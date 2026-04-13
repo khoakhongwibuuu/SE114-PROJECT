@@ -1,3 +1,41 @@
 <resources>
-    <string name="app_name">Spending Manager</string>
+    <string name="app_name">SE114-PROJECT</string>
+    <string name="contentDescription">SE114-PROJECT</string>
+    <string name="title_activity_login">LOGIN</string>
+    <string name="title_activity_signin">REGISTER</string>
+    <string name="re_password">Retype Password</string>
+    <string name="action_log_in">Log In</string>
+    <string name="action_sign_in">Sign In</string>
+    <string name="sign_in_text">Don\'t have account ?</string>
+    <string name="welcome">"Welcome !"</string>
+    <string name="invalid_username">Not a valid username</string>
+    <string name="invalid_password">Password must be >5 characters</string>
+    <string name="login_failed">"Login failed"</string>
+    <string name="quick_login">"━━━━  Or login with  ━━━━"</string>
+    <string name="title_activity_nhap_chi_so">Nhập chỉ số sức khỏe</string>
+    <string name="editDate">Chọn ngày</string>
+    <string name="editHeight">Chiều cao (cm)</string>
+    <string name="editWeight">Cân nặng (kg)</string>
+    <string name="editBloodPressure">Huyết áp (mmHg)</string>
+    editGlycemicIndex
+    <string name="editGlycemicIndex">Đường huyết (mg/dL)</string>
+    <string name="btnSave">LƯU THÔNG TIN</string>
+    <string name="title_activity_line_chart">Theo dõi sức khỏe</string>
+    <string name="title_history">Chi tiết lịch sử</string>
+    <string name="TableText_Date">Ngày</string>
+    <string name="TableText_Index">Chỉ số</string>
+    <string name="btnNhapChiSo">+ NHẬP CHỈ SỐ</string>
+    <string name="TableText_Name">Tên thuốc</string>
+    <string name="TableText_Count">Số lượng</string>
+    <string name="TableText_Expired">Hạn sử dụng</string>
+    <string name="title_activity_medicine">Tủ thuốc</string>
+    <string name="btnThemThuoc">+ THÊM THUỐC</string>
+    <string name="title_activity_them_thuoc">Thêm thuốc</string>
+    <string name="editName">Tên thuốc</string>
+    <string name="editCount">Số lượng (viên)</string>
+    <string name="Description">Công dụng</string>
+    <string name="ExpiredDate">Ngày hết hạn</string>
+    <string name="title_activity_alarm">Hẹn giờ uống thuốc</string>
+    <string name="TableText_Time">Thời gian</string>
+    <string name="btnThemThoiGian">+ THÊM THỜI GIAN UỐNG THUỐC</string>
 </resources>
