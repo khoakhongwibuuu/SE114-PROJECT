@@ -1,0 +1,35 @@
+# ═══════════════════════════════════════════════════════
+# CareNest Backend - .gitignore
+# ═══════════════════════════════════════════════════════
+
+# ── Build output ──────────────────────────────────────
+target/
+
+# ── IDE ───────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# ── OS ────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Maven ─────────────────────────────────────────────
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ── Environment & Secrets ─────────────────────────────
+.env
+*.env.local
+application-local.yml
+
+# ── Logs ──────────────────────────────────────────────
+*.log
+logs/
