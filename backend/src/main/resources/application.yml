@@ -1,0 +1,62 @@
+# ═══════════════════════════════════════════════════════
+# CareNest Backend - Cấu hình chính
+# ═══════════════════════════════════════════════════════
+# Profile mặc định: dev
+# Chạy với profile khác: --spring.profiles.active=prod
+# ═══════════════════════════════════════════════════════
+
+spring:
+  application:
+    name: carenest-backend
+
+  # Profile mặc định khi chạy local
+  profiles:
+    active: dev
+
+  # ── PostgreSQL ──────────────────────────────────────
+  datasource:
+    url: jdbc:postgresql://localhost:5432/carenest_db
+    username: carenest_user
+    password: ${DB_PASSWORD:carenest_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # ── JPA / Hibernate ─────────────────────────────────
+  jpa:
+    open-in-view: false           # Best practice: tắt lazy loading ngoài transaction
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # ── Redis ───────────────────────────────────────────
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: ${REDIS_PASSWORD:}
+
+  # ── Mail (Gmail SMTP) ──────────────────────────────
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+# ── JWT Custom Properties ───────────────────────────
+app:
+  jwt:
+    secret: ${JWT_SECRET:carenest-256-bit-secret-key-for-dev-environment-only-change-in-prod}
+    access-token-expiration: 900000       # 15 phút (ms)
+    refresh-token-expiration: 604800000   # 7 ngày (ms)
+
+# ── Server ──────────────────────────────────────────
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
