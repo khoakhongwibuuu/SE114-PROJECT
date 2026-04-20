@@ -48,6 +48,30 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- MapStruct: Tự động map Entity <-> DTO -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-processor</artifactId>
+            <version>${mapstruct.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ────────────────────────────────────────── -->
+        <!-- 6. UTILS & OTHERS                          -->
+        <!-- ────────────────────────────────────────── -->
+
+        <!-- OpenAPI / Swagger UI (Tài liệu API) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+
         <!-- Validation: @NotBlank, @Email, @Size, etc. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
