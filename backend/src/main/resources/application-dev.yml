@@ -1,0 +1,23 @@
+# ═══════════════════════════════════════════════════════
+# CareNest Backend - Cấu hình môi trường DEV
+# ═══════════════════════════════════════════════════════
+# Kích hoạt bằng: --spring.profiles.active=dev
+# Hoặc đặt trong application.yml (mặc định)
+# ═══════════════════════════════════════════════════════
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update              # Tự động tạo/cập nhật schema từ Entity
+    show-sql: true                  # Hiển thị SQL query ra console
+    properties:
+      hibernate:
+        format_sql: true            # Format SQL cho dễ đọc
+
+# ── Logging ─────────────────────────────────────────
+logging:
+  level:
+    com.carenest.backend: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

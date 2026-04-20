@@ -1,0 +1,54 @@
+# ═══════════════════════════════════════════════════════
+# CareNest Backend - Docker Compose
+# PostgreSQL 16 + Redis 7
+# ═══════════════════════════════════════════════════════
+# Cách dùng:
+#   cd backend
+#   docker compose up -d          ← Khởi động PostgreSQL + Redis
+#   docker compose down           ← Dừng tất cả
+#   docker compose logs -f        ← Xem log realtime
+# ═══════════════════════════════════════════════════════
+
+services:
+
+  # ── PostgreSQL 16 ─────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: carenest-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: carenest_db
+      POSTGRES_USER: carenest_user
+      POSTGRES_PASSWORD: carenest_pass
+    volumes:
+      - carenest_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carenest_user -d carenest_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis 7 ───────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: carenest-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - carenest_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ── Persistent Volumes ────────────────────────────
+volumes:
+  carenest_pgdata:
+    driver: local
+  carenest_redisdata:
+    driver: local
