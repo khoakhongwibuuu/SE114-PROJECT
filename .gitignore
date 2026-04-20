@@ -1,15 +1,26 @@
+# ═══════════════════════════════════════════════
+# CareNest Monorepo - .gitignore
+# ═══════════════════════════════════════════════
+
+# ── IDE (Android Studio / IntelliJ / VS Code) ──
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.vscode/
+
+# ── Android Build ───────────────────────────────
+.gradle/
+**/build/
+/captures/
+.externalNativeBuild/
+.cxx/
 local.properties
+
+# ── Backend (Spring Boot / Maven) ───────────────
+backend/target/
+backend/*.log
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# ── OS ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
