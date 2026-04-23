@@ -12,4 +12,5 @@ public interface MedicationLogRepository extends JpaRepository<MedicationLog, Lo
     List<MedicationLog> findAllByMedicationId(Long medicationId);
     List<MedicationLog> findAllByMedicationIdAndScheduledTimeBetween(Long medicationId, Instant start, Instant end);
     boolean existsByMedicationIdAndScheduledTime(Long medicationId, Instant scheduledTime);
+    List<MedicationLog> findAllByStatusAndIsNotifiedFalseAndScheduledTimeBetween(com.carenest.backend.module.medication.enums.MedicationLogStatus status, Instant start, Instant end);
 }
