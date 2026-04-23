@@ -34,6 +34,10 @@ public class MedicationLog extends BaseEntity {
     @Builder.Default
     private MedicationLogStatus status = MedicationLogStatus.PENDING;
 
+    @Column(name = "is_notified", nullable = false)
+    @Builder.Default
+    private Boolean isNotified = false;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 }
