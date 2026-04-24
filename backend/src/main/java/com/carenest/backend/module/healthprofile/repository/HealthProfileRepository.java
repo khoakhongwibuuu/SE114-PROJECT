@@ -10,4 +10,5 @@ import java.util.List;
 public interface HealthProfileRepository extends JpaRepository<HealthProfile, Long> {
     List<HealthProfile> findByFamilyIdAndDeletedAtIsNull(Long familyId);
     List<HealthProfile> findByUserIdAndDeletedAtIsNull(Long userId);
+    List<HealthProfile> findByFamilyId(Long familyId);
 }

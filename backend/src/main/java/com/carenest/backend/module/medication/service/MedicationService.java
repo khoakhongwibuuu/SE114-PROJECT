@@ -1,6 +1,7 @@
 package com.carenest.backend.module.medication.service;
 
 import com.carenest.backend.module.medication.dto.request.CheckInMedicationRequest;
+import com.carenest.backend.module.medication.dto.request.BatchCreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.CreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.UpdateMedicationRequest;
 import com.carenest.backend.module.medication.dto.response.MedicationLogResponse;
@@ -21,4 +22,6 @@ public interface MedicationService {
     List<MedicationLogResponse> getMedicationsForToday(Long profileId);
 
     void checkInMedicationLog(Long logId, CheckInMedicationRequest request);
+
+    void createBatchFromOcr(BatchCreateMedicationRequest request);
 }
