@@ -1,6 +1,7 @@
 package com.carenest.backend.module.medication.controller;
 
 import com.carenest.backend.common.dto.ApiResponse;
+import com.carenest.backend.module.medication.dto.request.BatchCreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.CreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.UpdateMedicationRequest;
 import com.carenest.backend.module.medication.dto.response.MedicationLogResponse;

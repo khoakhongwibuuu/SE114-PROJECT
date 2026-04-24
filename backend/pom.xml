@@ -184,6 +184,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring AI Gemini -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-vertex-ai-gemini-spring-boot-starter</artifactId>
+            <version>1.0.0-M1</version>
+        </dependency>
+
     </dependencies>
 
     <!-- ═══════════════════════════════════════════════ -->
@@ -233,5 +240,16 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
 </project>

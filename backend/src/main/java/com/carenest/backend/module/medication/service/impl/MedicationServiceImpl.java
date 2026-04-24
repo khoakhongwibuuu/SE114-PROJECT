@@ -2,9 +2,14 @@ package com.carenest.backend.module.medication.service.impl;
 
 import com.carenest.backend.common.exception.BadRequestException;
 import com.carenest.backend.common.exception.ResourceNotFoundException;
+import com.carenest.backend.module.cabinet.entity.CabinetMedicine;
+import com.carenest.backend.module.cabinet.entity.MedicineCabinet;
+import com.carenest.backend.module.cabinet.repository.CabinetMedicineRepository;
+import com.carenest.backend.module.cabinet.repository.MedicineCabinetRepository;
 import com.carenest.backend.module.family.util.FamilySecurityUtil;
 import com.carenest.backend.module.healthprofile.entity.HealthProfile;
 import com.carenest.backend.module.healthprofile.repository.HealthProfileRepository;
+import com.carenest.backend.module.medication.dto.request.BatchCreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.CheckInMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.CreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.UpdateMedicationRequest;
@@ -19,6 +24,7 @@ import com.carenest.backend.module.medication.mapper.MedicationMapper;
 import com.carenest.backend.module.medication.repository.MedicationLogRepository;
 import com.carenest.backend.module.medication.repository.MedicationRepository;
 import com.carenest.backend.module.medication.service.MedicationService;
+import com.carenest.backend.module.ocr.dto.response.ParsedMedicationDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +34,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,6 +45,8 @@ public class MedicationServiceImpl implements MedicationService {
     private final MedicationRepository medicationRepository;
     private final MedicationLogRepository medicationLogRepository;
     private final HealthProfileRepository healthProfileRepository;
+    private final MedicineCabinetRepository medicineCabinetRepository;
+    private final CabinetMedicineRepository cabinetMedicineRepository;
     private final MedicationMapper medicationMapper;
     private final FamilySecurityUtil familySecurityUtil;
 
@@ -290,6 +297,60 @@ public class MedicationServiceImpl implements MedicationService {
             } catch (DateTimeParseException e) {
                 throw new BadRequestException("Định dạng giờ không hợp lệ. Vui lòng dùng HH:mm (VD: 08:00)");
             }
+        }
+    }
+    @Override
+    @Transactional
+    public void createBatchFromOcr(BatchCreateMedicationRequest request) {
+        // [QUY TẮC 3]: Xác nhận bảo mật sở hữu HealthProfile và Family
+        familySecurityUtil.checkUserBelongsToFamily(request.getFamilyId());
+        familySecurityUtil.checkUserBelongsToHealthProfile(request.getHealthProfileId());
+        
+        HealthProfile profile = healthProfileRepository.findById(request.getHealthProfileId())
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ sức khỏe", request.getHealthProfileId()));
+
+        // Tủ thuốc (Module 9)
+        MedicineCabinet cabinet = medicineCabinetRepository.findByFamilyId(request.getFamilyId())
+                .orElseGet(() -> {
+                    MedicineCabinet newCabinet = MedicineCabinet.builder()
+                            .family(profile.getFamily())
+                            .name("Tủ thuốc gia đình")
+                            .build();
+                    return medicineCabinetRepository.save(newCabinet);
+                });
+
+        // Vòng lặp Transactional lưu hàng loạt
+        for (ParsedMedicationDto dto : request.getMedications()) {
+            // 1. Đồng bộ Tủ thuốc
+            CabinetMedicine cabMed = cabinetMedicineRepository.findByCabinetIdAndMedicineNameIgnoreCase(cabinet.getId(), dto.getMedicineName())
+                    .orElse(CabinetMedicine.builder()
+                            .cabinet(cabinet)
+                            .medicineName(dto.getMedicineName())
+                            .unit(dto.getUnit() != null ? dto.getUnit() : "Viên")
+                            .quantity(0)
+                            .build());
+            
+            cabMed.setQuantity(cabMed.getQuantity() + (dto.getTotalQuantity() != null ? dto.getTotalQuantity() : 0));
+            cabinetMedicineRepository.save(cabMed);
+
+            // 2. Tạo Kế hoạch uống thuốc (Medication Plan)
+            Medication medication = Medication.builder()
+                    .healthProfile(profile)
+                    .medicineName(dto.getMedicineName())
+                    .dosage(dto.getDosage())
+                    .frequency(dto.getFrequency() != null ? dto.getFrequency() : MedicationFrequency.DAILY)
+                    .timesPerDay(dto.getTimesPerDay() != null ? dto.getTimesPerDay() : 1)
+                    .startDate(LocalDate.now())
+                    .endDate(LocalDate.now().plusDays(dto.getDurationDays() != null ? dto.getDurationDays() : 7))
+                    .status(MedicationStatus.ACTIVE)
+                    .notes(dto.getNotes())
+                    // LLM might not know exact timeslots, we put a default one or leave empty and let User edit later
+                    .timeSlots("08:00") // Default morning
+                    .build();
+            medication = medicationRepository.save(medication);
+
+            // 3. Sinh Kế hoạch nhắc nhở (MedicationLog)
+            generateLogsForMedication(medication);
         }
     }
 }
