@@ -3,6 +3,12 @@ package com.carenest.backend.module.appointment.job;
 import com.carenest.backend.module.appointment.entity.Appointment;
 import com.carenest.backend.module.appointment.enums.AppointmentStatus;
 import com.carenest.backend.module.appointment.repository.AppointmentRepository;
+import com.carenest.backend.module.notification.enums.NotificationType;
+import com.carenest.backend.module.notification.service.NotificationService;
+import com.carenest.backend.module.auth.entity.User;
+import com.carenest.backend.module.family.entity.Family;
+import com.carenest.backend.module.family.entity.FamilyMember;
+import com.carenest.backend.module.family.repository.FamilyMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +25,8 @@ import java.util.List;
 public class AppointmentReminderJob {
 
     private final AppointmentRepository appointmentRepository;
+    private final NotificationService notificationService;
+    private final FamilyMemberRepository familyMemberRepository;
 
     /**
      * Cronjob runs every hour at minute 0.
@@ -40,10 +48,21 @@ public class AppointmentReminderJob {
         for (Appointment appointment : upcomingAppointments) {
             log.info("Sending reminder for appointment ID: {} for profile: {}", 
                     appointment.getId(), appointment.getHealthProfile().getFullName());
+            String title = "Nhắc nhở lịch khám";
+            String message = String.format("Bạn có lịch khám cho %s với bác sĩ %s tại %s.",
+                    appointment.getHealthProfile().getFullName(),
+                    appointment.getDoctorName() != null ? appointment.getDoctorName() : "chưa rõ",
+                    appointment.getHospitalName() != null ? appointment.getHospitalName() : "chưa rõ"
+            );
             
-            // TODO: Call NotificationService to actually send a push notification/email
-            // notificationService.sendAppointmentReminder(...)
-            
+            Family family = appointment.getHealthProfile().getFamily();
+            if (family != null) {
+                List<User> targetUsers = familyMemberRepository.findAllByFamilyId(family.getId())
+                        .stream().map(FamilyMember::getUser).toList();
+                notificationService.createNotificationForUsers(targetUsers, title, message, NotificationType.APPOINTMENT, "APPOINTMENT", appointment.getId());
+            } else if (appointment.getHealthProfile().getUser() != null) {
+                notificationService.createNotificationForUser(appointment.getHealthProfile().getUser(), title, message, NotificationType.APPOINTMENT, "APPOINTMENT", appointment.getId());
+            }
             appointment.setReminderSent(true);
         }
 
