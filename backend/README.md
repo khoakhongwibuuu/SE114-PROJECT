@@ -6,7 +6,7 @@ Hệ thống bao gồm 12 modules cốt lõi trong đó có Quản lý thành vi
 ## 🛠 Công nghệ sử dụng
 - **Ngôn ngữ:** Java 17
 - **Framework:** Spring Boot 3.4.5
-- **Cơ sở dữ liệu:** PostgreSQL 16 
+- **Cơ sở dữ liệu:** PostgreSQL 16 (cấu trúc Schema chuẩn hoá 18 bảng)
 - **Bộ nhớ đệm (Cache):** Redis 7
 - **Bảo mật:** Spring Security + JWT Authentication
 - **Object Mapper:** MapStruct, Lombok
