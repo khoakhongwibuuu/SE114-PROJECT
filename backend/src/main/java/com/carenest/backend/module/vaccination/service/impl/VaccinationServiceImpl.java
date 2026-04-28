@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.CacheManager;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -36,6 +37,13 @@ public class VaccinationServiceImpl implements VaccinationService {
     private final HealthProfileRepository healthProfileRepository;
     private final VaccinationMapper vaccinationMapper;
     private final FamilySecurityUtil familySecurityUtil;
+    private final CacheManager cacheManager;
+
+    private void evictDashboardCache(Long familyId) {
+        if (familyId != null && cacheManager.getCache("dashboard") != null) {
+            cacheManager.getCache("dashboard").evict(familyId);
+        }
+    }
 
     @Override
     @Transactional
@@ -73,6 +81,11 @@ public class VaccinationServiceImpl implements VaccinationService {
         }
 
         doses = vaccinationDoseRepository.saveAll(doses);
+
+        if (profile.getFamily() != null) {
+            evictDashboardCache(profile.getFamily().getId());
+        }
+
         return vaccinationMapper.toRecordResponseWithDoses(record, doses);
     }
 
@@ -132,6 +145,11 @@ public class VaccinationServiceImpl implements VaccinationService {
 
         // Trả về dữ liệu mới nhất
         List<VaccinationDose> updatedDoses = vaccinationDoseRepository.findAllByVaccinationRecordIdOrderByDoseNumberAsc(record.getId());
+
+        if (record.getHealthProfile().getFamily() != null) {
+            evictDashboardCache(record.getHealthProfile().getFamily().getId());
+        }
+
         return vaccinationMapper.toRecordResponseWithDoses(record, updatedDoses);
     }
 

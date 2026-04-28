@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -35,6 +36,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "dashboard", key = "#familyId")
     public DashboardResponse getDashboardOverview(Long familyId) {
         // 1. Kiểm tra bảo mật: User hiện tại phải thuộc familyId này
         familySecurityUtil.checkUserBelongsToFamily(familyId);

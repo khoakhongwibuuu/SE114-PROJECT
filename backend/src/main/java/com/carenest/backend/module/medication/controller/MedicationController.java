@@ -7,9 +7,9 @@ import com.carenest.backend.module.medication.dto.request.UpdateMedicationReques
 import com.carenest.backend.module.medication.dto.response.MedicationLogResponse;
 import com.carenest.backend.module.medication.dto.response.MedicationResponse;
 import com.carenest.backend.module.medication.service.MedicationService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,8 +28,13 @@ public class MedicationController {
 
     @PostMapping("/health-profiles/{profileId}/medications")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Tạo đơn thuốc mới cho một hồ sơ sức khỏe")
-    public ApiResponse<MedicationResponse> createMedication(
+    @io.swagger.v3.oas.annotations.Operation(summary = "Tạo đơn thuốc mới cho một hồ sơ sức khỏe")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Tạo đơn thuốc thành công"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Dữ liệu không hợp lệ (thời gian, etc)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy hồ sơ sức khỏe")
+    })
+    public com.carenest.backend.common.dto.ApiResponse<MedicationResponse> createMedication(
             @PathVariable Long profileId,
             @Valid @RequestBody CreateMedicationRequest request) {
         MedicationResponse response = medicationService.createMedication(profileId, request);
@@ -37,22 +42,32 @@ public class MedicationController {
     }
 
     @GetMapping("/health-profiles/{profileId}/medications")
-    @Operation(summary = "Lấy danh sách tất cả các đơn thuốc của một hồ sơ sức khỏe")
-    public ApiResponse<List<MedicationResponse>> getMedicationsByProfile(@PathVariable Long profileId) {
+    @io.swagger.v3.oas.annotations.Operation(summary = "Lấy danh sách tất cả các đơn thuốc của một hồ sơ sức khỏe")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
+    })
+    public com.carenest.backend.common.dto.ApiResponse<List<MedicationResponse>> getMedicationsByProfile(@PathVariable Long profileId) {
         List<MedicationResponse> response = medicationService.getMedicationsByProfile(profileId);
         return ApiResponse.success(response);
     }
 
     @GetMapping("/medications/today")
-    @Operation(summary = "Lấy danh sách thuốc cần uống HÔM NAY của một hồ sơ")
-    public ApiResponse<List<MedicationLogResponse>> getMedicationsForToday(@RequestParam Long profileId) {
+    @io.swagger.v3.oas.annotations.Operation(summary = "Lấy danh sách thuốc cần uống HÔM NAY của một hồ sơ")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
+    })
+    public com.carenest.backend.common.dto.ApiResponse<List<MedicationLogResponse>> getMedicationsForToday(@RequestParam Long profileId) {
         List<MedicationLogResponse> response = medicationService.getMedicationsForToday(profileId);
         return ApiResponse.success(response);
     }
 
     @PutMapping("/medications/{id}")
-    @Operation(summary = "Cập nhật thông tin đơn thuốc (Tự động tính lại lịch uống tương lai)")
-    public ApiResponse<MedicationResponse> updateMedication(
+    @io.swagger.v3.oas.annotations.Operation(summary = "Cập nhật thông tự động tính lại lịch uống tương lai)")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cập nhật thành công"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy đơn thuốc")
+    })
+    public com.carenest.backend.common.dto.ApiResponse<MedicationResponse> updateMedication(
             @PathVariable Long id,
             @Valid @RequestBody UpdateMedicationRequest request) {
         MedicationResponse response = medicationService.updateMedication(id, request);
@@ -60,8 +75,12 @@ public class MedicationController {
     }
 
     @PutMapping("/medications/{id}/complete")
-    @Operation(summary = "Đánh dấu kết thúc sớm một đơn thuốc")
-    public ApiResponse<Void> completeMedication(@PathVariable Long id) {
+    @io.swagger.v3.oas.annotations.Operation(summary = "Đánh dấu kết thúc sớm một đơn thuốc")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Kết thúc đơn thuốc thành công"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy đơn thuốc")
+    })
+    public com.carenest.backend.common.dto.ApiResponse<Void> completeMedication(@PathVariable Long id) {
         medicationService.completeMedication(id);
         return ApiResponse.success("Đã kết thúc đơn thuốc", null);
     }

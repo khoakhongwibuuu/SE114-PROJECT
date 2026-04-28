@@ -31,6 +31,7 @@
         <java.version>17</java.version>
         <jjwt.version>0.12.6</jjwt.version>
         <mapstruct.version>1.6.3</mapstruct.version>
+        <lombok.version>1.18.36</lombok.version>
     </properties>
 
     <!-- ═══════════════════════════════════════════════ -->
@@ -143,6 +144,12 @@
             <artifactId>mapstruct</artifactId>
             <version>${mapstruct.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-processor</artifactId>
+            <version>${mapstruct.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- DevTools: Hot reload khi phát triển -->
         <dependency>
@@ -196,24 +203,23 @@
                 </configuration>
             </plugin>
 
-            <!-- Annotation Processor: Lombok + MapStruct (thứ tự quan trọng!) -->
+            <!-- Annotation Processor: Lombok + MapStruct -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
                 <configuration>
                     <annotationProcessorPaths>
-                        <!-- Lombok phải đứng TRƯỚC MapStruct -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
                         </path>
-                        <!-- Binding giữa Lombok và MapStruct -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok-mapstruct-binding</artifactId>
                             <version>0.2.0</version>
                         </path>
-                        <!-- MapStruct Processor -->
                         <path>
                             <groupId>org.mapstruct</groupId>
                             <artifactId>mapstruct-processor</artifactId>

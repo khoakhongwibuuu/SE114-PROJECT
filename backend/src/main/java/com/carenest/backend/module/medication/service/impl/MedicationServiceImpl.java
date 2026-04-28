@@ -28,6 +28,7 @@ import com.carenest.backend.module.ocr.dto.response.ParsedMedicationDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.CacheManager;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -49,6 +50,13 @@ public class MedicationServiceImpl implements MedicationService {
     private final CabinetMedicineRepository cabinetMedicineRepository;
     private final MedicationMapper medicationMapper;
     private final FamilySecurityUtil familySecurityUtil;
+    private final CacheManager cacheManager;
+
+    private void evictDashboardCache(Long familyId) {
+        if (familyId != null && cacheManager.getCache("dashboard") != null) {
+            cacheManager.getCache("dashboard").evict(familyId);
+        }
+    }
 
     @Override
     @Transactional
@@ -69,6 +77,10 @@ public class MedicationServiceImpl implements MedicationService {
 
         // Generate Logs
         generateLogsForMedication(medication);
+
+        if (profile.getFamily() != null) {
+            evictDashboardCache(profile.getFamily().getId());
+        }
 
         return medicationMapper.toMedicationResponse(medication);
     }
@@ -124,6 +136,10 @@ public class MedicationServiceImpl implements MedicationService {
             generateLogsForMedication(medication);
         }
 
+        if (medication.getHealthProfile().getFamily() != null) {
+            evictDashboardCache(medication.getHealthProfile().getFamily().getId());
+        }
+
         return medicationMapper.toMedicationResponse(medication);
     }
 
@@ -145,6 +161,10 @@ public class MedicationServiceImpl implements MedicationService {
                 .filter(log -> log.getStatus() == MedicationLogStatus.PENDING && log.getScheduledTime().isAfter(now))
                 .collect(Collectors.toList());
         medicationLogRepository.deleteAll(futureLogs);
+
+        if (medication.getHealthProfile().getFamily() != null) {
+            evictDashboardCache(medication.getHealthProfile().getFamily().getId());
+        }
     }
 
     @Override
@@ -206,6 +226,10 @@ public class MedicationServiceImpl implements MedicationService {
         }
 
         medicationLogRepository.save(log);
+
+        if (log.getMedication().getHealthProfile().getFamily() != null) {
+            evictDashboardCache(log.getMedication().getHealthProfile().getFamily().getId());
+        }
     }
 
     private void generateLogsForMedication(Medication medication) {
@@ -352,5 +376,7 @@ public class MedicationServiceImpl implements MedicationService {
             // 3. Sinh Kế hoạch nhắc nhở (MedicationLog)
             generateLogsForMedication(medication);
         }
+
+        evictDashboardCache(request.getFamilyId());
     }
 }
