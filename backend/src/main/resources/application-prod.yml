@@ -1,0 +1,34 @@
+# ═══════════════════════════════════════════════════════
+# CareNest Backend - Cấu hình môi trường PRODUCTION
+# ═══════════════════════════════════════════════════════
+# Kích hoạt bằng: --spring.profiles.active=prod
+# Trong Docker: SPRING_PROFILES_ACTIVE=prod
+# ═══════════════════════════════════════════════════════
+
+spring:
+  # ── Database override for production ────────────────
+  # URL, username, password đều được inject qua ENV từ docker-compose
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  # ── Redis override for production ───────────────────
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
+      password: ${SPRING_DATA_REDIS_PASSWORD}
+
+  # ── JPA: validate schema, don't auto-migrate in prod!
+  jpa:
+    hibernate:
+      ddl-auto: validate             # KHÔNG tự sửa schema trên Production
+    show-sql: false                  # Tắt log SQL (giảm noise)
+
+# ── Logging: chỉ log WARN trở lên trên Production ────
+logging:
+  level:
+    root: WARN
+    com.carenest.backend: INFO
+    org.springframework.security: WARN

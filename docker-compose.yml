@@ -1,0 +1,126 @@
+# ═══════════════════════════════════════════════════════════════
+# CareNest - Docker Compose (Staging / Production)
+# ═══════════════════════════════════════════════════════════════
+# Usage:
+#   Staging : docker compose --env-file .env.staging up -d
+#   Prod    : docker compose --env-file .env.prod    up -d
+# ═══════════════════════════════════════════════════════════════
+
+services:
+
+  # ─────────────────────────────────────────────────────────────
+  # SERVICE 1: PostgreSQL 16 Database
+  # ─────────────────────────────────────────────────────────────
+  carenest-db:
+    image: postgres:16-alpine
+    container_name: carenest-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-carenest_db}
+      POSTGRES_USER: ${POSTGRES_USER:-carenest_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # Named volume: data persists across container restarts/upgrades
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Expose to host ONLY in staging (remove in production)
+      - "5432:5432"
+    networks:
+      - carenest-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-carenest_user} -d ${POSTGRES_DB:-carenest_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─────────────────────────────────────────────────────────────
+  # SERVICE 2: Redis Cache
+  # ─────────────────────────────────────────────────────────────
+  carenest-redis:
+    image: redis:7-alpine
+    container_name: carenest-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      # Expose to host ONLY in staging (remove in production)
+      - "6379:6379"
+    networks:
+      - carenest-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────────────────────
+  # SERVICE 3: CareNest Spring Boot Backend
+  # ─────────────────────────────────────────────────────────────
+  carenest-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: carenest-backend
+    restart: unless-stopped
+    depends_on:
+      carenest-db:
+        condition: service_healthy   # Wait for DB health check to pass
+      carenest-redis:
+        condition: service_healthy   # Wait for Redis health check to pass
+    environment:
+      # ── Spring Profile ──────────────────────────────────────
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+
+      # ── Database ────────────────────────────────────────────
+      # Point to Docker service name "carenest-db", NOT localhost
+      SPRING_DATASOURCE_URL: jdbc:postgresql://carenest-db:5432/${POSTGRES_DB:-carenest_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-carenest_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # ── Redis ────────────────────────────────────────────────
+      # Point to Docker service name "carenest-redis", NOT localhost
+      SPRING_DATA_REDIS_HOST: carenest-redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      # ── JWT Security ─────────────────────────────────────────
+      APP_JWT_SECRET: ${JWT_SECRET}
+      APP_JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-900000}
+      APP_JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+
+      # ── AI / Gemini API ──────────────────────────────────────
+      # ⚠️ QUAN TRỌNG: Giá trị này PHẢI được set trong file .env, KHÔNG bao giờ hardcode!
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+
+      # ── Mail SMTP ────────────────────────────────────────────
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+
+      # ── JVM Memory (phù hợp cho server 1-2GB RAM) ────────────
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m"
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    networks:
+      - carenest-network
+
+# ─────────────────────────────────────────────────────────────
+# NAMED VOLUMES (data persists across `docker compose down`)
+# ─────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ─────────────────────────────────────────────────────────────
+# INTERNAL NETWORK (services talk to each other by name)
+# ─────────────────────────────────────────────────────────────
+networks:
+  carenest-network:
+    driver: bridge
