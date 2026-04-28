@@ -48,6 +48,13 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- OpenAPI / Swagger UI (Tài liệu API) -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+
         <!-- Validation: @NotBlank, @Email, @Size, etc. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -160,6 +167,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring AI Gemini -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-vertex-ai-gemini-spring-boot-starter</artifactId>
+            <version>1.0.0-M1</version>
+        </dependency>
+
     </dependencies>
 
     <!-- ═══════════════════════════════════════════════ -->
@@ -209,5 +223,16 @@
             </plugin>
         </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
 </project>
