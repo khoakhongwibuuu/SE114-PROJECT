@@ -36,6 +36,12 @@ public class VaccinationDose extends BaseEntity {
     @Column(name = "administered_by", length = 200)
     private String administeredBy;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private com.carenest.backend.module.vaccination.enums.DoseStatus status = com.carenest.backend.module.vaccination.enums.DoseStatus.PENDING;
+
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 }
