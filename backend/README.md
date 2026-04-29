@@ -48,6 +48,53 @@ Tại đây, giao diện đồ hoạ Swagger sẽ liệt kê toàn bộ mọi AP
 
 ---
 
+## 📋 Chuẩn hoá API Response
+
+Tất cả các API trong hệ thống đều sử dụng một cấu trúc phản hồi (Envelope) duy nhất để đảm bảo tính đồng bộ cho Frontend:
+
+**Success Response (HTTP 200/201):**
+```json
+{
+  "success": true,
+  "message": "Thông báo thành công",
+  "data": { ... },
+  "timestamp": "2024-04-29T..."
+}
+```
+
+**Error Response (HTTP 4xx/5xx):**
+```json
+{
+  "success": false,
+  "message": "Thông báo lỗi chi tiết",
+  "errors": { ... },
+  "timestamp": "2024-04-29T..."
+}
+```
+
+---
+
+## 📦 Danh sách Module & Endpoint chính
+
+Dựa trên kế hoạch đồng bộ hóa, các module sau đây là ưu tiên hàng đầu:
+
+### 1. Authentication (`/api/v1/auth`)
+- `POST /register`: Đăng ký tài khoản mới.
+  - Payload: `{ email, password, fullName }`
+- `POST /login`: Đăng nhập hệ thống.
+  - Response: `{ accessToken, refreshToken, user: { id, email, fullName, ... } }`
+- `GET /me`: Lấy thông tin người dùng hiện tại đang đăng nhập.
+
+### 2. Family & Health Profile (`/api/v1/families`)
+- `POST /families`: Tạo tổ ấm mới.
+- `GET /families/{id}`: Chi tiết tổ ấm và danh sách thành viên.
+- `GET /health-profiles/{id}`: Chi tiết hồ sơ sức khỏe.
+
+> [!TIP]
+> Các module như `Cabinet`, `Medication`, `Growth`, `Vaccination` đang được tiếp tục chuẩn hoá theo cấu trúc RESTful này.
+
+---
+
 ## 👨‍💻 Workflow cho thành viên phát triển
 
 Trong giai đoạn Code chức năng (Phase 3+), xin hãy tuân thủ nguyên tắc Git đã đề ra:
