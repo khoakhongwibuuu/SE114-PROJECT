@@ -175,12 +175,13 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Spring AI Gemini -->
+<!-- 
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-vertex-ai-gemini-spring-boot-starter</artifactId>
             <version>1.0.0-M1</version>
         </dependency>
+-->
 
     </dependencies>
 
