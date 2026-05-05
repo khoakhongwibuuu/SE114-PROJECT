@@ -17,7 +17,7 @@ services:
     container_name: carenest-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_DB: carenest_db
       POSTGRES_USER: carenest_user

@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * - @SpringBootApplication: Bật auto-config, component scan, configuration
  * - @EnableScheduling: Cho phép chạy Cronjob (@Scheduled) nhắc thuốc, lịch khám
  */
-@SpringBootApplication
+@SpringBootApplication(excludeName = {"org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration"})
 @EnableScheduling
 @EnableCaching
 public class CareNestBackendApplication {
