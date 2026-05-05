@@ -13,6 +13,7 @@ public interface UserMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "role", ignore = true)
+    @Mapping(source = "phoneNumber", target = "phone")
     User toEntity(RegisterRequest request);
 
     UserInfoResponse toUserInfoResponse(User user);
