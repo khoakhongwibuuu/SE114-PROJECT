@@ -13,9 +13,15 @@ spring:
   profiles:
     active: dev
 
+  ai:
+    vertex:
+      ai:
+        gemini:
+          enabled: false
+
   # ── PostgreSQL ──────────────────────────────────────
   datasource:
-    url: jdbc:postgresql://localhost:5432/carenest_db
+    url: jdbc:postgresql://localhost:5433/carenest_db
     username: carenest_user
     password: ${DB_PASSWORD:carenest_pass}
     driver-class-name: org.postgresql.Driver

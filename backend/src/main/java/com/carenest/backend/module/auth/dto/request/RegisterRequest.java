@@ -18,4 +18,7 @@ public class RegisterRequest {
 
     @NotBlank(message = "Full name is required")
     private String fullName;
+
+    @Size(max = 20, message = "Phone number is too long")
+    private String phoneNumber;
 }

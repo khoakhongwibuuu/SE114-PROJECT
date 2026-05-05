@@ -24,7 +24,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       # Expose to host ONLY in staging (remove in production)
-      - "5432:5432"
+      - "5433:5432"
     networks:
       - carenest-network
     healthcheck:
