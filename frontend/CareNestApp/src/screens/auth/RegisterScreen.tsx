@@ -134,7 +134,10 @@ export default function RegisterScreen() {
             onPress={handleRegister}
             activeOpacity={0.85}
           >
-            <Text style={styles.registerBtnText}>{loading ? 'Đang đăng ký...' : 'Đăng ký'}</Text>
+            <View style={styles.btnContentRow}>
+              <Text style={styles.registerBtnText}>{loading ? 'Đang đăng ký...' : 'Đăng ký'}</Text>
+              {!loading && <Icon name="person_add" size={20} color={colors.onPrimary} />}
+            </View>
           </TouchableOpacity>
 
           {/* Divider */}
@@ -145,7 +148,7 @@ export default function RegisterScreen() {
           </View>
 
           <TouchableOpacity style={styles.googleBtn} activeOpacity={0.8}>
-            <Text style={styles.googleIcon}>G</Text>
+            <Icon name="google" size={20} color="#4285F4" />
             <Text style={styles.googleText}>Tiếp tục với Google</Text>
           </TouchableOpacity>
         </View>
@@ -229,4 +232,9 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { fontSize: 14, fontFamily: 'Inter', color: colors.onSurfaceVariant },
   footerLink: { fontSize: 14, fontFamily: 'Inter', fontWeight: '700', color: colors.primary },
+  btnContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
 });

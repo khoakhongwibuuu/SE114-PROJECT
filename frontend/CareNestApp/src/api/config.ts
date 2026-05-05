@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 const API_HOST = Platform.select({
-  android: 'http://192.168.1.6:8080',
+  android: 'http://10.0.2.2:8080',
   default: 'http://localhost:8080',
 });
 

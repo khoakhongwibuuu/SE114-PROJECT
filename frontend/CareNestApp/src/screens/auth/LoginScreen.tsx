@@ -99,14 +99,16 @@ export default function LoginScreen() {
             <Text style={styles.forgotText}>Quên mật khẩu?</Text>
           </TouchableOpacity>
 
-          {/* Login button */}
           <TouchableOpacity
             style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
             onPress={handleLogin}
             disabled={loading}
             activeOpacity={0.85}
           >
-            <Text style={styles.loginBtnText}>{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}</Text>
+            <View style={styles.btnContentRow}>
+              <Text style={styles.loginBtnText}>{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}</Text>
+              {!loading && <Icon name="login" size={20} color={colors.onPrimary} />}
+            </View>
           </TouchableOpacity>
 
           {/* Divider */}
@@ -118,7 +120,7 @@ export default function LoginScreen() {
 
           {/* Google button */}
           <TouchableOpacity style={styles.googleBtn} activeOpacity={0.8}>
-            <Text style={styles.googleIcon}>G</Text>
+            <Icon name="google" size={20} color="#4285F4" />
             <Text style={styles.googleText}>Tiếp tục với Google</Text>
           </TouchableOpacity>
         </View>
@@ -247,5 +249,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '700',
     color: colors.primary,
+  },
+  btnContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 });
