@@ -102,6 +102,8 @@ const iconMap: Record<string, string> = {
   password: 'lock-reset',
   lock_outline: 'lock-outline',
   pin: 'numeric',
+  google: 'google',
+  login: 'login',
 };
 
 export function getIconName(materialSymbolName: string): string {

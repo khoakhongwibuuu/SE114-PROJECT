@@ -11,6 +11,8 @@ public interface FamilyService {
 
     FamilyResponse createFamily(CreateFamilyRequest request);
 
+    FamilyDetailResponse getMyFamily();
+
     FamilyDetailResponse getFamilyById(Long id);
 
     void inviteMember(Long familyId, InviteMemberRequest request);

@@ -130,7 +130,10 @@ export default function ForgotPasswordScreen() {
                 onPress={() => void handleResetPassword()}
                 activeOpacity={0.85}
               >
-                <Text style={styles.primaryBtnText}>{loading ? 'Đang xử lý...' : 'Xác nhận'}</Text>
+                <View style={styles.btnContentRow}>
+                  <Text style={styles.primaryBtnText}>{loading ? 'Đang xử lý...' : 'Xác nhận'}</Text>
+                  {!loading && <Icon name="check" size={20} color={colors.onPrimary} />}
+                </View>
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.backLink} onPress={() => setSent(false)}>
@@ -165,7 +168,10 @@ export default function ForgotPasswordScreen() {
                 onPress={() => void handleForgotPassword()}
                 activeOpacity={0.85}
               >
-                <Text style={styles.primaryBtnText}>{loading ? 'Đang gửi...' : 'Gửi mã khôi phục'}</Text>
+                <View style={styles.btnContentRow}>
+                  <Text style={styles.primaryBtnText}>{loading ? 'Đang gửi...' : 'Gửi mã khôi phục'}</Text>
+                  {!loading && <Icon name="send" size={20} color={colors.onPrimary} />}
+                </View>
               </TouchableOpacity>
             </View>
 
@@ -232,5 +238,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
+  },
+  btnContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 });
