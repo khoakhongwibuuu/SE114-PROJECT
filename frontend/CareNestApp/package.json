@@ -19,6 +19,7 @@
     "axios": "^1.15.2",
     "react": "19.2.3",
     "react-native": "0.85.2",
+    "react-native-config": "^1.6.1",
     "react-native-image-picker": "^8.2.1",
     "react-native-markdown-display": "^7.0.2",
     "react-native-nitro-modules": "^0.35.6",

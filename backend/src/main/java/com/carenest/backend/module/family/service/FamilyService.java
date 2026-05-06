@@ -9,6 +9,8 @@ import com.carenest.backend.module.family.dto.response.FamilyResponse;
 
 public interface FamilyService {
 
+    FamilyDetailResponse getMyFamily();
+
     FamilyResponse createFamily(CreateFamilyRequest request);
 
     FamilyDetailResponse getFamilyById(Long id);
