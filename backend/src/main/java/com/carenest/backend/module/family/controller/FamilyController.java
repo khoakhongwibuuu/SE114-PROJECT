@@ -16,7 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/families")
+@RequestMapping("/families")
 @RequiredArgsConstructor
 @Tag(name = "Family", description = "Quản lý tổ ấm (gia đình)")
 @SecurityRequirement(name = "bearerAuth")
@@ -30,6 +30,13 @@ public class FamilyController {
     public ApiResponse<FamilyResponse> createFamily(@Valid @RequestBody CreateFamilyRequest request) {
         FamilyResponse response = familyService.createFamily(request);
         return ApiResponse.success("Tạo tổ ấm thành công", response);
+    }
+
+    @GetMapping
+    @Operation(summary = "Lấy thông tin chi tiết tổ ấm của user hiện tại")
+    public ApiResponse<FamilyDetailResponse> getMyFamily() {
+        FamilyDetailResponse response = familyService.getMyFamily();
+        return ApiResponse.success(response);
     }
 
     @GetMapping("/{id}")

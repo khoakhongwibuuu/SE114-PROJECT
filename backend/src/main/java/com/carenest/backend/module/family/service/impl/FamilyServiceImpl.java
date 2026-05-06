@@ -48,6 +48,16 @@ public class FamilyServiceImpl implements FamilyService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public FamilyDetailResponse getMyFamily() {
+        User currentUser = getCurrentUser();
+        FamilyMember member = familyMemberRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Family", "userId", String.valueOf(currentUser.getId())));
+        
+        return getFamilyById(member.getFamily().getId());
+    }
+
+    @Override
     @Transactional
     public FamilyResponse createFamily(CreateFamilyRequest request) {
         User currentUser = getCurrentUser();
