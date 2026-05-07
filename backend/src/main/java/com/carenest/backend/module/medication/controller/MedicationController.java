@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("")
 @RequiredArgsConstructor
 @Tag(name = "Medication", description = "Quản lý đơn thuốc và lịch uống thuốc")
 @SecurityRequirement(name = "bearerAuth")

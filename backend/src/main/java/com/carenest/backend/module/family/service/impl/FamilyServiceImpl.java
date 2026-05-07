@@ -51,12 +51,10 @@ public class FamilyServiceImpl implements FamilyService {
     @Transactional(readOnly = true)
     public FamilyDetailResponse getMyFamily() {
         User currentUser = getCurrentUser();
+        FamilyMember member = familyMemberRepository.findByUserId(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Family", "userId", String.valueOf(currentUser.getId())));
         
-        // Find the family where the current user is a member
-        FamilyMember membership = familyMemberRepository.findByUserId(currentUser.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Bạn chưa tham gia gia đình nào"));
-        
-        return getFamilyById(membership.getFamily().getId());
+        return getFamilyById(member.getFamily().getId());
     }
 
     @Override
