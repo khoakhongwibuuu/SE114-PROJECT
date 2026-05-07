@@ -23,6 +23,13 @@ import org.springframework.web.bind.annotation.*;
 public class FamilyController {
 
     private final FamilyService familyService;
+    
+    @GetMapping
+    @Operation(summary = "Lấy thông tin gia đình của người dùng hiện tại")
+    public ApiResponse<FamilyDetailResponse> getMyFamily() {
+        FamilyDetailResponse response = familyService.getMyFamily();
+        return ApiResponse.success(response);
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
