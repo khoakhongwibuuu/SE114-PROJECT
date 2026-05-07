@@ -16,6 +16,8 @@ import java.time.Instant;
 public class FamilyMemberResponse {
     private Long id; // ID của FamilyMember record
     private UserInfoResponse user; // Thông tin user
+    private String fullName;
+    private String avatarUrl;
     private FamilyRole role;
     private Instant joinedAt;
 }

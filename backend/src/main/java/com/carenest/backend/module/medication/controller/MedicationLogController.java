@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/medication-logs")
+@RequestMapping("/medication-logs")
 @RequiredArgsConstructor
 @Tag(name = "Medication Log", description = "Đánh dấu lịch uống thuốc hàng ngày (Check-in)")
 @SecurityRequirement(name = "bearerAuth")

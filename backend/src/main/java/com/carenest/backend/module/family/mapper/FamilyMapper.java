@@ -20,5 +20,7 @@ public interface FamilyMapper {
     @Mapping(target = "members", ignore = true) // Sẽ được map thủ công trong Service
     FamilyDetailResponse toFamilyDetailResponse(Family family);
 
+    @Mapping(source = "user.fullName", target = "fullName")
+    @Mapping(source = "user.avatarUrl", target = "avatarUrl")
     FamilyMemberResponse toFamilyMemberResponse(FamilyMember familyMember);
 }
