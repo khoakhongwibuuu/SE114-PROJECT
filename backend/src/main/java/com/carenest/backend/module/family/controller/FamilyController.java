@@ -39,12 +39,7 @@ public class FamilyController {
         return ApiResponse.success("Tạo tổ ấm thành công", response);
     }
 
-    @GetMapping
-    @Operation(summary = "Lấy thông tin chi tiết tổ ấm của user hiện tại")
-    public ApiResponse<FamilyDetailResponse> getMyFamily() {
-        FamilyDetailResponse response = familyService.getMyFamily();
-        return ApiResponse.success(response);
-    }
+
 
     @GetMapping("/{id}")
     @Operation(summary = "Lấy thông tin chi tiết của tổ ấm (bao gồm thành viên)")

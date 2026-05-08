@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -76,7 +77,7 @@ public class FamilyServiceImpl implements FamilyService {
                 .role(FamilyRole.OWNER)
                 .build();
         
-        familyMemberRepository.save(member);
+        familyMemberRepository.save(Objects.requireNonNull(member));
 
         return familyMapper.toFamilyResponse(family);
     }
