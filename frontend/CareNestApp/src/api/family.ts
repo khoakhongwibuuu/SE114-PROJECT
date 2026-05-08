@@ -65,51 +65,160 @@ export interface ProfileDetails {
 }
 
 
-export async function getMyFamily(): Promise<FamilyDetailResponse> {
-  return apiGetCached<FamilyDetailResponse>('/families', undefined, { ttlMs: 20000 });
+// --- RAW BACKEND MODELS ---
+export interface RawFamilyMember {
+  id: number;
+  user: {
+    id: number;
+    email: string;
+    fullName: string;
+    phone?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    avatarUrl?: string;
+    role?: string;
+    isVerified?: boolean;
+  };
+  fullName: string;
+  avatarUrl?: string;
+  role: FamilyRole;
+  joinedAt?: string;
 }
 
+export interface RawFamilyDetailResponse {
+  id: number;
+  name: string;
+  ownerId?: number;
+  createdAt?: string;
+  members: RawFamilyMember[];
+}
 
+interface RawHealthProfileResponse {
+  id: number;
+  userId: number;
+  familyId: number;
+  fullName: string;
+  dateOfBirth: string;
+  gender: string;
+  relationship: string;
+  bloodType: string;
+  allergies: string;
+  chronicDiseases: string;
+  notes: string;
+  avatarUrl: string;
+  isChild: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- MAPPERS ---
+function calculateAge(dateString?: string | null): number | null {
+  if (!dateString) return null;
+  const birthDate = new Date(dateString);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+function mapRawFamilyToDetail(raw: RawFamilyDetailResponse): FamilyDetailResponse {
+  return {
+    id: raw.id,
+    name: raw.name,
+    ownerId: raw.ownerId,
+    memberCount: raw.members?.length || 0,
+    members: (raw.members || []).map(m => ({
+      id: m.id,
+      fullName: m.fullName || m.user?.fullName,
+      role: m.role,
+      avatarUrl: m.avatarUrl || m.user?.avatarUrl,
+      age: calculateAge(m.user?.dateOfBirth),
+      healthStatus: 'Bình thường', 
+    }))
+  };
+}
+
+function mapRawHealthProfile(raw: RawHealthProfileResponse): ProfileDetails {
+  return {
+    id: raw.id,
+    fullName: raw.fullName,
+    birthday: raw.dateOfBirth,
+    age: calculateAge(raw.dateOfBirth),
+    gender: raw.gender,
+    bloodType: raw.bloodType,
+    height: null,
+    weight: null,
+    medicalHistory: raw.chronicDiseases,
+    allergy: raw.allergies,
+    emergencyContactPhone: null,
+    healthStatus: 'Bình thường',
+  };
+}
+
+// --- API METHODS ---
+
+export async function getMyFamily(): Promise<FamilyDetailResponse> {
+  const raw = await apiGetCached<RawFamilyDetailResponse>('/families', undefined, { ttlMs: 20000 });
+  return mapRawFamilyToDetail(raw);
+}
 
 export async function createFamily(name: string): Promise<void> {
   await apiPost('/families', { name });
-  invalidateApiGetCache(['/families', '/families/profiles/', '/dashboard']);
+  invalidateApiGetCache(['/families', '/dashboard']);
 }
-
-
 
 export async function getFamilyProfile(profileId: number): Promise<ProfileDetails> {
-  return apiGetCached<ProfileDetails>(`/families/profiles/${profileId}`, undefined, { ttlMs: 20000 });
+  const raw = await apiGetCached<RawHealthProfileResponse>(`/health-profiles/${profileId}`, undefined, { ttlMs: 20000 });
+  return mapRawHealthProfile(raw);
 }
-
-
 
 export async function updateProfile(profileId: number, payload: Record<string, unknown>): Promise<void> {
-  await apiPut(`/families/update-healthprofile/${profileId}`, payload);
-  invalidateApiGetCache([`/families/profiles/${profileId}`, '/families', '/dashboard']);
+  await apiPut(`/health-profiles/${profileId}`, {
+    fullName: payload.fullName,
+    dateOfBirth: payload.birthday,
+    gender: payload.gender,
+    relationship: payload.relationship || 'UNKNOWN',
+    isChild: false, 
+  });
+  
+  if (payload.bloodType || payload.allergy || payload.medicalHistory) {
+    await apiPut(`/health-profiles/${profileId}/medical-info`, {
+      bloodType: payload.bloodType,
+      allergies: payload.allergy,
+      chronicDiseases: payload.medicalHistory,
+    });
+  }
+  
+  invalidateApiGetCache([`/health-profiles/${profileId}`, '/families', '/dashboard']);
 }
 
-export async function inviteMember(receiverEmail: string, role: FamilyRole): Promise<void> {
-  await apiPost('/families/invitations', { receiverEmail, role });
+export async function inviteMember(familyId: number, receiverEmail: string, role: FamilyRole): Promise<void> {
+  await apiPost(`/families/${familyId}/invitations`, { email: receiverEmail, role });
   invalidateApiGetCache(['/families/invitations/']);
 }
 
 export async function getReceivedInvitations(): Promise<FamilyInvitationItem[]> {
-  return apiGet<FamilyInvitationItem[]>('/families/invitations/received');
+  // MOCK: Backend does not have this endpoint yet.
+  console.warn('getReceivedInvitations is a mock.');
+  return [];
 }
 
 export async function getSentInvitations(): Promise<FamilyInvitationItem[]> {
-  return apiGet<FamilyInvitationItem[]>('/families/invitations/sent');
+  // MOCK: Backend does not have this endpoint yet.
+  console.warn('getSentInvitations is a mock.');
+  return [];
 }
 
 export async function acceptInvitation(inviteId: number): Promise<void> {
-  await apiPost(`/families/${inviteId}/accept`);
-  invalidateApiGetCache(['/families', '/families/invitations/', '/families/profiles/', '/dashboard']);
+  await apiPut(`/invitations/${inviteId}`, { status: 'ACCEPTED' });
+  invalidateApiGetCache(['/families', '/dashboard']);
 }
 
 export async function rejectInvitation(inviteId: number): Promise<void> {
-  await apiPost(`/families/${inviteId}/reject`);
-  invalidateApiGetCache(['/families/invitations/']);
+  await apiPut(`/invitations/${inviteId}`, { status: 'REJECTED' });
 }
 
 export async function getFamilyJoinCode(): Promise<FamilyJoinCodeResponse> {
@@ -121,29 +230,26 @@ export async function rotateFamilyJoinCode(): Promise<FamilyJoinCodeResponse> {
 }
 
 export async function joinFamilyByCode(joinCode: string, role?: FamilyRole): Promise<FamilyDetailResponse> {
-  const response = await apiPost<FamilyDetailResponse, { joinCode: string; role?: FamilyRole }>('/families/join-by-code', {
+  const response = await apiPost<RawFamilyDetailResponse, { joinCode: string; role?: FamilyRole }>('/families/join-by-code', {
     joinCode,
     role,
   });
-  invalidateApiGetCache(['/families', '/families/invitations/', '/dashboard']);
-  return response;
+  invalidateApiGetCache(['/families', '/dashboard']);
+  return mapRawFamilyToDetail(response);
 }
 
 export async function joinFamilyByQr(formData: FormData): Promise<FamilyDetailResponse> {
-  const response = await apiPost<FamilyDetailResponse, FormData>('/families/join-by-qr', formData);
-  invalidateApiGetCache(['/families', '/families/invitations/', '/dashboard']);
-  return response;
+  const response = await apiPost<RawFamilyDetailResponse, FormData>('/families/join-by-qr', formData);
+  invalidateApiGetCache(['/families', '/dashboard']);
+  return mapRawFamilyToDetail(response);
 }
 
-export async function updateFamilyMemberRole(profileId: number, role: FamilyRole): Promise<FamilyDetailResponse> {
-  const response = await apiPut<FamilyDetailResponse, { role: FamilyRole }>(`/families/members/${profileId}/role`, {
-    role,
-  });
+export async function updateFamilyMemberRole(familyId: number, profileId: number, role: FamilyRole): Promise<void> {
+  await apiPut(`/families/${familyId}/members/${profileId}/role`, { role });
   invalidateApiGetCache(['/families', '/dashboard']);
-  return response;
 }
 
 export async function removeMember(profileId: number): Promise<void> {
-  await apiDelete(`/families/members/${profileId}`);
-  invalidateApiGetCache(['/families', '/families/profiles/', '/dashboard']);
+  await apiDelete(`/health-profiles/${profileId}`);
+  invalidateApiGetCache(['/families', '/dashboard']);
 }

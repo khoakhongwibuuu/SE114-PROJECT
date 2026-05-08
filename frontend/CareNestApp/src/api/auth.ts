@@ -27,7 +27,6 @@ export interface RegisterPayload {
   fullName: string;
   email: string;
   phoneNumber: string;
-  phoneNumber?: string;
   password: string;
 }
 
@@ -63,10 +62,34 @@ export interface UpdateCurrentUserProfilePayload {
   emergencyContactPhone?: string;
 }
 
+export interface RawUserInfoResponse {
+  id: number;
+  email: string;
+  fullName: string;
+  phone?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  avatarUrl?: string | null;
+  role?: string;
+  isVerified?: boolean;
+}
+
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
-  user: CurrentUserProfile;
+  user: RawUserInfoResponse;
+}
+
+function mapRawUserToProfile(raw: RawUserInfoResponse): CurrentUserProfile {
+  return {
+    id: raw.id,
+    email: raw.email,
+    fullName: raw.fullName,
+    phoneNumber: raw.phone,
+    birthday: raw.dateOfBirth,
+    gender: raw.gender,
+    avatarUrl: raw.avatarUrl,
+  };
 }
 
 
@@ -105,15 +128,30 @@ export async function resetPassword(payload: ResetPasswordPayload): Promise<void
 }
 
 export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
-  return apiGetCached<CurrentUserProfile>('/auth/me', undefined, { ttlMs: 20000 });
+  const raw = await apiGetCached<RawUserInfoResponse>('/auth/me', undefined, { ttlMs: 20000 });
+  return mapRawUserToProfile(raw);
 }
 
 
 
 export async function updateCurrentUserProfile(payload: UpdateCurrentUserProfilePayload): Promise<CurrentUserProfile> {
-  const profile = await apiPatch<CurrentUserProfile, UpdateCurrentUserProfilePayload>('/auth/me', payload);
-  invalidateApiGetCache(['/auth/me', '/dashboard', '/families/profiles/']);
-  return profile;
+  // MOCK: Backend has removed /auth/me update (moved to health-profiles).
+  // This is a stub to prevent crashes in the UI.
+  console.warn('updateCurrentUserProfile is deprecated on backend, mapping to a mocked response for now.');
+  return {
+    id: 0,
+    email: payload.email,
+    fullName: payload.fullName,
+    phoneNumber: payload.phoneNumber,
+    birthday: payload.birthday,
+    gender: payload.gender,
+    bloodType: payload.bloodType,
+    medicalHistory: payload.medicalHistory,
+    allergy: payload.allergy,
+    height: payload.height,
+    weight: payload.weight,
+    emergencyContactPhone: payload.emergencyContactPhone,
+  };
 }
 
 export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {

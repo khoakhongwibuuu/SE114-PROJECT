@@ -67,12 +67,12 @@ export default function AddAppointmentScreen() {
 
     try {
       await createAppointment({
-        profileId: selectedMember,
-        clinicName: facility,
+        healthProfileId: selectedMember,
+        hospitalName: facility,
         doctorName: doctor,
-        appointmentDate: formatLocalDateTime(date),
-        location: address,
-        note: notes,
+        appointmentDate: date.toISOString(),
+        address: address,
+        notes: notes,
       });
       Alert.alert('Đã lưu lịch hẹn', 'Lịch tái khám mới đã được tạo thành công.', [
         { text: 'OK', onPress: () => navigation.goBack() },
