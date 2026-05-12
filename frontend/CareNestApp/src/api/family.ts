@@ -160,8 +160,11 @@ function mapRawHealthProfile(raw: RawHealthProfileResponse): ProfileDetails {
 
 // --- API METHODS ---
 
-export async function getMyFamily(): Promise<FamilyDetailResponse> {
-  const raw = await apiGetCached<RawFamilyDetailResponse>('/families', undefined, { ttlMs: 20000 });
+export async function getMyFamily(options?: { forceRefresh?: boolean }): Promise<FamilyDetailResponse> {
+  const raw = await apiGetCached<RawFamilyDetailResponse>('/families', undefined, { 
+    ttlMs: 20000,
+    forceRefresh: options?.forceRefresh
+  });
   return mapRawFamilyToDetail(raw);
 }
 

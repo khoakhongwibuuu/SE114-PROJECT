@@ -128,4 +128,28 @@ public class HealthProfileServiceImpl implements HealthProfileService {
         HealthProfile updatedProfile = healthProfileRepository.save(healthProfile);
         return healthProfileMapper.toResponse(updatedProfile);
     }
+
+    @Override
+    @Transactional
+    public HealthProfileResponse getMyHealthProfile(Long userId) {
+        List<HealthProfile> profiles = healthProfileRepository.findByUserIdAndDeletedAtIsNull(userId);
+        if (profiles.isEmpty()) {
+            // Auto-create profile if missing
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+            
+            HealthProfile newProfile = HealthProfile.builder()
+                    .user(user)
+                    .fullName(user.getFullName())
+                    .dateOfBirth(user.getDateOfBirth() != null ? user.getDateOfBirth() : java.time.LocalDate.of(2000, 1, 1))
+                    .gender(user.getGender() != null ? user.getGender() : com.carenest.backend.module.auth.enums.Gender.OTHER)
+                    .isChild(false)
+                    .build();
+            
+            HealthProfile saved = healthProfileRepository.save(newProfile);
+            return healthProfileMapper.toResponse(saved);
+        }
+        // Usually the first one is the main profile
+        return healthProfileMapper.toResponse(profiles.get(0));
+    }
 }

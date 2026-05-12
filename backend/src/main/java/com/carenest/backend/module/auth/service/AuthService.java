@@ -9,4 +9,6 @@ public interface AuthService {
     AuthResponse register(RegisterRequest request);
     AuthResponse login(LoginRequest request);
     UserInfoResponse getCurrentUser();
+    UserInfoResponse updateCurrentUser(com.carenest.backend.module.auth.dto.request.UpdateUserRequest request);
+    AuthResponse refreshToken(String refreshToken);
 }

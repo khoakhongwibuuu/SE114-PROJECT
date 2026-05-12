@@ -35,7 +35,7 @@ public class MedicationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy hồ sơ sức khỏe")
     })
     public com.carenest.backend.common.dto.ApiResponse<MedicationResponse> createMedication(
-            @PathVariable Long profileId,
+            @PathVariable("profileId") Long profileId,
             @Valid @RequestBody CreateMedicationRequest request) {
         MedicationResponse response = medicationService.createMedication(profileId, request);
         return ApiResponse.success("Tạo đơn thuốc thành công", response);
@@ -46,7 +46,7 @@ public class MedicationController {
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
     })
-    public com.carenest.backend.common.dto.ApiResponse<List<MedicationResponse>> getMedicationsByProfile(@PathVariable Long profileId) {
+    public com.carenest.backend.common.dto.ApiResponse<List<MedicationResponse>> getMedicationsByProfile(@PathVariable("profileId") Long profileId) {
         List<MedicationResponse> response = medicationService.getMedicationsByProfile(profileId);
         return ApiResponse.success(response);
     }
@@ -68,7 +68,7 @@ public class MedicationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy đơn thuốc")
     })
     public com.carenest.backend.common.dto.ApiResponse<MedicationResponse> updateMedication(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateMedicationRequest request) {
         MedicationResponse response = medicationService.updateMedication(id, request);
         return ApiResponse.success("Cập nhật đơn thuốc thành công", response);
@@ -80,7 +80,7 @@ public class MedicationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Kết thúc đơn thuốc thành công"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy đơn thuốc")
     })
-    public com.carenest.backend.common.dto.ApiResponse<Void> completeMedication(@PathVariable Long id) {
+    public com.carenest.backend.common.dto.ApiResponse<Void> completeMedication(@PathVariable("id") Long id) {
         medicationService.completeMedication(id);
         return ApiResponse.success("Đã kết thúc đơn thuốc", null);
     }

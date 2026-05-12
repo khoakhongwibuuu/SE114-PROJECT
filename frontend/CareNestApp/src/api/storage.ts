@@ -1,12 +1,13 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Keychain from 'react-native-keychain';
 
 export interface AuthSession {
   token: string;
+  refreshToken: string;
   userId: number;
   email: string;
 }
 
-const STORAGE_KEY_SESSION = '@carenest_session';
+const KEYCHAIN_SERVICE = 'com.carenest.session';
 
 let inMemorySession: AuthSession | null = null;
 
@@ -15,26 +16,25 @@ export async function getStoredSession(): Promise<AuthSession | null> {
     return inMemorySession;
   }
 
-  const raw = await AsyncStorage.getItem(STORAGE_KEY_SESSION);
-  if (!raw) {
-    return null;
-  }
-
   try {
-    inMemorySession = JSON.parse(raw) as AuthSession;
-    return inMemorySession;
-  } catch {
-    await AsyncStorage.removeItem(STORAGE_KEY_SESSION);
-    return null;
+    const credentials = await Keychain.getGenericPassword({ service: KEYCHAIN_SERVICE });
+    if (credentials) {
+      inMemorySession = JSON.parse(credentials.password) as AuthSession;
+      return inMemorySession;
+    }
+  } catch (error) {
+    console.error("Keychain load error", error);
   }
+  return null;
 }
 
 export async function setStoredSession(session: AuthSession | null): Promise<void> {
   inMemorySession = session;
+  
   if (!session) {
-    await AsyncStorage.removeItem(STORAGE_KEY_SESSION);
+    await Keychain.resetGenericPassword({ service: KEYCHAIN_SERVICE });
     return;
   }
 
-  await AsyncStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
+  await Keychain.setGenericPassword('carenest_user', JSON.stringify(session), { service: KEYCHAIN_SERVICE });
 }

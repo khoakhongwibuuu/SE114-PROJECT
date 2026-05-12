@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { API_BASE_URL } from './config';
-import { getStoredSession } from './storage';
+import { getStoredSession, setStoredSession } from './storage';
 
 export interface ApiEnvelope<T> {
   success: boolean;
@@ -94,6 +94,42 @@ apiClient.interceptors.request.use(async config => {
   }
   return config;
 });
+
+apiClient.interceptors.response.use(
+  response => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as any;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const session = await getStoredSession();
+        if (session && session.refreshToken) {
+          const { data } = await axios.post<{ data: { accessToken: string, refreshToken: string } }>(
+            `${API_BASE_URL}/auth/refresh`,
+            { refreshToken: session.refreshToken }
+          );
+
+          const newSession = {
+            ...session,
+            token: data.data.accessToken,
+            refreshToken: data.data.refreshToken
+          };
+          await setStoredSession(newSession);
+
+          originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
+          return apiClient(originalRequest);
+        }
+      } catch (refreshError) {
+        // Refresh token failed, clear session
+        await setStoredSession(null);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 function extractApiError(error: unknown): string {
   if (axios.isAxiosError(error)) {

@@ -8,6 +8,7 @@ import com.carenest.backend.module.auth.dto.request.RegisterRequest;
 import com.carenest.backend.module.auth.dto.response.AuthResponse;
 import com.carenest.backend.module.auth.dto.response.UserInfoResponse;
 import com.carenest.backend.module.auth.entity.User;
+import com.carenest.backend.module.auth.enums.Gender;
 import com.carenest.backend.module.auth.enums.Role;
 import com.carenest.backend.module.auth.mapper.UserMapper;
 import com.carenest.backend.module.auth.repository.UserRepository;
@@ -84,5 +85,49 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return userMapper.toUserInfoResponse(user);
+    }
+
+    @Override
+    public AuthResponse refreshToken(String refreshToken) {
+        String userEmail = jwtService.extractUsername(refreshToken);
+        if (userEmail != null) {
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            if (jwtService.isTokenValid(refreshToken, user)) {
+                var accessToken = jwtService.generateToken(user);
+                return AuthResponse.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .user(userMapper.toUserInfoResponse(user))
+                        .build();
+            }
+        }
+        throw new IllegalArgumentException("Invalid refresh token");
+    }
+    @Override
+    @Transactional
+    public UserInfoResponse updateCurrentUser(com.carenest.backend.module.auth.dto.request.UpdateUserRequest request) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setFullName(request.getFullName());
+        user.setPhone(request.getPhone());
+        user.setDateOfBirth(request.getDateOfBirth());
+        
+        if (request.getGender() != null) {
+            try {
+                user.setGender(Gender.valueOf(request.getGender()));
+            } catch (IllegalArgumentException e) {
+                // ignore or log
+            }
+        }
+        
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
+
+        User savedUser = userRepository.save(user);
+        return userMapper.toUserInfoResponse(savedUser);
     }
 }

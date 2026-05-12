@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
@@ -110,31 +110,35 @@ export default function NotificationsCenterScreen() {
         title="Thông báo"
         rightAction={unreadCount > 0 ? markAllBtn : undefined}
       />
-      <ScrollView
+      <FlatList
+        data={Object.entries(grouped)}
+        keyExtractor={([group]) => group}
         contentContainerStyle={[
           styles.scroll,
           { paddingTop: TOP_BAR_HEIGHT + insets.top + 16, paddingBottom: BOTTOM_NAV_HEIGHT + 16 },
         ]}
         showsVerticalScrollIndicator={false}
-      >
-        {unreadCount > 0 ? (
-          <View style={styles.unreadBanner}>
-            <Icon name="notifications" size={16} color={colors.primary} />
-            <Text style={styles.unreadBannerText}>{unreadCount} thông báo chưa đọc</Text>
-          </View>
-        ) : null}
+        ListHeaderComponent={() => (
+          <>
+            {unreadCount > 0 ? (
+              <View style={styles.unreadBanner}>
+                <Icon name="notifications" size={16} color={colors.primary} />
+                <Text style={styles.unreadBannerText}>{unreadCount} thông báo chưa đọc</Text>
+              </View>
+            ) : null}
 
-        {Object.keys(grouped).length === 0 ? (
-          <View style={styles.emptyState}>
-            <Icon name="notifications" size={56} color={colors.outlineVariant} />
-            <Text style={styles.emptyTitle}>Không có thông báo nào</Text>
-            <Text style={styles.emptySubtitle}>
-              Mọi nhắc nhở và cập nhật sức khỏe sẽ xuất hiện ở đây.
-            </Text>
-          </View>
-        ) : null}
-
-        {Object.entries(grouped).map(([group, items]) => (
+            {Object.keys(grouped).length === 0 ? (
+              <View style={styles.emptyState}>
+                <Icon name="notifications" size={56} color={colors.outlineVariant} />
+                <Text style={styles.emptyTitle}>Không có thông báo nào</Text>
+                <Text style={styles.emptySubtitle}>
+                  Mọi nhắc nhở và cập nhật sức khỏe sẽ xuất hiện ở đây.
+                </Text>
+              </View>
+            ) : null}
+          </>
+        )}
+        renderItem={({ item: [group, items] }) => (
           <View key={group} style={styles.section}>
             <Text style={styles.sectionLabel}>{dateGroupLabel[group] ?? group}</Text>
             <View style={[styles.card, shadows.sm]}>
@@ -152,7 +156,7 @@ export default function NotificationsCenterScreen() {
                     activeOpacity={0.7}
                     onPress={async () => {
                       setNotifications(prev =>
-                        prev.map(n => (n.id === notif.id ? { ...n, isRead: true } : n)),
+                         prev.map(n => (n.id === notif.id ? { ...n, isRead: true } : n)),
                       );
                       await markNotificationRead(Number(notif.id)).catch(() => {});
                     }}
@@ -180,8 +184,8 @@ export default function NotificationsCenterScreen() {
               })}
             </View>
           </View>
-        ))}
-      </ScrollView>
+        )}
+      />
     </View>
   );
 }
