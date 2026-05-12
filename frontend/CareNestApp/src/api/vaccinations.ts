@@ -17,19 +17,38 @@ export interface VaccinationTrackerGroup {
 }
 
 export async function getVaccinationTracker(profileId: number): Promise<VaccinationTrackerGroup[]> {
-  return apiGetCached<VaccinationTrackerGroup[]>(`/vaccinations/profiles/${profileId}`, undefined, {
+  const records = await apiGetCached<any[]>(`/health-profiles/${profileId}/vaccinations`, undefined, {
     ttlMs: 20000,
   });
+
+  // Transform backend list to UI groups
+  // We group by vaccineName
+  return records.map(record => ({
+    stageLabel: record.vaccineName,
+    description: `Tổng số ${record.totalDoses} mũi`,
+    vaccinations: (record.doses || []).map((dose: any) => ({
+      id: dose.id,
+      profileId: record.healthProfileId,
+      fullName: '', // Not needed for display here
+      vaccineName: record.vaccineName,
+      doseNumber: dose.doseNumber,
+      dateGiven: dose.dateAdministered,
+      plannedDate: dose.scheduledDate,
+      clinicName: dose.location,
+      status: dose.status === 'COMPLETED' ? 'DONE' : 'PENDING',
+    })),
+  }));
 }
 
 export async function createVaccination(profileId: number, payload: {
   vaccineName: string;
-  doseNumber: number;
-  dateGiven?: string | null;
-  plannedDate?: string | null;
-  clinicName?: string;
+  totalDoses: number;
+  startDate: string;
+  doseIntervalDays?: number;
+  location?: string;
+  notes?: string;
 }): Promise<void> {
-  await apiPost(`/vaccinations/profiles/${profileId}`, payload);
-  invalidateApiGetCache(['/vaccinations/profiles/', '/dashboard', '/notifications']);
+  await apiPost(`/health-profiles/${profileId}/vaccinations`, payload);
+  invalidateApiGetCache([`/health-profiles/${profileId}/vaccinations`, '/dashboard', '/notifications']);
 }
 

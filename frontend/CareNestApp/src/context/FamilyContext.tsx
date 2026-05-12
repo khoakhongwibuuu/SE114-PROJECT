@@ -38,7 +38,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const nextFamily = await getMyFamily();
+      const nextFamily = await getMyFamily({ forceRefresh: true });
       setFamily(nextFamily);
     } catch {
       setFamily(null);

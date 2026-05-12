@@ -14,4 +14,5 @@ public interface HealthProfileService {
     HealthProfileResponse updateHealthProfile(Long id, HealthProfileUpdateRequest request);
     void deleteHealthProfile(Long id);
     HealthProfileResponse updateMedicalInfo(Long id, MedicalInfoUpdateRequest request);
+    HealthProfileResponse getMyHealthProfile(Long userId);
 }

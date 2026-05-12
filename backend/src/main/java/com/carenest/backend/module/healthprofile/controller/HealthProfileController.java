@@ -22,6 +22,12 @@ public class HealthProfileController {
 
     private final HealthProfileService healthProfileService;
 
+    @GetMapping("/health-profiles/me")
+    public ApiResponse<HealthProfileResponse> getMyHealthProfile(@AuthenticationPrincipal User user) {
+        HealthProfileResponse response = healthProfileService.getMyHealthProfile(user.getId());
+        return ApiResponse.success("Fetched current user health profile", response);
+    }
+
     @PostMapping("/health-profiles")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<HealthProfileResponse> createHealthProfile(
@@ -32,34 +38,34 @@ public class HealthProfileController {
     }
 
     @GetMapping("/families/{familyId}/health-profiles")
-    public ApiResponse<List<HealthProfileResponse>> getFamilyHealthProfiles(@PathVariable Long familyId) {
+    public ApiResponse<List<HealthProfileResponse>> getFamilyHealthProfiles(@PathVariable("familyId") Long familyId) {
         List<HealthProfileResponse> profiles = healthProfileService.getFamilyHealthProfiles(familyId);
         return ApiResponse.success("Fetched family health profiles", profiles);
     }
 
     @GetMapping("/health-profiles/{id}")
-    public ApiResponse<HealthProfileResponse> getHealthProfileById(@PathVariable Long id) {
+    public ApiResponse<HealthProfileResponse> getHealthProfileById(@PathVariable("id") Long id) {
         HealthProfileResponse response = healthProfileService.getHealthProfileById(id);
         return ApiResponse.success("Fetched health profile details", response);
     }
 
     @PutMapping("/health-profiles/{id}")
     public ApiResponse<HealthProfileResponse> updateHealthProfile(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody HealthProfileUpdateRequest request) {
         HealthProfileResponse response = healthProfileService.updateHealthProfile(id, request);
         return ApiResponse.success("Updated health profile successfully", response);
     }
 
     @DeleteMapping("/health-profiles/{id}")
-    public ApiResponse<Void> deleteHealthProfile(@PathVariable Long id) {
+    public ApiResponse<Void> deleteHealthProfile(@PathVariable("id") Long id) {
         healthProfileService.deleteHealthProfile(id);
         return ApiResponse.success("Deleted health profile successfully", null);
     }
 
     @PutMapping("/health-profiles/{id}/medical-info")
     public ApiResponse<HealthProfileResponse> updateMedicalInfo(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody MedicalInfoUpdateRequest request) {
         HealthProfileResponse response = healthProfileService.updateMedicalInfo(id, request);
         return ApiResponse.success("Updated medical info successfully", response);

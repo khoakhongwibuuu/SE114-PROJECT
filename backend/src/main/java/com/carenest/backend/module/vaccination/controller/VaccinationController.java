@@ -33,7 +33,7 @@ public class VaccinationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy hồ sơ sức khỏe")
     })
     public com.carenest.backend.common.dto.ApiResponse<VaccinationRecordResponse> createVaccinationPlan(
-            @PathVariable Long profileId,
+            @PathVariable("profileId") Long profileId,
             @Valid @RequestBody CreateVaccinationRequest request) {
         VaccinationRecordResponse response = vaccinationService.createVaccinationPlan(profileId, request);
         return ApiResponse.success("Tạo lịch tiêm chủng thành công", response);
@@ -45,7 +45,7 @@ public class VaccinationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lấy lịch sử thành công"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy hồ sơ sức khỏe")
     })
-    public com.carenest.backend.common.dto.ApiResponse<List<VaccinationRecordResponse>> getVaccinationHistory(@PathVariable Long profileId) {
+    public com.carenest.backend.common.dto.ApiResponse<List<VaccinationRecordResponse>> getVaccinationHistory(@PathVariable("profileId") Long profileId) {
         List<VaccinationRecordResponse> response = vaccinationService.getVaccinationHistory(profileId);
         return ApiResponse.success(response);
     }
@@ -58,7 +58,7 @@ public class VaccinationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy mũi tiêm")
     })
     public com.carenest.backend.common.dto.ApiResponse<VaccinationRecordResponse> administerDose(
-            @PathVariable Long doseId,
+            @PathVariable("doseId") Long doseId,
             @Valid @RequestBody AdministerDoseRequest request) {
         VaccinationRecordResponse response = vaccinationService.administerDose(doseId, request);
         return ApiResponse.success("Cập nhật mũi tiêm thành công", response);

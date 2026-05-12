@@ -53,10 +53,10 @@ export default function AddVaccinationScheduleScreen() {
       const dateValue = formatLocalDate(date);
       await createVaccination(profileId, {
         vaccineName,
-        doseNumber: Number(doseNumber) || 1,
-        dateGiven: isCompleted ? dateValue : null,
-        plannedDate: isCompleted ? null : dateValue,
-        clinicName,
+        totalDoses: Number(doseNumber) || 1,
+        startDate: dateValue,
+        location: clinicName,
+        notes: notes,
       });
       Alert.alert('Đã lưu thông tin tiêm chủng', 'Mũi tiêm đã được thêm vào hồ sơ của trẻ.', [
         { text: 'OK', onPress: () => navigation.goBack() },

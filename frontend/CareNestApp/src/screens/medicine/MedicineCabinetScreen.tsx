@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
@@ -63,87 +64,100 @@ export default function MedicineCabinetScreen() {
   return (
     <View style={styles.root}>
       <TopAppBar variant="detail" title="Tủ thuốc gia đình" />
-      <ScrollView
+      <FlatList
+        data={filteredMedicines.length > 0 ? filteredMedicines : []}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={[
           styles.scroll,
           { paddingTop: TOP_BAR_HEIGHT + insets.top + 16, paddingBottom: BOTTOM_NAV_HEIGHT + 80 },
         ]}
         showsVerticalScrollIndicator={false}
-      >
-        {alertCount > 0 ? (
-          <View style={styles.alertBanner}>
-            <Icon name="warning" size={18} color={colors.onErrorContainer} />
-            <Text style={styles.alertBannerText}>{alertCount} loại thuốc cần kiểm tra</Text>
-          </View>
-        ) : null}
-
-        <TouchableOpacity
-          style={styles.ocrCard}
-          onPress={() => navigation.navigate('OcrScanner')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.ocrIconWrap}>
-            <Icon name="document_scanner" size={24} color={colors.primary} />
-          </View>
-          <View style={styles.ocrInfo}>
-            <Text style={styles.ocrTitle}>Quét toa thuốc</Text>
-            <Text style={styles.ocrSub}>Dùng AI để thêm thuốc và lịch uống nhanh hơn</Text>
-          </View>
-          <Icon name="chevron_right" size={20} color={colors.outlineVariant} />
-        </TouchableOpacity>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          {FILTERS.map(item => (
-            <TouchableOpacity
-              key={item.key}
-              style={[styles.filterChip, filter === item.key && styles.filterChipActive]}
-              onPress={() => setFilter(item.key)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.filterChipText, filter === item.key && styles.filterChipTextActive]}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <View style={styles.section}>
-          <Text style={styles.countText}>{filteredMedicines.length} loại thuốc</Text>
-          <View style={[styles.card, shadows.sm]}>
-            {filteredMedicines.length === 0 ? (
-              <View style={styles.emptyRow}>
-                <Text style={styles.emptyText}>Chưa có thuốc nào trong tủ</Text>
+        ListHeaderComponent={() => (
+          <>
+            {alertCount > 0 ? (
+              <View style={styles.alertBanner}>
+                <Icon name="warning" size={18} color={colors.onErrorContainer} />
+                <Text style={styles.alertBannerText}>{alertCount} loại thuốc cần kiểm tra</Text>
               </View>
-            ) : (
-              filteredMedicines.map((medicine, index) => {
-                const status = mapStatus(medicine.status);
-                const config = STATUS_CONFIG[status];
-                return (
-                  <View
-                    key={medicine.id}
+            ) : null}
 
-                    style={[styles.medRow, index < filteredMedicines.length - 1 && styles.medRowDivider]}
-                  >
-                    <View style={styles.medIconWrap}>
-                      <Icon name="pill" size={22} color={colors.primary} />
-                    </View>
-                    <View style={styles.medContent}>
-                      <Text style={styles.medName}>{medicine.name}</Text>
-                      <Text style={styles.medMeta}>
-                        {medicine.quantity} {medicine.unit}
-                        {medicine.expiryDate ? ` · HSD: ${medicine.expiryDate}` : ''}
-                      </Text>
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: config.bg }]}>
-                      <Text style={[styles.statusText, { color: config.textColor }]}>{config.label}</Text>
-                    </View>
-                  </View>
-                );
-              })
-            )}
+            <TouchableOpacity
+              style={styles.ocrCard}
+              onPress={() => navigation.navigate('OcrScanner')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.ocrIconWrap}>
+                <Icon name="document_scanner" size={24} color={colors.primary} />
+              </View>
+              <View style={styles.ocrInfo}>
+                <Text style={styles.ocrTitle}>Quét toa thuốc</Text>
+                <Text style={styles.ocrSub}>Dùng AI để thêm thuốc và lịch uống nhanh hơn</Text>
+              </View>
+              <Icon name="chevron_right" size={20} color={colors.outlineVariant} />
+            </TouchableOpacity>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+              {FILTERS.map(item => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[styles.filterChip, filter === item.key && styles.filterChipActive]}
+                  onPress={() => setFilter(item.key)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.filterChipText, filter === item.key && styles.filterChipTextActive]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.section}>
+              <Text style={styles.countText}>{filteredMedicines.length} loại thuốc</Text>
+            </View>
+          </>
+        )}
+        ListEmptyComponent={() => (
+          <View style={[styles.card, shadows.sm]}>
+            <View style={styles.emptyRow}>
+              <Text style={styles.emptyText}>Chưa có thuốc nào trong tủ</Text>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        )}
+        renderItem={({ item: medicine, index }) => {
+          const status = mapStatus(medicine.status);
+          const config = STATUS_CONFIG[status];
+          const isFirst = index === 0;
+          const isLast = index === filteredMedicines.length - 1;
+          
+          return (
+            <View style={[
+              styles.card, 
+              shadows.sm, 
+              { borderRadius: 0 },
+              isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+              isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, marginBottom: 16 }
+            ]}>
+              <View
+                style={[styles.medRow, !isLast && styles.medRowDivider]}
+              >
+                <View style={styles.medIconWrap}>
+                  <Icon name="pill" size={22} color={colors.primary} />
+                </View>
+                <View style={styles.medContent}>
+                  <Text style={styles.medName}>{medicine.name}</Text>
+                  <Text style={styles.medMeta}>
+                    {medicine.quantity} {medicine.unit}
+                    {medicine.expiryDate ? ` · HSD: ${medicine.expiryDate}` : ''}
+                  </Text>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: config.bg }]}>
+                  <Text style={[styles.statusText, { color: config.textColor }]}>{config.label}</Text>
+                </View>
+              </View>
+            </View>
+          );
+        }}
+      />
       <FAB
         iconName="add"
         onPress={() => navigation.navigate('AddMedicineToCabinet', {})}

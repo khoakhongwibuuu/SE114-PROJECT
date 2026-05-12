@@ -29,7 +29,7 @@ public class MedicineCabinetController {
     }
 
     @GetMapping("/families/{familyId}/cabinets")
-    public ApiResponse<MedicineCabinetResponse> getFamilyCabinet(@PathVariable Long familyId) {
+    public ApiResponse<MedicineCabinetResponse> getFamilyCabinet(@PathVariable("familyId") Long familyId) {
         MedicineCabinetResponse response = medicineCabinetService.getFamilyCabinet(familyId);
         return ApiResponse.success("Fetched family medicine cabinet", response);
     }
@@ -37,7 +37,7 @@ public class MedicineCabinetController {
     @PostMapping("/cabinets/{id}/medicines")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CabinetMedicineResponse> addMedicine(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody CabinetMedicineRequest request) {
         CabinetMedicineResponse response = medicineCabinetService.addMedicine(id, request);
         return ApiResponse.success("Added medicine to cabinet successfully", response);
@@ -45,8 +45,8 @@ public class MedicineCabinetController {
 
     @PutMapping("/cabinets/{id}/medicines/{medicineId}")
     public ApiResponse<CabinetMedicineResponse> updateMedicine(
-            @PathVariable Long id,
-            @PathVariable Long medicineId,
+            @PathVariable("id") Long id,
+            @PathVariable("medicineId") Long medicineId,
             @Valid @RequestBody CabinetMedicineUpdateRequest request) {
         CabinetMedicineResponse response = medicineCabinetService.updateMedicine(id, medicineId, request);
         return ApiResponse.success("Updated medicine successfully", response);
@@ -54,15 +54,15 @@ public class MedicineCabinetController {
 
     @DeleteMapping("/cabinets/{id}/medicines/{medicineId}")
     public ApiResponse<Void> removeMedicine(
-            @PathVariable Long id,
-            @PathVariable Long medicineId) {
+            @PathVariable("id") Long id,
+            @PathVariable("medicineId") Long medicineId) {
         medicineCabinetService.removeMedicine(id, medicineId);
         return ApiResponse.success("Removed medicine from cabinet successfully", null);
     }
 
     @GetMapping("/cabinets/{id}/medicines")
     public ApiResponse<List<CabinetMedicineResponse>> getMedicines(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestParam(required = false, defaultValue = "all") String status) {
         List<CabinetMedicineResponse> responses = medicineCabinetService.getMedicines(id, status);
         return ApiResponse.success("Fetched medicines successfully", responses);

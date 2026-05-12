@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const profile = await getCurrentUserProfile();
+    const profile = await getCurrentUserProfile({ forceRefresh: true });
     setUser(mapProfileToUser(profile, session.token));
     setIsLoggedIn(true);
   }

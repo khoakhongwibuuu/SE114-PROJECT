@@ -43,7 +43,7 @@ public class FamilyController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Lấy thông tin chi tiết của tổ ấm (bao gồm thành viên)")
-    public ApiResponse<FamilyDetailResponse> getFamilyById(@PathVariable Long id) {
+    public ApiResponse<FamilyDetailResponse> getFamilyById(@PathVariable("id") Long id) {
         FamilyDetailResponse response = familyService.getFamilyById(id);
         return ApiResponse.success(response);
     }
@@ -51,7 +51,7 @@ public class FamilyController {
     @PostMapping("/{id}/invitations")
     @Operation(summary = "Mời thành viên mới vào tổ ấm (Chỉ Admin/Owner)")
     public ApiResponse<Void> inviteMember(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody InviteMemberRequest request) {
         familyService.inviteMember(id, request);
         return ApiResponse.success("Đã gửi lời mời thành công", null);
@@ -60,8 +60,8 @@ public class FamilyController {
     @PutMapping("/{id}/members/{memberId}/role")
     @Operation(summary = "Thay đổi vai trò của thành viên trong tổ ấm")
     public ApiResponse<Void> updateMemberRole(
-            @PathVariable Long id,
-            @PathVariable Long memberId,
+            @PathVariable("id") Long id,
+            @PathVariable("memberId") Long memberId,
             @Valid @RequestBody UpdateRoleRequest request) {
         familyService.updateMemberRole(id, memberId, request);
         return ApiResponse.success("Cập nhật vai trò thành công", null);

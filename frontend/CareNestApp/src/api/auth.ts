@@ -1,4 +1,4 @@
-import { apiGet, apiGetCached, apiPatch, apiPost, apiClient, invalidateApiGetCache } from './client';
+import { apiGet, apiGetCached, apiPatch, apiPost, apiPut, apiPutCached, apiClient, invalidateApiGetCache } from './client';
 import type { AuthSession } from './storage';
 
 function normalizeUploadUri(uri: string): string {
@@ -97,6 +97,7 @@ export async function login(payload: LoginPayload): Promise<AuthSession> {
   const data = await apiPost<AuthResponse, LoginPayload>('/auth/login', payload);
   return {
     token: data.accessToken,
+    refreshToken: data.refreshToken,
     userId: data.user.id,
     email: data.user.email,
   };
@@ -127,31 +128,54 @@ export async function resetPassword(payload: ResetPasswordPayload): Promise<void
   await apiPost('/auth/reset-password', payload);
 }
 
-export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
-  const raw = await apiGetCached<RawUserInfoResponse>('/auth/me', undefined, { ttlMs: 20000 });
+export async function getCurrentUserProfile(options?: { forceRefresh?: boolean }): Promise<CurrentUserProfile> {
+  const raw = await apiGetCached<RawUserInfoResponse>('/auth/me', undefined, { 
+    ttlMs: 20000,
+    forceRefresh: options?.forceRefresh 
+  });
   return mapRawUserToProfile(raw);
 }
 
 
 
 export async function updateCurrentUserProfile(payload: UpdateCurrentUserProfilePayload): Promise<CurrentUserProfile> {
-  // MOCK: Backend has removed /auth/me update (moved to health-profiles).
-  // This is a stub to prevent crashes in the UI.
-  console.warn('updateCurrentUserProfile is deprecated on backend, mapping to a mocked response for now.');
-  return {
-    id: 0,
-    email: payload.email,
+  // 1. Update Core User Account (Full Name, Phone, Birthday)
+  const userResponse = await apiPut<RawUserInfoResponse, any>('/auth/me', {
     fullName: payload.fullName,
-    phoneNumber: payload.phoneNumber,
-    birthday: payload.birthday,
+    phone: payload.phoneNumber,
+    dateOfBirth: payload.birthday,
     gender: payload.gender,
-    bloodType: payload.bloodType,
-    medicalHistory: payload.medicalHistory,
-    allergy: payload.allergy,
-    height: payload.height,
-    weight: payload.weight,
-    emergencyContactPhone: payload.emergencyContactPhone,
-  };
+  });
+
+  // 2. Update Health Profile (Medical Info)
+  // We fetch the correct profileId using the new /health-profiles/me endpoint
+  // to avoid ID mismatch (userId != healthProfileId)
+  
+  try {
+    const myProfile = await apiGet<any>('/health-profiles/me');
+    const profileId = myProfile.id;
+
+    await apiPut(`/health-profiles/${profileId}`, {
+      fullName: payload.fullName,
+      dateOfBirth: payload.birthday,
+      gender: payload.gender,
+    });
+
+    if (payload.bloodType || payload.medicalHistory || payload.allergy) {
+      await apiPut(`/health-profiles/${profileId}/medical-info`, {
+        bloodType: payload.bloodType,
+        allergies: payload.allergy,
+        chronicDiseases: payload.medicalHistory,
+      });
+    }
+
+    // Invalidate all related caches
+    invalidateApiGetCache(['/auth/me', '/dashboard', '/families', `/health-profiles/${profileId}`]);
+  } catch (error) {
+    console.error('Failed to update health profile part:', error);
+  }
+  
+  return mapRawUserToProfile(userResponse);
 }
 
 export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
