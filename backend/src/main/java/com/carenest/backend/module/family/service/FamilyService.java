@@ -13,7 +13,6 @@ public interface FamilyService {
 
     FamilyResponse createFamily(CreateFamilyRequest request);
 
-
     FamilyDetailResponse getFamilyById(Long id);
 
     void inviteMember(Long familyId, InviteMemberRequest request);

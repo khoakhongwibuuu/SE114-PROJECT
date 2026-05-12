@@ -51,3 +51,5 @@ docker-volumes/
 # Local dev configs
 # ─────────────────────────────────────────
 local.properties
+
+backend/pgdata/
