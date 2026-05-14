@@ -33,6 +33,7 @@ export type HomeStackParamList = {
 
 export type FamilyStackParamList = {
   FamilyManagement: undefined;
+  FamilyChat: { familyId: number; familyName: string };
   HealthProfileDetail: { memberId: string };
   VaccinationTracker: { memberId: string };
   GrowthTracker: { memberId: string };

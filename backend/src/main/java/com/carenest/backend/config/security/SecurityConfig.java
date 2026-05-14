@@ -40,6 +40,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(req -> req
                 .requestMatchers(
                     "/auth/**",
+                    "/ws/**",           // WebSocket Handshake — xác thực qua JwtChannelInterceptor
+                    "/ws-sockjs/**",    // SockJS fallback endpoint
                     "/v2/api-docs",
                     "/v3/api-docs",
                     "/v3/api-docs/**",
