@@ -12,6 +12,7 @@ import MedicineScheduleScreen from '../screens/medicine/MedicineScheduleScreen';
 import AddMedicineScheduleScreen from '../screens/medicine/AddMedicineScheduleScreen';
 import AppointmentListScreen from '../screens/appointment/AppointmentListScreen';
 import AddAppointmentScreen from '../screens/appointment/AddAppointmentScreen';
+import FamilyChatScreen from '../screens/family/FamilyChatScreen';
 
 const Stack = createNativeStackNavigator<FamilyStackParamList>();
 
@@ -19,6 +20,7 @@ export default function FamilyStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="FamilyManagement" component={FamilyManagementScreen} />
+      <Stack.Screen name="FamilyChat" component={FamilyChatScreen} />
       <Stack.Screen name="HealthProfileDetail" component={HealthProfileDetailScreen} />
       <Stack.Screen name="VaccinationTracker" component={VaccinationTrackerScreen} />
       <Stack.Screen name="GrowthTracker" component={GrowthTrackerScreen} />

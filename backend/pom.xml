@@ -189,6 +189,12 @@
             <artifactId>bucket4j-core</artifactId>
             <version>8.1.0</version>
         </dependency>
+
+        <!-- WebSocket + STOMP: Family Chat Box real-time -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
     </dependencies>
 
     <!-- ═══════════════════════════════════════════════ -->
