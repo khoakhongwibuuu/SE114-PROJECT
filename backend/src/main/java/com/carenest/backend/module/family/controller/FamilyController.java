@@ -8,6 +8,7 @@ import com.carenest.backend.module.family.dto.request.UpdateRoleRequest;
 import com.carenest.backend.module.family.dto.response.FamilyDetailResponse;
 import com.carenest.backend.module.family.dto.response.FamilyJoinCodeResponse;
 import com.carenest.backend.module.family.dto.response.FamilyResponse;
+import com.carenest.backend.module.family.dto.response.FamilySummaryResponse;
 import com.carenest.backend.module.family.service.FamilyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -16,6 +17,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/families")
@@ -27,9 +30,15 @@ public class FamilyController {
     private final FamilyService familyService;
 
     @GetMapping
-    @Operation(summary = "Get current user's family")
+    @Operation(summary = "Get current user's primary family (legacy — prefer /my-list)")
     public ApiResponse<FamilyDetailResponse> getMyFamily() {
         return ApiResponse.success(familyService.getMyFamily());
+    }
+
+    @GetMapping("/my-list")
+    @Operation(summary = "Get all families the current user belongs to")
+    public ApiResponse<List<FamilySummaryResponse>> getMyFamilies() {
+        return ApiResponse.success(familyService.getMyFamilies());
     }
 
     @PostMapping

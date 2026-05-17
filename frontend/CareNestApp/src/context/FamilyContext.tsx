@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createFamily as createFamilyRequest,
@@ -138,6 +139,16 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
+
+  // ── Listen for BOLA/IDOR kicks (403 Forbidden) to recover gracefully ───────
+  useEffect(() => {
+    const handler = () => {
+      console.log('[FamilyContext] Recovering from 403 access denied...');
+      void bootstrapFamilies();
+    };
+    const subscription = DeviceEventEmitter.addListener('FAMILY_ACCESS_DENIED', handler);
+    return () => subscription.remove();
+  }, [bootstrapFamilies]);
 
   // ── Public: switch active family ─────────────────────────────────────────
   const setActiveFamilyId = useCallback(async (id: number) => {

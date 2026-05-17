@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import { DeviceEventEmitter } from 'react-native';
 import { API_BASE_URL } from './config';
 import { getStoredSession, setStoredSession } from './storage';
 
@@ -100,6 +101,7 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 
+    // Handle 401 Unauthorized (Token refresh)
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -125,6 +127,12 @@ apiClient.interceptors.response.use(
         // Refresh token failed, clear session
         await setStoredSession(null);
       }
+    }
+
+    // Handle 403 Forbidden (BOLA/IDOR protection kick)
+    if (error.response?.status === 403) {
+      console.warn('[API Client] 403 Forbidden detected. Emitting FAMILY_ACCESS_DENIED.');
+      DeviceEventEmitter.emit('FAMILY_ACCESS_DENIED');
     }
 
     return Promise.reject(error);

@@ -9,11 +9,15 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "family_members", indexes = {
-        @Index(name = "idx_family_members_user", columnList = "user_id")
-}, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_family_members_user", columnNames = "user_id")
-})
+@Table(name = "family_members",
+       indexes = {
+           @Index(name = "idx_family_members_user", columnList = "user_id"),
+           @Index(name = "idx_family_members_family", columnList = "family_id")
+       },
+       uniqueConstraints = {
+           // A user may only join the SAME family once — but can join multiple families
+           @UniqueConstraint(name = "uk_family_member_family_user", columnNames = {"family_id", "user_id"})
+       })
 @Getter
 @Setter
 @Builder

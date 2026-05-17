@@ -9,12 +9,16 @@ import com.carenest.backend.module.family.dto.response.FamilyDetailResponse;
 import com.carenest.backend.module.family.dto.response.FamilyInvitationResponse;
 import com.carenest.backend.module.family.dto.response.FamilyJoinCodeResponse;
 import com.carenest.backend.module.family.dto.response.FamilyResponse;
+import com.carenest.backend.module.family.dto.response.FamilySummaryResponse;
 
 import java.util.List;
 
 public interface FamilyService {
 
     FamilyDetailResponse getMyFamily();
+
+    /** Returns all families the current user belongs to (multi-family support). */
+    List<FamilySummaryResponse> getMyFamilies();
 
     FamilyResponse createFamily(CreateFamilyRequest request);
 

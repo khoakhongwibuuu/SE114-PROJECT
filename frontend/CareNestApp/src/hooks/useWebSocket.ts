@@ -34,6 +34,11 @@ export function useWebSocket({
   onMessageReceived,
 }: UseWebSocketOptions): UseWebSocketReturn {
   const clientRef = useRef<Client | null>(null);
+  const onMessageReceivedRef = useRef(onMessageReceived);
+
+  useEffect(() => {
+    onMessageReceivedRef.current = onMessageReceived;
+  }, [onMessageReceived]);
 
   const connect = useCallback(async () => {
     const session = await getStoredSession();
@@ -84,7 +89,7 @@ export function useWebSocket({
             };
 
             console.log('[WS] ✅ Parsed message:', JSON.stringify(msg));
-            onMessageReceived(msg);
+            onMessageReceivedRef.current(msg);
           } catch (e) {
             console.error('[WS] Lỗi parse tin nhắn:', e);
           }
@@ -98,7 +103,7 @@ export function useWebSocket({
 
     client.activate();
     clientRef.current = client;
-  }, [familyId, onMessageReceived]);
+  }, [familyId]);
 
   const sendMessage = useCallback(
     (content: string) => {
@@ -121,6 +126,12 @@ export function useWebSocket({
   );
 
   useEffect(() => {
+    // Ensure any existing connection is safely terminated before connecting a new one
+    // This prevents STOMP eavesdropping if familyId changes without unmounting the component
+    if (clientRef.current?.connected) {
+      clientRef.current.deactivate();
+      clientRef.current = null;
+    }
     void connect();
 
     return () => {
