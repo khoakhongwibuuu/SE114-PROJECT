@@ -53,39 +53,51 @@ public class VaccinationServiceImpl implements VaccinationService {
         HealthProfile profile = healthProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", profileId));
 
-        if (request.getTotalDoses() > 1 && (request.getDoseIntervalDays() == null || request.getDoseIntervalDays() <= 0)) {
-            throw new BadRequestException("Khoảng cách giữa các mũi tiêm (doseIntervalDays) phải lớn hơn 0 nếu có nhiều hơn 1 mũi.");
+        // 1. Tìm hoặc tạo mới VaccinationRecord theo vaccineName (không phân biệt hoa thường)
+        VaccinationRecord record = vaccinationRecordRepository
+                .findByHealthProfileIdAndVaccineNameIgnoreCase(profileId, request.getVaccineName())
+                .orElseGet(() -> {
+                    VaccinationRecord newRecord = VaccinationRecord.builder()
+                            .healthProfile(profile)
+                            .vaccineName(request.getVaccineName())
+                            .totalDoses(1)
+                            .notes(request.getNotes())
+                            .build();
+                    return vaccinationRecordRepository.save(newRecord);
+                });
+
+        // Cập nhật lại totalDoses trong record nếu doseNumber lớn hơn totalDoses hiện tại
+        if (request.getDoseNumber() > record.getTotalDoses()) {
+            record.setTotalDoses(request.getDoseNumber());
+            vaccinationRecordRepository.save(record);
         }
 
-        VaccinationRecord record = vaccinationMapper.toEntity(request);
-        record.setHealthProfile(profile);
-        record = vaccinationRecordRepository.save(record);
+        // 2. Tìm hoặc tạo mới VaccinationDose cho doseNumber của record này
+        DoseStatus targetStatus = DoseStatus.valueOf(request.getStatus().toUpperCase());
+        LocalDate dateAdministered = (targetStatus == DoseStatus.COMPLETED) ? request.getDate() : null;
+        LocalDate scheduledDate = request.getDate();
 
-        // Pre-generation logic: Sinh sẵn toàn bộ các mũi tiêm (PENDING)
-        List<VaccinationDose> doses = new ArrayList<>();
-        LocalDate currentDate = request.getStartDate();
+        VaccinationDose dose = vaccinationDoseRepository
+                .findByVaccinationRecordIdAndDoseNumber(record.getId(), request.getDoseNumber())
+                .orElseGet(() -> VaccinationDose.builder()
+                        .vaccinationRecord(record)
+                        .doseNumber(request.getDoseNumber())
+                        .build());
 
-        for (int i = 1; i <= request.getTotalDoses(); i++) {
-            VaccinationDose dose = VaccinationDose.builder()
-                    .vaccinationRecord(record)
-                    .doseNumber(i)
-                    .scheduledDate(currentDate)
-                    .status(DoseStatus.PENDING)
-                    .location(request.getLocation())
-                    .build();
-            doses.add(dose);
+        dose.setScheduledDate(scheduledDate);
+        dose.setDateAdministered(dateAdministered);
+        dose.setStatus(targetStatus);
+        if (request.getLocation() != null) dose.setLocation(request.getLocation());
+        if (request.getNotes() != null) dose.setNotes(request.getNotes());
 
-            if (request.getDoseIntervalDays() != null) {
-                currentDate = currentDate.plusDays(request.getDoseIntervalDays());
-            }
-        }
-
-        doses = vaccinationDoseRepository.saveAll(doses);
+        vaccinationDoseRepository.save(dose);
 
         if (profile.getFamily() != null) {
             evictDashboardCache(profile.getFamily().getId());
         }
 
+        // 3. Trả về toàn bộ các mũi tiêm thuộc record này để đồng bộ hóa danh sách UI
+        List<VaccinationDose> doses = vaccinationDoseRepository.findAllByVaccinationRecordIdOrderByDoseNumberAsc(record.getId());
         return vaccinationMapper.toRecordResponseWithDoses(record, doses);
     }
 

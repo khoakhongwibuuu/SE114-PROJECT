@@ -42,9 +42,9 @@ export async function getVaccinationTracker(profileId: number): Promise<Vaccinat
 
 export async function createVaccination(profileId: number, payload: {
   vaccineName: string;
-  totalDoses: number;
-  startDate: string;
-  doseIntervalDays?: number;
+  doseNumber: number;
+  status: string; // 'COMPLETED' or 'PENDING'
+  date: string;
   location?: string;
   notes?: string;
 }): Promise<void> {

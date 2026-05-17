@@ -22,6 +22,14 @@ import { formatLocalDate } from '../../utils/dateTime';
 
 type AddVaccinationRoute = RouteProp<FamilyStackParamList, 'AddVaccinationSchedule'>;
 
+const DOSE_OPTIONS = [
+  { label: 'Mũi 1', value: 1 },
+  { label: 'Mũi 2', value: 2 },
+  { label: 'Mũi 3', value: 3 },
+  { label: 'Mũi 4', value: 4 },
+  { label: 'Nhắc lại', value: 99 },
+];
+
 export default function AddVaccinationScheduleScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -29,12 +37,12 @@ export default function AddVaccinationScheduleScreen() {
   const { profileId } = route.params;
 
   const [vaccineName, setVaccineName] = useState('');
-  const [doseNumber, setDoseNumber] = useState('1');
+  const [selectedDose, setSelectedDose] = useState(1);
+  const [isCompleted, setIsCompleted] = useState(true);
   const [date, setDate] = useState(new Date());
   const [clinicName, setClinicName] = useState('');
   const [notes, setNotes] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(true);
 
   const onDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -44,21 +52,23 @@ export default function AddVaccinationScheduleScreen() {
   };
 
   async function handleSave() {
-    if (!vaccineName) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên vaccine.');
+    if (!vaccineName.trim()) {
+      Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên vắc xin.');
       return;
     }
 
     try {
       const dateValue = formatLocalDate(date);
       await createVaccination(profileId, {
-        vaccineName,
-        totalDoses: Number(doseNumber) || 1,
-        startDate: dateValue,
-        location: clinicName,
-        notes: notes,
+        vaccineName: vaccineName.trim(),
+        doseNumber: selectedDose,
+        status: isCompleted ? 'COMPLETED' : 'PENDING',
+        date: dateValue,
+        location: clinicName.trim() || undefined,
+        notes: notes.trim() || undefined,
       });
-      Alert.alert('Đã lưu thông tin tiêm chủng', 'Mũi tiêm đã được thêm vào hồ sơ của trẻ.', [
+
+      Alert.alert('Đã lưu thành công', 'Mũi tiêm đã được thêm vào hồ sơ của bé.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
@@ -73,65 +83,120 @@ export default function AddVaccinationScheduleScreen() {
     >
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#0369a1" />
+          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Ghi nhận tiêm chủng</Text>
         <View style={styles.helpBtn} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.introText}>Ghi lại lịch sử tiêm chủng của hồ sơ #{profileId} để duy trì hồ sơ sức khỏe đầy đủ.</Text>
+        <Text style={styles.introText}>
+          Ghi nhận từng mũi tiêm cụ thể để theo dõi đầy đủ và chính xác lịch trình phòng bệnh của bé.
+        </Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Thông tin vaccine</Text>
+          <Text style={styles.cardTitle}>Thông tin vắc xin</Text>
 
-          <Text style={styles.inputLabel}>TÊN VACCINE</Text>
+          {/* Câu 1: Tên Vaccine */}
+          <Text style={styles.inputLabel}>TÊN VẮC XIN</Text>
           <View style={styles.inputWrap}>
             <MaterialCommunityIcons name="needle" size={20} color="#64748b" />
-            <TextInput style={styles.input} value={vaccineName} onChangeText={setVaccineName} placeholder="Ví dụ: Vắc xin 6 trong 1" placeholderTextColor="#94a3b8" />
+            <TextInput
+              style={styles.input}
+              value={vaccineName}
+              onChangeText={setVaccineName}
+              placeholder="Ví dụ: Vắc xin 6 trong 1 Hexaxim"
+              placeholderTextColor="#94a3b8"
+            />
           </View>
 
-          <Text style={[styles.inputLabel, { marginTop: 20 }]}>SỐ MŨI</Text>
-          <View style={styles.inputWrap}>
-            <MaterialCommunityIcons name="numeric" size={20} color="#64748b" />
-            <TextInput style={styles.input} value={doseNumber} onChangeText={setDoseNumber} keyboardType="numeric" placeholder="1" placeholderTextColor="#94a3b8" />
+          {/* Câu 2: Đây là mũi thứ mấy? */}
+          <Text style={[styles.inputLabel, { marginTop: 24 }]}>ĐÂY LÀ MŨI THỨ MẤY?</Text>
+          <View style={styles.doseGrid}>
+            {DOSE_OPTIONS.map((opt) => {
+              const isSelected = selectedDose === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[styles.doseChip, isSelected && styles.doseChipActive]}
+                  onPress={() => setSelectedDose(opt.value)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.doseText, isSelected && styles.doseTextActive]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
-          <Text style={[styles.inputLabel, { marginTop: 20 }]}>TRẠNG THÁI</Text>
+          {/* Câu 3: Trạng thái tiêm */}
+          <Text style={[styles.inputLabel, { marginTop: 24 }]}>TRẠNG THÁI</Text>
           <View style={styles.choiceRow}>
-            <TouchableOpacity style={[styles.choiceChip, isCompleted && styles.choiceChipActive]} onPress={() => setIsCompleted(true)}>
+            <TouchableOpacity
+              style={[styles.choiceChip, isCompleted && styles.choiceChipActive]}
+              onPress={() => setIsCompleted(true)}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons
+                name="check-circle"
+                size={16}
+                color={isCompleted ? '#fff' : '#64748b'}
+                style={{ marginRight: 6 }}
+              />
               <Text style={[styles.choiceText, isCompleted && styles.choiceTextActive]}>Đã tiêm</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.choiceChip, !isCompleted && styles.choiceChipActive]} onPress={() => setIsCompleted(false)}>
+            <TouchableOpacity
+              style={[styles.choiceChip, !isCompleted && styles.choiceChipActive]}
+              onPress={() => setIsCompleted(false)}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons
+                name="calendar-clock"
+                size={16}
+                color={!isCompleted ? '#fff' : '#64748b'}
+                style={{ marginRight: 6 }}
+              />
               <Text style={[styles.choiceText, !isCompleted && styles.choiceTextActive]}>Lịch dự kiến</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Thông tin mũi tiêm</Text>
+          <Text style={styles.cardTitle}>Chi tiết mũi tiêm</Text>
 
-          <Text style={styles.inputLabel}>{isCompleted ? 'NGÀY TIÊM' : 'NGÀY DỰ KIẾN'}</Text>
+          {/* Câu 4: Ngày tiêm / Ngày hẹn */}
+          <Text style={styles.inputLabel}>
+            {isCompleted ? 'NGÀY TIÊM THỰC TẾ' : 'NGÀY HẸN CỦA VNVC / DỰ KIẾN'}
+          </Text>
           <TouchableOpacity style={styles.inputWrap} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
             <MaterialCommunityIcons name="calendar-month-outline" size={20} color="#64748b" />
             <Text style={styles.input}>{date.toLocaleDateString('vi-VN')}</Text>
             <MaterialCommunityIcons name="calendar" size={20} color="#64748b" style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
 
-          <Text style={[styles.inputLabel, { marginTop: 20 }]}>NƠI TIÊM / PHÒNG KHÁM</Text>
+          {/* Tùy chọn: Địa điểm tiêm */}
+          <Text style={[styles.inputLabel, { marginTop: 24 }]}>ĐỊA ĐIỂM TIÊM (TÙY CHỌN)</Text>
           <View style={styles.inputWrap}>
             <MaterialCommunityIcons name="hospital-building" size={20} color="#64748b" />
-            <TextInput style={styles.input} value={clinicName} onChangeText={setClinicName} placeholder="Ví dụ: Phòng khám Nhi thành phố" placeholderTextColor="#94a3b8" />
+            <TextInput
+              style={styles.input}
+              value={clinicName}
+              onChangeText={setClinicName}
+              placeholder="Ví dụ: Trung tâm Tiêm chủng VNVC"
+              placeholderTextColor="#94a3b8"
+            />
           </View>
 
-          <Text style={[styles.inputLabel, { marginTop: 20 }]}>GHI CHÚ</Text>
+          {/* Tùy chọn: Ghi chú */}
+          <Text style={[styles.inputLabel, { marginTop: 24 }]}>GHI CHÚ (TÙY CHỌN)</Text>
           <View style={[styles.inputWrap, styles.notesInputWrap]}>
             <MaterialCommunityIcons name="file-document-edit-outline" size={20} color="#64748b" style={{ marginTop: 2 }} />
             <TextInput
               style={[styles.input, styles.notesInput]}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Phản ứng sau tiêm hoặc lời khuyên của bác sĩ..."
+              placeholder="Phản ứng sau tiêm hoặc lưu ý theo dõi sức khỏe cho bé..."
               placeholderTextColor="#94a3b8"
               multiline
               textAlignVertical="top"
@@ -143,7 +208,7 @@ export default function AddVaccinationScheduleScreen() {
       <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
         <TouchableOpacity style={styles.submitBtn} activeOpacity={0.8} onPress={() => void handleSave()}>
           <MaterialCommunityIcons name="check-circle-outline" size={24} color="#fff" />
-          <Text style={styles.submitBtnText}>Lưu hồ sơ tiêm chủng</Text>
+          <Text style={styles.submitBtnText}>Lưu mũi tiêm</Text>
         </TouchableOpacity>
       </View>
 
@@ -157,22 +222,27 @@ const styles = StyleSheet.create({
   header: { height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, backgroundColor: 'transparent' },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   helpBtn: { width: 40, height: 40 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#0369a1' },
+  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.primary, fontFamily: 'Manrope' },
   scrollContent: { paddingHorizontal: 24, paddingBottom: 40 },
-  introText: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20, marginTop: 20, marginBottom: 30, paddingHorizontal: 10 },
-  card: { backgroundColor: '#fff', borderRadius: 32, padding: 24, marginBottom: 20, shadowColor: '#1a73e8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.03, shadowRadius: 20, elevation: 2 },
-  cardTitle: { fontSize: 18, fontWeight: '800', color: '#1e293b', marginBottom: 24 },
-  inputLabel: { fontSize: 12, fontWeight: '800', color: '#64748b', marginBottom: 10, letterSpacing: 0.5, marginLeft: 4 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: 20, paddingHorizontal: 16, height: 60 },
-  input: { flex: 1, marginLeft: 12, fontSize: 16, color: '#1e293b', fontWeight: '600' },
+  introText: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 18, marginTop: 16, marginBottom: 24, paddingHorizontal: 10, fontFamily: 'Inter' },
+  card: { backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 20, shadowColor: '#1a73e8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.03, shadowRadius: 20, elevation: 2 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: '#1e293b', marginBottom: 20, fontFamily: 'Manrope' },
+  inputLabel: { fontSize: 11, fontWeight: '800', color: '#64748b', marginBottom: 10, letterSpacing: 0.5, marginLeft: 4, fontFamily: 'Inter' },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: 16, paddingHorizontal: 16, height: 56 },
+  input: { flex: 1, marginLeft: 12, fontSize: 15, color: '#1e293b', fontWeight: '600', fontFamily: 'Inter' },
   choiceRow: { flexDirection: 'row', gap: 12 },
-  choiceChip: { flex: 1, height: 48, borderRadius: 16, backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
+  choiceChip: { flex: 1, height: 48, borderRadius: 16, backgroundColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   choiceChipActive: { backgroundColor: colors.primary },
-  choiceText: { fontSize: 14, fontWeight: '700', color: '#475569' },
+  choiceText: { fontSize: 13, fontWeight: '700', color: '#475569', fontFamily: 'Inter' },
   choiceTextActive: { color: '#fff' },
-  notesInputWrap: { height: 120, alignItems: 'flex-start', paddingVertical: 16 },
-  notesInput: { marginLeft: 12, height: '100%' },
+  doseGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  doseChip: { paddingHorizontal: 16, height: 40, borderRadius: 20, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' },
+  doseChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  doseText: { fontSize: 13, fontWeight: '700', color: '#475569', fontFamily: 'Inter' },
+  doseTextActive: { color: '#fff' },
+  notesInputWrap: { height: 120, alignItems: 'flex-start', paddingVertical: 14 },
+  notesInput: { marginLeft: 12, height: '100%', textAlignVertical: 'top' },
   footer: { paddingHorizontal: 24, paddingVertical: 10 },
-  submitBtn: { height: 64, backgroundColor: '#3498db', borderRadius: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, shadowColor: '#2563eb', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
-  submitBtnText: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  submitBtn: { height: 56, backgroundColor: colors.primary, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, shadowColor: '#2563eb', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
+  submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', fontFamily: 'Inter' },
 });
