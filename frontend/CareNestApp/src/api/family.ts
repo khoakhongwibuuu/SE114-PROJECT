@@ -262,3 +262,24 @@ export async function removeMember(profileId: number): Promise<void> {
   await apiDelete(`/health-profiles/${profileId}`);
   invalidateApiGetCache(['/families', '/dashboard']);
 }
+
+// ─── MULTI-FAMILY SUPPORT ────────────────────────────────────────────────────
+
+export interface FamilySummary {
+  id: number;
+  name: string;
+  memberCount: number;
+  myRole: FamilyRole;
+  ownerName: string;
+}
+
+/** Fetch all families the authenticated user belongs to. */
+export async function getMyFamilyList(): Promise<FamilySummary[]> {
+  return apiGet<FamilySummary[]>('/families/my-list');
+}
+
+/** Fetch full detail of a specific family by ID. */
+export async function getFamilyById(familyId: number): Promise<FamilyDetailResponse> {
+  const raw = await apiGet<RawFamilyDetailResponse>(`/families/${familyId}`);
+  return mapRawFamilyToDetail(raw);
+}

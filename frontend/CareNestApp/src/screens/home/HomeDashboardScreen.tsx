@@ -1,11 +1,14 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   Image,
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -173,8 +176,10 @@ export default function HomeDashboardScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { members, selectedProfileId, setSelectedProfileId } = useFamily();
+  const { members, selectedProfileId, setSelectedProfileId, allFamilies, activeFamilyId, setActiveFamilyId } = useFamily();
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
+  const [switcherVisible, setSwitcherVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(400)).current;
 
   const loadDashboard = useCallback(async () => {
     await getDashboard(selectedProfileId || undefined)
@@ -248,20 +253,87 @@ export default function HomeDashboardScreen() {
     void getVaccinationTracker(activeShortcutProfileId);
   }, [activeShortcutProfileId]);
 
+  const handleOpenSwitcher = () => {
+    setSwitcherVisible(true);
+    Animated.spring(slideAnim, {
+      toValue: 0, useNativeDriver: true, tension: 70, friction: 12,
+    }).start();
+  };
+
+  const handleCloseSwitcher = () => {
+    Animated.timing(slideAnim, {
+      toValue: 400, useNativeDriver: true, duration: 220,
+    }).start(() => setSwitcherVisible(false));
+  };
+
+  const handleSwitchFamily = async (id: number) => {
+    handleCloseSwitcher();
+    if (id !== activeFamilyId) {
+      await setActiveFamilyId(id);
+      await loadDashboard();
+    }
+  };
+
+  const activeFamilyName = allFamilies.find(f => f.id === activeFamilyId)?.name
+    ?? (allFamilies.length > 0 ? allFamilies[0].name : 'CareNest');
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <View style={styles.brandLeft}>
+        {/* Family Switcher — replaces static logo */}
+        <TouchableOpacity
+          style={styles.brandLeft}
+          activeOpacity={0.8}
+          onPress={handleOpenSwitcher}
+          disabled={allFamilies.length <= 1}
+        >
           <Image source={CARENEST_LOGO_HOUSE} style={styles.brandGlyph} resizeMode="contain" />
-          <Text style={styles.logoText}>CareNest</Text>
-        </View>
+          <Text style={styles.logoText} numberOfLines={1}>
+            {activeFamilyName}
+          </Text>
+          {allFamilies.length > 1 && (
+            <Text style={styles.switcherCaret}>▾</Text>
+          )}
+        </TouchableOpacity>
         <View style={styles.headerActions}>
           <Avatar uri={user?.avatarUrl} name={user?.fullName || 'CareNest'} size="sm" bordered />
           <NotificationBell iconColor={colors.onSurfaceVariant} hasNotification={unreadCount > 0} />
         </View>
       </View>
+
+      {/* Family Switcher Bottom Sheet */}
+      <Modal transparent animationType="none" visible={switcherVisible} onRequestClose={handleCloseSwitcher}>
+        <TouchableWithoutFeedback onPress={handleCloseSwitcher}>
+          <View style={styles.sheetOverlay} />
+        </TouchableWithoutFeedback>
+        <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>Chọn gia đình</Text>
+          {allFamilies.map(family => {
+            const isActive = family.id === activeFamilyId;
+            return (
+              <TouchableOpacity
+                key={family.id}
+                style={[styles.sheetItem, isActive && styles.sheetItemActive]}
+                activeOpacity={0.8}
+                onPress={() => handleSwitchFamily(family.id)}
+              >
+                <View style={styles.sheetItemLeft}>
+                  <Text style={[styles.sheetItemName, isActive && styles.sheetItemNameActive]}>
+                    {family.name}
+                  </Text>
+                  <Text style={styles.sheetItemSub}>
+                    {family.memberCount} thành viên • {family.myRole === 'OWNER' ? 'Chủ hộ' : 'Thành viên'}
+                  </Text>
+                </View>
+                {isActive && <Text style={styles.sheetCheckmark}>✓</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </Animated.View>
+      </Modal>
 
       <ScrollView
         contentContainerStyle={[
@@ -709,5 +781,73 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     fontStyle: 'italic',
     lineHeight: 22,
+  },
+
+  // ── Family Switcher ─────────────────────────────────────────────────────────
+  switcherCaret: {
+    fontSize: 14,
+    color: '#64748B',
+    marginLeft: 2,
+    marginTop: 1,
+  },
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  sheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E2E8F0',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  sheetTitle: {
+    fontSize: 17,
+    fontFamily: 'Manrope',
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 12,
+  },
+  sheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    marginBottom: 4,
+  },
+  sheetItemActive: {
+    backgroundColor: '#EFF6FF',
+  },
+  sheetItemLeft: { flex: 1 },
+  sheetItemName: {
+    fontSize: 15,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 3,
+  },
+  sheetItemNameActive: { color: colors.primary },
+  sheetItemSub: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    color: '#64748B',
+  },
+  sheetCheckmark: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.primary,
   },
 });
