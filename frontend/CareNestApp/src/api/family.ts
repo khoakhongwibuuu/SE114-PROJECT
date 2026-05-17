@@ -110,6 +110,8 @@ interface RawHealthProfileResponse {
   notes: string;
   avatarUrl: string;
   isChild: boolean;
+  height?: number | null;
+  weight?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -154,8 +156,8 @@ function mapRawHealthProfile(raw: RawHealthProfileResponse): ProfileDetails {
     age: calculateAge(raw.dateOfBirth),
     gender: raw.gender,
     bloodType: raw.bloodType,
-    height: null,
-    weight: null,
+    height: raw.height,
+    weight: raw.weight,
     medicalHistory: raw.chronicDiseases,
     allergy: raw.allergies,
     emergencyContactPhone: null,
@@ -190,6 +192,8 @@ export async function updateProfile(profileId: number, payload: Record<string, u
     gender: payload.gender,
     relationship: payload.relationship || 'UNKNOWN',
     isChild: false, 
+    height: payload.height,
+    weight: payload.weight,
   });
   
   if (payload.bloodType || payload.allergy || payload.medicalHistory) {

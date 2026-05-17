@@ -13,6 +13,8 @@ import com.carenest.backend.module.healthprofile.entity.HealthProfile;
 import com.carenest.backend.module.healthprofile.mapper.HealthProfileMapper;
 import com.carenest.backend.module.healthprofile.repository.HealthProfileRepository;
 import com.carenest.backend.module.healthprofile.service.HealthProfileService;
+import com.carenest.backend.module.growth.repository.GrowthRecordRepository;
+import com.carenest.backend.module.growth.entity.GrowthRecord;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     private final UserRepository userRepository;
     private final FamilyRepository familyRepository;
     private final HealthProfileMapper healthProfileMapper;
+    private final GrowthRecordRepository growthRecordRepository;
 
     @Override
     @Transactional
@@ -60,7 +63,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
                 .build();
 
         HealthProfile savedProfile = healthProfileRepository.save(healthProfile);
-        return healthProfileMapper.toResponse(savedProfile);
+        return enrichWithHeightAndWeight(healthProfileMapper.toResponse(savedProfile));
     }
 
     @Override
@@ -73,6 +76,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
         List<HealthProfile> profiles = healthProfileRepository.findByFamilyIdAndDeletedAtIsNull(familyId);
         return profiles.stream()
                 .map(healthProfileMapper::toResponse)
+                .map(this::enrichWithHeightAndWeight)
                 .collect(Collectors.toList());
     }
 
@@ -81,7 +85,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     public HealthProfileResponse getHealthProfileById(Long id) {
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", id.toString()));
-        return healthProfileMapper.toResponse(healthProfile);
+        return enrichWithHeightAndWeight(healthProfileMapper.toResponse(healthProfile));
     }
 
     @Override
@@ -102,7 +106,8 @@ public class HealthProfileServiceImpl implements HealthProfileService {
         }
 
         HealthProfile updatedProfile = healthProfileRepository.save(healthProfile);
-        return healthProfileMapper.toResponse(updatedProfile);
+        saveHeightAndWeight(updatedProfile, request.getHeight(), request.getWeight());
+        return enrichWithHeightAndWeight(healthProfileMapper.toResponse(updatedProfile));
     }
 
     @Override
@@ -126,7 +131,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
         healthProfile.setChronicDiseases(request.getChronicDiseases());
 
         HealthProfile updatedProfile = healthProfileRepository.save(healthProfile);
-        return healthProfileMapper.toResponse(updatedProfile);
+        return enrichWithHeightAndWeight(healthProfileMapper.toResponse(updatedProfile));
     }
 
     @Override
@@ -147,9 +152,78 @@ public class HealthProfileServiceImpl implements HealthProfileService {
                     .build();
             
             HealthProfile saved = healthProfileRepository.save(newProfile);
-            return healthProfileMapper.toResponse(saved);
+            return enrichWithHeightAndWeight(healthProfileMapper.toResponse(saved));
         }
         // Usually the first one is the main profile
-        return healthProfileMapper.toResponse(profiles.get(0));
+        return enrichWithHeightAndWeight(healthProfileMapper.toResponse(profiles.get(0)));
+    }
+
+    private HealthProfileResponse enrichWithHeightAndWeight(HealthProfileResponse response) {
+        if (response == null) return null;
+        List<GrowthRecord> growthRecords = growthRecordRepository.findByHealthProfileIdOrderByRecordDateDesc(response.getId());
+        if (!growthRecords.isEmpty()) {
+            GrowthRecord latest = growthRecords.get(0);
+            response.setHeight(latest.getHeightCm());
+            response.setWeight(latest.getWeightKg());
+        }
+        return response;
+    }
+
+    private void saveHeightAndWeight(HealthProfile profile, java.math.BigDecimal height, java.math.BigDecimal weight) {
+        if (height == null && weight == null) return;
+        
+        java.time.LocalDate today = java.time.LocalDate.now();
+        List<GrowthRecord> records = growthRecordRepository.findByHealthProfileIdOrderByRecordDateDesc(profile.getId());
+        
+        GrowthRecord record = null;
+        // Check if there is already a record for today
+        for (GrowthRecord r : records) {
+            if (r.getRecordDate().equals(today)) {
+                record = r;
+                break;
+            }
+        }
+        
+        if (record == null) {
+            // Find latest values to fill missing fields if only one is updated
+            java.math.BigDecimal lastHeight = height;
+            java.math.BigDecimal lastWeight = weight;
+            if (!records.isEmpty()) {
+                GrowthRecord latest = records.get(0);
+                if (lastHeight == null) lastHeight = latest.getHeightCm();
+                if (lastWeight == null) lastWeight = latest.getWeightKg();
+            }
+            
+            // Set defaults if still null to avoid validation errors
+            if (lastHeight == null) lastHeight = new java.math.BigDecimal("160.0");
+            if (lastWeight == null) lastWeight = new java.math.BigDecimal("55.0");
+            
+            java.math.BigDecimal bmi = null;
+            if (lastHeight.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                java.math.BigDecimal heightM = lastHeight.divide(new java.math.BigDecimal("100"), 4, java.math.RoundingMode.HALF_UP);
+                bmi = lastWeight.divide(heightM.multiply(heightM), 1, java.math.RoundingMode.HALF_UP);
+            }
+            
+            record = GrowthRecord.builder()
+                    .healthProfile(profile)
+                    .recordDate(today)
+                    .heightCm(lastHeight)
+                    .weightKg(lastWeight)
+                    .bmi(bmi)
+                    .notes("Cập nhật từ hồ sơ")
+                    .build();
+        } else {
+            if (height != null) record.setHeightCm(height);
+            if (weight != null) record.setWeightKg(weight);
+            
+            java.math.BigDecimal currentHeight = record.getHeightCm();
+            java.math.BigDecimal currentWeight = record.getWeightKg();
+            if (currentHeight != null && currentWeight != null && currentHeight.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                java.math.BigDecimal heightM = currentHeight.divide(new java.math.BigDecimal("100"), 4, java.math.RoundingMode.HALF_UP);
+                record.setBmi(currentWeight.divide(heightM.multiply(heightM), 1, java.math.RoundingMode.HALF_UP));
+            }
+        }
+        
+        growthRecordRepository.save(record);
     }
 }

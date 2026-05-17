@@ -37,7 +37,7 @@ public class FamilyInvitationController {
     @PutMapping("/{id}")
     @Operation(summary = "Accept or reject a family invitation")
     public ApiResponse<Void> handleInvitation(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateInvitationRequest request) {
         familyService.handleInvitation(id, request);
         return ApiResponse.success("Invitation handled successfully", null);

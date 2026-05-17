@@ -4,6 +4,7 @@ import com.carenest.backend.module.family.entity.FamilyInvitation;
 import com.carenest.backend.module.family.enums.InvitationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -25,5 +26,8 @@ public interface FamilyInvitationRepository extends JpaRepository<FamilyInvitati
                or lower(invitation.recipientEmail) = lower(:email)
             order by invitation.createdAt desc
             """)
-    List<FamilyInvitation> findReceivedInvitations(Long userId, String email);
+    List<FamilyInvitation> findReceivedInvitations(
+            @Param("userId") Long userId,
+            @Param("email") String email
+    );
 }

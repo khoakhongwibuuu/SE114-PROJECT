@@ -299,25 +299,31 @@ export default function HomeDashboardScreen() {
                 Cả nhà
               </Text>
             </TouchableOpacity>
-            {members.map(member => (
-              <TouchableOpacity
-                key={member.id}
-                style={[
-                  styles.memberPill,
-                  selectedProfileId === member.id && styles.memberPillActive,
-                ]}
-                onPress={() => setSelectedProfileId(member.id)}
-              >
-                <Text
+            {members.map(member => {
+              const isSelf = String(member.id) === String(user?.profileId);
+              const trimmedName = (member.fullName || '').trim();
+              const displayName = isSelf ? 'Tôi' : (trimmedName.split(/\s+/).pop() || 'Thành viên');
+              
+              return (
+                <TouchableOpacity
+                  key={member.id}
                   style={[
-                    styles.memberPillText,
-                    selectedProfileId === member.id && styles.memberPillTextActive,
+                    styles.memberPill,
+                    selectedProfileId === member.id && styles.memberPillActive,
                   ]}
+                  onPress={() => setSelectedProfileId(member.id)}
                 >
-                  {member.fullName.split(' ').pop()}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.memberPillText,
+                      selectedProfileId === member.id && styles.memberPillTextActive,
+                    ]}
+                  >
+                    {displayName}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 

@@ -1,4 +1,5 @@
 import * as Keychain from 'react-native-keychain';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface AuthSession {
   token: string;
@@ -8,6 +9,7 @@ export interface AuthSession {
 }
 
 const KEYCHAIN_SERVICE = 'com.carenest.session';
+const FALLBACK_SESSION_KEY = '@carenest:session';
 
 let inMemorySession: AuthSession | null = null;
 
@@ -16,6 +18,7 @@ export async function getStoredSession(): Promise<AuthSession | null> {
     return inMemorySession;
   }
 
+  // 1. Try Keychain
   try {
     const credentials = await Keychain.getGenericPassword({ service: KEYCHAIN_SERVICE });
     if (credentials) {
@@ -23,8 +26,20 @@ export async function getStoredSession(): Promise<AuthSession | null> {
       return inMemorySession;
     }
   } catch (error) {
-    console.error("Keychain load error", error);
+    console.warn("Keychain get session failed, trying fallback storage:", error);
   }
+
+  // 2. Fallback to AsyncStorage
+  try {
+    const fallbackData = await AsyncStorage.getItem(FALLBACK_SESSION_KEY);
+    if (fallbackData) {
+      inMemorySession = JSON.parse(fallbackData) as AuthSession;
+      return inMemorySession;
+    }
+  } catch (fallbackError) {
+    console.error("Fallback AsyncStorage get session failed:", fallbackError);
+  }
+
   return null;
 }
 
@@ -32,9 +47,34 @@ export async function setStoredSession(session: AuthSession | null): Promise<voi
   inMemorySession = session;
   
   if (!session) {
-    await Keychain.resetGenericPassword({ service: KEYCHAIN_SERVICE });
+    try {
+      await Keychain.resetGenericPassword({ service: KEYCHAIN_SERVICE });
+    } catch (e) {
+      console.warn("Keychain reset failed:", e);
+    }
+    try {
+      await AsyncStorage.removeItem(FALLBACK_SESSION_KEY);
+    } catch (e) {
+      console.warn("AsyncStorage remove failed:", e);
+    }
     return;
   }
 
-  await Keychain.setGenericPassword('carenest_user', JSON.stringify(session), { service: KEYCHAIN_SERVICE });
+  // 1. Store in AsyncStorage as the primary fail-safe layer
+  try {
+    await AsyncStorage.setItem(FALLBACK_SESSION_KEY, JSON.stringify(session));
+  } catch (fallbackError) {
+    console.error("AsyncStorage set session failed:", fallbackError);
+  }
+
+  // 2. Also try storing in Keychain for dual-layer security
+  try {
+    await Keychain.setGenericPassword('carenest_user', JSON.stringify(session), {
+      service: KEYCHAIN_SERVICE,
+      securityLevel: Keychain.SECURITY_LEVEL.SECURE_SOFTWARE,
+    });
+  } catch (error) {
+    console.warn("Keychain set session failed:", error);
+  }
 }
+

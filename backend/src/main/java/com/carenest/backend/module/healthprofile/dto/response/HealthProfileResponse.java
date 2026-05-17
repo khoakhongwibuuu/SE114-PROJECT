@@ -28,6 +28,8 @@ public class HealthProfileResponse {
     private String notes;
     private String avatarUrl;
     private Boolean isChild;
+    private java.math.BigDecimal height;
+    private java.math.BigDecimal weight;
     private Instant createdAt;
     private Instant updatedAt;
 }

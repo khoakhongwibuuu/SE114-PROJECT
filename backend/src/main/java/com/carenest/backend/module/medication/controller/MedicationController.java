@@ -56,7 +56,7 @@ public class MedicationController {
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
     })
-    public com.carenest.backend.common.dto.ApiResponse<List<MedicationLogResponse>> getMedicationsForToday(@RequestParam Long profileId) {
+    public com.carenest.backend.common.dto.ApiResponse<List<MedicationLogResponse>> getMedicationsForToday(@RequestParam("profileId") Long profileId) {
         List<MedicationLogResponse> response = medicationService.getMedicationsForToday(profileId);
         return ApiResponse.success(response);
     }
