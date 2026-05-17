@@ -9,6 +9,5 @@ import org.springframework.data.repository.query.Param;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
-    @Query("SELECT m FROM ChatMessage m WHERE m.family.id = :familyId ORDER BY m.createdAt DESC")
-    Page<ChatMessage> findByFamilyIdOrderByCreatedAtDesc(@Param("familyId") Long familyId, Pageable pageable);
+    Page<ChatMessage> findByFamilyId(Long familyId, Pageable pageable);
 }
