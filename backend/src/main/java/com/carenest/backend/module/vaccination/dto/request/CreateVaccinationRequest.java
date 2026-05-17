@@ -20,16 +20,17 @@ public class CreateVaccinationRequest {
     @Schema(description = "Tên vắc xin", example = "Vắc-xin 6 trong 1 Hexaxim")
     private String vaccineName;
 
-    @NotNull(message = "Tổng số mũi không được để trống")
-    @Schema(description = "Tổng số mũi cần tiêm", example = "3")
-    private Integer totalDoses;
+    @NotNull(message = "Số thứ tự mũi tiêm không được để trống")
+    @Schema(description = "Mũi thứ mấy (ví dụ: 1, 2, 99 cho mũi nhắc lại)", example = "1")
+    private Integer doseNumber;
 
-    @Schema(description = "Khoảng cách giữa các mũi (số ngày)", example = "30")
-    private Integer doseIntervalDays;
+    @NotBlank(message = "Trạng thái không được để trống")
+    @Schema(description = "Trạng thái mũi tiêm (COMPLETED hoặc PENDING)", example = "COMPLETED")
+    private String status;
 
-    @NotNull(message = "Ngày bắt đầu (mũi 1) không được để trống")
-    @Schema(description = "Ngày tiêm mũi đầu tiên", example = "2023-11-01")
-    private LocalDate startDate;
+    @NotNull(message = "Ngày tiêm/dự kiến không được để trống")
+    @Schema(description = "Ngày tiêm thực tế hoặc ngày hẹn dự kiến", example = "2026-05-18")
+    private LocalDate date;
 
     @Schema(description = "Địa điểm tiêm", example = "VNVC Hoàng Văn Thụ")
     private String location;
