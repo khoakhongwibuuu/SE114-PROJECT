@@ -2,6 +2,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Auth: undefined;
   Main: undefined;
+  ChatRoomV2: { familyId: number; familyName: string };
 };
 
 export type AuthStackParamList = {

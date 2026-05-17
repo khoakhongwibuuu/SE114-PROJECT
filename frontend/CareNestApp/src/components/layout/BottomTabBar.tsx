@@ -11,7 +11,7 @@ const TAB_CONFIG = [
   { name: 'HomeTab', iconName: 'home', label: 'Trang chủ' },
   { name: 'FamilyTab', iconName: 'group', label: 'Gia đình' },
   { name: 'MedicineTab', iconName: 'medication', label: 'Thuốc' },
-  { name: 'AiChatTab', iconName: 'smart_toy', label: 'Trợ lý ảo', useBrandIcon: true },
+  { name: 'AiChatTab', iconName: 'chat-processing', label: 'Tin nhắn' },
   { name: 'ProfileTab', iconName: 'person', label: 'Tôi' },
 ];
 

@@ -31,13 +31,14 @@ public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatService chatService;
+    private final com.carenest.backend.module.auth.repository.UserRepository userRepository;
 
     // ─── REST: Lấy lịch sử tin nhắn ──────────────────────────────────────────
 
     @GetMapping("/{familyId}/messages")
     @Operation(summary = "Lấy lịch sử chat của gia đình (có phân trang)")
     public ApiResponse<Page<ChatMessageResponse>> getMessages(
-            @PathVariable Long familyId,
+            @PathVariable("familyId") Long familyId,
             @AuthenticationPrincipal User user,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
@@ -49,12 +50,34 @@ public class ChatController {
 
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(@Payload @Valid SendMessageRequest request,
-                            @AuthenticationPrincipal User sender) {
+                            java.security.Principal principal) {
+
+        if (principal == null) {
+            log.warn("[Chat] Refused message from unauthenticated user (principal is null).");
+            return;
+        }
+
+        log.info("[Chat Diagnostic] principalClass={}, principalStr={}", 
+            principal.getClass().getName(), principal.toString());
+
+        if (principal instanceof org.springframework.security.core.Authentication) {
+            org.springframework.security.core.Authentication auth = (org.springframework.security.core.Authentication) principal;
+            log.info("[Chat Diagnostic] authPrincipalClass={}, authPrincipalStr={}", 
+                auth.getPrincipal() != null ? auth.getPrincipal().getClass().getName() : "null",
+                auth.getPrincipal() != null ? auth.getPrincipal().toString() : "null");
+        }
+
+        String email = principal.getName();
+        log.info("[Chat] Received STOMP message from: {}, content: {}", email, request.getContent());
+
+        // Get full user entity from database to guarantee we have the non-null primary key ID
+        User fullSender = userRepository.findByEmail(email)
+                .orElseThrow(() -> new com.carenest.backend.common.exception.ResourceNotFoundException("User", "email", email));
 
         // 1. Lưu vào DB
         ChatMessageResponse saved = chatService.saveMessage(
                 request.getFamilyId(),
-                sender.getId(),
+                fullSender.getId(),
                 request.getContent()
         );
 
@@ -64,6 +87,6 @@ public class ChatController {
                 saved
         );
 
-        log.info("[Chat] Broadcast: family={}, sender={}", request.getFamilyId(), sender.getEmail());
+        log.info("[Chat] Broadcast successful: family={}, sender={}", request.getFamilyId(), fullSender.getEmail());
     }
 }
