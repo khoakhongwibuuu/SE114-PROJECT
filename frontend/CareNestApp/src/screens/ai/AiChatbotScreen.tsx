@@ -252,7 +252,7 @@ export default function AiChatbotScreen() {
         profileId: activeProfileId,
       });
 
-      setConversationId(response.conversation_id);
+      setConversationId(response.conversation_id ?? conversationId);
       setMessages(prev => [
         ...prev,
         {

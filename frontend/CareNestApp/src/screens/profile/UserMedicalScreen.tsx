@@ -178,7 +178,7 @@ export default function UserMedicalScreen() {
     }
 
     return user?.profileId ? Number(user.profileId) : null;
-  }, [memberId, profile?.profileId, user?.profileId]);
+  }, [memberId, profile?.id, user?.profileId]);
 
   const myMember = useMemo(
     () => members.find(member => String(member.id) === user?.profileId),
@@ -248,7 +248,10 @@ export default function UserMedicalScreen() {
 
     try {
       setIsUpdatingRole(true);
-      await updateFamilyMemberRole(viewedProfileId, nextRole);
+      if (!family?.id) {
+        throw new Error('Khong tim thay thong tin gia dinh.');
+      }
+      await updateFamilyMemberRole(family.id, viewedProfileId, nextRole);
       await Promise.all([refreshFamily(), loadProfile()]);
       Alert.alert('Cập nhật thành công', 'Vai trò thành viên đã được cập nhật.');
     } catch (error) {

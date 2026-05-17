@@ -7,7 +7,7 @@ import { BOTTOM_NAV_HEIGHT } from '../../utils/constants';
 import { CARENEST_LOGO_HOUSE } from '../../assets/branding';
 import Icon from '../common/Icon';
 
-const TAB_CONFIG = [
+const TAB_CONFIG: Array<{ name: string; iconName: string; label: string; useBrandIcon?: boolean }> = [
   { name: 'HomeTab', iconName: 'home', label: 'Trang chủ' },
   { name: 'FamilyTab', iconName: 'group', label: 'Gia đình' },
   { name: 'MedicineTab', iconName: 'medication', label: 'Thuốc' },

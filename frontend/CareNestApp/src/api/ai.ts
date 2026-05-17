@@ -4,6 +4,8 @@ export interface ChatReply {
   reply: string;
   id: number;
   messageId?: number;
+  message_id?: number;
+  conversation_id?: number;
   sqlGenerated?: string | null;
   data?: unknown;
 }

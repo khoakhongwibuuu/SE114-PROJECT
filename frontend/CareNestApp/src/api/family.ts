@@ -12,6 +12,7 @@ export type FamilyRole =
 
 export interface FamilyMemberSummary {
   id: number;
+  profileId?: number | null;
   fullName: string;
   role: FamilyRole;
 
@@ -24,6 +25,7 @@ export interface FamilyDetailResponse {
   id: number;
   name: string;
   ownerId?: number;
+  ownerUserId?: number;
   memberCount: number;
   members: FamilyMemberSummary[];
 }
@@ -51,6 +53,7 @@ export interface FamilyInvitationItem {
 
 export interface ProfileDetails {
   id: number;
+  profileId?: number | null;
   fullName: string;
   birthday?: string | null;
   age?: number | null;
@@ -129,6 +132,7 @@ function mapRawFamilyToDetail(raw: RawFamilyDetailResponse): FamilyDetailRespons
     id: raw.id,
     name: raw.name,
     ownerId: raw.ownerId,
+    ownerUserId: raw.ownerId,
     memberCount: raw.members?.length || 0,
     members: (raw.members || []).map(m => ({
       id: m.id,
@@ -144,6 +148,7 @@ function mapRawFamilyToDetail(raw: RawFamilyDetailResponse): FamilyDetailRespons
 function mapRawHealthProfile(raw: RawHealthProfileResponse): ProfileDetails {
   return {
     id: raw.id,
+    profileId: raw.id,
     fullName: raw.fullName,
     birthday: raw.dateOfBirth,
     age: calculateAge(raw.dateOfBirth),
@@ -198,30 +203,27 @@ export async function updateProfile(profileId: number, payload: Record<string, u
   invalidateApiGetCache([`/health-profiles/${profileId}`, '/families', '/dashboard']);
 }
 
-export async function inviteMember(familyId: number, receiverEmail: string, role: FamilyRole): Promise<void> {
+export async function inviteMember(familyId: number, receiverEmail: string, role: FamilyRole = 'MEMBER'): Promise<void> {
   await apiPost(`/families/${familyId}/invitations`, { email: receiverEmail, role });
-  invalidateApiGetCache(['/families/invitations/']);
+  invalidateApiGetCache(['/invitations/sent']);
 }
 
 export async function getReceivedInvitations(): Promise<FamilyInvitationItem[]> {
-  // MOCK: Backend does not have this endpoint yet.
-  console.warn('getReceivedInvitations is a mock.');
-  return [];
+  return apiGetCached<FamilyInvitationItem[]>('/invitations/received', undefined, { ttlMs: 15000 });
 }
 
 export async function getSentInvitations(): Promise<FamilyInvitationItem[]> {
-  // MOCK: Backend does not have this endpoint yet.
-  console.warn('getSentInvitations is a mock.');
-  return [];
+  return apiGetCached<FamilyInvitationItem[]>('/invitations/sent', undefined, { ttlMs: 15000 });
 }
 
 export async function acceptInvitation(inviteId: number): Promise<void> {
   await apiPut(`/invitations/${inviteId}`, { status: 'ACCEPTED' });
-  invalidateApiGetCache(['/families', '/dashboard']);
+  invalidateApiGetCache(['/families', '/invitations/received', '/dashboard']);
 }
 
 export async function rejectInvitation(inviteId: number): Promise<void> {
   await apiPut(`/invitations/${inviteId}`, { status: 'REJECTED' });
+  invalidateApiGetCache(['/invitations/received']);
 }
 
 export async function getFamilyJoinCode(): Promise<FamilyJoinCodeResponse> {

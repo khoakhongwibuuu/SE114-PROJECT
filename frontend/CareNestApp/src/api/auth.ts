@@ -1,4 +1,4 @@
-import { apiGet, apiGetCached, apiPatch, apiPost, apiPut, apiPutCached, apiClient, invalidateApiGetCache } from './client';
+import { apiGet, apiGetCached, apiPatch, apiPost, apiPut, apiClient, invalidateApiGetCache } from './client';
 import type { AuthSession } from './storage';
 
 function normalizeUploadUri(uri: string): string {

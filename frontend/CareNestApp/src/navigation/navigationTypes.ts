@@ -69,5 +69,6 @@ export type ProfileStackParamList = {
   AppointmentList: { memberId?: string } | undefined;
   AddAppointment: { editId?: string; memberId?: string } | undefined;
   VaccinationTracker: { memberId: string };
+  AddVaccinationSchedule: { profileId: number };
   GrowthTracker: { memberId: string };
 };

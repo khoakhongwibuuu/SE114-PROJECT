@@ -305,7 +305,10 @@ export default function FamilyManagementScreen() {
 
     try {
       setIsBusy(true);
-      await inviteMember(inviteValue.trim(), mapRelationToRole(selectedRelation));
+      if (!family?.id) {
+        throw new Error('Khong tim thay thong tin gia dinh.');
+      }
+      await inviteMember(family.id, inviteValue.trim(), mapRelationToRole(selectedRelation));
       setInviteValue('');
       setSentInvitations(await getSentInvitations());
       Alert.alert(

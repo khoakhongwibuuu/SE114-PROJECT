@@ -20,4 +20,10 @@ public class Family extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
+
+    @Column(name = "join_code", unique = true, length = 12)
+    private String joinCode;
+
+    @Column(name = "join_code_expires_at")
+    private java.time.Instant joinCodeExpiresAt;
 }

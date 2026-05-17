@@ -1,4 +1,10 @@
+import { Platform } from 'react-native';
 import Config from 'react-native-config';
 
-// Sử dụng biến môi trường từ file .env (ưu tiên) hoặc fallback về emulator local
-export const API_BASE_URL = Config.API_URL || 'http://10.0.2.2:8080/api/v1';
+const localHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+
+const defaultApiUrl = `http://${localHost}:8080/api/v1`;
+const defaultWsUrl = `ws://${localHost}:8080/api/v1/ws`;
+
+export const API_BASE_URL = Config.API_URL || Config.API_BASE_URL || defaultApiUrl;
+export const WS_BASE_URL = Config.WS_URL || Config.WS_BASE_URL || defaultWsUrl;
