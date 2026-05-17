@@ -1,16 +1,32 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 import { Client } from '@stomp/stompjs';
 import type { IMessage as StompFrame } from '@stomp/stompjs';
-import type { IMessage as GiftedMessage } from 'react-native-gifted-chat';
 import { getStoredSession } from '../api/storage';
 import Config from 'react-native-config';
 
-// WebSocket URL: Lấy từ .env hoặc fallback về emulator
-const WS_URL = Config.WS_URL || 'ws://10.0.2.2:8080/api/v1/ws';
+// WebSocket URL: Lấy từ .env hoặc fallback thông minh theo hệ điều hành
+const defaultWsUrl = Platform.OS === 'android' 
+  ? 'ws://10.0.2.2:8080/api/v1/ws'
+  : 'ws://localhost:8080/api/v1/ws';
+
+const WS_URL = Config.WS_URL || defaultWsUrl;
+
+// Self-contained payload type — không phụ thuộc thư viện UI nào
+export interface ChatMessagePayload {
+  _id: string | number;
+  text: string;
+  createdAt: Date;
+  user: {
+    _id: number;
+    name: string;
+    avatar?: string;
+  };
+}
 
 interface UseWebSocketOptions {
   familyId: number;
-  onMessageReceived: (msg: GiftedMessage) => void;
+  onMessageReceived: (msg: ChatMessagePayload) => void;
 }
 
 interface UseWebSocketReturn {
@@ -35,35 +51,44 @@ export function useWebSocket({
     const client = new Client({
       brokerURL: WS_URL,
 
-      // ĐÂY LÀ ĐIỂM THEN CHỐT: JWT vào STOMP CONNECT header
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
 
-      reconnectDelay: 5000,       // Tự kết nối lại sau 5 giây nếu đứt
-      heartbeatIncoming: 10000,   // Server ping mỗi 10s
-      heartbeatOutgoing: 10000,   // Client ping mỗi 10s
+      // ĐÂY LÀ ĐIỂM SỐNG CÒN CHO REACT NATIVE ANDROID
+      // Tránh lỗi gửi ký tự NULL (\0) qua TEXT frame làm crash server
+      forceBinaryWSFrames: true,
+      appendMissingNULLonIncoming: true,
+
+      reconnectDelay: 5000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
 
       onConnect: () => {
         console.log('[WS] ✅ Kết nối thành công');
 
-        // Subscribe vào kênh gia đình ngay sau khi connect
         client.subscribe(`/topic/family/${familyId}`, (frame: StompFrame) => {
           try {
             const raw = JSON.parse(frame.body);
+            console.log('[WS] 📨 Raw message received:', JSON.stringify(raw));
 
-            // Map sang IMessage của react-native-gifted-chat
-            const msg: GiftedMessage = {
-              _id: raw._id,
-              text: raw.text,
-              createdAt: new Date(raw.createdAt),
+            // Backend dùng Java Instant -> có thể là ISO string hoặc epoch ms
+            const createdAt = raw.createdAt
+              ? new Date(raw.createdAt)
+              : new Date();
+
+            const msg: ChatMessagePayload = {
+              _id: raw._id ?? raw.id ?? Date.now(),
+              text: raw.text ?? raw.content ?? '',
+              createdAt,
               user: {
-                _id: raw.user._id,
-                name: raw.user.name,
-                avatar: raw.user.avatar ?? undefined,
+                _id: raw.user?._id ?? raw.user?.id ?? 0,
+                name: raw.user?.name ?? 'Unknown',
+                avatar: raw.user?.avatar ?? undefined,
               },
             };
 
+            console.log('[WS] ✅ Parsed message:', JSON.stringify(msg));
             onMessageReceived(msg);
           } catch (e) {
             console.error('[WS] Lỗi parse tin nhắn:', e);
@@ -85,6 +110,7 @@ export function useWebSocket({
       if (clientRef.current?.connected) {
         clientRef.current.publish({
           destination: '/app/chat.sendMessage',
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ familyId, content }),
         });
       } else {
@@ -102,7 +128,6 @@ export function useWebSocket({
   useEffect(() => {
     void connect();
 
-    // QUAN TRỌNG: Cleanup — ngắt kết nối khi rời màn hình chat
     return () => {
       clientRef.current?.deactivate();
       clientRef.current = null;

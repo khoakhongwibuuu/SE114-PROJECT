@@ -7,6 +7,7 @@ import type { RootStackParamList } from './navigationTypes';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import AuthStack from './AuthStack';
 import MainTabNavigator from './MainTabNavigator';
+import ChatRoomV2Screen from '../screens/family/ChatRoomV2Screen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -20,7 +21,14 @@ export default function RootNavigator() {
       ) : !isLoggedIn ? (
         <Stack.Screen name="Auth" component={AuthStack} />
       ) : (
-        <Stack.Screen name="Main" component={MainTabNavigator} />
+        <>
+          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <Stack.Screen 
+            name="ChatRoomV2" 
+            component={ChatRoomV2Screen} 
+            options={{ headerShown: false }}
+          />
+        </>
       )}
     </Stack.Navigator>
   );

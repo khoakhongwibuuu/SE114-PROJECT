@@ -1005,17 +1005,7 @@ export default function FamilyManagementScreen() {
           </TouchableOpacity>
           <Text style={styles.topBarTitle}>{hasFamily ? familyName : 'Gia đình'}</Text>
         </View>
-        {hasFamily && family ? (
-          <TouchableOpacity 
-            style={styles.chatBtn}
-            onPress={() => navigation.navigate('FamilyChat', { 
-              familyId: family.id, 
-              familyName: family.name 
-            })}
-          >
-            <MaterialCommunityIcons name="chat-processing-outline" size={24} color="#0369a1" />
-          </TouchableOpacity>
-        ) : null}
+        <View style={styles.headerSpacer} />
       </View>
 
       {!hasFamily
