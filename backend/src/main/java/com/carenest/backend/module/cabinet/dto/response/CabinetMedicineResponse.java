@@ -21,5 +21,6 @@ public class CabinetMedicineResponse {
     private LocalDate addedDate;
     private String notes;
     private boolean isExpired;
+    private boolean isExpiring;
     private boolean isLowStock;
 }
