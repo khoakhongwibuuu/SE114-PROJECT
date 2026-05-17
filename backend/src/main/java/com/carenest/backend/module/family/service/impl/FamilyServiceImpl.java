@@ -16,6 +16,7 @@ import com.carenest.backend.module.family.dto.response.FamilyInvitationResponse;
 import com.carenest.backend.module.family.dto.response.FamilyJoinCodeResponse;
 import com.carenest.backend.module.family.dto.response.FamilyMemberResponse;
 import com.carenest.backend.module.family.dto.response.FamilyResponse;
+import com.carenest.backend.module.family.dto.response.FamilySummaryResponse;
 import com.carenest.backend.module.family.entity.Family;
 import com.carenest.backend.module.family.entity.FamilyInvitation;
 import com.carenest.backend.module.family.entity.FamilyMember;
@@ -70,12 +71,29 @@ public class FamilyServiceImpl implements FamilyService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<FamilySummaryResponse> getMyFamilies() {
+        User currentUser = getCurrentUser();
+        List<FamilyMember> memberships = familyMemberRepository.findAllByUserIdWithFamily(currentUser.getId());
+
+        return memberships.stream().map(fm -> {
+            Family family = fm.getFamily();
+            int memberCount = familyMemberRepository.findAllByFamilyId(family.getId()).size();
+            return FamilySummaryResponse.builder()
+                    .id(family.getId())
+                    .name(family.getName())
+                    .memberCount(memberCount)
+                    .myRole(fm.getRole())
+                    .ownerName(family.getOwner().getFullName())
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public FamilyResponse createFamily(CreateFamilyRequest request) {
         User currentUser = getCurrentUser();
-        if (familyMemberRepository.existsByUserId(currentUser.getId())) {
-            throw new DuplicateResourceException("User already belongs to a family");
-        }
+        // Multi-family support: users may create multiple families without restriction
 
         Family family = Family.builder()
                 .name(request.getName())
@@ -231,9 +249,7 @@ public class FamilyServiceImpl implements FamilyService {
     @Transactional
     public FamilyDetailResponse joinByCode(JoinFamilyByCodeRequest request) {
         User currentUser = getCurrentUser();
-        if (familyMemberRepository.existsByUserId(currentUser.getId())) {
-            throw new DuplicateResourceException("User already belongs to a family");
-        }
+        // Multi-family support: users may join additional families without restriction
         String joinCode = normalizeJoinCode(request.getJoinCode());
 
         Family family = familyRepository.findByJoinCode(joinCode)
