@@ -68,7 +68,7 @@ public class ChatServiceImpl implements ChatService {
         }
 
         return chatMessageRepository
-                .findByFamilyIdOrderByCreatedAtDesc(familyId, pageable)
+                .findByFamilyId(familyId, pageable)
                 .map(this::toResponse);
     }
 
