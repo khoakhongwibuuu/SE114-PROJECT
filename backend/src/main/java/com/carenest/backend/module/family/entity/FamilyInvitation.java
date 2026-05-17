@@ -2,6 +2,7 @@ package com.carenest.backend.module.family.entity;
 
 import com.carenest.backend.common.entity.BaseEntity;
 import com.carenest.backend.module.auth.entity.User;
+import com.carenest.backend.module.family.enums.FamilyRole;
 import com.carenest.backend.module.family.enums.InvitationStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -31,6 +32,11 @@ public class FamilyInvitation extends BaseEntity {
 
     @Column(name = "recipient_email", length = 255)
     private String recipientEmail;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 30)
+    @Builder.Default
+    private FamilyRole role = FamilyRole.MEMBER;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

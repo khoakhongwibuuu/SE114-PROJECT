@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
 import { Client } from '@stomp/stompjs';
 import type { IMessage as StompFrame } from '@stomp/stompjs';
 import { getStoredSession } from '../api/storage';
-import Config from 'react-native-config';
+import { WS_BASE_URL } from '../api/config';
 
 // WebSocket URL: Lấy từ .env hoặc fallback thông minh theo hệ điều hành
-const defaultWsUrl = Platform.OS === 'android' 
-  ? 'ws://10.0.2.2:8080/api/v1/ws'
-  : 'ws://localhost:8080/api/v1/ws';
-
-const WS_URL = Config.WS_URL || defaultWsUrl;
+const WS_URL = WS_BASE_URL;
 
 // Self-contained payload type — không phụ thuộc thư viện UI nào
 export interface ChatMessagePayload {

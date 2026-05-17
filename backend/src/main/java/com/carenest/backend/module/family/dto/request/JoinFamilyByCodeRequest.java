@@ -1,7 +1,6 @@
 package com.carenest.backend.module.family.dto.request;
 
 import com.carenest.backend.module.family.enums.FamilyRole;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,11 +11,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class InviteMemberRequest {
+public class JoinFamilyByCodeRequest {
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email is invalid")
-    private String email;
+    @NotBlank(message = "Join code is required")
+    private String joinCode;
 
     private FamilyRole role;
 }

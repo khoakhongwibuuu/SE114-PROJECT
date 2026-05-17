@@ -43,6 +43,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     } catch {
       setFamily(null);
       setSelectedProfileId(user?.profileId ? Number(user.profileId) : null);
+      setHasInitializedSelection(false);
     }
   }, [isLoggedIn, user?.profileId]);
 

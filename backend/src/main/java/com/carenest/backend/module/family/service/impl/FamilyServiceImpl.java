@@ -8,9 +8,12 @@ import com.carenest.backend.module.auth.entity.User;
 import com.carenest.backend.module.auth.repository.UserRepository;
 import com.carenest.backend.module.family.dto.request.CreateFamilyRequest;
 import com.carenest.backend.module.family.dto.request.InviteMemberRequest;
+import com.carenest.backend.module.family.dto.request.JoinFamilyByCodeRequest;
 import com.carenest.backend.module.family.dto.request.UpdateInvitationRequest;
 import com.carenest.backend.module.family.dto.request.UpdateRoleRequest;
 import com.carenest.backend.module.family.dto.response.FamilyDetailResponse;
+import com.carenest.backend.module.family.dto.response.FamilyInvitationResponse;
+import com.carenest.backend.module.family.dto.response.FamilyJoinCodeResponse;
 import com.carenest.backend.module.family.dto.response.FamilyMemberResponse;
 import com.carenest.backend.module.family.dto.response.FamilyResponse;
 import com.carenest.backend.module.family.entity.Family;
@@ -28,13 +31,22 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class FamilyServiceImpl implements FamilyService {
+
+    private static final String JOIN_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int JOIN_CODE_LENGTH = 6;
+    private static final int JOIN_CODE_TTL_DAYS = 7;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final FamilyRepository familyRepository;
     private final FamilyMemberRepository familyMemberRepository;
@@ -45,16 +57,15 @@ public class FamilyServiceImpl implements FamilyService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Vui lòng đăng nhập"));
+                .orElseThrow(() -> new UnauthorizedException("Please sign in"));
     }
 
     @Override
     @Transactional(readOnly = true)
     public FamilyDetailResponse getMyFamily() {
         User currentUser = getCurrentUser();
-        FamilyMember member = familyMemberRepository.findByUserId(currentUser.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Family", "userId", String.valueOf(currentUser.getId())));
-        
+        FamilyMember member = getCurrentFamilyMember(currentUser);
+
         return getFamilyById(member.getFamily().getId());
     }
 
@@ -62,21 +73,24 @@ public class FamilyServiceImpl implements FamilyService {
     @Transactional
     public FamilyResponse createFamily(CreateFamilyRequest request) {
         User currentUser = getCurrentUser();
+        if (familyMemberRepository.existsByUserId(currentUser.getId())) {
+            throw new DuplicateResourceException("User already belongs to a family");
+        }
 
         Family family = Family.builder()
                 .name(request.getName())
                 .owner(currentUser)
                 .build();
-        
+
+        ensureJoinCode(family);
         family = familyRepository.save(family);
 
-        // Add the creator as an OWNER in family_members
         FamilyMember member = FamilyMember.builder()
                 .family(family)
                 .user(currentUser)
                 .role(FamilyRole.OWNER)
                 .build();
-        
+
         familyMemberRepository.save(Objects.requireNonNull(member));
 
         return familyMapper.toFamilyResponse(family);
@@ -88,10 +102,8 @@ public class FamilyServiceImpl implements FamilyService {
         Family family = familyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Family", id));
 
-        // Get members
         List<FamilyMember> members = familyMemberRepository.findAllByFamilyId(id);
-        
-        // Map to Response
+
         FamilyDetailResponse response = familyMapper.toFamilyDetailResponse(family);
         List<FamilyMemberResponse> memberResponses = members.stream()
                 .map(familyMapper::toFamilyMemberResponse)
@@ -105,107 +117,255 @@ public class FamilyServiceImpl implements FamilyService {
     @Transactional
     public void inviteMember(Long familyId, InviteMemberRequest request) {
         User currentUser = getCurrentUser();
-        
         Family family = familyRepository.findById(familyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Family", familyId));
 
-        // Check if current user has permission (OWNER or ADMIN)
-        FamilyMember currentMember = familyMemberRepository.findByFamilyIdAndUserId(familyId, currentUser.getId())
-                .orElseThrow(() -> new UnauthorizedException("Bạn không thuộc gia đình này"));
-                
-        if (currentMember.getRole() == FamilyRole.MEMBER) {
-            throw new UnauthorizedException("Chỉ OWNER và ADMIN mới có quyền mời thành viên");
+        assertCanManageFamily(familyId, currentUser.getId());
+
+        String email = request.getEmail().trim().toLowerCase(Locale.ROOT);
+        User recipient = userRepository.findByEmail(email).orElse(null);
+        if (recipient != null && familyMemberRepository.existsByFamilyIdAndUserId(familyId, recipient.getId())) {
+            throw new DuplicateResourceException("Member already exists in this family");
+        }
+        if (familyInvitationRepository.existsByFamily_IdAndRecipientEmailIgnoreCaseAndStatus(
+                familyId,
+                email,
+                InvitationStatus.PENDING
+        )) {
+            throw new DuplicateResourceException("A pending invitation already exists for this email");
         }
 
-        // Check if recipient is already in the family
-        User recipient = userRepository.findByEmail(request.getEmail()).orElse(null);
-        if (recipient != null) {
-            boolean alreadyInFamily = familyMemberRepository.findByFamilyIdAndUserId(familyId, recipient.getId()).isPresent();
-            if (alreadyInFamily) {
-                throw new DuplicateResourceException("Thành viên đã có trong gia đình");
-            }
-        }
-
-        // Create Invitation
         FamilyInvitation invitation = FamilyInvitation.builder()
                 .family(family)
                 .sender(currentUser)
                 .recipient(recipient)
-                .recipientEmail(request.getEmail())
+                .recipientEmail(email)
+                .role(normalizeJoinRole(request.getRole()))
                 .status(InvitationStatus.PENDING)
                 .build();
-                
+
         familyInvitationRepository.save(invitation);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FamilyInvitationResponse> getReceivedInvitations() {
+        User currentUser = getCurrentUser();
+        return familyInvitationRepository.findReceivedInvitations(currentUser.getId(), currentUser.getEmail()).stream()
+                .map(this::toInvitationResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FamilyInvitationResponse> getSentInvitations() {
+        User currentUser = getCurrentUser();
+        return familyInvitationRepository.findAllBySender_IdOrderByCreatedAtDesc(currentUser.getId()).stream()
+                .map(this::toInvitationResponse)
+                .toList();
     }
 
     @Override
     @Transactional
     public void handleInvitation(Long invitationId, UpdateInvitationRequest request) {
         User currentUser = getCurrentUser();
-        
         FamilyInvitation invitation = familyInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Invitation", invitationId));
 
-        // Validate recipient
-        if (invitation.getRecipient() != null && !invitation.getRecipient().getId().equals(currentUser.getId())) {
-             throw new UnauthorizedException("Bạn không có quyền xử lý lời mời này");
-        } else if (invitation.getRecipient() == null && !invitation.getRecipientEmail().equals(currentUser.getEmail())) {
-             throw new UnauthorizedException("Email lời mời không khớp với tài khoản của bạn");
+        boolean belongsToCurrentUser = invitation.getRecipient() != null
+                && invitation.getRecipient().getId().equals(currentUser.getId());
+        boolean invitedByEmail = invitation.getRecipient() == null
+                && invitation.getRecipientEmail().equalsIgnoreCase(currentUser.getEmail());
+
+        if (!belongsToCurrentUser && !invitedByEmail) {
+            throw new UnauthorizedException("You cannot handle this invitation");
         }
 
         if (invitation.getStatus() != InvitationStatus.PENDING) {
-            throw new BadRequestException("Lời mời đã được xử lý");
+            throw new BadRequestException("Invitation has already been handled");
         }
 
         invitation.setStatus(request.getStatus());
-        
+
         if (request.getStatus() == InvitationStatus.ACCEPTED) {
-            // Check if already joined another way
-            boolean alreadyJoined = familyMemberRepository.findByFamilyIdAndUserId(invitation.getFamily().getId(), currentUser.getId()).isPresent();
-            if (!alreadyJoined) {
-                FamilyMember newMember = FamilyMember.builder()
-                        .family(invitation.getFamily())
-                        .user(currentUser)
-                        .role(FamilyRole.MEMBER)
-                        .build();
-                familyMemberRepository.save(newMember);
+            if (familyMemberRepository.existsByUserId(currentUser.getId())) {
+                throw new DuplicateResourceException("User already belongs to a family");
             }
-            
-            // If the recipient was previously null but invited by email, update it
+            addMemberIfMissing(invitation.getFamily(), currentUser, invitation.getRole());
             if (invitation.getRecipient() == null) {
                 invitation.setRecipient(currentUser);
             }
         }
-        
+
         familyInvitationRepository.save(invitation);
+    }
+
+    @Override
+    @Transactional
+    public FamilyJoinCodeResponse getJoinCode() {
+        User currentUser = getCurrentUser();
+        FamilyMember member = getCurrentFamilyMember(currentUser);
+        assertCanManageFamily(member.getFamily().getId(), currentUser.getId());
+
+        Family family = member.getFamily();
+        ensureJoinCode(family);
+        family = familyRepository.save(family);
+        return toJoinCodeResponse(family);
+    }
+
+    @Override
+    @Transactional
+    public FamilyJoinCodeResponse rotateJoinCode() {
+        User currentUser = getCurrentUser();
+        FamilyMember member = getCurrentFamilyMember(currentUser);
+        assertCanManageFamily(member.getFamily().getId(), currentUser.getId());
+
+        Family family = member.getFamily();
+        family.setJoinCode(generateUniqueJoinCode());
+        family.setJoinCodeExpiresAt(Instant.now().plus(JOIN_CODE_TTL_DAYS, ChronoUnit.DAYS));
+        family = familyRepository.save(family);
+        return toJoinCodeResponse(family);
+    }
+
+    @Override
+    @Transactional
+    public FamilyDetailResponse joinByCode(JoinFamilyByCodeRequest request) {
+        User currentUser = getCurrentUser();
+        if (familyMemberRepository.existsByUserId(currentUser.getId())) {
+            throw new DuplicateResourceException("User already belongs to a family");
+        }
+        String joinCode = normalizeJoinCode(request.getJoinCode());
+
+        Family family = familyRepository.findByJoinCode(joinCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Family", "joinCode", joinCode));
+
+        if (family.getJoinCodeExpiresAt() != null && family.getJoinCodeExpiresAt().isBefore(Instant.now())) {
+            throw new BadRequestException("Join code has expired");
+        }
+
+        addMemberIfMissing(family, currentUser, normalizeJoinRole(request.getRole()));
+        return getFamilyById(family.getId());
     }
 
     @Override
     @Transactional
     public void updateMemberRole(Long familyId, Long memberId, UpdateRoleRequest request) {
         User currentUser = getCurrentUser();
-        
+
         FamilyMember requester = familyMemberRepository.findByFamilyIdAndUserId(familyId, currentUser.getId())
-                .orElseThrow(() -> new UnauthorizedException("Bạn không thuộc gia đình này"));
-                
+                .orElseThrow(() -> new UnauthorizedException("You are not in this family"));
+
         if (requester.getRole() != FamilyRole.OWNER && requester.getRole() != FamilyRole.ADMIN) {
-             throw new UnauthorizedException("Chỉ OWNER hoặc ADMIN mới có quyền thay đổi vai trò");
+            throw new UnauthorizedException("Only owners and admins can update roles");
         }
 
         FamilyMember targetMember = familyMemberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("FamilyMember", memberId));
 
         if (!targetMember.getFamily().getId().equals(familyId)) {
-            throw new BadRequestException("Thành viên không thuộc gia đình này");
+            throw new BadRequestException("Member does not belong to this family");
         }
 
-        // Only OWNER can grant/revoke OWNER or ADMIN role
-        if ((request.getRole() == FamilyRole.OWNER || targetMember.getRole() == FamilyRole.OWNER) 
-            && requester.getRole() != FamilyRole.OWNER) {
-            throw new UnauthorizedException("Chỉ OWNER mới có quyền thay đổi cấp bậc quản lý cao nhất");
+        if ((request.getRole() == FamilyRole.OWNER || targetMember.getRole() == FamilyRole.OWNER)
+                && requester.getRole() != FamilyRole.OWNER) {
+            throw new UnauthorizedException("Only owners can change owner role");
         }
 
         targetMember.setRole(request.getRole());
         familyMemberRepository.save(targetMember);
+    }
+
+    private FamilyMember getCurrentFamilyMember(User currentUser) {
+        List<FamilyMember> memberships = familyMemberRepository.findAllByUserId(currentUser.getId());
+        if (memberships.isEmpty()) {
+            throw new ResourceNotFoundException("Family", "userId", String.valueOf(currentUser.getId()));
+        }
+        return memberships.get(0);
+    }
+
+    private void assertCanManageFamily(Long familyId, Long userId) {
+        FamilyMember member = familyMemberRepository.findByFamilyIdAndUserId(familyId, userId)
+                .orElseThrow(() -> new UnauthorizedException("You are not in this family"));
+
+        if (member.getRole() != FamilyRole.OWNER && member.getRole() != FamilyRole.ADMIN) {
+            throw new UnauthorizedException("Only owners and admins can manage invitations");
+        }
+    }
+
+    private void addMemberIfMissing(Family family, User user, FamilyRole role) {
+        if (familyMemberRepository.existsByFamilyIdAndUserId(family.getId(), user.getId())) {
+            return;
+        }
+
+        FamilyMember member = FamilyMember.builder()
+                .family(family)
+                .user(user)
+                .role(role)
+                .build();
+        familyMemberRepository.save(member);
+    }
+
+    private FamilyRole normalizeRole(FamilyRole role) {
+        return role == null ? FamilyRole.MEMBER : role;
+    }
+
+    private FamilyRole normalizeJoinRole(FamilyRole role) {
+        FamilyRole normalized = normalizeRole(role);
+        if (normalized == FamilyRole.OWNER || normalized == FamilyRole.ADMIN) {
+            return FamilyRole.MEMBER;
+        }
+        return normalized;
+    }
+
+    private String normalizeJoinCode(String joinCode) {
+        return joinCode.trim().replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
+    }
+
+    private void ensureJoinCode(Family family) {
+        if (family.getJoinCode() != null
+                && family.getJoinCodeExpiresAt() != null
+                && family.getJoinCodeExpiresAt().isAfter(Instant.now())) {
+            return;
+        }
+
+        family.setJoinCode(generateUniqueJoinCode());
+        family.setJoinCodeExpiresAt(Instant.now().plus(JOIN_CODE_TTL_DAYS, ChronoUnit.DAYS));
+    }
+
+    private String generateUniqueJoinCode() {
+        String code;
+        do {
+            StringBuilder builder = new StringBuilder(JOIN_CODE_LENGTH);
+            for (int i = 0; i < JOIN_CODE_LENGTH; i++) {
+                builder.append(JOIN_CODE_ALPHABET.charAt(RANDOM.nextInt(JOIN_CODE_ALPHABET.length())));
+            }
+            code = builder.toString();
+        } while (familyRepository.existsByJoinCode(code));
+        return code;
+    }
+
+    private FamilyJoinCodeResponse toJoinCodeResponse(Family family) {
+        String joinCode = family.getJoinCode();
+        return FamilyJoinCodeResponse.builder()
+                .id(family.getId())
+                .name(family.getName())
+                .joinCode(joinCode)
+                .joinLink("carenest://family/join?code=" + joinCode)
+                .qrCodeBase64(null)
+                .expiresAt(family.getJoinCodeExpiresAt())
+                .build();
+    }
+
+    private FamilyInvitationResponse toInvitationResponse(FamilyInvitation invitation) {
+        return FamilyInvitationResponse.builder()
+                .inviteId(invitation.getId())
+                .familyId(invitation.getFamily().getId())
+                .name(invitation.getFamily().getName())
+                .senderEmail(invitation.getSender().getEmail())
+                .receiverEmail(invitation.getRecipientEmail())
+                .role(invitation.getRole())
+                .status(invitation.getStatus())
+                .createdAt(invitation.getCreatedAt())
+                .build();
     }
 }
