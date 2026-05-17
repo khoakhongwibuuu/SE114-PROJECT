@@ -220,6 +220,21 @@ public class MedicationServiceImpl implements MedicationService {
         log.setStatus(request.getStatus());
         if (request.getStatus() == MedicationLogStatus.TAKEN) {
             log.setTakenTime(Instant.now());
+            
+            // Tự động trừ thuốc trong tủ của gia đình khi đánh dấu đã uống thuốc
+            HealthProfile profile = log.getMedication().getHealthProfile();
+            if (profile.getFamily() != null) {
+                Long familyId = profile.getFamily().getId();
+                medicineCabinetRepository.findByFamilyId(familyId).ifPresent(cabinet -> {
+                    String medicineName = log.getMedication().getMedicineName();
+                    cabinetMedicineRepository.findByCabinetIdAndMedicineNameIgnoreCase(cabinet.getId(), medicineName)
+                            .ifPresent(cabMed -> {
+                                int doseQty = parseDosageQuantity(log.getMedication().getDosage());
+                                cabMed.setQuantity(Math.max(0, cabMed.getQuantity() - doseQty));
+                                cabinetMedicineRepository.save(cabMed);
+                            });
+                });
+            }
         }
         if (request.getNotes() != null) {
             log.setNotes(request.getNotes());
@@ -230,6 +245,40 @@ public class MedicationServiceImpl implements MedicationService {
         if (log.getMedication().getHealthProfile().getFamily() != null) {
             evictDashboardCache(log.getMedication().getHealthProfile().getFamily().getId());
         }
+    }
+
+    private int parseDosageQuantity(String dosage) {
+        if (dosage == null || dosage.trim().isEmpty()) {
+            return 1; // Mặc định 1 nếu trống
+        }
+        
+        String clean = dosage.trim().replaceAll(",", ".");
+        
+        // Khớp số hoặc phân số ở đầu chuỗi (ví dụ: "1", "2.5", "1/2", "0.5")
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^(\\d+(?:\\.\\d+)?|\\d+/\\d+)");
+        java.util.regex.Matcher matcher = pattern.matcher(clean);
+        
+        if (matcher.find()) {
+            String val = matcher.group(1);
+            if (val.contains("/")) {
+                String[] parts = val.split("/");
+                try {
+                    double num = Double.parseDouble(parts[0]);
+                    double den = Double.parseDouble(parts[1]);
+                    return (int) Math.max(1, Math.round(num / den));
+                } catch (Exception e) {
+                    return 1;
+                }
+            } else {
+                try {
+                    double valDouble = Double.parseDouble(val);
+                    return (int) Math.max(1, Math.round(valDouble));
+                } catch (Exception e) {
+                    return 1;
+                }
+            }
+        }
+        return 1; // Fallback mặc định là 1 nếu không tìm thấy số
     }
 
     private void generateLogsForMedication(Medication medication) {
