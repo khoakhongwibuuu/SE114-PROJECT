@@ -17,6 +17,7 @@ Hệ thống không chỉ dừng lại ở việc lưu trữ dữ liệu mà cò
 *   **AI Health Advisor:** Trợ lý ảo tư vấn sức khỏe dựa trên hồ sơ y tế thực tế của từng thành viên.
 *   **Smart OCR:** Tự động nhận diện đơn thuốc từ ảnh chụp để lên lịch nhắc nhở uống thuốc.
 *   **Smart Automation:** Tự động rải lịch tiêm chủng, điều chỉnh lịch uống thuốc thông minh và cảnh báo tương tác thuốc.
+*   **Real-time Family Chat:** Hộp chat box gia đình thời gian thực dựa trên giao thức STOMP WebSocket bảo mật cao.
 
 ---
 
@@ -24,10 +25,11 @@ Hệ thống không chỉ dừng lại ở việc lưu trữ dữ liệu mà cò
 Hệ thống được xây dựng trên nền tảng công nghệ mạnh mẽ, chia làm 2 phân hệ chính:
 
 ### Backend (Spring Boot Core)
-*   **Core:** Java 17, Spring Boot 3.4.5
+*   **Core:** Java 17, Spring Boot 3.3.5
 *   **Persistence:** Spring Data JPA, Hibernate, PostgreSQL 16
 *   **Caching & Fast Data:** Redis 7 (Refresh Token, Metadata Caching)
 *   **Intelligence:** Spring AI, Google Gemini LLM API
+*   **Real-time:** Spring Boot WebSocket (STOMP Broker, SimpMessagingTemplate)
 *   **Mapping & Tooling:** MapStruct (Entity-DTO), Lombok, Validation API
 *   **Infrastructure:** Docker & Docker Compose
 *   **Security:** Spring Security, JWT (Access & Refresh Token strategy)
@@ -35,12 +37,19 @@ Hệ thống được xây dựng trên nền tảng công nghệ mạnh mẽ, c
 ### Frontend (Mobile App)
 *   **Core:** React Native 0.85.2 (TypeScript)
 *   **Navigation:** React Navigation (Bottom Tabs, Native Stack)
+*   **Real-time Client:** `@stomp/stompjs` (STOMP over WebSocket)
 *   **Network:** Axios (với cơ chế interceptor cho Auth Token)
 *   **Storage:** AsyncStorage
 
 ---
 
 ## 🏗 Điểm nhấn Kiến trúc & Kỹ thuật (Key Technical Highlights)
+
+### 💬 Real-time WebSocket Messaging (Family Chat)
+Kiến trúc chat thời gian thực đa người dùng hoạt động thông qua một STOMP message broker:
+*   **JWT Handshake Authentication:** Khi client gửi khung `CONNECT`, `JwtChannelInterceptor` sẽ chặn và giải mã JWT token để xác thực người dùng ngay trước khi bắt đầu bắt tay (handshake).
+*   **Robust Security context mapping:** Khắc phục triệt để lỗi không đồng bộ hóa của Spring Security trong luồng WebSocket bất đồng bộ bằng cách sử dụng `java.security.Principal` nguyên bản để xác định email người gửi, kết hợp trực tiếp truy vấn DB thực thể người dùng để đảm bảo luôn thu được ID người dùng hợp lệ trước khi lưu tin nhắn.
+*   **Optimistic UI & Deduplication:** Phía ứng dụng di động áp dụng cơ chế hiển thị tin nhắn ngay lập tức khi gửi (Optimistic) kết hợp với hàng đợi kiểm tra ID (`seenIds` ref) giúp loại bỏ tin nhắn bị lặp (WS echo) và nâng cao trải nghiệm người dùng tối đa.
 
 ### 🛡 Security First: Multi-Family Isolation
 Kiến trúc phân quyền phức tạp được giải quyết thông qua `FamilySecurityUtil`. Hệ thống đảm bảo mỗi người dùng chỉ có thể truy cập dữ liệu thuộc về Family của họ. Kết hợp với bộ lọc JWT tùy chỉnh, CareNest cung cấp cơ chế bảo mật đa tầng, ngăn chặn triệt để lỗi rò rỉ dữ liệu chéo (IDOR).
