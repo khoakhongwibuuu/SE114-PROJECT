@@ -234,11 +234,11 @@ export default function FamilyPickerScreen() {
         onClose={() => setSheetVisible(false)}
         onCreateNew={() => {
           setSheetVisible(false);
-          navigation.navigate('FamilyManagement');
+          navigation.navigate('FamilyManagement', { mode: 'create' });
         }}
         onJoinByCode={() => {
           setSheetVisible(false);
-          navigation.navigate('FamilyManagement');
+          navigation.navigate('FamilyManagement', { mode: 'join' });
         }}
       />
     </View>

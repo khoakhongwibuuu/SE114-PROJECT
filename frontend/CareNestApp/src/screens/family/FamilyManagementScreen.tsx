@@ -18,7 +18,7 @@ import type { Permission } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { launchCamera, launchImageLibrary, type Asset, type ImagePickerResponse } from 'react-native-image-picker';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { BOTTOM_NAV_HEIGHT } from '../../utils/constants';
 import { useFamily } from '../../context/FamilyContext';
@@ -112,10 +112,22 @@ function formatInvitationStatus(status?: string) {
 export default function FamilyManagementScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { hasFamily, family, familyName, createFamily, members, refreshFamily } = useFamily();
   const { user } = useAuth();
 
+  const [overrideMode, setOverrideMode] = useState<'create' | 'join' | null>(null);
   const [step, setStep] = useState(1);
+
+  useEffect(() => {
+    const mode = route.params?.mode;
+    if (mode) {
+      setOverrideMode(mode);
+      // Clear navigation parameter so it doesn't get stuck on subsequent visits
+      navigation.setParams({ mode: undefined });
+    }
+  }, [route.params?.mode, navigation]);
+
   const [tempName, setTempName] = useState('Tổ ấm thân thương');
   const [tempImage, setTempImage] = useState<string | null>(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -287,6 +299,7 @@ export default function FamilyManagementScreen() {
       setIsBusy(true);
       await createFamily(tempName.trim(), tempImage);
       setStep(1);
+      setOverrideMode(null);
     } catch (error) {
       Alert.alert(
         'Không thể tạo gia đình',
@@ -344,6 +357,7 @@ export default function FamilyManagementScreen() {
       await refreshFamily();
       setJoinCodeInput('');
       setSelectedJoinRole('MEMBER');
+      setOverrideMode(null);
       Alert.alert(
         'Tham gia thành công',
         'Bạn đã được thêm vào gia đình.',
@@ -398,6 +412,7 @@ export default function FamilyManagementScreen() {
       await joinFamilyByQr(formData);
       await refreshFamily();
       setSelectedJoinRole('MEMBER');
+      setOverrideMode(null);
       Alert.alert(
         'Tham gia thành công',
         'Bạn đã quét QR và tham gia gia đình.',
@@ -444,6 +459,7 @@ export default function FamilyManagementScreen() {
           refreshFamily(),
         ]);
         setReceivedInvitations(nextInvitations);
+        setOverrideMode(null);
       } else {
         await rejectInvitation(inviteId);
         setReceivedInvitations(await getReceivedInvitations());
@@ -755,7 +771,13 @@ export default function FamilyManagementScreen() {
             <MaterialCommunityIcons name="qrcode-scan" size={20} color="#0369a1" />
             <Text style={styles.qrBtnText}>Quét mã QR</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.joinBackBtn} onPress={() => setStep(1)}>
+          <TouchableOpacity style={styles.joinBackBtn} onPress={() => {
+            if (overrideMode) {
+              setOverrideMode(null);
+            } else {
+              setStep(1);
+            }
+          }}>
             <MaterialCommunityIcons name="arrow-left" size={18} color="#1e293b" />
             <Text style={styles.joinBackText}>Quay lại</Text>
           </TouchableOpacity>
@@ -1038,23 +1060,47 @@ export default function FamilyManagementScreen() {
     </View>
   );
 
+  const handleBack = () => {
+    if (overrideMode) {
+      setOverrideMode(null);
+    } else if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
+  };
+
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.topBar}>
         <View style={styles.topBarLeft}>
-          <TouchableOpacity style={styles.profileBtn}>
-            <Image
-              source={require('../../assets/branding/carenest-logo-house.png')}
-              style={styles.smallAvatar}
-              resizeMode="contain"
-            />
+          <TouchableOpacity style={styles.profileBtn} onPress={handleBack}>
+            {overrideMode || navigation.canGoBack() ? (
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#1e293b" />
+            ) : (
+              <Image
+                source={require('../../assets/branding/carenest-logo-house.png')}
+                style={styles.smallAvatar}
+                resizeMode="contain"
+              />
+            )}
           </TouchableOpacity>
-          <Text style={styles.topBarTitle}>{hasFamily ? familyName : 'Gia đình'}</Text>
+          <Text style={styles.topBarTitle}>
+            {overrideMode === 'create'
+              ? 'Tạo gia đình mới'
+              : overrideMode === 'join'
+              ? 'Tham gia gia đình'
+              : hasFamily
+              ? familyName
+              : 'Gia đình'}
+          </Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
 
-      {!hasFamily
+      {overrideMode
+        ? overrideMode === 'create'
+          ? renderSetupStep()
+          : renderJoinStep()
+        : !hasFamily
         ? step === 1
           ? renderWelcomeStep()
           : step === 4
