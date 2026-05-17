@@ -1,11 +1,14 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
+  Alert,
   FlatList,
-  TouchableOpacity,
+  Modal,
+  ScrollView,
   StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -17,7 +20,7 @@ import Icon from '../../components/common/Icon';
 import TopAppBar from '../../components/layout/TopAppBar';
 import FAB from '../../components/common/FAB';
 import type { MedicineStackParamList } from '../../navigation/navigationTypes';
-import { getCabinetMedicines, type MedicineItem } from '../../api/medicine';
+import { getCabinetMedicines, updateCabinetMedicine, deleteCabinetMedicine, type MedicineItem } from '../../api/medicine';
 
 type Nav = NativeStackNavigationProp<MedicineStackParamList, 'MedicineCabinet'>;
 type FilterKey = 'all' | 'expired' | 'expiring' | 'low_stock' | 'out_of_stock';
@@ -36,12 +39,83 @@ export default function MedicineCabinetScreen() {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [medicines, setMedicines] = useState<MedicineItem[]>([]);
+  const [selectedMedicine, setSelectedMedicine] = useState<MedicineItem | null>(null);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [isEditingQuantity, setIsEditingQuantity] = useState(false);
+  const [newQuantity, setNewQuantity] = useState('');
 
   const loadMedicines = useCallback(async () => {
     await getCabinetMedicines()
       .then(setMedicines)
       .catch(() => setMedicines([]));
   }, []);
+
+  const handleOpenSheet = (item: MedicineItem) => {
+    setSelectedMedicine(item);
+    setNewQuantity(String(item.quantity));
+    setIsEditingQuantity(false);
+    setSheetVisible(true);
+  };
+
+  const handleQuickTake = async () => {
+    if (!selectedMedicine) return;
+    if (selectedMedicine.quantity <= 0) {
+      Alert.alert('Hết hàng', 'Thuốc này đã hết trong tủ thuốc!');
+      return;
+    }
+    try {
+      const newQty = Math.max(0, selectedMedicine.quantity - 1);
+      await updateCabinetMedicine(selectedMedicine.id, {
+        quantity: newQty
+      });
+      setSheetVisible(false);
+      void loadMedicines();
+    } catch (e) {
+      Alert.alert('Lỗi', 'Không thể cập nhật số lượng thuốc.');
+    }
+  };
+
+  const handleSaveQuantity = async () => {
+    if (!selectedMedicine) return;
+    const qtyVal = Number(newQuantity);
+    if (isNaN(qtyVal) || qtyVal < 0) {
+      Alert.alert('Không hợp lệ', 'Vui lòng nhập số lượng hợp lệ.');
+      return;
+    }
+    try {
+      await updateCabinetMedicine(selectedMedicine.id, {
+        quantity: qtyVal
+      });
+      setSheetVisible(false);
+      void loadMedicines();
+    } catch (e) {
+      Alert.alert('Lỗi', 'Không thể cập nhật số lượng thuốc.');
+    }
+  };
+
+  const handleDeleteMedicine = async () => {
+    if (!selectedMedicine) return;
+    Alert.alert(
+      'Xóa thuốc',
+      `Bạn có chắc chắn muốn xóa ${selectedMedicine.name} khỏi tủ thuốc không?`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { 
+          text: 'Xóa', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteCabinetMedicine(selectedMedicine.id);
+              setSheetVisible(false);
+              void loadMedicines();
+            } catch (e) {
+              Alert.alert('Lỗi', 'Không thể xóa thuốc khỏi tủ.');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -132,13 +206,17 @@ export default function MedicineCabinetScreen() {
           const isLast = index === filteredMedicines.length - 1;
           
           return (
-            <View style={[
-              styles.card, 
-              shadows.sm, 
-              { borderRadius: 0 },
-              isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-              isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, marginBottom: 16 }
-            ]}>
+            <TouchableOpacity 
+              style={[
+                styles.card, 
+                shadows.sm, 
+                { borderRadius: 0 },
+                isFirst && { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+                isLast && { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, marginBottom: 16 }
+              ]}
+              onPress={() => handleOpenSheet(medicine)}
+              activeOpacity={0.8}
+            >
               <View
                 style={[styles.medRow, !isLast && styles.medRowDivider]}
               >
@@ -156,7 +234,7 @@ export default function MedicineCabinetScreen() {
                   <Text style={[styles.statusText, { color: config.textColor }]}>{config.label}</Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         }}
       />
@@ -165,6 +243,60 @@ export default function MedicineCabinetScreen() {
         onPress={() => navigation.navigate('AddMedicineToCabinet', {})}
         bottomOffset={BOTTOM_NAV_HEIGHT - 55}
       />
+
+      <Modal transparent visible={sheetVisible} animationType="slide" onRequestClose={() => setSheetVisible(false)}>
+        <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setSheetVisible(false)}>
+          <View style={styles.sheetCard} onStartShouldSetResponder={() => true}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>{selectedMedicine?.name}</Text>
+            <Text style={styles.sheetSub}>
+              Đơn vị: {selectedMedicine?.unit} · Số lượng hiện tại: <Text style={{ fontWeight: '700', color: colors.primary }}>{selectedMedicine?.quantity}</Text>
+            </Text>
+
+            {!isEditingQuantity ? (
+              <View style={styles.sheetActions}>
+                <TouchableOpacity style={styles.actionBtn} onPress={() => void handleQuickTake()} activeOpacity={0.75}>
+                  <Icon name="local_hospital" size={20} color={colors.primary} />
+                  <Text style={styles.actionBtnText}>Uống nhanh 1 {selectedMedicine?.unit || 'viên'}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionBtn} onPress={() => setIsEditingQuantity(true)} activeOpacity={0.75}>
+                  <Icon name="edit" size={20} color={colors.primary} />
+                  <Text style={styles.actionBtnText}>Chỉnh sửa số lượng</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.actionBtn, styles.deleteActionBtn]} onPress={() => void handleDeleteMedicine()} activeOpacity={0.75}>
+                  <Icon name="delete" size={20} color="#C62828" />
+                  <Text style={[styles.actionBtnText, { color: '#C62828' }]}>Xóa khỏi tủ thuốc</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.editSection}>
+                <Text style={styles.editLabel}>Nhập số lượng mới:</Text>
+                <TextInput
+                  style={styles.quantityInput}
+                  value={newQuantity}
+                  onChangeText={setNewQuantity}
+                  keyboardType="numeric"
+                  autoFocus
+                />
+                <View style={styles.editActions}>
+                  <TouchableOpacity style={styles.cancelEditBtn} onPress={() => setIsEditingQuantity(false)} activeOpacity={0.8}>
+                    <Text style={styles.cancelEditText}>Hủy</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.saveEditBtn} onPress={() => void handleSaveQuantity()} activeOpacity={0.8}>
+                    <Text style={styles.saveEditText}>Lưu</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setSheetVisible(false)} activeOpacity={0.8}>
+              <Text style={styles.closeBtnText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -254,4 +386,23 @@ const styles = StyleSheet.create({
   medMeta: { fontSize: 12, fontFamily: 'Inter', color: colors.onSurfaceVariant, marginTop: 2 },
   statusBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start' },
   statusText: { fontSize: 11, fontFamily: 'Inter', fontWeight: '700' },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.45)', justifyContent: 'flex-end' },
+  sheetCard: { backgroundColor: colors.surfaceContainerLowest, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 16, paddingBottom: 40 },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.outlineVariant, alignSelf: 'center', marginBottom: 4 },
+  sheetTitle: { fontSize: 20, fontFamily: 'Manrope', fontWeight: '800', color: colors.onSurface, textAlign: 'center' },
+  sheetSub: { fontSize: 13, fontFamily: 'Inter', color: colors.onSurfaceVariant, textAlign: 'center', marginBottom: 8 },
+  sheetActions: { gap: 12 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', height: 50, borderRadius: 12, backgroundColor: colors.surfaceContainerHigh, paddingHorizontal: 16, gap: 12 },
+  deleteActionBtn: { backgroundColor: '#FFEBEE' },
+  actionBtnText: { fontSize: 14, fontFamily: 'Inter', fontWeight: '700', color: colors.onSurface },
+  editSection: { gap: 12 },
+  editLabel: { fontSize: 13, fontFamily: 'Inter', fontWeight: '600', color: colors.onSurfaceVariant },
+  quantityInput: { height: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.outlineVariant, backgroundColor: colors.surfaceContainerHigh, paddingHorizontal: 16, fontSize: 16, color: colors.onSurface },
+  editActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
+  cancelEditBtn: { flex: 1, height: 44, borderRadius: 8, backgroundColor: colors.surfaceContainerHigh, alignItems: 'center', justifyContent: 'center' },
+  cancelEditText: { fontSize: 14, fontFamily: 'Inter', fontWeight: '700', color: colors.onSurfaceVariant },
+  saveEditBtn: { flex: 1, height: 44, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  saveEditText: { fontSize: 14, fontFamily: 'Inter', fontWeight: '700', color: '#fff' },
+  closeBtn: { height: 48, borderRadius: 999, borderWidth: 1, borderColor: colors.outlineVariant, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+  closeBtnText: { fontSize: 14, fontFamily: 'Inter', fontWeight: '700', color: colors.onSurfaceVariant },
 });
