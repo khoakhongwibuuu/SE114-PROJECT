@@ -915,7 +915,7 @@ export default function FamilyManagementScreen() {
             const isUnder18 = typeof member.age === 'number' && member.age < 18;
 
             return (
-              <View key={member.profileId} style={styles.memberCard}>
+              <View key={member.id} style={styles.memberCard}>
                 <View style={styles.memberCardMain}>
                   <View style={styles.avatarWrapper}>
                     <Image
@@ -933,10 +933,10 @@ export default function FamilyManagementScreen() {
 
                   <TouchableOpacity
                     style={styles.memberInfo}
-                    onPressIn={() => prefetchMemberMedical(member.profileId)}
+                    onPressIn={() => prefetchMemberMedical(member.id)}
                     onPress={() =>
                       navigation.navigate('UserMedical', {
-                        memberId: String(member.profileId),
+                        memberId: String(member.id),
                       })
                     }
                   >
@@ -955,10 +955,10 @@ export default function FamilyManagementScreen() {
                 {isUnder18 ? (
                   <TouchableOpacity
                     style={styles.growthBar}
-                    onPressIn={() => prefetchMemberGrowth(member.profileId)}
+                    onPressIn={() => prefetchMemberGrowth(member.id)}
                     onPress={() =>
                       navigation.navigate('GrowthTracker', {
-                        memberId: String(member.profileId),
+                        memberId: String(member.id),
                       })
                     }
                   >
@@ -1005,6 +1005,17 @@ export default function FamilyManagementScreen() {
           </TouchableOpacity>
           <Text style={styles.topBarTitle}>{hasFamily ? familyName : 'Gia đình'}</Text>
         </View>
+        {hasFamily && family ? (
+          <TouchableOpacity 
+            style={styles.chatBtn}
+            onPress={() => navigation.navigate('FamilyChat', { 
+              familyId: family.id, 
+              familyName: family.name 
+            })}
+          >
+            <MaterialCommunityIcons name="chat-processing-outline" size={24} color="#0369a1" />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {!hasFamily
@@ -1036,6 +1047,14 @@ const styles = StyleSheet.create({
   profileBtn: {
     width: 32,
     height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
   },

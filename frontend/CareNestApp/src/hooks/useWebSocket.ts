@@ -3,10 +3,10 @@ import { Client } from '@stomp/stompjs';
 import type { IMessage as StompFrame } from '@stomp/stompjs';
 import type { IMessage as GiftedMessage } from 'react-native-gifted-chat';
 import { getStoredSession } from '../api/storage';
+import Config from 'react-native-config';
 
-// WebSocket URL: thay http:// → ws://, giữ nguyên path
-// React Native dùng native WebSocket, KHÔNG qua SockJS
-const WS_URL = 'ws://10.0.2.2:8080/api/v1/ws';
+// WebSocket URL: Lấy từ .env hoặc fallback về emulator
+const WS_URL = Config.WS_URL || 'ws://10.0.2.2:8080/api/v1/ws';
 
 interface UseWebSocketOptions {
   familyId: number;
