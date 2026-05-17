@@ -20,13 +20,15 @@ import type { MedicineStackParamList } from '../../navigation/navigationTypes';
 import { getCabinetMedicines, type MedicineItem } from '../../api/medicine';
 
 type Nav = NativeStackNavigationProp<MedicineStackParamList, 'MedicineCabinet'>;
-type FilterKey = 'all' | 'expiring' | 'expired';
-type CabinetStatus = 'stable' | 'expiring' | 'expired' | 'out_of_stock';
+type FilterKey = 'all' | 'expired' | 'expiring' | 'low_stock' | 'out_of_stock';
+type CabinetStatus = 'stable' | 'expiring' | 'expired' | 'out_of_stock' | 'low_stock';
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'all', label: 'Tất cả' },
-  { key: 'expiring', label: 'Sắp hết hạn' },
   { key: 'expired', label: 'Hết hạn' },
+  { key: 'expiring', label: 'Sắp hết hạn' },
+  { key: 'low_stock', label: 'Sắp hết hàng' },
+  { key: 'out_of_stock', label: 'Hết hàng' },
 ];
 
 export default function MedicineCabinetScreen() {
@@ -169,15 +171,17 @@ export default function MedicineCabinetScreen() {
 
 const STATUS_CONFIG: Record<CabinetStatus, { label: string; bg: string; textColor: string }> = {
   stable: { label: 'Ổn định', bg: '#E8F5E9', textColor: '#2E7D32' },
-  expiring: { label: 'Sắp hết hạn', bg: '#FFF3E0', textColor: '#E65100' },
+  expiring: { label: 'Sắp hết hạn', bg: '#FFEBEE', textColor: '#C62828' },
   expired: { label: 'Hết hạn', bg: colors.errorContainer, textColor: colors.onErrorContainer },
   out_of_stock: { label: 'Hết hàng', bg: '#ECEFF1', textColor: '#546E7A' },
+  low_stock: { label: 'Sắp hết hàng', bg: '#FFF3E0', textColor: '#E65100' },
 };
 
 function mapStatus(status: string): CabinetStatus {
   const normalized = status.toUpperCase();
   if (normalized.includes('EXPIRED')) return 'expired';
-  if (normalized.includes('LOW') || normalized.includes('EXPIR')) return 'expiring';
+  if (normalized.includes('EXPIRING')) return 'expiring';
+  if (normalized.includes('LOW_STOCK')) return 'low_stock';
   if (normalized.includes('OUT')) return 'out_of_stock';
   return 'stable';
 }

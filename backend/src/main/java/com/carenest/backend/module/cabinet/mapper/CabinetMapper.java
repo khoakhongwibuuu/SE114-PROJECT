@@ -18,6 +18,7 @@ public interface CabinetMapper {
     MedicineCabinetResponse toCabinetResponse(MedicineCabinet cabinet);
 
     @Mapping(target = "isExpired", expression = "java(medicine.getExpiryDate() != null && medicine.getExpiryDate().isBefore(java.time.LocalDate.now()))")
+    @Mapping(target = "isExpiring", expression = "java(medicine.getExpiryDate() != null && !medicine.getExpiryDate().isBefore(java.time.LocalDate.now()) && medicine.getExpiryDate().isBefore(java.time.LocalDate.now().plusDays(30)))")
     @Mapping(target = "isLowStock", expression = "java(medicine.getQuantity() != null && medicine.getQuantity() <= 5)")
     CabinetMedicineResponse toMedicineResponse(CabinetMedicine medicine);
 }

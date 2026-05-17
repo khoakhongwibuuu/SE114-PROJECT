@@ -52,7 +52,7 @@ export async function getCabinetMedicines(): Promise<MedicineItem[]> {
       name: m.medicineName,
       quantity: m.quantity,
       unit: m.unit,
-      status: m.isExpired ? 'EXPIRED' : (m.isLowStock ? 'LOW_STOCK' : 'AVAILABLE'),
+      status: m.quantity <= 0 ? 'OUT_OF_STOCK' : (m.isExpired ? 'EXPIRED' : (m.isExpiring ? 'EXPIRING' : (m.isLowStock ? 'LOW_STOCK' : 'AVAILABLE'))),
       expiryDate: m.expiryDate
     }));
   } catch (error) {
