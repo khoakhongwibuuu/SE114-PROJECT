@@ -22,7 +22,7 @@ public class MedicationLogController {
     @PostMapping("/{logId}/check-in")
     @Operation(summary = "Check-in (Đánh dấu đã uống hoặc bỏ qua) một cữ thuốc")
     public ApiResponse<Void> checkInMedicationLog(
-            @PathVariable Long logId,
+            @PathVariable("logId") Long logId,
             @Valid @RequestBody CheckInMedicationRequest request) {
         medicationService.checkInMedicationLog(logId, request);
         return ApiResponse.success("Ghi nhận trạng thái uống thuốc thành công", null);

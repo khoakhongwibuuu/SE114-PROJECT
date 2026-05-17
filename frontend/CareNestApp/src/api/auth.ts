@@ -129,11 +129,26 @@ export async function resetPassword(payload: ResetPasswordPayload): Promise<void
 }
 
 export async function getCurrentUserProfile(options?: { forceRefresh?: boolean }): Promise<CurrentUserProfile> {
-  const raw = await apiGetCached<RawUserInfoResponse>('/auth/me', undefined, { 
-    ttlMs: 20000,
-    forceRefresh: options?.forceRefresh 
-  });
-  return mapRawUserToProfile(raw);
+  const [raw, rawProfile] = await Promise.all([
+    apiGetCached<RawUserInfoResponse>('/auth/me', undefined, { 
+      ttlMs: 20000,
+      forceRefresh: options?.forceRefresh 
+    }),
+    apiGetCached<any>('/health-profiles/me', undefined, {
+      ttlMs: 20000,
+      forceRefresh: options?.forceRefresh
+    }).catch(() => null)
+  ]);
+  
+  const profile = mapRawUserToProfile(raw);
+  if (rawProfile) {
+    profile.bloodType = rawProfile.bloodType;
+    profile.medicalHistory = rawProfile.chronicDiseases;
+    profile.allergy = rawProfile.allergies;
+    profile.height = rawProfile.height;
+    profile.weight = rawProfile.weight;
+  }
+  return profile;
 }
 
 
@@ -159,6 +174,8 @@ export async function updateCurrentUserProfile(payload: UpdateCurrentUserProfile
       fullName: payload.fullName,
       dateOfBirth: payload.birthday,
       gender: payload.gender,
+      height: payload.height,
+      weight: payload.weight,
     });
 
     if (payload.bloodType || payload.medicalHistory || payload.allergy) {

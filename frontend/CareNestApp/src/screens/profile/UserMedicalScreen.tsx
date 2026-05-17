@@ -196,7 +196,7 @@ export default function UserMedicalScreen() {
   const isSelfProfile = viewedProfileId !== null && String(viewedProfileId) === user?.profileId;
   const isTargetOwner =
     targetMember?.role === 'OWNER' || (Boolean(targetMember) && isOwner && isSelfProfile);
-  const canEditRole = Boolean(targetMember) && !isTargetOwner && (isOwner || isSelfProfile);
+  const canEditRole = Boolean(targetMember) && !isTargetOwner && isOwner && !isSelfProfile;
 
   const editableRoleOptions = useMemo(() => {
     if (!targetMember) {

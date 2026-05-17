@@ -33,7 +33,7 @@ public class NotificationController {
 
     @PatchMapping("/{id}/read")
     public ApiResponse<NotificationResponse> markAsRead(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @AuthenticationPrincipal User user) {
         
         NotificationResponse response = notificationService.markAsRead(id, user.getId());

@@ -22,7 +22,7 @@ public class GrowthRecordController {
     @PostMapping("/growth-records")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<GrowthRecordResponse> addGrowthRecord(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody GrowthRecordCreateRequest request) {
         
         GrowthRecordResponse response = growthRecordService.addRecord(id, request);
@@ -31,7 +31,7 @@ public class GrowthRecordController {
 
     @GetMapping("/growth-records")
     public ApiResponse<List<GrowthRecordResponse>> getGrowthRecords(
-            @PathVariable Long id) {
+            @PathVariable("id") Long id) {
         
         List<GrowthRecordResponse> response = growthRecordService.getGrowthRecords(id);
         return ApiResponse.success("Fetched growth records successfully", response);
@@ -39,7 +39,7 @@ public class GrowthRecordController {
 
     @GetMapping("/growth-chart")
     public ApiResponse<List<GrowthChartResponse>> getGrowthChartData(
-            @PathVariable Long id) {
+            @PathVariable("id") Long id) {
         
         List<GrowthChartResponse> response = growthRecordService.getGrowthChartData(id);
         return ApiResponse.success("Fetched growth chart data successfully", response);

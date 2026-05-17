@@ -18,7 +18,7 @@ import type { Permission } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { launchCamera, launchImageLibrary, type Asset, type ImagePickerResponse } from 'react-native-image-picker';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { BOTTOM_NAV_HEIGHT } from '../../utils/constants';
 import { useFamily } from '../../context/FamilyContext';
@@ -145,31 +145,34 @@ export default function FamilyManagementScreen() {
     void Promise.allSettled([getFamilyProfile(profileId), getGrowthSummary(profileId)]);
   };
 
-  useEffect(() => {
-    async function loadFamilyExtras() {
-      if (hasFamily) {
-        try {
-          const sent = isOwner ? await getSentInvitations() : [];
-          setSentInvitations(sent);
-        } catch {
-          setSentInvitations([]);
+  useFocusEffect(
+    React.useCallback(() => {
+      async function loadFamilyExtras() {
+        if (hasFamily) {
+          try {
+            const sent = isOwner ? await getSentInvitations() : [];
+            setSentInvitations(sent);
+          } catch {
+            setSentInvitations([]);
+          }
+          setReceivedInvitations([]);
+          return;
         }
-        setReceivedInvitations([]);
-        return;
+
+        try {
+          const invites = await getReceivedInvitations();
+          setReceivedInvitations(invites);
+        } catch (err) {
+          console.error('[loadFamilyExtras] getReceivedInvitations failed:', err);
+          setReceivedInvitations([]);
+        }
+        setSentInvitations([]);
+        setJoinCodeInfo(null);
       }
 
-      try {
-        const invites = await getReceivedInvitations();
-        setReceivedInvitations(invites);
-      } catch {
-        setReceivedInvitations([]);
-      }
-      setSentInvitations([]);
-      setJoinCodeInfo(null);
-    }
-
-    void loadFamilyExtras();
-  }, [hasFamily, isOwner]);
+      void loadFamilyExtras();
+    }, [hasFamily, isOwner])
+  );
 
   const ensureAndroidPermission = async (
     permission: Permission,
@@ -797,7 +800,11 @@ export default function FamilyManagementScreen() {
   );
 
   const renderWelcomeStep = () => (
-    <View style={styles.centerContainer}>
+    <ScrollView 
+      style={styles.root}
+      contentContainerStyle={[styles.centerContainer, { paddingBottom: BOTTOM_NAV_HEIGHT + 32, paddingHorizontal: 16 }]}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.heroCircle}>
         <MaterialCommunityIcons
           name="account-group-outline"
@@ -827,7 +834,43 @@ export default function FamilyManagementScreen() {
           </Text>
         </View>
       </View>
-    </View>
+
+      {/* Render received invitations directly on Welcome Screen for super UX! */}
+      {receivedInvitations.length > 0 ? (
+        <View style={[styles.inviteCard, styles.receivedCard, { width: '100%', marginTop: 24 }]}>
+          <Text style={styles.pendingTitle}>Lời mời bạn đã nhận</Text>
+          {receivedInvitations.map(item => (
+            <View key={item.inviteId} style={styles.receivedItem}>
+              <View style={styles.pendingAvatar}>
+                <Text style={styles.avatarInitial}>
+                  {(item.name || '?').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.pendingTextWrap}>
+                <Text style={styles.pendingEmail}>{item.name || 'Gia đình'}</Text>
+                <Text style={styles.pendingStatus}>
+                  {item.senderEmail || 'Không rõ người gửi'}
+                </Text>
+              </View>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={[styles.inlineActionBtn, styles.inlineAcceptBtn]}
+                  onPress={() => void handleInvitationAction(item.inviteId, 'accept')}
+                >
+                  <Text style={styles.inlineAcceptText}>Nhận</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.inlineActionBtn, styles.inlineRejectBtn]}
+                  onPress={() => void handleInvitationAction(item.inviteId, 'reject')}
+                >
+                  <Text style={styles.inlineRejectText}>Từ chối</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </ScrollView>
   );
 
   const renderSetupStep = () => (

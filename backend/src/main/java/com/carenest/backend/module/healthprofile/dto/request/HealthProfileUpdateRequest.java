@@ -38,4 +38,6 @@ public class HealthProfileUpdateRequest {
     private String avatarUrl;
 
     private Boolean isChild;
+    private java.math.BigDecimal height;
+    private java.math.BigDecimal weight;
 }

@@ -29,48 +29,48 @@ public class AppointmentController {
     }
 
     @GetMapping("/health-profiles/{id}/appointments")
-    public ApiResponse<List<AppointmentResponse>> getProfileAppointments(@PathVariable Long id) {
+    public ApiResponse<List<AppointmentResponse>> getProfileAppointments(@PathVariable("id") Long id) {
         List<AppointmentResponse> responses = appointmentService.getProfileAppointments(id);
         return ApiResponse.success("Fetched profile appointments", responses);
     }
 
     @GetMapping("/appointments/upcoming")
-    public ApiResponse<List<AppointmentResponse>> getUpcomingAppointments(@RequestParam Long profileId) {
+    public ApiResponse<List<AppointmentResponse>> getUpcomingAppointments(@RequestParam("profileId") Long profileId) {
         List<AppointmentResponse> responses = appointmentService.getUpcomingAppointments(profileId);
         return ApiResponse.success("Fetched upcoming appointments", responses);
     }
 
     @PutMapping("/appointments/{id}")
     public ApiResponse<AppointmentResponse> updateAppointment(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody AppointmentUpdateRequest request) {
         AppointmentResponse response = appointmentService.updateAppointment(id, request);
         return ApiResponse.success("Updated appointment successfully", response);
     }
 
     @PutMapping("/appointments/{id}/cancel")
-    public ApiResponse<AppointmentResponse> cancelAppointment(@PathVariable Long id) {
+    public ApiResponse<AppointmentResponse> cancelAppointment(@PathVariable("id") Long id) {
         AppointmentResponse response = appointmentService.cancelAppointment(id);
         return ApiResponse.success("Cancelled appointment successfully", response);
     }
 
     @PostMapping("/appointments/{id}/members")
     public ApiResponse<AppointmentResponse> assignMember(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody AppointmentMemberRequest request) {
         AppointmentResponse response = appointmentService.assignMember(id, request);
         return ApiResponse.success("Assigned member to appointment successfully", response);
     }
 
     @GetMapping("/appointments/{id}/notes")
-    public ApiResponse<String> getNotes(@PathVariable Long id) {
+    public ApiResponse<String> getNotes(@PathVariable("id") Long id) {
         String notes = appointmentService.getNotes(id);
         return ApiResponse.success("Fetched appointment result notes", notes);
     }
 
     @PutMapping("/appointments/{id}/notes")
     public ApiResponse<AppointmentResponse> updateNotes(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody AppointmentNotesRequest request) {
         AppointmentResponse response = appointmentService.updateNotes(id, request);
         return ApiResponse.success("Updated appointment result notes successfully", response);
