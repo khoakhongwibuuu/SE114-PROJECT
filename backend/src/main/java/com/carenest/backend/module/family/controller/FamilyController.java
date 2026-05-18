@@ -9,14 +9,17 @@ import com.carenest.backend.module.family.dto.response.FamilyDetailResponse;
 import com.carenest.backend.module.family.dto.response.FamilyJoinCodeResponse;
 import com.carenest.backend.module.family.dto.response.FamilyResponse;
 import com.carenest.backend.module.family.dto.response.FamilySummaryResponse;
+import com.carenest.backend.module.family.enums.FamilyRole;
 import com.carenest.backend.module.family.service.FamilyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -89,5 +92,13 @@ public class FamilyController {
     @Operation(summary = "Join a family by code")
     public ApiResponse<FamilyDetailResponse> joinByCode(@Valid @RequestBody JoinFamilyByCodeRequest request) {
         return ApiResponse.success(familyService.joinByCode(request));
+    }
+
+    @PostMapping(value = "/join-by-qr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Join a family by QR image")
+    public ApiResponse<FamilyDetailResponse> joinByQr(
+            @RequestPart("image") MultipartFile image,
+            @RequestParam(value = "role", required = false) FamilyRole role) {
+        return ApiResponse.success(familyService.joinByQr(image, role));
     }
 }
