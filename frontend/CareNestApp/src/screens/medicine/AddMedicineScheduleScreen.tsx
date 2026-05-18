@@ -46,6 +46,7 @@ export default function AddMedicineScheduleScreen() {
   const [endDate, setEndDate] = useState(formatLocalDate(new Date(Date.now() + 6 * 24 * 60 * 60 * 1000)));
   const [notes, setNotes] = useState('');
   const [showPicker, setShowPicker] = useState<'start' | 'end' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 3. Memoized and Effect Hooks
   const selectedMedicine = useMemo(
@@ -82,12 +83,17 @@ export default function AddMedicineScheduleScreen() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     if (!selectedMember || !selectedMedicine) {
       Alert.alert('Thiếu dữ liệu', 'Vui lòng chọn hồ sơ và thuốc trước khi lưu lịch.');
       return;
     }
 
     try {
+      setIsSubmitting(true);
       await createMedicineSchedule({
         profile: selectedMember,
         medicineId: selectedMedicine.id,
@@ -103,6 +109,7 @@ export default function AddMedicineScheduleScreen() {
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
+      setIsSubmitting(false);
       Alert.alert('Không thể tạo lịch thuốc', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     }
   };
@@ -151,7 +158,7 @@ export default function AddMedicineScheduleScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Chọn thuốc từ tủ</Text>
             <View style={styles.whiteCard}>
-              {(formData?.medicines || []).map(medicine => (
+              {(formData?.medicines || []).length > 0 ? (formData?.medicines || []).map(medicine => (
                 <TouchableOpacity
                   key={medicine.id}
                   style={[styles.medicineChoice, selectedMedicineId === medicine.id && styles.medicineChoiceActive]}
@@ -165,7 +172,9 @@ export default function AddMedicineScheduleScreen() {
                     <Text style={styles.medicineChoiceMeta}>{medicine.quantity} {medicine.unit}</Text>
                   </View>
                 </TouchableOpacity>
-              ))}
+              )) : (
+                <Text style={styles.emptyText}>Chua co thuoc trong tu. Hay them thuoc truoc khi tao lich.</Text>
+              )}
             </View>
           </View>
 
@@ -232,7 +241,12 @@ export default function AddMedicineScheduleScreen() {
             </View>
           </View>
 
-          <TouchableOpacity style={[styles.submitBtn, shadows.md]} onPress={() => void handleSubmit()} activeOpacity={0.9}>
+          <TouchableOpacity
+            style={[styles.submitBtn, shadows.md, (isSubmitting || !selectedMember || !selectedMedicine) && styles.submitBtnDisabled]}
+            onPress={() => void handleSubmit()}
+            activeOpacity={0.9}
+            disabled={isSubmitting || !selectedMember || !selectedMedicine}
+          >
             <Text style={styles.submitBtnText}>Lưu lịch</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -279,4 +293,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   submitBtnText: { fontSize: 16, fontFamily: 'Manrope', fontWeight: '800', color: '#fff' },
+  submitBtnDisabled: { opacity: 0.55 },
+  emptyText: { fontSize: 13, fontFamily: 'Inter', color: colors.onSurfaceVariant, lineHeight: 20 },
 });

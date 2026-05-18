@@ -39,9 +39,11 @@ public class VaccinationServiceImpl implements VaccinationService {
     private final FamilySecurityUtil familySecurityUtil;
     private final CacheManager cacheManager;
 
-    private void evictDashboardCache(Long familyId) {
-        if (familyId != null && cacheManager.getCache("dashboard") != null) {
-            cacheManager.getCache("dashboard").evict(familyId);
+    private void evictDashboardCache(HealthProfile profile) {
+        if (profile != null && cacheManager.getCache("dashboard") != null) {
+            for (Long familyId : familySecurityUtil.getFamilyIdsForProfile(profile)) {
+                cacheManager.getCache("dashboard").evict(familyId);
+            }
         }
     }
 
@@ -92,9 +94,7 @@ public class VaccinationServiceImpl implements VaccinationService {
 
         vaccinationDoseRepository.save(dose);
 
-        if (profile.getFamily() != null) {
-            evictDashboardCache(profile.getFamily().getId());
-        }
+        evictDashboardCache(profile);
 
         // 3. Trả về toàn bộ các mũi tiêm thuộc record này để đồng bộ hóa danh sách UI
         List<VaccinationDose> doses = vaccinationDoseRepository.findAllByVaccinationRecordIdOrderByDoseNumberAsc(record.getId());
@@ -158,9 +158,7 @@ public class VaccinationServiceImpl implements VaccinationService {
         // Trả về dữ liệu mới nhất
         List<VaccinationDose> updatedDoses = vaccinationDoseRepository.findAllByVaccinationRecordIdOrderByDoseNumberAsc(record.getId());
 
-        if (record.getHealthProfile().getFamily() != null) {
-            evictDashboardCache(record.getHealthProfile().getFamily().getId());
-        }
+        evictDashboardCache(record.getHealthProfile());
 
         return vaccinationMapper.toRecordResponseWithDoses(record, updatedDoses);
     }

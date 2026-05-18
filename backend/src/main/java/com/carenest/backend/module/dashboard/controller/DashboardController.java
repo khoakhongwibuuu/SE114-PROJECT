@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
+import com.carenest.backend.module.family.context.FamilyRequestContext;
+
 @RestController
 @RequestMapping("/dashboard")
 @RequiredArgsConstructor
@@ -25,9 +27,10 @@ public class DashboardController {
     })
     @GetMapping({"", "/today"})
     public ResponseEntity<com.carenest.backend.common.dto.ApiResponse<DashboardResponse>> getDashboardOverview(
-            @RequestParam("familyId") Long familyId,
+            @RequestParam(value = "familyId", required = false) Long familyId,
             @RequestParam(value = "profileId", required = false) Long profileId) {
-        DashboardResponse response = dashboardService.getDashboardOverview(familyId, profileId);
+        Long resolvedFamilyId = familyId != null ? familyId : FamilyRequestContext.getFamilyId();
+        DashboardResponse response = dashboardService.getDashboardOverview(resolvedFamilyId, profileId);
         return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu Dashboard thành công", response));
     }
 }

@@ -29,6 +29,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/health-profiles/**",
                         "/medications/**",
                         "/medication-logs/**",
+                        "/cabinets/**",
                         "/appointments/**",
                         "/vaccination-records/**",
                         "/growth-records/**",

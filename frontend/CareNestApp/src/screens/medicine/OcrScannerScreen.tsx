@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
   PermissionsAndroid,
   Platform,
   ScrollView,
@@ -44,6 +45,7 @@ export default function OcrScannerScreen() {
   const [clinicName, setClinicName] = useState('');
   const [doctorName, setDoctorName] = useState('');
   const [prescriptionDate, setPrescriptionDate] = useState('');
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const ensureAndroidPermission = async (
     permission: Permission,
@@ -212,11 +214,16 @@ export default function OcrScannerScreen() {
   }
 
   async function handleConfirm() {
+    if (isConfirming) {
+      return;
+    }
+
     if (!activeProfileId || !ocrId) {
       return;
     }
 
     try {
+      setIsConfirming(true);
       await confirmOcr(ocrId, {
         profileId: activeProfileId,
         structuredData: {
@@ -236,12 +243,16 @@ export default function OcrScannerScreen() {
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
+      setIsConfirming(false);
       Alert.alert('Không thể xác nhận OCR', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     }
   }
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <TopAppBar variant="detail" title="Quét toa thuốc OCR" />
       <ScrollView
         contentContainerStyle={[
@@ -249,6 +260,7 @@ export default function OcrScannerScreen() {
           { paddingTop: TOP_BAR_HEIGHT + insets.top + 16, paddingBottom: BOTTOM_NAV_HEIGHT + 40 },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.cameraBox}>
           {ocrState === 'scanning' ? (
@@ -330,14 +342,19 @@ export default function OcrScannerScreen() {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.submitBtn} onPress={() => void handleConfirm()} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={[styles.submitBtn, isConfirming && styles.disabledBtn]}
+              onPress={() => void handleConfirm()}
+              activeOpacity={0.85}
+              disabled={isConfirming}
+            >
               <Icon name="check" size={20} color={colors.onPrimary} />
               <Text style={styles.submitBtnText}>Xác nhận và lưu vào hệ thống</Text>
             </TouchableOpacity>
           </>
         ) : null}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -425,4 +442,5 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   submitBtnText: { fontSize: 15, fontFamily: 'Inter', fontWeight: '700', color: colors.onPrimary },
+  disabledBtn: { opacity: 0.6 },
 });

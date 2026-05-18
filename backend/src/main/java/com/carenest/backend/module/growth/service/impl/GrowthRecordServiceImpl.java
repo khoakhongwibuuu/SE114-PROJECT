@@ -5,6 +5,7 @@ import com.carenest.backend.module.auth.entity.User;
 import com.carenest.backend.module.family.entity.Family;
 import com.carenest.backend.module.family.entity.FamilyMember;
 import com.carenest.backend.module.family.repository.FamilyMemberRepository;
+import com.carenest.backend.module.family.util.FamilySecurityUtil;
 import com.carenest.backend.module.growth.dto.request.GrowthRecordCreateRequest;
 import com.carenest.backend.module.growth.dto.response.GrowthChartResponse;
 import com.carenest.backend.module.growth.dto.response.GrowthRecordResponse;
@@ -39,10 +40,13 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
     private final WhoGrowthCalculatorService whoGrowthCalculatorService;
     private final NotificationService notificationService;
     private final FamilyMemberRepository familyMemberRepository;
+    private final FamilySecurityUtil familySecurityUtil;
 
     @Override
     @Transactional
     public GrowthRecordResponse addRecord(Long profileId, GrowthRecordCreateRequest request) {
+        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
 
@@ -77,6 +81,8 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
     @Override
     @Transactional(readOnly = true)
     public List<GrowthRecordResponse> getGrowthRecords(Long profileId) {
+        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
                 
@@ -89,6 +95,8 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
     @Override
     @Transactional(readOnly = true)
     public List<GrowthChartResponse> getGrowthChartData(Long profileId) {
+        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
 

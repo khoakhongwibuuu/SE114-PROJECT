@@ -24,6 +24,7 @@ export default function AddMedicineToCabinetScreen() {
   const [unit, setUnit] = useState('viên');
   const [expiryDate, setExpiryDate] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -33,12 +34,13 @@ export default function AddMedicineToCabinetScreen() {
   };
 
   const UNITS = ['viên', 'gói', 'chai', 'tuýp', 'hộp'];
-  const canSubmit = name.trim().length > 0 && expiryDate.trim().length > 0;
+  const canSubmit = name.trim().length > 0 && expiryDate.trim().length > 0 && !isSubmitting;
 
   async function handleSubmit() {
-    if (!canSubmit) return;
+    if (!canSubmit || isSubmitting) return;
 
     try {
+      setIsSubmitting(true);
       await createCabinetMedicine({
         name,
         quantity: Number(quantity) || 0,
@@ -49,6 +51,7 @@ export default function AddMedicineToCabinetScreen() {
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
+      setIsSubmitting(false);
       Alert.alert('Không thể thêm thuốc', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     }
   }

@@ -21,6 +21,7 @@ import TopAppBar from '../../components/layout/TopAppBar';
 import FAB from '../../components/common/FAB';
 import type { MedicineStackParamList } from '../../navigation/navigationTypes';
 import { getCabinetMedicines, updateCabinetMedicine, deleteCabinetMedicine, type MedicineItem } from '../../api/medicine';
+import { invalidateApiGetCache } from '../../api/client';
 
 type Nav = NativeStackNavigationProp<MedicineStackParamList, 'MedicineCabinet'>;
 type FilterKey = 'all' | 'expired' | 'expiring' | 'low_stock' | 'out_of_stock';
@@ -43,12 +44,21 @@ export default function MedicineCabinetScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [isEditingQuantity, setIsEditingQuantity] = useState(false);
   const [newQuantity, setNewQuantity] = useState('');
+  const [isMutating, setIsMutating] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadMedicines = useCallback(async () => {
     await getCabinetMedicines()
       .then(setMedicines)
       .catch(() => setMedicines([]));
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    invalidateApiGetCache(['/cabinets']);
+    await loadMedicines();
+    setRefreshing(false);
+  }, [loadMedicines]);
 
   const handleOpenSheet = (item: MedicineItem) => {
     setSelectedMedicine(item);
@@ -148,6 +158,8 @@ export default function MedicineCabinetScreen() {
           { paddingTop: TOP_BAR_HEIGHT + insets.top + 16, paddingBottom: BOTTOM_NAV_HEIGHT + 80 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         ListHeaderComponent={() => (
           <>
             {alertCount > 0 ? (

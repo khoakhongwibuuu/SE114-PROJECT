@@ -58,7 +58,7 @@ export default function TopAppBar({
   if (variant === 'chat') {
     return (
       <View style={[styles.bar, styles.chatBar, { paddingTop: insets.top || 12, height: barHeight }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Icon name="arrow_back" size={24} color={colors.onSurface} />
         </TouchableOpacity>
         <View style={styles.chatTitle}>
@@ -78,7 +78,7 @@ export default function TopAppBar({
   // detail variant (default)
   return (
     <View style={[styles.bar, styles.detailBar, { paddingTop: insets.top || 12, height: barHeight }]}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.8}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.8} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Icon name="arrow_back" size={24} color={colors.onSurface} />
       </TouchableOpacity>
       <Text style={styles.detailTitle} numberOfLines={1}>

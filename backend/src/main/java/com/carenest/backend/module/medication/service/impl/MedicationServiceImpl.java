@@ -52,6 +52,14 @@ public class MedicationServiceImpl implements MedicationService {
     private final FamilySecurityUtil familySecurityUtil;
     private final CacheManager cacheManager;
 
+    private void evictDashboardCache(HealthProfile profile) {
+        if (profile != null && cacheManager.getCache("dashboard") != null) {
+            for (Long familyId : familySecurityUtil.getFamilyIdsForProfile(profile)) {
+                cacheManager.getCache("dashboard").evict(familyId);
+            }
+        }
+    }
+
     private void evictDashboardCache(Long familyId) {
         if (familyId != null && cacheManager.getCache("dashboard") != null) {
             cacheManager.getCache("dashboard").evict(familyId);
@@ -78,9 +86,7 @@ public class MedicationServiceImpl implements MedicationService {
         // Generate Logs
         generateLogsForMedication(medication);
 
-        if (profile.getFamily() != null) {
-            evictDashboardCache(profile.getFamily().getId());
-        }
+        evictDashboardCache(profile);
 
         return medicationMapper.toMedicationResponse(medication);
     }
@@ -136,9 +142,7 @@ public class MedicationServiceImpl implements MedicationService {
             generateLogsForMedication(medication);
         }
 
-        if (medication.getHealthProfile().getFamily() != null) {
-            evictDashboardCache(medication.getHealthProfile().getFamily().getId());
-        }
+        evictDashboardCache(medication.getHealthProfile());
 
         return medicationMapper.toMedicationResponse(medication);
     }
@@ -162,9 +166,7 @@ public class MedicationServiceImpl implements MedicationService {
                 .collect(Collectors.toList());
         medicationLogRepository.deleteAll(futureLogs);
 
-        if (medication.getHealthProfile().getFamily() != null) {
-            evictDashboardCache(medication.getHealthProfile().getFamily().getId());
-        }
+        evictDashboardCache(medication.getHealthProfile());
     }
 
     @Override
@@ -242,9 +244,7 @@ public class MedicationServiceImpl implements MedicationService {
 
         medicationLogRepository.save(log);
 
-        if (log.getMedication().getHealthProfile().getFamily() != null) {
-            evictDashboardCache(log.getMedication().getHealthProfile().getFamily().getId());
-        }
+        evictDashboardCache(log.getMedication().getHealthProfile());
     }
 
     private int parseDosageQuantity(String dosage) {

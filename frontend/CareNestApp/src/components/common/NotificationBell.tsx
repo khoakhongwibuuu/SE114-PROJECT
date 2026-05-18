@@ -22,6 +22,7 @@ export default function NotificationBell({
       style={styles.container} 
       activeOpacity={0.7}
       onPress={() => navigation.navigate('NotificationsCenter')}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
       <Icon name="notifications" size={size} color={iconColor} />
       {hasNotification && (
@@ -34,6 +35,8 @@ export default function NotificationBell({
 const styles = StyleSheet.create({
   container: {
     padding: 4,
+    minWidth: 44,
+    minHeight: 44,
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',

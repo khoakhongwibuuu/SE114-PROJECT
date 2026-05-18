@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -34,7 +34,7 @@ export default function AddVaccinationScheduleScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const route = useRoute<AddVaccinationRoute>();
-  const { profileId } = route.params;
+  const profileId = route.params?.profileId;
 
   const [vaccineName, setVaccineName] = useState('');
   const [selectedDose, setSelectedDose] = useState(1);
@@ -43,6 +43,26 @@ export default function AddVaccinationScheduleScreen() {
   const [clinicName, setClinicName] = useState('');
   const [notes, setNotes] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const editData = (route.params as any)?.editVaccination;
+    if (editData) {
+      setVaccineName(editData.vaccineName || '');
+      setSelectedDose(editData.doseNumber || 1);
+      setIsCompleted(editData.status === 'DONE');
+      setClinicName(editData.clinicName || '');
+      setNotes(editData.notes || '');
+
+      const dateStr = editData.dateGiven || editData.plannedDate;
+      if (dateStr) {
+        const parsedDate = new Date(dateStr);
+        if (!isNaN(parsedDate.getTime())) {
+          setDate(parsedDate);
+        }
+      }
+    }
+  }, [route.params]);
 
   const onDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -73,12 +93,22 @@ export default function AddVaccinationScheduleScreen() {
   };
 
   async function handleSave() {
+    if (isSaving) {
+      return;
+    }
+
+    if (!profileId) {
+      Alert.alert('Thieu ho so', 'Khong tim thay ho so suc khoe de luu mui tiem.');
+      return;
+    }
+
     if (!vaccineName.trim()) {
       Alert.alert('Thiếu thông tin', 'Vui lòng nhập tên vắc xin.');
       return;
     }
 
     try {
+      setIsSaving(true);
       const dateValue = formatLocalDate(date);
       await createVaccination(profileId, {
         vaccineName: vaccineName.trim(),
@@ -89,10 +119,14 @@ export default function AddVaccinationScheduleScreen() {
         notes: notes.trim() || undefined,
       });
 
-      Alert.alert('Đã lưu thành công', 'Mũi tiêm đã được thêm vào hồ sơ của bé.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      const isEdit = !!(route.params as any)?.editVaccination;
+      Alert.alert(
+        isEdit ? 'Đã cập nhật thành công' : 'Đã lưu thành công',
+        isEdit ? 'Thông tin mũi tiêm đã được cập nhật.' : 'Mũi tiêm đã được thêm vào hồ sơ của bé.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
     } catch (error) {
+      setIsSaving(false);
       Alert.alert('Không thể lưu dữ liệu', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     }
   }
@@ -106,13 +140,17 @@ export default function AddVaccinationScheduleScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ghi nhận tiêm chủng</Text>
+        <Text style={styles.headerTitle}>
+          {(route.params as any)?.editVaccination ? 'Chỉnh sửa mũi tiêm' : 'Ghi nhận tiêm chủng'}
+        </Text>
         <View style={styles.helpBtn} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.introText}>
-          Ghi nhận từng mũi tiêm cụ thể để theo dõi đầy đủ và chính xác lịch trình phòng bệnh của bé.
+          {(route.params as any)?.editVaccination
+            ? 'Cập nhật lại thông tin mũi tiêm đã ghi nhận trong hồ sơ sức khỏe.'
+            : 'Ghi nhận từng mũi tiêm cụ thể để theo dõi đầy đủ và chính xác lịch trình phòng bệnh của bé.'}
         </Text>
 
         <View style={styles.card}>
@@ -227,9 +265,16 @@ export default function AddVaccinationScheduleScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
-        <TouchableOpacity style={styles.submitBtn} activeOpacity={0.8} onPress={() => void handleSave()}>
+        <TouchableOpacity
+          style={[styles.submitBtn, isSaving && styles.submitBtnDisabled]}
+          activeOpacity={0.8}
+          onPress={() => void handleSave()}
+          disabled={isSaving}
+        >
           <MaterialCommunityIcons name="check-circle-outline" size={24} color="#fff" />
-          <Text style={styles.submitBtnText}>Lưu mũi tiêm</Text>
+          <Text style={styles.submitBtnText}>
+            {(route.params as any)?.editVaccination ? 'Cập nhật mũi tiêm' : 'Lưu mũi tiêm'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -265,5 +310,6 @@ const styles = StyleSheet.create({
   notesInput: { marginLeft: 12, height: '100%', textAlignVertical: 'top' },
   footer: { paddingHorizontal: 24, paddingVertical: 10 },
   submitBtn: { height: 56, backgroundColor: colors.primary, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, shadowColor: '#2563eb', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
+  submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', fontFamily: 'Inter' },
 });

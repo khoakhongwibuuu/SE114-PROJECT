@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -19,6 +20,7 @@ import { getDailySchedule, getScheduleFormData, takeDose, type DailyMedicineSche
 import { useFamily } from '../../context/FamilyContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatLocalDate } from '../../utils/dateTime';
+import { invalidateApiGetCache } from '../../api/client';
 
 type Nav = NativeStackNavigationProp<any, 'MedicineSchedule'>;
 
@@ -35,6 +37,7 @@ export default function MedicineScheduleScreen() {
   const { selectedProfileId } = useFamily();
   const { user } = useAuth();
   const [schedule, setSchedule] = useState<DailyMedicineSchedule | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const memberId = route.params?.memberId as string | undefined;
   const activeProfileId = memberId
@@ -54,6 +57,13 @@ export default function MedicineScheduleScreen() {
 
     void getScheduleFormData();
   }, [activeProfileId]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    invalidateApiGetCache(['/medications/today']);
+    await loadSchedule();
+    setRefreshing(false);
+  }, [loadSchedule]);
 
   useFocusEffect(
     useCallback(() => {
@@ -93,6 +103,13 @@ export default function MedicineScheduleScreen() {
           { paddingTop: TOP_BAR_HEIGHT + insets.top + 16, paddingBottom: BOTTOM_NAV_HEIGHT + 80 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+          />
+        }
       >
         <View style={styles.progressCard}>
           <View style={styles.progressInfo}>

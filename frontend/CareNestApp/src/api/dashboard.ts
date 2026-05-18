@@ -12,11 +12,20 @@ export interface DashboardTask {
 export interface DashboardPayload {
   unreadNotifications: number;
   todayTasks: DashboardTask[];
+  generatedAt?: string;
 }
 
-export async function getDashboard(profileId?: number): Promise<DashboardPayload> {
-  return apiGetCached<DashboardPayload>('/dashboard', profileId ? { profileId } : undefined, {
+export async function getDashboard(familyId?: number | null, profileId?: number): Promise<DashboardPayload> {
+  const params: Record<string, unknown> = {};
+  if (familyId) {
+    params.familyId = familyId;
+  }
+  if (profileId) {
+    params.profileId = profileId;
+  }
+  return apiGetCached<DashboardPayload>('/dashboard', params, {
     ttlMs: 20000,
   });
 }
+
 

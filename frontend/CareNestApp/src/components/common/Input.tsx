@@ -37,7 +37,11 @@ export default function Input({
           {...props}
         />
         {rightIcon && (
-          <TouchableOpacity onPress={onRightIconPress} style={styles.rightIcon}>
+          <TouchableOpacity
+            onPress={onRightIconPress}
+            style={styles.rightIcon}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             {rightIcon}
           </TouchableOpacity>
         )}
@@ -70,7 +74,13 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
   },
   leftIcon: { marginRight: 10 },
-  rightIcon: { marginLeft: 8 },
+  rightIcon: {
+    minWidth: 44,
+    minHeight: 44,
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   input: {
     flex: 1,
     fontSize: 15,
