@@ -215,12 +215,19 @@ public class MedicationServiceImpl implements MedicationService {
 
         familySecurityUtil.checkUserBelongsToHealthProfile(log.getMedication().getHealthProfile().getId());
 
-        if (log.getStatus() != MedicationLogStatus.PENDING) {
-             throw new BadRequestException("Bản ghi này đã được xử lý (đã uống hoặc bỏ qua)");
+        MedicationLogStatus oldStatus = log.getStatus();
+        MedicationLogStatus newStatus = request.getStatus();
+
+        if (oldStatus == newStatus) {
+            if (request.getNotes() != null) {
+                log.setNotes(request.getNotes());
+                medicationLogRepository.save(log);
+            }
+            return;
         }
 
-        log.setStatus(request.getStatus());
-        if (request.getStatus() == MedicationLogStatus.TAKEN) {
+        log.setStatus(newStatus);
+        if (newStatus == MedicationLogStatus.TAKEN) {
             log.setTakenTime(Instant.now());
             
             // Tự động trừ thuốc trong tủ của gia đình khi đánh dấu đã uống thuốc
@@ -237,7 +244,27 @@ public class MedicationServiceImpl implements MedicationService {
                             });
                 });
             }
+        } else if (newStatus == MedicationLogStatus.PENDING) {
+            log.setTakenTime(null);
+            
+            // Tự động cộng trả lại thuốc vào tủ gia đình nếu trước đó đã đánh dấu TAKEN
+            if (oldStatus == MedicationLogStatus.TAKEN) {
+                HealthProfile profile = log.getMedication().getHealthProfile();
+                if (profile.getFamily() != null) {
+                    Long familyId = profile.getFamily().getId();
+                    medicineCabinetRepository.findByFamilyId(familyId).ifPresent(cabinet -> {
+                        String medicineName = log.getMedication().getMedicineName();
+                        cabinetMedicineRepository.findByCabinetIdAndMedicineNameIgnoreCase(cabinet.getId(), medicineName)
+                                .ifPresent(cabMed -> {
+                                    int doseQty = parseDosageQuantity(log.getMedication().getDosage());
+                                    cabMed.setQuantity(cabMed.getQuantity() + doseQty);
+                                    cabinetMedicineRepository.save(cabMed);
+                                });
+                    });
+                }
+            }
         }
+
         if (request.getNotes() != null) {
             log.setNotes(request.getNotes());
         }
@@ -428,4 +455,23 @@ public class MedicationServiceImpl implements MedicationService {
 
         evictDashboardCache(request.getFamilyId());
     }
+
+    @Override
+    @Transactional
+    public void deleteMedication(Long medicationId) {
+        Medication medication = medicationRepository.findById(medicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Medication", medicationId));
+
+        familySecurityUtil.checkUserBelongsToHealthProfile(medication.getHealthProfile().getId());
+
+        // Delete all logs first
+        List<MedicationLog> logs = medicationLogRepository.findAllByMedicationId(medicationId);
+        medicationLogRepository.deleteAll(logs);
+
+        // Delete medication plan
+        medicationRepository.delete(medication);
+
+        evictDashboardCache(medication.getHealthProfile());
+    }
 }
+

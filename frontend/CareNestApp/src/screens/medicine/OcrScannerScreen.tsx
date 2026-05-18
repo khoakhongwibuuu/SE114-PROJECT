@@ -37,7 +37,7 @@ type EditableMedicine = {
 export default function OcrScannerScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { selectedProfileId } = useFamily();
+  const { selectedProfileId, ownProfileId } = useFamily();
   const { user } = useAuth();
   const [ocrState, setOcrState] = useState<OcrState>('idle');
   const [ocrId, setOcrId] = useState<number | null>(null);
@@ -134,7 +134,7 @@ export default function OcrScannerScreen() {
     return asset;
   };
 
-  const activeProfileId = selectedProfileId || (user?.profileId ? Number(user.profileId) : null);
+  const activeProfileId = selectedProfileId || ownProfileId;
 
   async function processSelectedImage(asset?: Asset) {
     if (!activeProfileId) {

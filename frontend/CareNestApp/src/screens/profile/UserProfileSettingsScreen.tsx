@@ -148,7 +148,7 @@ export default function UserProfileSettingsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { user, logout, refreshUser } = useAuth();
-  const { members, refreshFamily } = useFamily();
+  const { members, refreshFamily, ownProfileId } = useFamily();
 
   const [medReminder, setMedReminder] = useState(true);
   const [apptReminder, setApptReminder] = useState(true);
@@ -171,9 +171,9 @@ export default function UserProfileSettingsScreen() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const memberRole = useMemo(() => {
-    const currentMember = members.find(member => String(member.id) === user?.profileId);
+    const currentMember = members.find(member => member.userId === user?.userId);
     return formatMemberRole(currentMember?.role);
-  }, [members, user?.profileId]);
+  }, [members, user?.userId]);
 
 
   const loadProfile = useCallback(async () => {
@@ -380,11 +380,11 @@ export default function UserProfileSettingsScreen() {
               void getCurrentUserProfile().catch(() => {});
             }}
             onPress={() => {
-              if (!user?.profileId) {
-                Alert.alert('Chua co ho so', 'Vui long dong bo ho so suc khoe truoc khi mo ho so y te.');
+              if (!ownProfileId) {
+                Alert.alert('Chưa có hồ sơ', 'Vui lòng đồng bộ hồ sơ sức khỏe trước khi mở hồ sơ y tế.');
                 return;
               }
-              navigation.navigate('UserMedical', { memberId: String(user.profileId) });
+              navigation.navigate('UserMedical', { memberId: String(ownProfileId) });
             }}
           >
             <View style={styles.medicalIconWrap}>

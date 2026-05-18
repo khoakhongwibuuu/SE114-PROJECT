@@ -119,6 +119,7 @@ export async function getDailySchedule(profileId: number, date: string): Promise
     
     const item = {
       id: log.id,
+      medicationId: log.medicationId,
       medicineName: log.medicineName,
       dosage: log.dosage,
       note: log.notes,
@@ -227,4 +228,11 @@ export async function deleteMedicineSchedule(scheduleId: number): Promise<void> 
   await apiPut(`/medications/${scheduleId}/complete`);
   invalidateApiGetCache(['/medications/today', '/dashboard', '/notifications']);
 }
+
+export async function deleteMedication(scheduleId: number): Promise<void> {
+  const { apiDelete } = await import('./client');
+  await apiDelete(`/medications/${scheduleId}`);
+  invalidateApiGetCache(['/medications/today', `/health-profiles/.*`, '/dashboard', '/notifications']);
+}
+
 

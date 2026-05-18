@@ -14,6 +14,7 @@ export interface FamilyMemberSummary {
   id: number;
   familyMemberId?: number | null;
   profileId?: number | null;
+  userId?: number | null;
   fullName: string;
   role: FamilyRole;
 
@@ -142,6 +143,7 @@ function mapRawFamilyToDetail(raw: RawFamilyDetailResponse): FamilyDetailRespons
       id: m.profileId ?? m.id,
       familyMemberId: m.id,
       profileId: m.profileId ?? null,
+      userId: m.user?.id ?? null,
       fullName: m.fullName || m.user?.fullName,
       role: m.role,
       avatarUrl: m.avatarUrl || m.user?.avatarUrl,
