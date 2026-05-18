@@ -67,7 +67,7 @@ export default function VaccinationTrackerScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: BOTTOM_NAV_HEIGHT + 80 },
+          { paddingBottom: 100 },
         ]}
       >
         {groups.length === 0 ? (
@@ -78,34 +78,48 @@ export default function VaccinationTrackerScreen() {
           </View>
         ) : (
           groups.map(group => (
-            <View key={group.stageLabel} style={styles.timelineSection}>
-              <View style={styles.ageHeaderRow}>
-                <View style={styles.ageIconCircle}>
-                  <Icon name={AGE_GROUP_ICONS[group.stageLabel] || 'calendar_today'} size={24} color="#3B82F6" />
-                </View>
-                <View>
-                  <Text style={styles.ageTitleText}>{group.stageLabel}</Text>
-                  <Text style={styles.ageSubTitleText}>{group.description}</Text>
+            <View key={group.stageLabel} style={styles.vaccineGroupCard}>
+              <View style={styles.groupHeader}>
+                <View style={styles.groupHeaderLeft}>
+                  <View style={styles.groupIconCircle}>
+                    <Icon name="syringe" size={20} color="#3B82F6" />
+                  </View>
+                  <Text style={styles.groupTitleText}>{group.stageLabel}</Text>
                 </View>
               </View>
 
-              <View style={styles.cardListContainer}>
-                {group.vaccinations.map(vaccine => (
-                  <View key={vaccine.id} style={[styles.vacCard, shadows.sm]}>
+              <View style={styles.doseList}>
+                {group.vaccinations.map((vaccine, index) => {
+                  const isLast = index === group.vaccinations.length - 1;
+                  return (
+                    <View
+                      key={vaccine.id}
+                      style={[
+                        styles.doseRow,
+                        !isLast && styles.doseDivider,
+                      ]}
+                    >
+                      <View style={[styles.vacIconWrap, vaccine.status === 'DONE' ? styles.vacIconWrapCompleted : undefined]}>
+                        <Icon
+                          name={vaccine.status === 'DONE' ? 'check' : 'calendar_today'}
+                          size={18}
+                          color={vaccine.status === 'DONE' ? '#fff' : colors.primary}
+                        />
+                      </View>
 
-                    <View style={[styles.vacIconWrap, vaccine.status === 'DONE' ? styles.vacIconWrapCompleted : undefined]}>
-                      <Icon name={vaccine.status === 'DONE' ? 'check' : 'calendar_today'} size={20} color={vaccine.status === 'DONE' ? '#fff' : colors.primary} />
+                      <View style={styles.vacInfo}>
+                        <Text style={styles.vacDetail}>
+                          Mũi {vaccine.doseNumber} • {vaccine.dateGiven || vaccine.plannedDate || 'Chưa có ngày'}
+                        </Text>
+                        {vaccine.clinicName ? (
+                          <Text style={styles.vacFacility}>{vaccine.clinicName}</Text>
+                        ) : (
+                          <Text style={styles.vacNoFacility}>Chưa cập nhật địa điểm</Text>
+                        )}
+                      </View>
                     </View>
-
-                    <View style={styles.vacInfo}>
-                      <Text style={styles.vacName}>{vaccine.vaccineName}</Text>
-                      <Text style={styles.vacDetail}>
-                        Mũi {vaccine.doseNumber} · {vaccine.dateGiven || vaccine.plannedDate || 'Chưa có ngày'}
-                      </Text>
-                      {vaccine.clinicName ? <Text style={styles.vacFacility}>{vaccine.clinicName}</Text> : null}
-                    </View>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             </View>
           ))
@@ -131,17 +145,86 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 10 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.onSurface },
   emptyText: { fontSize: 14, color: colors.onSurfaceVariant, textAlign: 'center', lineHeight: 22 },
-  timelineSection: { marginBottom: 32 },
-  ageHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
-  ageIconCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#DBEAFE', alignItems: 'center', justifyContent: 'center' },
-  ageTitleText: { fontSize: 20, fontFamily: 'Manrope', fontWeight: '800', color: '#1E293B' },
-  ageSubTitleText: { fontSize: 13, fontFamily: 'Inter', color: '#64748B', marginTop: 2 },
-  cardListContainer: { gap: 14 },
-  vacCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 28, padding: 18, gap: 16 },
-  vacIconWrap: { width: 44, height: 44, borderRadius: 10, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center' },
-  vacIconWrapCompleted: { backgroundColor: '#3B82F6' },
-  vacInfo: { flex: 1 },
-  vacName: { fontSize: 16, fontFamily: 'Inter', fontWeight: '700', color: '#1E293B' },
-  vacDetail: { fontSize: 13, fontFamily: 'Inter', fontWeight: '600', color: '#64748B', marginTop: 4 },
-  vacFacility: { fontSize: 12, fontFamily: 'Inter', color: '#94A3B8', marginTop: 3 },
+  vaccineGroupCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    ...shadows.sm,
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  groupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  groupIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  groupTitleText: {
+    fontSize: 16,
+    fontFamily: 'Manrope',
+    fontWeight: '800',
+    color: '#1E3A8A',
+  },
+  doseList: {
+    marginTop: 4,
+  },
+  doseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    gap: 12,
+  },
+  doseDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  vacIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vacIconWrapCompleted: {
+    backgroundColor: '#3B82F6',
+  },
+  vacInfo: {
+    flex: 1,
+  },
+  vacDetail: {
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    color: '#1E293B',
+  },
+  vacFacility: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    color: '#64748B',
+    marginTop: 3,
+  },
+  vacNoFacility: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    color: '#94A3B8',
+    marginTop: 3,
+    fontStyle: 'italic',
+  },
 });
