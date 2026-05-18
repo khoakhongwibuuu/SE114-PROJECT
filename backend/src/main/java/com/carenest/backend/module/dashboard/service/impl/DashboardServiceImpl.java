@@ -107,6 +107,7 @@ public class DashboardServiceImpl implements DashboardService {
                     .time(logItem.getScheduledTime().toString())
                     .memberName(logItem.getMedication().getHealthProfile().getFullName())
                     .referenceId(logItem.getId())
+                    .profileId(logItem.getMedication().getHealthProfile().getId())
                     .build());
         }
 
@@ -128,6 +129,7 @@ public class DashboardServiceImpl implements DashboardService {
                     .time(dose.getScheduledDate().atStartOfDay(zoneId).toInstant().toString())
                     .memberName(dose.getVaccinationRecord().getHealthProfile().getFullName())
                     .referenceId(dose.getId())
+                    .profileId(dose.getVaccinationRecord().getHealthProfile().getId())
                     .subtitle(subtitle)
                     .build());
         }
@@ -141,6 +143,7 @@ public class DashboardServiceImpl implements DashboardService {
                     .time(app.getAppointmentDate().toString())
                     .memberName(app.getHealthProfile().getFullName())
                     .referenceId(app.getId())
+                    .profileId(app.getHealthProfile().getId())
                     .subtitle("🏥 Hôm nay")
                     .build());
         }

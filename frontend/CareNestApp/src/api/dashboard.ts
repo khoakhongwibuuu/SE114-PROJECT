@@ -6,6 +6,7 @@ export interface DashboardTask {
   time: string;
   memberName: string;
   referenceId: number;
+  profileId: number;
   subtitle?: string | null;
 }
 

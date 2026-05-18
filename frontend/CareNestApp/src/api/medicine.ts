@@ -18,6 +18,7 @@ export interface DailyMedicineSchedule {
     label?: string | null;
     items: Array<{
       id: number;
+      medicationId?: number | null;
       medicineName: string;
       dosage: string;
       note?: string | null;

@@ -256,6 +256,9 @@ export default function HomeDashboardScreen() {
 
       return {
         id: `${t.type}-${t.referenceId}`,
+        type: t.type,
+        referenceId: t.referenceId,
+        profileId: t.profileId,
         icon,
         iconBg,
         iconColor,
@@ -308,6 +311,17 @@ export default function HomeDashboardScreen() {
 
     void getVaccinationTracker(activeShortcutProfileId).catch(() => {});
   }, [activeShortcutProfileId]);
+
+  const handleTaskPress = (task: any) => {
+    const targetProfileId = task.profileId || activeShortcutProfileId;
+    if (task.type === 'MEDICATION') {
+      navigation.navigate('MedicineSchedule', { memberId: String(targetProfileId) });
+    } else if (task.type === 'VACCINATION') {
+      navigation.navigate('VaccinationTracker', { memberId: String(targetProfileId) });
+    } else if (task.type === 'APPOINTMENT') {
+      navigation.navigate('AppointmentList', { memberId: String(targetProfileId) });
+    }
+  };
 
   const handleOpenSwitcher = () => {
     setSwitcherVisible(true);
@@ -588,7 +602,12 @@ export default function HomeDashboardScreen() {
             </View>
           ) : (
             tasks.map(task => (
-              <View key={task.id} style={styles.taskCard}>
+              <TouchableOpacity
+                key={task.id}
+                style={styles.taskCard}
+                onPress={() => handleTaskPress(task)}
+                activeOpacity={0.7}
+              >
                 <View style={[styles.taskIconWrap, { backgroundColor: task.iconBg }]}>
                   <Icon name={task.icon} size={24} color={task.iconColor} />
                 </View>
@@ -615,7 +634,7 @@ export default function HomeDashboardScreen() {
                 ) : (
                   <Icon name="chevron_right" size={20} color="#94A3B8" />
                 )}
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </View>
