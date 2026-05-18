@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { DeviceEventEmitter } from 'react-native';
+import { getActiveFamilyHeaderId } from './activeFamily';
 import { API_BASE_URL } from './config';
 import { getStoredSession, setStoredSession } from './storage';
 
@@ -51,6 +52,19 @@ function buildGetCacheKey(url: string, params?: Record<string, unknown>): string
   return `GET:${url}?${stableStringify(params)}`;
 }
 
+function shouldAttachActiveFamilyHeader(url?: string): boolean {
+  if (!url) {
+    return true;
+  }
+
+  return (
+    !url.startsWith('/auth') &&
+    !url.startsWith('/families/my-list') &&
+    !url.startsWith('/families/join-by-code') &&
+    !url.startsWith('/families/join-by-qr')
+  );
+}
+
 function readFreshCache<T>(cacheKey: string): T | null {
   const cached = getResponseCache.get(cacheKey);
   if (!cached) {
@@ -93,6 +107,14 @@ apiClient.interceptors.request.use(async config => {
   if (session?.token) {
     config.headers.Authorization = `Bearer ${session.token}`;
   }
+
+  if (!config.headers['X-Family-Id'] && shouldAttachActiveFamilyHeader(config.url)) {
+    const activeFamilyId = await getActiveFamilyHeaderId();
+    if (activeFamilyId) {
+      config.headers['X-Family-Id'] = String(activeFamilyId);
+    }
+  }
+
   return config;
 });
 
