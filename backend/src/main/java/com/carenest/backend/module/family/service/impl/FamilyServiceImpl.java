@@ -28,14 +28,33 @@ import com.carenest.backend.module.family.repository.FamilyInvitationRepository;
 import com.carenest.backend.module.family.repository.FamilyMemberRepository;
 import com.carenest.backend.module.family.repository.FamilyRepository;
 import com.carenest.backend.module.family.service.FamilyService;
+import com.carenest.backend.module.healthprofile.entity.HealthProfile;
+import com.carenest.backend.module.healthprofile.repository.HealthProfileRepository;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.common.HybridBinarizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -55,6 +74,7 @@ public class FamilyServiceImpl implements FamilyService {
     private final FamilyInvitationRepository familyInvitationRepository;
     private final UserRepository userRepository;
     private final FamilyMapper familyMapper;
+    private final HealthProfileRepository healthProfileRepository;
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -111,12 +131,13 @@ public class FamilyServiceImpl implements FamilyService {
                 .build();
 
         familyMemberRepository.save(Objects.requireNonNull(member));
+        ensureFamilyHealthProfile(family, currentUser);
 
         return familyMapper.toFamilyResponse(family);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public FamilyDetailResponse getFamilyById(Long id) {
         User currentUser = getCurrentUser();
         if (!familyMemberRepository.existsByFamilyIdAndUserId(id, currentUser.getId())) {
@@ -130,7 +151,11 @@ public class FamilyServiceImpl implements FamilyService {
 
         FamilyDetailResponse response = familyMapper.toFamilyDetailResponse(family);
         List<FamilyMemberResponse> memberResponses = members.stream()
-                .map(familyMapper::toFamilyMemberResponse)
+                .map(member -> {
+                    FamilyMemberResponse memberResponse = familyMapper.toFamilyMemberResponse(member);
+                    memberResponse.setProfileId(ensureFamilyHealthProfile(family, member.getUser()).getId());
+                    return memberResponse;
+                })
                 .collect(Collectors.toList());
         response.setMembers(memberResponses);
 
@@ -271,6 +296,17 @@ public class FamilyServiceImpl implements FamilyService {
 
     @Override
     @Transactional
+    public FamilyDetailResponse joinByQr(MultipartFile image, FamilyRole role) {
+        String qrPayload = decodeQrPayload(image);
+        JoinFamilyByCodeRequest request = JoinFamilyByCodeRequest.builder()
+                .joinCode(extractJoinCode(qrPayload))
+                .role(role)
+                .build();
+        return joinByCode(request);
+    }
+
+    @Override
+    @Transactional
     public void updateMemberRole(Long familyId, Long memberId, UpdateRoleRequest request) {
         User currentUser = getCurrentUser();
 
@@ -334,6 +370,22 @@ public class FamilyServiceImpl implements FamilyService {
                 .role(role)
                 .build();
         familyMemberRepository.save(member);
+        ensureFamilyHealthProfile(family, user);
+    }
+
+    private HealthProfile ensureFamilyHealthProfile(Family family, User user) {
+        return healthProfileRepository
+                .findFirstByFamilyIdAndUserIdAndDeletedAtIsNull(family.getId(), user.getId())
+                .orElseGet(() -> healthProfileRepository.save(HealthProfile.builder()
+                        .user(user)
+                        .family(family)
+                        .fullName(user.getFullName() != null ? user.getFullName() : user.getEmail())
+                        .dateOfBirth(user.getDateOfBirth() != null ? user.getDateOfBirth() : LocalDate.of(2000, 1, 1))
+                        .gender(user.getGender() != null ? user.getGender() : com.carenest.backend.module.auth.enums.Gender.OTHER)
+                        .relationship("MEMBER")
+                        .avatarUrl(user.getAvatarUrl())
+                        .isChild(false)
+                        .build()));
     }
 
     private FamilyRole normalizeRole(FamilyRole role) {
@@ -377,14 +429,70 @@ public class FamilyServiceImpl implements FamilyService {
 
     private FamilyJoinCodeResponse toJoinCodeResponse(Family family) {
         String joinCode = family.getJoinCode();
+        String joinLink = "carenest://family/join?code=" + joinCode;
         return FamilyJoinCodeResponse.builder()
                 .id(family.getId())
                 .name(family.getName())
                 .joinCode(joinCode)
-                .joinLink("carenest://family/join?code=" + joinCode)
-                .qrCodeBase64(null)
+                .joinLink(joinLink)
+                .qrCodeBase64(generateQrCodeBase64(joinLink))
                 .expiresAt(family.getJoinCodeExpiresAt())
                 .build();
+    }
+
+    private String generateQrCodeBase64(String payload) {
+        try {
+            BitMatrix bitMatrix = new MultiFormatWriter().encode(payload, BarcodeFormat.QR_CODE, 256, 256);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
+            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        } catch (Exception e) {
+            throw new BadRequestException("Could not generate family QR code");
+        }
+    }
+
+    private String decodeQrPayload(MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new BadRequestException("QR image is required");
+        }
+
+        try {
+            BufferedImage bufferedImage = ImageIO.read(image.getInputStream());
+            if (bufferedImage == null) {
+                throw new BadRequestException("Invalid QR image");
+            }
+            BinaryBitmap bitmap = new BinaryBitmap(
+                    new HybridBinarizer(new BufferedImageLuminanceSource(bufferedImage)));
+            return new MultiFormatReader().decode(bitmap).getText();
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Could not read family QR code");
+        }
+    }
+
+    private String extractJoinCode(String payload) {
+        if (payload == null || payload.isBlank()) {
+            throw new BadRequestException("QR code does not contain a join code");
+        }
+
+        String trimmed = payload.trim();
+        try {
+            URI uri = URI.create(trimmed);
+            String query = uri.getRawQuery();
+            if (query != null) {
+                for (String pair : query.split("&")) {
+                    String[] parts = pair.split("=", 2);
+                    if (parts.length == 2 && "code".equalsIgnoreCase(parts[0])) {
+                        return URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
+                    }
+                }
+            }
+        } catch (IllegalArgumentException ignored) {
+            // Raw join-code payloads are accepted below.
+        }
+
+        return trimmed;
     }
 
     private FamilyInvitationResponse toInvitationResponse(FamilyInvitation invitation) {

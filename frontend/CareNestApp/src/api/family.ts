@@ -12,6 +12,7 @@ export type FamilyRole =
 
 export interface FamilyMemberSummary {
   id: number;
+  familyMemberId?: number | null;
   profileId?: number | null;
   fullName: string;
   role: FamilyRole;
@@ -71,6 +72,7 @@ export interface ProfileDetails {
 // --- RAW BACKEND MODELS ---
 export interface RawFamilyMember {
   id: number;
+  profileId?: number | null;
   user: {
     id: number;
     email: string;
@@ -137,7 +139,9 @@ function mapRawFamilyToDetail(raw: RawFamilyDetailResponse): FamilyDetailRespons
     ownerUserId: raw.ownerId,
     memberCount: raw.members?.length || 0,
     members: (raw.members || []).map(m => ({
-      id: m.id,
+      id: m.profileId ?? m.id,
+      familyMemberId: m.id,
+      profileId: m.profileId ?? null,
       fullName: m.fullName || m.user?.fullName,
       role: m.role,
       avatarUrl: m.avatarUrl || m.user?.avatarUrl,
@@ -253,8 +257,8 @@ export async function joinFamilyByQr(formData: FormData): Promise<FamilyDetailRe
   return mapRawFamilyToDetail(response);
 }
 
-export async function updateFamilyMemberRole(familyId: number, profileId: number, role: FamilyRole): Promise<void> {
-  await apiPut(`/families/${familyId}/members/${profileId}/role`, { role });
+export async function updateFamilyMemberRole(familyId: number, familyMemberId: number, role: FamilyRole): Promise<void> {
+  await apiPut(`/families/${familyId}/members/${familyMemberId}/role`, { role });
   invalidateApiGetCache(['/families', '/dashboard']);
 }
 

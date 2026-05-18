@@ -10,6 +10,8 @@ import com.carenest.backend.module.family.dto.response.FamilyInvitationResponse;
 import com.carenest.backend.module.family.dto.response.FamilyJoinCodeResponse;
 import com.carenest.backend.module.family.dto.response.FamilyResponse;
 import com.carenest.backend.module.family.dto.response.FamilySummaryResponse;
+import com.carenest.backend.module.family.enums.FamilyRole;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -37,6 +39,8 @@ public interface FamilyService {
     FamilyJoinCodeResponse rotateJoinCode();
 
     FamilyDetailResponse joinByCode(JoinFamilyByCodeRequest request);
+
+    FamilyDetailResponse joinByQr(MultipartFile image, FamilyRole role);
 
     void updateMemberRole(Long familyId, Long memberId, UpdateRoleRequest request);
 }

@@ -14,8 +14,9 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FamilyMemberResponse {
-    private Long id; // ID của FamilyMember record
-    private UserInfoResponse user; // Thông tin user
+    private Long id;
+    private Long profileId;
+    private UserInfoResponse user;
     private String fullName;
     private String avatarUrl;
     private FamilyRole role;

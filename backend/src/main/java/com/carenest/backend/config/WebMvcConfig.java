@@ -39,6 +39,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/families/my-list",
                         "/families/join-by-code",
+                        "/families/join-by-qr",
                         "/auth/**"
                 );
     }
