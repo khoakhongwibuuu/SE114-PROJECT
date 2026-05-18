@@ -1,30 +1,17 @@
 import { apiGetCached } from './client';
 
-export interface DashboardPayload {
-  generatedAt: string;
-  scopeType: 'PROFILE' | 'FAMILY';
-  family?: {
-    id: number;
-    name: string;
-    memberCount: number;
-    members: Array<{
-      id: number;
-      fullName: string;
-      role: string;
+export interface DashboardTask {
+  type: 'MEDICATION' | 'VACCINATION' | 'APPOINTMENT';
+  title: string;
+  time: string;
+  memberName: string;
+  referenceId: number;
+  subtitle?: string | null;
+}
 
-      avatarUrl?: string | null;
-      age?: number | null;
-      healthStatus?: string | null;
-    }>;
-  } | null;
-  selectedProfileId: number | null;
-  selectedProfile?: Record<string, unknown> | null;
-  profiles: Array<Record<string, unknown>>;
-  profileContexts: Array<Record<string, unknown>>;
-  medicineCabinet: Array<Record<string, unknown>>;
-  notifications: Array<Record<string, unknown>>;
-  unreadNotificationCount: number;
-  aiSummary: string;
+export interface DashboardPayload {
+  unreadNotifications: number;
+  todayTasks: DashboardTask[];
 }
 
 export async function getDashboard(profileId?: number): Promise<DashboardPayload> {
@@ -32,3 +19,4 @@ export async function getDashboard(profileId?: number): Promise<DashboardPayload
     ttlMs: 20000,
   });
 }
+

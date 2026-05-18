@@ -23,9 +23,11 @@ public class DashboardController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Không có quyền truy cập (Token không hợp lệ hoặc hết hạn)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Người dùng không thuộc gia đình này")
     })
-    @GetMapping("/today")
-    public ResponseEntity<com.carenest.backend.common.dto.ApiResponse<DashboardResponse>> getDashboardOverview(@RequestParam("familyId") Long familyId) {
-        DashboardResponse response = dashboardService.getDashboardOverview(familyId);
+    @GetMapping({"", "/today"})
+    public ResponseEntity<com.carenest.backend.common.dto.ApiResponse<DashboardResponse>> getDashboardOverview(
+            @RequestParam("familyId") Long familyId,
+            @RequestParam(value = "profileId", required = false) Long profileId) {
+        DashboardResponse response = dashboardService.getDashboardOverview(familyId, profileId);
         return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu Dashboard thành công", response));
     }
 }

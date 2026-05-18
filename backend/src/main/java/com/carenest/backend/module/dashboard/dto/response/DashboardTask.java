@@ -25,4 +25,7 @@ public class DashboardTask {
     
     @Schema(description = "ID tham chiếu của công việc (MedicationLog ID hoặc VaccinationDose ID)", example = "123")
     private Long referenceId;
+
+    @Schema(description = "Mô tả phụ hoặc thẻ nhắc nhở", example = "⏳ Ngày mai")
+    private String subtitle;
 }

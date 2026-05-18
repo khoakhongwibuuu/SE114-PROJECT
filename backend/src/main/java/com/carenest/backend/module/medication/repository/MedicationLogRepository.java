@@ -28,4 +28,17 @@ public interface MedicationLogRepository extends JpaRepository<MedicationLog, Lo
             @Param("status") com.carenest.backend.module.medication.enums.MedicationLogStatus status,
             @Param("startOfDay") Instant startOfDay,
             @Param("endOfDay") Instant endOfDay);
+
+    @Query("SELECT m FROM MedicationLog m " +
+           "JOIN FETCH m.medication med " +
+           "JOIN FETCH med.healthProfile hp " +
+           "WHERE hp.id = :profileId " +
+           "AND m.status = :status " +
+           "AND m.scheduledTime BETWEEN :startOfDay AND :endOfDay " +
+           "ORDER BY m.scheduledTime ASC")
+    List<MedicationLog> findPendingTasksForProfileToday(
+            @Param("profileId") Long profileId,
+            @Param("status") com.carenest.backend.module.medication.enums.MedicationLogStatus status,
+            @Param("startOfDay") Instant startOfDay,
+            @Param("endOfDay") Instant endOfDay);
 }

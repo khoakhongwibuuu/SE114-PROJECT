@@ -23,4 +23,30 @@ public interface VaccinationDoseRepository extends JpaRepository<VaccinationDose
     List<VaccinationDose> findUpcomingDosesForFamily(
             @Param("familyId") Long familyId,
             @Param("status") com.carenest.backend.module.vaccination.enums.DoseStatus status);
+
+    @Query("SELECT v FROM VaccinationDose v " +
+           "JOIN FETCH v.vaccinationRecord r " +
+           "JOIN FETCH r.healthProfile hp " +
+           "WHERE hp.family.id = :familyId " +
+           "AND v.status = :status " +
+           "AND v.scheduledDate BETWEEN :startDate AND :endDate " +
+           "ORDER BY v.scheduledDate ASC")
+    List<VaccinationDose> findUpcomingDosesForFamilyBetween(
+            @Param("familyId") Long familyId,
+            @Param("status") com.carenest.backend.module.vaccination.enums.DoseStatus status,
+            @Param("startDate") java.time.LocalDate startDate,
+            @Param("endDate") java.time.LocalDate endDate);
+
+    @Query("SELECT v FROM VaccinationDose v " +
+           "JOIN FETCH v.vaccinationRecord r " +
+           "JOIN FETCH r.healthProfile hp " +
+           "WHERE hp.id = :profileId " +
+           "AND v.status = :status " +
+           "AND v.scheduledDate BETWEEN :startDate AND :endDate " +
+           "ORDER BY v.scheduledDate ASC")
+    List<VaccinationDose> findUpcomingDosesForProfileBetween(
+            @Param("profileId") Long profileId,
+            @Param("status") com.carenest.backend.module.vaccination.enums.DoseStatus status,
+            @Param("startDate") java.time.LocalDate startDate,
+            @Param("endDate") java.time.LocalDate endDate);
 }

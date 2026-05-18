@@ -194,37 +194,82 @@ export default function HomeDashboardScreen() {
     }, [loadDashboard]),
   );
 
-  const profileContexts = useMemo(
-    () => (dashboard?.profileContexts || []) as ProfileContext[],
-    [dashboard],
-  );
-
-  const selectedProfileContext = useMemo(
-    () =>
-      profileContexts.find(item => {
-        const profile = item.profile as { id?: number } | undefined;
-        return profile?.id === dashboard?.selectedProfileId;
-      }),
-    [dashboard?.selectedProfileId, profileContexts],
-  );
+  const handleSelectMember = (profileId: number | null) => {
+    if (selectedProfileId === profileId) {
+      setSelectedProfileId(null);
+    } else {
+      setSelectedProfileId(profileId);
+    }
+  };
 
   const tasks = useMemo(() => {
-    if (!dashboard) {
+    if (!dashboard || !dashboard.todayTasks) {
       return [];
     }
 
-    if (dashboard.scopeType === 'FAMILY') {
-      return profileContexts.flatMap(context => buildTasks(context)).slice(0, 4);
+    return dashboard.todayTasks.map((t) => {
+      let icon = 'check_circle';
+      let iconBg = '#EFF6FF';
+      let iconColor = '#2563EB';
+
+      if (t.type === 'MEDICATION') {
+        icon = 'pill';
+        iconBg = '#EFF6FF';
+        iconColor = '#2563EB';
+      } else if (t.type === 'VACCINATION') {
+        icon = 'syringe';
+        iconBg = '#FFF7ED';
+        iconColor = '#EA580C';
+      } else if (t.type === 'APPOINTMENT') {
+        icon = 'calendar_month';
+        iconBg = '#F0FDF4';
+        iconColor = '#16A34A';
+      }
+
+      let timeLabel = '';
+      if (t.time) {
+        try {
+          const date = new Date(t.time);
+          if (t.type === 'MEDICATION') {
+            timeLabel = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+          } else {
+            timeLabel = date.toLocaleDateString('vi-VN');
+          }
+        } catch {
+          timeLabel = t.time;
+        }
+      }
+
+      const memberSub = t.memberName ? ` (${t.memberName})` : '';
+      const subtitleText = `${timeLabel}${memberSub}`;
+
+      return {
+        id: `${t.type}-${t.referenceId}`,
+        icon,
+        iconBg,
+        iconColor,
+        title: t.title,
+        subtitle: subtitleText,
+        badge: t.subtitle || undefined,
+      };
+    });
+  }, [dashboard]);
+
+  const unreadCount = dashboard?.unreadNotifications ?? 0;
+
+  const aiSummaryText = useMemo(() => {
+    if (!dashboard || !dashboard.todayTasks) {
+      return AI_SUMMARY_FALLBACK;
     }
+    const count = dashboard.todayTasks.length;
+    if (count > 0) {
+      return `Hôm nay ${selectedProfileId ? 'thành viên' : 'cả nhà'} có ${count} việc cần chú ý thực hiện. Hãy lưu ý chuẩn bị đầy đủ nhé!`;
+    }
+    return 'Hôm nay chưa có cảnh báo lớn. Bạn có thể kiểm tra lịch thuốc, lịch khám và hỏi CareNest AI nếu cần tra cứu nhanh.';
+  }, [dashboard, selectedProfileId]);
 
-    return buildTasks(selectedProfileContext);
-  }, [dashboard, profileContexts, selectedProfileContext]);
-
-  const unreadCount = dashboard?.unreadNotificationCount ?? 0;
-  const aiSummaryText = normalizeAiSummaryText(dashboard?.aiSummary);
   const selectedProfileRouteId = String(
     selectedProfileId || user?.profileId || members[0]?.id || '',
-
   );
   const activeShortcutProfileId = Number(selectedProfileRouteId);
 
@@ -383,7 +428,7 @@ export default function HomeDashboardScreen() {
                     styles.memberPill,
                     selectedProfileId === member.id && styles.memberPillActive,
                   ]}
-                  onPress={() => setSelectedProfileId(member.id)}
+                  onPress={() => handleSelectMember(member.id)}
                 >
                   <Text
                     style={[
@@ -532,8 +577,20 @@ export default function HomeDashboardScreen() {
                   <Text style={styles.taskTime}>{task.subtitle}</Text>
                 </View>
                 {task.badge ? (
-                  <View style={styles.tagChuaUong}>
-                    <Text style={styles.tagText}>{task.badge}</Text>
+                  <View style={[
+                    styles.badgeContainer,
+                    task.badge.includes('Ngày mai') && styles.badgeTomorrow,
+                    task.badge.includes('Ngày kia') && styles.badgeUpcoming,
+                    task.badge.includes('Hôm nay') && styles.badgeToday,
+                  ]}>
+                    <Text style={[
+                      styles.badgeText,
+                      task.badge.includes('Ngày mai') && styles.badgeTextTomorrow,
+                      task.badge.includes('Ngày kia') && styles.badgeTextUpcoming,
+                      task.badge.includes('Hôm nay') && styles.badgeTextToday,
+                    ]}>
+                      {task.badge}
+                    </Text>
                   </View>
                 ) : (
                   <Icon name="chevron_right" size={20} color="#94A3B8" />
@@ -849,5 +906,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.primary,
+  },
+  badgeContainer: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  badgeTomorrow: {
+    backgroundColor: '#FEE2E2',
+  },
+  badgeTextTomorrow: {
+    color: '#EF4444',
+  },
+  badgeUpcoming: {
+    backgroundColor: '#FFEDD5',
+  },
+  badgeTextUpcoming: {
+    color: '#F97316',
+  },
+  badgeToday: {
+    backgroundColor: '#ECFDF5',
+  },
+  badgeTextToday: {
+    color: '#10B981',
   },
 });
