@@ -24,4 +24,6 @@ public interface MedicationService {
     void checkInMedicationLog(Long logId, CheckInMedicationRequest request);
 
     void createBatchFromOcr(BatchCreateMedicationRequest request);
+
+    void deleteMedication(Long id);
 }

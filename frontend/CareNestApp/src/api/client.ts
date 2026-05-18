@@ -163,6 +163,9 @@ apiClient.interceptors.response.use(
 
 function extractApiError(error: unknown): string {
   if (axios.isAxiosError(error)) {
+    if (!error.response || error.message === 'Network Error') {
+      return 'Không có kết nối mạng. Vui lòng kiểm tra Wi-Fi hoặc dữ liệu di động của bạn và thử lại.';
+    }
     return error.response?.data?.message || error.message || 'Đã có lỗi xảy ra';
   }
   if (error instanceof Error) {

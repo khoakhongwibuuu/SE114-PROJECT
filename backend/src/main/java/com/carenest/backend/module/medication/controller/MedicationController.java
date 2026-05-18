@@ -84,4 +84,16 @@ public class MedicationController {
         medicationService.completeMedication(id);
         return ApiResponse.success("Đã kết thúc đơn thuốc", null);
     }
+
+    @DeleteMapping("/medications/{id}")
+    @io.swagger.v3.oas.annotations.Operation(summary = "Xóa hoàn toàn một đơn thuốc và toàn bộ lịch nhắc liên quan")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Xóa đơn thuốc thành công"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy đơn thuốc")
+    })
+    public com.carenest.backend.common.dto.ApiResponse<Void> deleteMedication(@PathVariable("id") Long id) {
+        medicationService.deleteMedication(id);
+        return ApiResponse.success("Đã xóa hoàn toàn đơn thuốc", null);
+    }
 }
+

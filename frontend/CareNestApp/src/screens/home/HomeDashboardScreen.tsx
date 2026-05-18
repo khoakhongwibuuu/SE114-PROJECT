@@ -178,7 +178,7 @@ export default function HomeDashboardScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { members, selectedProfileId, setSelectedProfileId, allFamilies, activeFamilyId, setActiveFamilyId } = useFamily();
+  const { members, selectedProfileId, setSelectedProfileId, ownProfileId, allFamilies, activeFamilyId, setActiveFamilyId } = useFamily();
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [switcherVisible, setSwitcherVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(400)).current;
@@ -280,7 +280,7 @@ export default function HomeDashboardScreen() {
   }, [dashboard, selectedProfileId]);
 
   const selectedProfileRouteId = String(
-    selectedProfileId || user?.profileId || members[0]?.id || '',
+    selectedProfileId || ownProfileId || members[0]?.id || '',
   );
   const activeShortcutProfileId = Number(selectedProfileRouteId);
 
@@ -290,7 +290,7 @@ export default function HomeDashboardScreen() {
     }
 
     const today = formatLocalDate(new Date());
-    void getDailySchedule(activeShortcutProfileId, today);
+    void getDailySchedule(activeShortcutProfileId, today).catch(() => {});
   }, [activeShortcutProfileId]);
 
   const prefetchAppointments = useCallback(() => {
@@ -298,7 +298,7 @@ export default function HomeDashboardScreen() {
       return;
     }
 
-    void getAppointmentOverview(activeShortcutProfileId);
+    void getAppointmentOverview(activeShortcutProfileId).catch(() => {});
   }, [activeShortcutProfileId]);
 
   const prefetchVaccinations = useCallback(() => {
@@ -306,7 +306,7 @@ export default function HomeDashboardScreen() {
       return;
     }
 
-    void getVaccinationTracker(activeShortcutProfileId);
+    void getVaccinationTracker(activeShortcutProfileId).catch(() => {});
   }, [activeShortcutProfileId]);
 
   const handleOpenSwitcher = () => {
@@ -437,7 +437,7 @@ export default function HomeDashboardScreen() {
               </Text>
             </TouchableOpacity>
             {members.map(member => {
-              const isSelf = String(member.id) === String(user?.profileId);
+              const isSelf = member.userId === user?.userId;
               const trimmedName = (member.fullName || '').trim();
               const displayName = isSelf ? 'Tôi' : (trimmedName.split(/\s+/).pop() || 'Thành viên');
               

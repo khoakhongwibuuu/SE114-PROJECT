@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -30,6 +31,7 @@ interface FamilyContextType {
   members: FamilyMemberSummary[];
   selectedProfileId: number | null;
   setSelectedProfileId: (profileId: number | null) => void;
+  ownProfileId: number | null;
 
   // ── Multi-family ─────────────────────────────────────────────────────────────
   /** Summary list of every family the current user belongs to */
@@ -56,6 +58,12 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
   const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
 
+  const ownProfileId = useMemo(() => {
+    if (!family?.members?.length) return null;
+    const currentUserMember = family.members.find(m => m.userId === user?.userId);
+    return currentUserMember?.profileId || (user?.profileId ? Number(user.profileId) : null);
+  }, [family?.members, user?.userId, user?.profileId]);
+
   // ── Multi-family state ────────────────────────────────────────────────────
   const [allFamilies, setAllFamilies] = useState<FamilySummary[]>([]);
   const [activeFamilyId, setActiveFamilyIdState] = useState<number | null>(null);
@@ -64,13 +72,13 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   // ── Auto-select member profile when family loads ──────────────────────────
   useEffect(() => {
     if (!hasInitializedSelection && family?.members?.length) {
-      const preferredProfileId = user?.profileId
-        ? Number(user.profileId)
-        : family.members[0].id;
+      const currentUserMember = family.members.find(m => m.userId === user?.userId);
+      const preferredProfileId = currentUserMember?.profileId 
+        || (user?.profileId ? Number(user.profileId) : family.members[0].id);
       setSelectedProfileId(preferredProfileId);
       setHasInitializedSelection(true);
     }
-  }, [family, hasInitializedSelection, user?.profileId]);
+  }, [family, hasInitializedSelection, user?.profileId, user?.userId]);
 
   // ── Bootstrap: load family list + resolve active family ──────────────────
   const bootstrapFamilies = useCallback(async () => {
@@ -203,6 +211,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
         members: family?.members || [],
         selectedProfileId,
         setSelectedProfileId,
+        ownProfileId,
         allFamilies,
         activeFamilyId,
         setActiveFamilyId,

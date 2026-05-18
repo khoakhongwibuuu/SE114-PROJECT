@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -16,7 +17,7 @@ import { TOP_BAR_HEIGHT, BOTTOM_NAV_HEIGHT } from '../../utils/constants';
 import Icon from '../../components/common/Icon';
 import TopAppBar from '../../components/layout/TopAppBar';
 import FAB from '../../components/common/FAB';
-import { getDailySchedule, getScheduleFormData, takeDose, type DailyMedicineSchedule } from '../../api/medicine';
+import { getDailySchedule, getScheduleFormData, takeDose, deleteMedication, type DailyMedicineSchedule } from '../../api/medicine';
 import { useFamily } from '../../context/FamilyContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatLocalDate } from '../../utils/dateTime';
@@ -94,6 +95,25 @@ export default function MedicineScheduleScreen() {
     await loadSchedule();
   }
 
+  function handleDelete(medicationId: number) {
+    Alert.alert(
+      'Xóa lịch uống thuốc',
+      'Bạn có chắc chắn muốn xóa hoàn toàn lịch uống thuốc này cùng toàn bộ các nhắc nhở liên quan?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteMedication(medicationId).catch(() => {});
+            await loadSchedule();
+          },
+        },
+      ],
+    );
+  }
+
+
   return (
     <View style={styles.root}>
       <TopAppBar variant="detail" title="Lịch uống thuốc" />
@@ -160,6 +180,18 @@ export default function MedicineScheduleScreen() {
                       </Text>
                       <Text style={styles.schedDosage}>{item.dosage}{item.note ? ` - ${item.note}` : ''}</Text>
                     </View>
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        if (item.medicationId) {
+                          handleDelete(item.medicationId);
+                        }
+                      }}
+                      style={styles.deleteBtn}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Icon name="delete" size={20} color={colors.error} />
+                    </TouchableOpacity>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -227,4 +259,9 @@ const styles = StyleSheet.create({
   schedName: { fontSize: 14, fontFamily: 'Inter', fontWeight: '600', color: colors.onSurface },
   schedNameTaken: { textDecorationLine: 'line-through', color: colors.onSurfaceVariant },
   schedDosage: { fontSize: 12, fontFamily: 'Inter', color: colors.onSurfaceVariant, marginTop: 2 },
+  deleteBtn: {
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
