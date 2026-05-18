@@ -19,7 +19,7 @@ public interface MedicationLogRepository extends JpaRepository<MedicationLog, Lo
     @Query("SELECT m FROM MedicationLog m " +
            "JOIN FETCH m.medication med " +
            "JOIN FETCH med.healthProfile hp " +
-           "WHERE hp.family.id = :familyId " +
+           "WHERE (hp.family.id = :familyId OR hp.user.id IN (SELECT fm.user.id FROM FamilyMember fm WHERE fm.family.id = :familyId)) " +
            "AND m.status = :status " +
            "AND m.scheduledTime BETWEEN :startOfDay AND :endOfDay " +
            "ORDER BY m.scheduledTime ASC")

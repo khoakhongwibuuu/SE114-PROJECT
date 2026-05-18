@@ -1,7 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -61,6 +63,7 @@ export default function GrowthTrackerScreen() {
   const [weightInput, setWeightInput] = useState('');
   const [heightInput, setHeightInput] = useState('');
   const [noteInput, setNoteInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadSummary = useCallback(async () => {
     await getGrowthSummary(Number(memberId))
@@ -76,14 +79,19 @@ export default function GrowthTrackerScreen() {
   );
 
   const latest = summary?.history?.[0];
-  const latestWeight = latest?.weight ?? 0;
-  const latestHeight = latest?.height ?? 0;
+  const latestWeight = latest?.weight ?? null;
+  const latestHeight = latest?.height ?? null;
   const chartValues = (metric === 'weight' ? summary?.weightChart : summary?.heightChart) || [];
   const maxValue = Math.max(...chartValues.map(item => item.value), 1);
   const chartMessage = normalizeGrowthChartMessage(summary?.chartMessage);
 
   async function handleCreateGrowthLog() {
+    if (isSaving) {
+      return;
+    }
+
     try {
+      setIsSaving(true);
       await createGrowthLog({
         profileId: Number(memberId),
         weight: Number(weightInput) || undefined,
@@ -97,6 +105,7 @@ export default function GrowthTrackerScreen() {
       setNoteInput('');
       await loadSummary();
     } catch (error) {
+      setIsSaving(false);
       Alert.alert('Không thể ghi log', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     }
   }
@@ -119,7 +128,7 @@ export default function GrowthTrackerScreen() {
           >
             <Icon name="monitor_weight" size={20} color={metric === 'weight' ? colors.onPrimary : colors.primary} />
             <Text style={[styles.statValue, metric === 'weight' && styles.statValueActive]}>
-              {latestWeight} <Text style={[styles.statUnit, metric === 'weight' && styles.statValueActive]}>kg</Text>
+              {latestWeight ?? '--'} <Text style={[styles.statUnit, metric === 'weight' && styles.statValueActive]}>kg</Text>
             </Text>
             <Text style={[styles.statLabel, metric === 'weight' && styles.statValueActive]}>Cân nặng</Text>
           </TouchableOpacity>
@@ -130,7 +139,7 @@ export default function GrowthTrackerScreen() {
           >
             <Icon name="height" size={20} color={metric === 'height' ? colors.onPrimary : colors.primary} />
             <Text style={[styles.statValue, metric === 'height' && styles.statValueActive]}>
-              {latestHeight} <Text style={[styles.statUnit, metric === 'height' && styles.statValueActive]}>cm</Text>
+              {latestHeight ?? '--'} <Text style={[styles.statUnit, metric === 'height' && styles.statValueActive]}>cm</Text>
             </Text>
             <Text style={[styles.statLabel, metric === 'height' && styles.statValueActive]}>Chiều cao</Text>
           </TouchableOpacity>
@@ -169,7 +178,11 @@ export default function GrowthTrackerScreen() {
               <Text style={[styles.tableCell, styles.tableHeaderText]}>Cân nặng</Text>
               <Text style={[styles.tableCell, styles.tableHeaderText]}>Chiều cao</Text>
             </View>
-            {(summary?.history || []).map((item, index) => (
+            {(summary?.history || []).length === 0 ? (
+              <View style={styles.historyEmpty}>
+                <Text style={styles.chartEmptyText}>Chua co lan ghi nhan nao.</Text>
+              </View>
+            ) : (summary?.history || []).map((item, index) => (
               <View key={`${item.date}-${index}`} style={[styles.tableRow, index < (summary?.history.length || 0) - 1 && styles.tableRowDivider]}>
                 <Text style={[styles.tableCell, { flex: 1.5 }]}>{item.date}</Text>
                 <Text style={styles.tableCell}>{item.weight ?? '--'} kg</Text>
@@ -236,6 +249,7 @@ const styles = StyleSheet.create({
   tableHeader: { backgroundColor: colors.surfaceContainerHigh },
   tableCell: { flex: 1, fontSize: 13, fontFamily: 'Inter', color: colors.onSurface },
   tableHeaderText: { fontWeight: '700', color: colors.onSurfaceVariant, fontSize: 12 },
+  historyEmpty: { padding: 18, alignItems: 'center' },
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, backgroundColor: colors.primary, borderRadius: 999, gap: 8, shadowColor: colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 6 },
   addBtnText: { fontSize: 16, fontFamily: 'Inter', fontWeight: '700', color: colors.onPrimary },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.45)', justifyContent: 'center', padding: 24 },
@@ -247,4 +261,5 @@ const styles = StyleSheet.create({
   modalSecondaryText: { fontSize: 14, fontWeight: '700', color: colors.onSurfaceVariant },
   modalPrimaryBtn: { backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 10 },
   modalPrimaryText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  disabledBtn: { opacity: 0.6 },
 });

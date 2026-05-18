@@ -42,7 +42,7 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "dashboard", key = "#familyId", condition = "#profileId == null")
+    @Cacheable(value = "dashboard", key = "#familyId", condition = "#profileId == null && #familyId != null")
     public DashboardResponse getDashboardOverview(Long familyId, Long profileId) {
         // 1. Kiểm tra bảo mật: User hiện tại phải thuộc familyId này
         familySecurityUtil.checkUserBelongsToFamily(familyId);

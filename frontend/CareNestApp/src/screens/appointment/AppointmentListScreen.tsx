@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -19,6 +20,7 @@ import type { HomeStackParamList } from '../../navigation/navigationTypes';
 import { getAppointmentOverview, type AppointmentOverview } from '../../api/appointments';
 import { useFamily } from '../../context/FamilyContext';
 import { useAuth } from '../../context/AuthContext';
+import { invalidateApiGetCache } from '../../api/client';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'AppointmentList'>;
 type FilterKey = 'all' | 'upcoming' | 'past';
@@ -37,6 +39,7 @@ export default function AppointmentListScreen() {
   const { user } = useAuth();
   const [filter, setFilter] = useState<FilterKey>('all');
   const [overview, setOverview] = useState<AppointmentOverview | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const memberId = route.params?.memberId as string | undefined;
 
   const activeProfileId = memberId
@@ -53,6 +56,13 @@ export default function AppointmentListScreen() {
       .then(setOverview)
       .catch(() => setOverview(null));
   }, [activeProfileId]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    invalidateApiGetCache(['/appointments']);
+    await loadOverview();
+    setRefreshing(false);
+  }, [loadOverview]);
 
   useFocusEffect(
     useCallback(() => {
@@ -78,6 +88,13 @@ export default function AppointmentListScreen() {
           { paddingTop: TOP_BAR_HEIGHT + insets.top + 16, paddingBottom: BOTTOM_NAV_HEIGHT + 80 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+          />
+        }
       >
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
           {FILTERS.map(item => (

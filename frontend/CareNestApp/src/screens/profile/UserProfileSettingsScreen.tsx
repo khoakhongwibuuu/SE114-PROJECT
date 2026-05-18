@@ -3,6 +3,8 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -327,7 +329,10 @@ export default function UserProfileSettingsScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
           <Icon name="arrow_back" size={26} color="#1E293B" />
@@ -343,6 +348,7 @@ export default function UserProfileSettingsScreen() {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: BOTTOM_NAV_HEIGHT + 40 }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.avatarSection}>
           <View style={[styles.avatarContainer, shadows.md]}>
@@ -373,7 +379,13 @@ export default function UserProfileSettingsScreen() {
             onPressIn={() => {
               void getCurrentUserProfile().catch(() => {});
             }}
-            onPress={() => navigation.navigate('UserMedical', { memberId: user?.profileId })}
+            onPress={() => {
+              if (!user?.profileId) {
+                Alert.alert('Chua co ho so', 'Vui long dong bo ho so suc khoe truoc khi mo ho so y te.');
+                return;
+              }
+              navigation.navigate('UserMedical', { memberId: String(user.profileId) });
+            }}
           >
             <View style={styles.medicalIconWrap}>
               <Icon name="description" size={22} color="#fff" />
@@ -512,7 +524,10 @@ export default function UserProfileSettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Ứng dụng</Text>
           <View style={[styles.formCard, shadows.sm]}>
-            <TouchableOpacity style={styles.settingsRow}>
+            <TouchableOpacity
+              style={styles.settingsRow}
+              onPress={() => Alert.alert('Sap ra mat', 'Tuy chon ngon ngu se duoc bo sung sau.')}
+            >
               <View style={[styles.rowIconWrap, { backgroundColor: '#F5F3FF' }]}>
                 <Icon name="language" size={20} color="#7C3AED" />
               </View>
@@ -533,14 +548,20 @@ export default function UserProfileSettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Hỗ trợ</Text>
           <View style={[styles.formCard, shadows.sm]}>
-            <TouchableOpacity style={styles.settingsRow}>
+            <TouchableOpacity
+              style={styles.settingsRow}
+              onPress={() => Alert.alert('Sap ra mat', 'Trung tam ho tro se duoc bo sung sau.')}
+            >
               <View style={[styles.rowIconWrap, { backgroundColor: '#FFF7ED' }]}>
                 <Icon name="help_center" size={20} color="#EA580C" />
               </View>
               <Text style={styles.rowLabelText}>Trung tâm hỗ trợ</Text>
               <Icon name="chevron_right" size={20} color="#CBD5E1" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.settingsRow}>
+            <TouchableOpacity
+              style={styles.settingsRow}
+              onPress={() => Alert.alert('Sap ra mat', 'Tinh nang bao cao su co se duoc bo sung sau.')}
+            >
               <View style={[styles.rowIconWrap, { backgroundColor: '#EFF6FF' }]}>
                 <Icon name="bug_report" size={20} color="#2563EB" />
               </View>
@@ -565,7 +586,7 @@ export default function UserProfileSettingsScreen() {
           onChange={handleBirthdayChange}
         />
       ) : null}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

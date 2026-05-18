@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -41,8 +43,9 @@ export default function AddAppointmentScreen() {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const canSubmit = Boolean(selectedMember && facility && doctor);
+  const canSubmit = Boolean(selectedMember && facility && doctor) && !isSaving;
 
   const currentMember = useMemo(
     () => members.find(member => member.id === selectedMember),
@@ -60,12 +63,17 @@ export default function AddAppointmentScreen() {
   };
 
   async function handleSave() {
+    if (isSaving) {
+      return;
+    }
+
     if (!selectedMember) {
       Alert.alert('Thiếu hồ sơ', 'Vui lòng chọn thành viên cho lịch hẹn này.');
       return;
     }
 
     try {
+      setIsSaving(true);
       await createAppointment({
         healthProfileId: selectedMember,
         hospitalName: facility,
@@ -78,15 +86,20 @@ export default function AddAppointmentScreen() {
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
+      setIsSaving(false);
       Alert.alert('Không thể lưu lịch hẹn', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     }
   }
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <TopAppBar variant="detail" title="Lịch hẹn mới" />
       <ScrollView
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: TOP_BAR_HEIGHT + insets.top, paddingBottom: BOTTOM_NAV_HEIGHT + 40 },
@@ -211,7 +224,7 @@ export default function AddAppointmentScreen() {
           onChange={onTimeChange} 
         />
       ) : null}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

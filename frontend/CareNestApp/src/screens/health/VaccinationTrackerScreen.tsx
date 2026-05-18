@@ -92,12 +92,17 @@ export default function VaccinationTrackerScreen() {
                 {group.vaccinations.map((vaccine, index) => {
                   const isLast = index === group.vaccinations.length - 1;
                   return (
-                    <View
+                    <TouchableOpacity
                       key={vaccine.id}
                       style={[
                         styles.doseRow,
                         !isLast && styles.doseDivider,
                       ]}
+                      activeOpacity={0.7}
+                      onPress={() => navigation.navigate('AddVaccinationSchedule', {
+                        profileId: Number(memberId),
+                        editVaccination: vaccine,
+                      })}
                     >
                       <View style={[styles.vacIconWrap, vaccine.status === 'DONE' ? styles.vacIconWrapCompleted : undefined]}>
                         <Icon
@@ -117,7 +122,9 @@ export default function VaccinationTrackerScreen() {
                           <Text style={styles.vacNoFacility}>Chưa cập nhật địa điểm</Text>
                         )}
                       </View>
-                    </View>
+
+                      <Icon name="edit" size={16} color="#94A3B8" style={{ marginLeft: 'auto', paddingRight: 4 }} />
+                    </TouchableOpacity>
                   );
                 })}
               </View>

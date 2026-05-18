@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, CompositeNavigationProp } from '@react-navigation/native';
@@ -27,6 +28,7 @@ import type { HomeStackParamList, MainTabParamList } from '../../navigation/navi
 import { useAuth } from '../../context/AuthContext';
 import { useFamily } from '../../context/FamilyContext';
 import { getDashboard, type DashboardPayload } from '../../api/dashboard';
+import { invalidateApiGetCache } from '../../api/client';
 import { getAppointmentOverview } from '../../api/appointments';
 import { getDailySchedule } from '../../api/medicine';
 import { getVaccinationTracker } from '../../api/vaccinations';
@@ -180,12 +182,21 @@ export default function HomeDashboardScreen() {
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [switcherVisible, setSwitcherVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(400)).current;
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadDashboard = useCallback(async () => {
-    await getDashboard(selectedProfileId || undefined)
+    if (!activeFamilyId) return;
+    await getDashboard(activeFamilyId, selectedProfileId || undefined)
       .then(setDashboard)
       .catch(() => setDashboard(null));
-  }, [selectedProfileId]);
+  }, [activeFamilyId, selectedProfileId]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    invalidateApiGetCache(['/dashboard', '/notifications']);
+    await loadDashboard();
+    setRefreshing(false);
+  }, [loadDashboard]);
 
   useFocusEffect(
     useCallback(() => {
@@ -315,7 +326,9 @@ export default function HomeDashboardScreen() {
     handleCloseSwitcher();
     if (id !== activeFamilyId) {
       await setActiveFamilyId(id);
-      await loadDashboard();
+      await getDashboard(id, selectedProfileId || undefined)
+        .then(setDashboard)
+        .catch(() => setDashboard(null));
     }
   };
 
@@ -386,6 +399,13 @@ export default function HomeDashboardScreen() {
           { paddingBottom: BOTTOM_NAV_HEIGHT + insets.bottom + 20 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+          />
+        }
       >
         <View style={styles.greetingSection}>
           <Text style={styles.greetingTitle}>
@@ -920,21 +940,21 @@ const styles = StyleSheet.create({
     color: '#4F46E5',
   },
   badgeTomorrow: {
-    backgroundColor: '#FEE2E2',
-  },
-  badgeTextTomorrow: {
-    color: '#EF4444',
-  },
-  badgeUpcoming: {
     backgroundColor: '#FFEDD5',
   },
-  badgeTextUpcoming: {
+  badgeTextTomorrow: {
     color: '#F97316',
   },
-  badgeToday: {
+  badgeUpcoming: {
     backgroundColor: '#ECFDF5',
   },
-  badgeTextToday: {
+  badgeTextUpcoming: {
     color: '#10B981',
+  },
+  badgeToday: {
+    backgroundColor: '#FEE2E2',
+  },
+  badgeTextToday: {
+    color: '#EF4444',
   },
 });

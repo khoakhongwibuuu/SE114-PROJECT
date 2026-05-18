@@ -5,6 +5,7 @@ import com.carenest.backend.module.auth.entity.User;
 import com.carenest.backend.module.auth.repository.UserRepository;
 import com.carenest.backend.module.family.entity.Family;
 import com.carenest.backend.module.family.repository.FamilyRepository;
+import com.carenest.backend.module.family.util.FamilySecurityUtil;
 import com.carenest.backend.module.healthprofile.dto.request.HealthProfileCreateRequest;
 import com.carenest.backend.module.healthprofile.dto.request.HealthProfileUpdateRequest;
 import com.carenest.backend.module.healthprofile.dto.request.MedicalInfoUpdateRequest;
@@ -34,6 +35,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     private final FamilyRepository familyRepository;
     private final HealthProfileMapper healthProfileMapper;
     private final GrowthRecordRepository growthRecordRepository;
+    private final FamilySecurityUtil familySecurityUtil;
 
     @Override
     @Transactional
@@ -43,6 +45,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
 
         Family family = null;
         if (request.getFamilyId() != null) {
+            familySecurityUtil.checkUserBelongsToFamily(request.getFamilyId());
             family = familyRepository.findById(request.getFamilyId())
                     .orElseThrow(() -> new ResourceNotFoundException("Family", "id", request.getFamilyId().toString()));
         }
@@ -69,6 +72,8 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional(readOnly = true)
     public List<HealthProfileResponse> getFamilyHealthProfiles(Long familyId) {
+        familySecurityUtil.checkUserBelongsToFamily(familyId);
+
         if (!familyRepository.existsById(familyId)) {
             throw new ResourceNotFoundException("Family", "id", familyId.toString());
         }
@@ -83,6 +88,8 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional(readOnly = true)
     public HealthProfileResponse getHealthProfileById(Long id) {
+        familySecurityUtil.checkUserBelongsToHealthProfile(id);
+
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", id.toString()));
         return enrichWithHeightAndWeight(healthProfileMapper.toResponse(healthProfile));
@@ -91,6 +98,8 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional
     public HealthProfileResponse updateHealthProfile(Long id, HealthProfileUpdateRequest request) {
+        familySecurityUtil.checkUserBelongsToHealthProfile(id);
+
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", id.toString()));
 
@@ -113,6 +122,8 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional
     public void deleteHealthProfile(Long id) {
+        familySecurityUtil.checkUserBelongsToHealthProfile(id);
+
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", id.toString()));
         
@@ -123,6 +134,8 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional
     public HealthProfileResponse updateMedicalInfo(Long id, MedicalInfoUpdateRequest request) {
+        familySecurityUtil.checkUserBelongsToHealthProfile(id);
+
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", id.toString()));
 

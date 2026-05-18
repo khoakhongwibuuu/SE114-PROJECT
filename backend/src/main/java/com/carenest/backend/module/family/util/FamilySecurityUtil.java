@@ -50,4 +50,21 @@ public class FamilySecurityUtil {
             }
         }
     }
+
+    public java.util.List<Long> getFamilyIdsForProfile(HealthProfile profile) {
+        java.util.List<Long> familyIds = new java.util.ArrayList<>();
+        if (profile == null) {
+            return familyIds;
+        }
+        if (profile.getFamily() != null) {
+            familyIds.add(profile.getFamily().getId());
+        } else if (profile.getUser() != null) {
+            for (com.carenest.backend.module.family.entity.FamilyMember fm : familyMemberRepository.findAllByUserId(profile.getUser().getId())) {
+                if (fm.getFamily() != null) {
+                    familyIds.add(fm.getFamily().getId());
+                }
+            }
+        }
+        return familyIds;
+    }
 }

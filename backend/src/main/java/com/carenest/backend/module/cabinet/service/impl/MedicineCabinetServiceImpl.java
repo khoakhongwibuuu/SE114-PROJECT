@@ -14,6 +14,7 @@ import com.carenest.backend.module.cabinet.repository.MedicineCabinetRepository;
 import com.carenest.backend.module.cabinet.service.MedicineCabinetService;
 import com.carenest.backend.module.family.entity.Family;
 import com.carenest.backend.module.family.repository.FamilyRepository;
+import com.carenest.backend.module.family.util.FamilySecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,10 +34,13 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
     private final CabinetMedicineRepository medicineRepository;
     private final FamilyRepository familyRepository;
     private final CabinetMapper cabinetMapper;
+    private final FamilySecurityUtil familySecurityUtil;
 
     @Override
     @Transactional
     public MedicineCabinetResponse createCabinet(CabinetCreateRequest request) {
+        familySecurityUtil.checkUserBelongsToFamily(request.getFamilyId());
+
         Family family = familyRepository.findById(request.getFamilyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Family", "id", request.getFamilyId().toString()));
 
@@ -58,6 +62,8 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
     @Override
     @Transactional(readOnly = true)
     public MedicineCabinetResponse getFamilyCabinet(Long familyId) {
+        familySecurityUtil.checkUserBelongsToFamily(familyId);
+
         if (!familyRepository.existsById(familyId)) {
             throw new ResourceNotFoundException("Family", "id", familyId.toString());
         }
@@ -78,6 +84,7 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
     public CabinetMedicineResponse addMedicine(Long cabinetId, CabinetMedicineRequest request) {
         MedicineCabinet cabinet = cabinetRepository.findById(cabinetId)
                 .orElseThrow(() -> new ResourceNotFoundException("MedicineCabinet", "id", cabinetId.toString()));
+        assertCabinetAccess(cabinet);
 
         // Check if medicine with same name already exists in cabinet
         Optional<CabinetMedicine> existing = medicineRepository.findByCabinetIdAndMedicineNameIgnoreCase(cabinetId, request.getMedicineName());
@@ -109,6 +116,7 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
     public CabinetMedicineResponse updateMedicine(Long cabinetId, Long medicineId, CabinetMedicineUpdateRequest request) {
         CabinetMedicine medicine = medicineRepository.findById(medicineId)
                 .orElseThrow(() -> new ResourceNotFoundException("CabinetMedicine", "id", medicineId.toString()));
+        assertCabinetAccess(medicine.getCabinet());
 
         if (!medicine.getCabinet().getId().equals(cabinetId)) {
             throw new IllegalArgumentException("Medicine does not belong to the specified cabinet");
@@ -129,6 +137,7 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
     public void removeMedicine(Long cabinetId, Long medicineId) {
         CabinetMedicine medicine = medicineRepository.findById(medicineId)
                 .orElseThrow(() -> new ResourceNotFoundException("CabinetMedicine", "id", medicineId.toString()));
+        assertCabinetAccess(medicine.getCabinet());
 
         if (!medicine.getCabinet().getId().equals(cabinetId)) {
             throw new IllegalArgumentException("Medicine does not belong to the specified cabinet");
@@ -140,9 +149,9 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
     @Override
     @Transactional(readOnly = true)
     public List<CabinetMedicineResponse> getMedicines(Long cabinetId, String status) {
-        if (!cabinetRepository.existsById(cabinetId)) {
-            throw new ResourceNotFoundException("MedicineCabinet", "id", cabinetId.toString());
-        }
+        MedicineCabinet cabinet = cabinetRepository.findById(cabinetId)
+                .orElseThrow(() -> new ResourceNotFoundException("MedicineCabinet", "id", cabinetId.toString()));
+        assertCabinetAccess(cabinet);
 
         List<CabinetMedicine> medicines;
         if ("expired".equalsIgnoreCase(status)) {
@@ -156,5 +165,9 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
         return medicines.stream()
                 .map(cabinetMapper::toMedicineResponse)
                 .collect(Collectors.toList());
+    }
+
+    private void assertCabinetAccess(MedicineCabinet cabinet) {
+        familySecurityUtil.checkUserBelongsToFamily(cabinet.getFamily().getId());
     }
 }

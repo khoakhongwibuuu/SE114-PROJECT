@@ -40,11 +40,15 @@ export function useWebSocket({
     onMessageReceivedRef.current = onMessageReceived;
   }, [onMessageReceived]);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (isCancelled?: () => boolean) => {
     const session = await getStoredSession();
     const token = session?.token;
     if (!token) {
       console.warn('[WS] Không có token, bỏ qua kết nối.');
+      return;
+    }
+
+    if (isCancelled?.()) {
       return;
     }
 
@@ -101,8 +105,8 @@ export function useWebSocket({
         console.error('[WS] ❌ STOMP Error:', frame.headers['message']),
     });
 
-    client.activate();
     clientRef.current = client;
+    client.activate();
   }, [familyId]);
 
   const sendMessage = useCallback(
@@ -128,13 +132,13 @@ export function useWebSocket({
   useEffect(() => {
     // Ensure any existing connection is safely terminated before connecting a new one
     // This prevents STOMP eavesdropping if familyId changes without unmounting the component
-    if (clientRef.current?.connected) {
-      clientRef.current.deactivate();
-      clientRef.current = null;
-    }
-    void connect();
+    let cancelled = false;
+    clientRef.current?.deactivate();
+    clientRef.current = null;
+    void connect(() => cancelled);
 
     return () => {
+      cancelled = true;
       clientRef.current?.deactivate();
       clientRef.current = null;
     };

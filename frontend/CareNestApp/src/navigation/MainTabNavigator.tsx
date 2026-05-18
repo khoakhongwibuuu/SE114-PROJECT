@@ -25,7 +25,7 @@ import { getFamilyProfile } from '../api/family';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabNavigator() {
-  const { hasFamily, members, selectedProfileId } = useFamily();
+  const { hasFamily, members, selectedProfileId, activeFamilyId } = useFamily();
   const { user } = useAuth();
 
   const ownProfileId = user?.profileId ? Number(user.profileId) : undefined;
@@ -40,7 +40,7 @@ export default function MainTabNavigator() {
   useEffect(() => {
     const today = formatLocalDate(new Date());
     const prefetchTasks: Array<Promise<unknown>> = [
-      getDashboard(selectedProfileId ?? undefined),
+      ...(activeFamilyId ? [getDashboard(activeFamilyId, selectedProfileId ?? undefined)] : []),
       getCabinetMedicines(),
       getScheduleFormData(),
       getNotifications(notificationProfileId),

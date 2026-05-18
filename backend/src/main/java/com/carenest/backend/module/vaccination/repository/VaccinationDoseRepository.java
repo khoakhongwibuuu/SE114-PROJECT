@@ -17,7 +17,7 @@ public interface VaccinationDoseRepository extends JpaRepository<VaccinationDose
     @Query("SELECT v FROM VaccinationDose v " +
            "JOIN FETCH v.vaccinationRecord r " +
            "JOIN FETCH r.healthProfile hp " +
-           "WHERE hp.family.id = :familyId " +
+           "WHERE (hp.family.id = :familyId OR hp.user.id IN (SELECT fm.user.id FROM FamilyMember fm WHERE fm.family.id = :familyId)) " +
            "AND v.status = :status " +
            "ORDER BY v.scheduledDate ASC")
     List<VaccinationDose> findUpcomingDosesForFamily(
@@ -27,7 +27,7 @@ public interface VaccinationDoseRepository extends JpaRepository<VaccinationDose
     @Query("SELECT v FROM VaccinationDose v " +
            "JOIN FETCH v.vaccinationRecord r " +
            "JOIN FETCH r.healthProfile hp " +
-           "WHERE hp.family.id = :familyId " +
+           "WHERE (hp.family.id = :familyId OR hp.user.id IN (SELECT fm.user.id FROM FamilyMember fm WHERE fm.family.id = :familyId)) " +
            "AND v.status = :status " +
            "AND v.scheduledDate BETWEEN :startDate AND :endDate " +
            "ORDER BY v.scheduledDate ASC")

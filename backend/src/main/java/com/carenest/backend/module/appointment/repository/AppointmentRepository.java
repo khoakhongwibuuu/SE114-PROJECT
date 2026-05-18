@@ -20,7 +20,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     @Query("SELECT a FROM Appointment a " +
            "JOIN FETCH a.healthProfile hp " +
-           "WHERE hp.family.id = :familyId " +
+           "WHERE (hp.family.id = :familyId OR hp.user.id IN (SELECT fm.user.id FROM FamilyMember fm WHERE fm.family.id = :familyId)) " +
            "AND a.status = :status " +
            "AND a.appointmentDate BETWEEN :startOfDay AND :endOfDay " +
            "ORDER BY a.appointmentDate ASC")

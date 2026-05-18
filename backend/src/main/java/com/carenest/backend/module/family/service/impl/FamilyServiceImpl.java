@@ -17,6 +17,7 @@ import com.carenest.backend.module.family.dto.response.FamilyJoinCodeResponse;
 import com.carenest.backend.module.family.dto.response.FamilyMemberResponse;
 import com.carenest.backend.module.family.dto.response.FamilyResponse;
 import com.carenest.backend.module.family.dto.response.FamilySummaryResponse;
+import com.carenest.backend.module.family.context.FamilyRequestContext;
 import com.carenest.backend.module.family.entity.Family;
 import com.carenest.backend.module.family.entity.FamilyInvitation;
 import com.carenest.backend.module.family.entity.FamilyMember;
@@ -117,6 +118,11 @@ public class FamilyServiceImpl implements FamilyService {
     @Override
     @Transactional(readOnly = true)
     public FamilyDetailResponse getFamilyById(Long id) {
+        User currentUser = getCurrentUser();
+        if (!familyMemberRepository.existsByFamilyIdAndUserId(id, currentUser.getId())) {
+            throw new UnauthorizedException("You are not in this family");
+        }
+
         Family family = familyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Family", id));
 
@@ -206,8 +212,8 @@ public class FamilyServiceImpl implements FamilyService {
         invitation.setStatus(request.getStatus());
 
         if (request.getStatus() == InvitationStatus.ACCEPTED) {
-            if (familyMemberRepository.existsByUserId(currentUser.getId())) {
-                throw new DuplicateResourceException("User already belongs to a family");
+            if (familyMemberRepository.existsByFamilyIdAndUserId(invitation.getFamily().getId(), currentUser.getId())) {
+                throw new DuplicateResourceException("Member already exists in this family");
             }
             addMemberIfMissing(invitation.getFamily(), currentUser, invitation.getRole());
             if (invitation.getRecipient() == null) {
@@ -222,7 +228,7 @@ public class FamilyServiceImpl implements FamilyService {
     @Transactional
     public FamilyJoinCodeResponse getJoinCode() {
         User currentUser = getCurrentUser();
-        FamilyMember member = getCurrentFamilyMember(currentUser);
+        FamilyMember member = getActiveFamilyMember(currentUser);
         assertCanManageFamily(member.getFamily().getId(), currentUser.getId());
 
         Family family = member.getFamily();
@@ -235,7 +241,7 @@ public class FamilyServiceImpl implements FamilyService {
     @Transactional
     public FamilyJoinCodeResponse rotateJoinCode() {
         User currentUser = getCurrentUser();
-        FamilyMember member = getCurrentFamilyMember(currentUser);
+        FamilyMember member = getActiveFamilyMember(currentUser);
         assertCanManageFamily(member.getFamily().getId(), currentUser.getId());
 
         Family family = member.getFamily();
@@ -297,6 +303,15 @@ public class FamilyServiceImpl implements FamilyService {
             throw new ResourceNotFoundException("Family", "userId", String.valueOf(currentUser.getId()));
         }
         return memberships.get(0);
+    }
+
+    private FamilyMember getActiveFamilyMember(User currentUser) {
+        Long activeFamilyId = FamilyRequestContext.getFamilyId();
+        if (activeFamilyId != null) {
+            return familyMemberRepository.findByFamilyIdAndUserId(activeFamilyId, currentUser.getId())
+                    .orElseThrow(() -> new UnauthorizedException("You are not in this family"));
+        }
+        return getCurrentFamilyMember(currentUser);
     }
 
     private void assertCanManageFamily(Long familyId, Long userId) {
