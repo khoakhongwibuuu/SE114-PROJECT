@@ -18,9 +18,8 @@ import {
   type FamilyDetailResponse,
   type FamilySummary,
 } from '../api/family';
+import { ACTIVE_FAMILY_STORAGE_KEY, setActiveFamilyHeaderId } from '../api/activeFamily';
 import { useAuth } from './AuthContext';
-
-const ACTIVE_FAMILY_STORAGE_KEY = 'carenest:activeFamilyId';
 
 interface FamilyContextType {
   // ── Legacy / Active-family state ────────────────────────────────────────────
@@ -84,6 +83,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
 
       if (list.length === 0) {
         setActiveFamilyIdState(null);
+        setActiveFamilyHeaderId(null);
         await AsyncStorage.removeItem(ACTIVE_FAMILY_STORAGE_KEY);
         return;
       }
@@ -100,6 +100,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       const resolvedId = stillValid ? savedId : preferred;
 
       setActiveFamilyIdState(resolvedId);
+      setActiveFamilyHeaderId(resolvedId);
       await AsyncStorage.setItem(ACTIVE_FAMILY_STORAGE_KEY, String(resolvedId));
 
       // Load full detail for the active family
@@ -118,6 +119,15 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
       // Refresh the list
       const list = await getMyFamilyList();
       setAllFamilies(list);
+      if (list.length === 0) {
+        setFamily(null);
+        setActiveFamilyIdState(null);
+        setActiveFamilyHeaderId(null);
+        setSelectedProfileId(user?.profileId ? Number(user.profileId) : null);
+        setHasInitializedSelection(false);
+        await AsyncStorage.removeItem(ACTIVE_FAMILY_STORAGE_KEY);
+        return;
+      }
 
       // Refresh the active family detail using legacy API as fallback
       const nextFamily = activeFamilyId
@@ -153,6 +163,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   // ── Public: switch active family ─────────────────────────────────────────
   const setActiveFamilyId = useCallback(async (id: number) => {
     setActiveFamilyIdState(id);
+    setActiveFamilyHeaderId(id);
     await AsyncStorage.setItem(ACTIVE_FAMILY_STORAGE_KEY, String(id));
     try {
       const detail = await getFamilyById(id);
@@ -176,6 +187,7 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     setFamilyImage(null);
     setAllFamilies([]);
     setActiveFamilyIdState(null);
+    setActiveFamilyHeaderId(null);
     setSelectedProfileId(null);
     setHasInitializedSelection(false);
     void AsyncStorage.removeItem(ACTIVE_FAMILY_STORAGE_KEY);
