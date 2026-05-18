@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent, DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { colors } from '../../theme/colors';
 import type { FamilyStackParamList } from '../../navigation/navigationTypes';
 import { createVaccination } from '../../api/vaccinations';
@@ -48,6 +48,27 @@ export default function AddVaccinationScheduleScreen() {
     setShowDatePicker(false);
     if (selectedDate) {
       setDate(selectedDate);
+    }
+  };
+
+  const showDatePickerAndroid = () => {
+    DateTimePickerAndroid.open({
+      value: date,
+      onChange: (_event, selectedDate) => {
+        if (selectedDate) {
+          setDate(selectedDate);
+        }
+      },
+      mode: 'date',
+      display: 'default',
+    });
+  };
+
+  const handleOpenDatePicker = () => {
+    if (Platform.OS === 'android') {
+      showDatePickerAndroid();
+    } else {
+      setShowDatePicker(true);
     }
   };
 
@@ -167,9 +188,9 @@ export default function AddVaccinationScheduleScreen() {
 
           {/* Câu 4: Ngày tiêm / Ngày hẹn */}
           <Text style={styles.inputLabel}>
-            {isCompleted ? 'NGÀY TIÊM THỰC TẾ' : 'NGÀY HẸN CỦA VNVC / DỰ KIẾN'}
+            {isCompleted ? 'NGÀY TIÊM THỰC TẾ' : 'NGÀY HẸN / DỰ KIẾN'}
           </Text>
-          <TouchableOpacity style={styles.inputWrap} onPress={() => setShowDatePicker(true)} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.inputWrap} onPress={handleOpenDatePicker} activeOpacity={0.7}>
             <MaterialCommunityIcons name="calendar-month-outline" size={20} color="#64748b" />
             <Text style={styles.input}>{date.toLocaleDateString('vi-VN')}</Text>
             <MaterialCommunityIcons name="calendar" size={20} color="#64748b" style={{ marginLeft: 'auto' }} />
