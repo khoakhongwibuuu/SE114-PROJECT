@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { getFocusedRouteNameFromRoute, StackActions } from '@react-navigation/native';
 import type { MainTabParamList } from './navigationTypes';
 
 import HomeStack from './HomeStack';
@@ -62,6 +62,19 @@ export default function MainTabNavigator() {
     prefetchTasks.forEach(task => task.catch(() => {}));
   }, [activeProfileId, members, notificationProfileId, selectedProfileId]);
 
+  const tabPressListener = ({ navigation }: any) => ({
+    tabPress: (e: any) => {
+      const state = navigation.getState();
+      const activeRoute = state?.routes?.[state.index];
+      const hasHistory = activeRoute?.state && (activeRoute.state.index ?? 0) > 0;
+
+      if (navigation.isFocused() && hasHistory) {
+        e.preventDefault();
+        navigation.dispatch(StackActions.popToTop());
+      }
+    },
+  });
+
   return (
     <Tab.Navigator
       screenOptions={{ 
@@ -70,11 +83,11 @@ export default function MainTabNavigator() {
       }}
       tabBar={props => <BottomTabBar {...props} />}
     >
-      <Tab.Screen name="HomeTab" component={HomeStack} />
-      <Tab.Screen name="FamilyTab" component={FamilyStack} />
-      <Tab.Screen name="MedicineTab" component={MedicineStack} />
-      <Tab.Screen name="AiChatTab" component={ChatHubNavigator} />
-      <Tab.Screen name="ProfileTab" component={ProfileStack} />
+      <Tab.Screen name="HomeTab" component={HomeStack} listeners={tabPressListener} />
+      <Tab.Screen name="FamilyTab" component={FamilyStack} listeners={tabPressListener} />
+      <Tab.Screen name="MedicineTab" component={MedicineStack} listeners={tabPressListener} />
+      <Tab.Screen name="AiChatTab" component={ChatHubNavigator} listeners={tabPressListener} />
+      <Tab.Screen name="ProfileTab" component={ProfileStack} listeners={tabPressListener} />
     </Tab.Navigator>
   );
 }
