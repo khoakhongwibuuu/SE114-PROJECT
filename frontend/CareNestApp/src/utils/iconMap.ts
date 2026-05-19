@@ -104,6 +104,7 @@ const iconMap: Record<string, string> = {
   pin: 'numeric',
   google: 'google',
   login: 'login',
+  'chat-processing': 'chat-processing',
 };
 
 export function getIconName(materialSymbolName: string): string {
