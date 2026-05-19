@@ -4,6 +4,7 @@ export interface User {
   profileId?: string;
   email: string;
   fullName: string;
+  role?: 'USER' | 'DOCTOR' | 'ADMIN' | string;
   avatarUrl?: string;
   createdAt: string;
   phoneNumber?: string;

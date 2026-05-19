@@ -4,6 +4,8 @@
 const iconMap: Record<string, string> = {
   home: 'home',
   group: 'account-group',
+  globe: 'earth',
+  users: 'account-group-outline',
   medication: 'pill',
   smart_toy: 'robot',
   person: 'account',

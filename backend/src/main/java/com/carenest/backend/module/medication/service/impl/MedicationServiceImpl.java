@@ -403,8 +403,7 @@ public class MedicationServiceImpl implements MedicationService {
     @Transactional
     public void createBatchFromOcr(BatchCreateMedicationRequest request) {
         // [QUY TẮC 3]: Xác nhận bảo mật sở hữu HealthProfile và Family
-        familySecurityUtil.checkUserBelongsToFamily(request.getFamilyId());
-        familySecurityUtil.checkUserBelongsToHealthProfile(request.getHealthProfileId());
+        familySecurityUtil.checkHealthProfileBelongsToFamily(request.getHealthProfileId(), request.getFamilyId());
         
         HealthProfile profile = healthProfileRepository.findById(request.getHealthProfileId())
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ sức khỏe", request.getHealthProfileId()));

@@ -7,6 +7,7 @@ import HomeStack from './HomeStack';
 import FamilyStack from './FamilyStack';
 import MedicineStack from './MedicineStack';
 import ChatHubNavigator from './ChatHubNavigator';
+import CommunityStack from './CommunityStack';
 import ProfileStack from './ProfileStack';
 import BottomTabBar from '../components/layout/BottomTabBar';
 import { useFamily } from '../context/FamilyContext';
@@ -80,6 +81,8 @@ export default function MainTabNavigator() {
           navigation.navigate('MedicineTab', { screen: 'MedicineCabinet' });
         } else if (route.name === 'AiChatTab') {
           navigation.navigate('AiChatTab', { screen: 'FamilyChatTab' });
+        } else if (route.name === 'CommunityTab') {
+          navigation.navigate('CommunityTab', { screen: 'CommunityTabs' });
         } else if (route.name === 'ProfileTab') {
           navigation.navigate('ProfileTab', { screen: 'UserProfileSettings' });
         }
@@ -99,6 +102,7 @@ export default function MainTabNavigator() {
       <Tab.Screen name="FamilyTab" component={FamilyStack} listeners={tabPressListener} />
       <Tab.Screen name="MedicineTab" component={MedicineStack} listeners={tabPressListener} />
       <Tab.Screen name="AiChatTab" component={ChatHubNavigator} listeners={tabPressListener} />
+      <Tab.Screen name="CommunityTab" component={CommunityStack} listeners={tabPressListener} />
       <Tab.Screen name="ProfileTab" component={ProfileStack} listeners={tabPressListener} />
     </Tab.Navigator>
   );

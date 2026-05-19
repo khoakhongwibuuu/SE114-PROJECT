@@ -1,5 +1,6 @@
 package com.carenest.backend.module.appointment.service.impl;
 
+import com.carenest.backend.common.exception.BadRequestException;
 import com.carenest.backend.common.exception.ResourceNotFoundException;
 import com.carenest.backend.module.appointment.dto.request.AppointmentCreateRequest;
 import com.carenest.backend.module.appointment.dto.request.AppointmentMemberRequest;
@@ -123,6 +124,12 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(request.getHealthProfileId())
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", request.getHealthProfileId().toString()));
+
+        if (appointment.getHealthProfile().getFamily() != null
+                && healthProfile.getFamily() != null
+                && !appointment.getHealthProfile().getFamily().getId().equals(healthProfile.getFamily().getId())) {
+            throw new BadRequestException("Appointment cannot be moved to another family");
+        }
 
         appointment.setHealthProfile(healthProfile);
         Appointment saved = appointmentRepository.save(appointment);

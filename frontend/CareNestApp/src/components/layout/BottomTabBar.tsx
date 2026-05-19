@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors } from '../../theme/colors';
@@ -8,11 +8,12 @@ import { CARENEST_LOGO_HOUSE } from '../../assets/branding';
 import Icon from '../common/Icon';
 
 const TAB_CONFIG: Array<{ name: string; iconName: string; label: string; useBrandIcon?: boolean }> = [
-  { name: 'HomeTab', iconName: 'home', label: 'Trang chủ' },
-  { name: 'FamilyTab', iconName: 'group', label: 'Gia đình' },
-  { name: 'MedicineTab', iconName: 'medication', label: 'Thuốc' },
-  { name: 'AiChatTab', iconName: 'chat-processing', label: 'Tin nhắn' },
-  { name: 'ProfileTab', iconName: 'person', label: 'Tôi' },
+  { name: 'HomeTab', iconName: 'home', label: 'Trang chu' },
+  { name: 'FamilyTab', iconName: 'group', label: 'Gia dinh' },
+  { name: 'MedicineTab', iconName: 'medication', label: 'Thuoc' },
+  { name: 'AiChatTab', iconName: 'chat-processing', label: 'Tin nhan' },
+  { name: 'CommunityTab', iconName: 'globe', label: 'Cong dong' },
+  { name: 'ProfileTab', iconName: 'person', label: 'Toi' },
 ];
 
 export default function BottomTabBar({ state, navigation }: BottomTabBarProps) {
@@ -57,7 +58,7 @@ export default function BottomTabBar({ state, navigation }: BottomTabBarProps) {
                 color={isActive ? colors.primary : colors.outline}
               />
             )}
-            <Text style={[styles.label, isActive && styles.labelActive]}>
+            <Text style={[styles.label, isActive && styles.labelActive]} numberOfLines={1}>
               {config.label}
             </Text>
           </TouchableOpacity>
@@ -86,9 +87,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 6,
-    borderRadius: 16,
-    marginHorizontal: 4,
+    borderRadius: 14,
+    marginHorizontal: 2,
     gap: 2,
+    minWidth: 0,
   },
   tabActive: {
     backgroundColor: '#EFF6FF',
@@ -100,12 +102,13 @@ const styles = StyleSheet.create({
   brandIconActive: { opacity: 1 },
   brandIconInactive: { opacity: 0.65 },
   label: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Inter',
     fontWeight: '600',
     color: colors.outline,
-    letterSpacing: 0.3,
+    letterSpacing: 0,
     marginTop: 2,
+    maxWidth: '100%',
   },
   labelActive: {
     color: colors.primary,
