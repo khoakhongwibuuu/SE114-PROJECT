@@ -1,5 +1,6 @@
 import { apiDelete, apiGetCached, apiPost, apiPut, invalidateApiGetCache } from './client';
 import { getMyFamily } from './family';
+import { getActiveFamilyHeaderId } from './activeFamily';
 
 export interface MedicineItem {
   id: number;
@@ -46,8 +47,9 @@ export interface MedicineScheduleFormData {
 
 export async function getCabinetMedicines(): Promise<MedicineItem[]> {
   try {
-    const family = await getMyFamily();
-    const cabinet = await apiGetCached<any>(`/families/${family.id}/cabinets`, undefined, { ttlMs: 20000 });
+    const activeFamilyId = await getActiveFamilyHeaderId();
+    const familyId = activeFamilyId || (await getMyFamily()).id;
+    const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`, undefined, { ttlMs: 20000 });
     return cabinet.medicines.map((m: any) => ({
       id: m.id,
       name: m.medicineName,
@@ -67,13 +69,14 @@ export async function createCabinetMedicine(payload: {
   unit: string;
   expiryDate?: string;
 }): Promise<void> {
-  const family = await getMyFamily();
+  const activeFamilyId = await getActiveFamilyHeaderId();
+  const familyId = activeFamilyId || (await getMyFamily()).id;
   let cabinetId = null;
   try {
-    const cabinet = await apiGetCached<any>(`/families/${family.id}/cabinets`);
+    const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`);
     cabinetId = cabinet.id;
   } catch (e) {
-    const newCabinet = await apiPost<any>('/cabinets', { familyId: family.id, name: 'Tủ thuốc gia đình' });
+    const newCabinet = await apiPost<any>('/cabinets', { familyId, name: 'Tủ thuốc gia đình' });
     cabinetId = newCabinet.id;
   }
   
@@ -84,7 +87,7 @@ export async function createCabinetMedicine(payload: {
     expiryDate: payload.expiryDate,
     status: 'AVAILABLE'
   });
-  invalidateApiGetCache([`/families/${family.id}/cabinets`, '/dashboard']);
+  invalidateApiGetCache([`/families/${familyId}/cabinets`, '/dashboard']);
 }
 
 export async function updateCabinetMedicine(medicineId: number, payload: {
@@ -94,17 +97,19 @@ export async function updateCabinetMedicine(medicineId: number, payload: {
   expiryDate?: string | null;
   notes?: string | null;
 }): Promise<void> {
-  const family = await getMyFamily();
-  const cabinet = await apiGetCached<any>(`/families/${family.id}/cabinets`);
+  const activeFamilyId = await getActiveFamilyHeaderId();
+  const familyId = activeFamilyId || (await getMyFamily()).id;
+  const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`);
   await apiPut(`/cabinets/${cabinet.id}/medicines/${medicineId}`, payload);
-  invalidateApiGetCache([`/families/${family.id}/cabinets`, '/dashboard']);
+  invalidateApiGetCache([`/families/${familyId}/cabinets`, '/dashboard']);
 }
 
 export async function deleteCabinetMedicine(medicineId: number): Promise<void> {
-  const family = await getMyFamily();
-  const cabinet = await apiGetCached<any>(`/families/${family.id}/cabinets`);
+  const activeFamilyId = await getActiveFamilyHeaderId();
+  const familyId = activeFamilyId || (await getMyFamily()).id;
+  const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`);
   await apiDelete(`/cabinets/${cabinet.id}/medicines/${medicineId}`);
-  invalidateApiGetCache([`/families/${family.id}/cabinets`, '/dashboard']);
+  invalidateApiGetCache([`/families/${familyId}/cabinets`, '/dashboard']);
 }
 
 export async function getDailySchedule(profileId: number, date: string): Promise<DailyMedicineSchedule> {
