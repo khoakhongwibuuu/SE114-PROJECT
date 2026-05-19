@@ -5,6 +5,8 @@ import type { ProfileStackParamList } from './navigationTypes';
 import UserProfileSettingsScreen from '../screens/profile/UserProfileSettingsScreen';
 import UserMedicalScreen from '../screens/profile/UserMedicalScreen';
 import PolicyScreen from '../screens/profile/PolicyScreen';
+import DoctorVerificationScreen from '../screens/profile/DoctorVerificationScreen';
+import AdminVerificationScreen from '../screens/profile/AdminVerificationScreen';
 import MedicineScheduleScreen from '../screens/medicine/MedicineScheduleScreen';
 import AddMedicineScheduleScreen from '../screens/medicine/AddMedicineScheduleScreen';
 import AppointmentListScreen from '../screens/appointment/AppointmentListScreen';
@@ -20,6 +22,8 @@ export default function ProfileStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="UserProfileSettings" component={UserProfileSettingsScreen} />
       <Stack.Screen name="UserMedical" component={UserMedicalScreen} />
+      <Stack.Screen name="DoctorVerification" component={DoctorVerificationScreen} />
+      <Stack.Screen name="AdminVerification" component={AdminVerificationScreen} />
       <Stack.Screen name="Policy" component={PolicyScreen} />
       <Stack.Screen name="MedicineSchedule" component={MedicineScheduleScreen} />
       <Stack.Screen name="AddMedicineSchedule" component={AddMedicineScheduleScreen} />

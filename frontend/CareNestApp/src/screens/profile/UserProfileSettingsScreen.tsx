@@ -526,6 +526,28 @@ export default function UserProfileSettingsScreen() {
           <View style={[styles.formCard, shadows.sm]}>
             <TouchableOpacity
               style={styles.settingsRow}
+              onPress={() => navigation.navigate('DoctorVerification')}
+            >
+              <View style={[styles.rowIconWrap, { backgroundColor: '#ECFDF5' }]}>
+                <Icon name="verified" size={20} color="#16A34A" />
+              </View>
+              <Text style={styles.rowLabelText}>Xac thuc Bac si</Text>
+              <Icon name="chevron_right" size={20} color="#CBD5E1" />
+            </TouchableOpacity>
+            {user?.role === 'ADMIN' ? (
+              <TouchableOpacity
+                style={styles.settingsRow}
+                onPress={() => navigation.navigate('AdminVerification')}
+              >
+                <View style={[styles.rowIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                  <Icon name="medical_services" size={20} color="#2563EB" />
+                </View>
+                <Text style={styles.rowLabelText}>Duyet ho so Bac si</Text>
+                <Icon name="chevron_right" size={20} color="#CBD5E1" />
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              style={styles.settingsRow}
               onPress={() => Alert.alert('Sap ra mat', 'Tuy chon ngon ngu se duoc bo sung sau.')}
             >
               <View style={[styles.rowIconWrap, { backgroundColor: '#F5F3FF' }]}>
