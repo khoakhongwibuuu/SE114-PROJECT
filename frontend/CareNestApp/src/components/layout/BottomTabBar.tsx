@@ -25,11 +25,23 @@ export default function BottomTabBar({ state, navigation }: BottomTabBarProps) {
         const isActive = state.index === index;
         const config = TAB_CONFIG.find(t => t.name === route.name) ?? TAB_CONFIG[0];
 
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isActive && !event.defaultPrevented) {
+            navigation.navigate({ name: route.name, merge: true } as any);
+          }
+        };
+
         return (
           <TouchableOpacity
             key={route.key}
             style={[styles.tab, isActive && styles.tabActive]}
-            onPress={() => navigation.navigate(route.name)}
+            onPress={onPress}
             activeOpacity={0.8}
           >
             {config.useBrandIcon ? (
