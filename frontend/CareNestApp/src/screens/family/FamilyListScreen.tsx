@@ -13,18 +13,14 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ChatRoomV2'
 export default function FamilyListScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { family, familyName, familyImage } = useFamily();
+  const { allFamilies } = useFamily();
 
-  // In the future, this will be an array of families.
-  // For now, we mock it with the single family from context if it exists.
-  const families = family ? [
-    {
-      id: family.id,
-      name: familyName || 'Tổ ấm thân thương',
-      image: familyImage,
-      lastMessage: 'Bấm để bắt đầu trò chuyện',
-    }
-  ] : [];
+  const families = allFamilies.map(f => ({
+    id: f.id,
+    name: f.name,
+    image: null,
+    lastMessage: 'Bấm để bắt đầu trò chuyện',
+  }));
 
   if (families.length === 0) {
     return (
