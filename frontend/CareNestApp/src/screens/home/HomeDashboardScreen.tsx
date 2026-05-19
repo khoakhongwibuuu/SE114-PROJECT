@@ -339,8 +339,9 @@ export default function HomeDashboardScreen() {
   const handleSwitchFamily = async (id: number) => {
     handleCloseSwitcher();
     if (id !== activeFamilyId) {
+      setSelectedProfileId(null);
       await setActiveFamilyId(id);
-      await getDashboard(id, selectedProfileId || undefined)
+      await getDashboard(id, undefined)
         .then(setDashboard)
         .catch(() => setDashboard(null));
     }
@@ -357,17 +358,19 @@ export default function HomeDashboardScreen() {
         {/* Family Switcher — replaces static logo */}
         <TouchableOpacity
           style={styles.brandLeft}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
           onPress={handleOpenSwitcher}
           disabled={allFamilies.length <= 1}
         >
           <Image source={CARENEST_LOGO_HOUSE} style={styles.brandGlyph} resizeMode="contain" />
-          <Text style={styles.logoText} numberOfLines={1}>
-            {activeFamilyName}
-          </Text>
-          {allFamilies.length > 1 && (
-            <Text style={styles.switcherCaret}>▾</Text>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={styles.logoText} numberOfLines={1}>
+              {activeFamilyName}
+            </Text>
+            {allFamilies.length > 1 && (
+              <Icon name="keyboard_arrow_down" size={20} color="#0047AB" style={{ marginTop: 2 }} />
+            )}
+          </View>
         </TouchableOpacity>
         <View style={styles.headerActions}>
           <Avatar uri={user?.avatarUrl} name={user?.fullName || 'CareNest'} size="sm" bordered />
