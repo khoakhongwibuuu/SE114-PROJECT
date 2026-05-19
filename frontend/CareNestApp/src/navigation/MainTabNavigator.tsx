@@ -62,7 +62,7 @@ export default function MainTabNavigator() {
     prefetchTasks.forEach(task => task.catch(() => {}));
   }, [activeProfileId, members, notificationProfileId, selectedProfileId]);
 
-  const tabPressListener = ({ navigation }: any) => ({
+  const tabPressListener = ({ navigation, route }: any) => ({
     tabPress: (e: any) => {
       const state = navigation.getState();
       const activeRoute = state?.routes?.[state.index];
@@ -70,7 +70,19 @@ export default function MainTabNavigator() {
 
       if (navigation.isFocused() && hasHistory) {
         e.preventDefault();
-        navigation.dispatch(StackActions.popToTop());
+        
+        // Safely navigate to the root screen of the active stack to pop all screens
+        if (route.name === 'HomeTab') {
+          navigation.navigate('HomeTab', { screen: 'HomeDashboard' });
+        } else if (route.name === 'FamilyTab') {
+          navigation.navigate('FamilyTab', { screen: 'FamilyPicker' });
+        } else if (route.name === 'MedicineTab') {
+          navigation.navigate('MedicineTab', { screen: 'MedicineCabinet' });
+        } else if (route.name === 'AiChatTab') {
+          navigation.navigate('AiChatTab', { screen: 'FamilyChatTab' });
+        } else if (route.name === 'ProfileTab') {
+          navigation.navigate('ProfileTab', { screen: 'UserProfileSettings' });
+        }
       }
     },
   });
