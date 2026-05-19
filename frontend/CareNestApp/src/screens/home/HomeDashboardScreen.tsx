@@ -368,7 +368,7 @@ export default function HomeDashboardScreen() {
               {activeFamilyName}
             </Text>
             {allFamilies.length > 1 && (
-              <Icon name="keyboard_arrow_down" size={20} color="#0047AB" style={{ marginTop: 2 }} />
+              <Icon name="expand_more" size={20} color="#0047AB" style={{ marginTop: 2 }} />
             )}
           </View>
         </TouchableOpacity>
