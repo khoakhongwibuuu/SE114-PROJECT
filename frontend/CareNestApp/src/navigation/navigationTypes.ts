@@ -17,6 +17,7 @@ export type MainTabParamList = {
   FamilyTab: undefined;
   MedicineTab: undefined;
   AiChatTab: undefined;
+  CommunityTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -59,6 +60,17 @@ export type MedicineStackParamList = {
 
 export type AiChatStackParamList = {
   AiChatbot: undefined;
+};
+
+export type CommunityStackParamList = {
+  CommunityTabs: undefined;
+  GroupDetail: { groupId: number; groupName: string };
+  CreateArticle: undefined;
+};
+
+export type CommunityTopTabParamList = {
+  WikiTab: undefined;
+  GroupsTab: undefined;
 };
 
 export type ProfileStackParamList = {

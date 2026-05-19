@@ -35,6 +35,7 @@ export interface CurrentUserProfile {
   id: number;
   email: string;
   fullName: string;
+  role?: string | null;
   phoneNumber?: string | null;
   birthday?: string | null;
   gender?: string | null;
@@ -85,6 +86,7 @@ function mapRawUserToProfile(raw: RawUserInfoResponse): CurrentUserProfile {
     id: raw.id,
     email: raw.email,
     fullName: raw.fullName,
+    role: raw.role,
     phoneNumber: raw.phone,
     birthday: raw.dateOfBirth,
     gender: raw.gender,

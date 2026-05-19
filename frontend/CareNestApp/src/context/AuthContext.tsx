@@ -29,6 +29,7 @@ function mapProfileToUser(profile: CurrentUserProfile, token?: string): User {
     profileId: String(profile.id),
     email: profile.email,
     fullName: profile.fullName,
+    role: profile.role || undefined,
     avatarUrl: profile.avatarUrl || undefined,
     createdAt: new Date().toISOString(),
     phoneNumber: profile.phoneNumber || undefined,

@@ -55,14 +55,14 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUser() {
         UserInfoResponse response = authService.getCurrentUser();
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/me")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<UserInfoResponse>> updateCurrentUser(@RequestBody @Valid com.carenest.backend.module.auth.dto.request.UpdateUserRequest request) {
         UserInfoResponse response = authService.updateCurrentUser(request);
         return ResponseEntity.ok(ApiResponse.success("User updated successfully", response));

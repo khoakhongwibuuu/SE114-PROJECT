@@ -3,6 +3,8 @@ package com.carenest.backend.module.family.util;
 import com.carenest.backend.common.exception.UnauthorizedException;
 import com.carenest.backend.module.auth.entity.User;
 import com.carenest.backend.module.auth.repository.UserRepository;
+import com.carenest.backend.module.family.context.FamilyRequestContext;
+import com.carenest.backend.module.family.entity.FamilyMember;
 import com.carenest.backend.module.family.repository.FamilyMemberRepository;
 import com.carenest.backend.module.healthprofile.entity.HealthProfile;
 import com.carenest.backend.module.healthprofile.repository.HealthProfileRepository;
@@ -10,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -22,46 +27,71 @@ public class FamilySecurityUtil {
     public User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Vui lòng đăng nhập"));
+                .orElseThrow(() -> new UnauthorizedException("Please sign in"));
     }
 
     public void checkUserBelongsToFamily(Long familyId) {
         User currentUser = getCurrentUser();
         boolean belongs = familyMemberRepository.findByFamilyIdAndUserId(familyId, currentUser.getId()).isPresent();
         if (!belongs) {
-            throw new AccessDeniedException("Bạn không có quyền truy cập vào gia đình này");
+            throw new AccessDeniedException("You do not have access to this family");
         }
     }
 
     public void checkUserBelongsToHealthProfile(Long profileId) {
         User currentUser = getCurrentUser();
         HealthProfile profile = healthProfileRepository.findById(profileId)
-                .orElseThrow(() -> new IllegalArgumentException("Hồ sơ sức khỏe không tồn tại"));
+                .orElseThrow(() -> new IllegalArgumentException("Health profile does not exist"));
+
+        Long activeFamilyId = FamilyRequestContext.getFamilyId();
+        if (activeFamilyId != null
+                && profile.getFamily() != null
+                && !profile.getFamily().getId().equals(activeFamilyId)) {
+            throw new AccessDeniedException("Health profile does not belong to the active family");
+        }
 
         if (profile.getFamily() != null) {
-            boolean belongs = familyMemberRepository.findByFamilyIdAndUserId(profile.getFamily().getId(), currentUser.getId()).isPresent();
+            boolean belongs = familyMemberRepository
+                    .findByFamilyIdAndUserId(profile.getFamily().getId(), currentUser.getId())
+                    .isPresent();
             if (!belongs) {
-                throw new AccessDeniedException("Bạn không có quyền truy cập vào hồ sơ sức khỏe này");
+                throw new AccessDeniedException("You do not have access to this health profile");
             }
-        } else {
-            // Profile does not belong to a family, only the direct user can access
-            if (!profile.getUser().getId().equals(currentUser.getId())) {
-                throw new AccessDeniedException("Bạn không có quyền truy cập vào hồ sơ cá nhân này");
-            }
+            return;
+        }
+
+        if (profile.getUser() == null || !profile.getUser().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You do not have access to this personal health profile");
         }
     }
 
-    public java.util.List<Long> getFamilyIdsForProfile(HealthProfile profile) {
-        java.util.List<Long> familyIds = new java.util.ArrayList<>();
+    public void checkHealthProfileBelongsToFamily(Long profileId, Long familyId) {
+        if (profileId == null || familyId == null) {
+            throw new AccessDeniedException("Family and health profile are required");
+        }
+
+        checkUserBelongsToFamily(familyId);
+        checkUserBelongsToHealthProfile(profileId);
+
+        HealthProfile profile = healthProfileRepository.findById(profileId)
+                .orElseThrow(() -> new IllegalArgumentException("Health profile does not exist"));
+
+        if (profile.getFamily() == null || !profile.getFamily().getId().equals(familyId)) {
+            throw new AccessDeniedException("Health profile does not belong to this family");
+        }
+    }
+
+    public List<Long> getFamilyIdsForProfile(HealthProfile profile) {
+        List<Long> familyIds = new ArrayList<>();
         if (profile == null) {
             return familyIds;
         }
         if (profile.getFamily() != null) {
             familyIds.add(profile.getFamily().getId());
         } else if (profile.getUser() != null) {
-            for (com.carenest.backend.module.family.entity.FamilyMember fm : familyMemberRepository.findAllByUserId(profile.getUser().getId())) {
-                if (fm.getFamily() != null) {
-                    familyIds.add(fm.getFamily().getId());
+            for (FamilyMember familyMember : familyMemberRepository.findAllByUserId(profile.getUser().getId())) {
+                if (familyMember.getFamily() != null) {
+                    familyIds.add(familyMember.getFamily().getId());
                 }
             }
         }

@@ -50,7 +50,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         // Nếu profileId != null, kiểm tra quyền truy cập profile đó
         if (profileId != null) {
-            familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+            familySecurityUtil.checkHealthProfileBelongsToFamily(profileId, familyId);
         }
 
         // 2. Tính toán startOfDay và endOfDay (Instant)

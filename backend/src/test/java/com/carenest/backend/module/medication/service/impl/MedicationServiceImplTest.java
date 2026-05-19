@@ -3,6 +3,9 @@ package com.carenest.backend.module.medication.service.impl;
 import com.carenest.backend.module.family.util.FamilySecurityUtil;
 import com.carenest.backend.module.healthprofile.entity.HealthProfile;
 import com.carenest.backend.module.healthprofile.repository.HealthProfileRepository;
+import com.carenest.backend.module.cabinet.repository.CabinetMedicineRepository;
+import com.carenest.backend.module.cabinet.repository.MedicineCabinetRepository;
+import com.carenest.backend.module.medication.dto.request.BatchCreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.CreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.UpdateMedicationRequest;
 import com.carenest.backend.module.medication.entity.Medication;
@@ -20,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.CacheManager;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -28,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -43,6 +48,12 @@ public class MedicationServiceImplTest {
 
     @Mock
     private HealthProfileRepository healthProfileRepository;
+
+    @Mock
+    private MedicineCabinetRepository medicineCabinetRepository;
+
+    @Mock
+    private CabinetMedicineRepository cabinetMedicineRepository;
 
     @Mock
     private FamilySecurityUtil familySecurityUtil;
@@ -139,5 +150,20 @@ public class MedicationServiceImplTest {
         
         // Verify regeneration logic triggered (saveAll called for new logs)
         verify(medicationLogRepository).saveAll(anyList());
+    }
+
+    @Test
+    void createBatchFromOcr_deniesMismatchedFamilyAndProfileBeforeMutation() {
+        BatchCreateMedicationRequest request = new BatchCreateMedicationRequest();
+        request.setFamilyId(10L);
+        request.setHealthProfileId(99L);
+
+        doThrow(new AccessDeniedException("denied"))
+                .when(familySecurityUtil).checkHealthProfileBelongsToFamily(99L, 10L);
+
+        assertThrows(AccessDeniedException.class, () -> medicationService.createBatchFromOcr(request));
+
+        verifyNoInteractions(medicineCabinetRepository, cabinetMedicineRepository);
+        verify(medicationRepository, never()).save(any());
     }
 }
