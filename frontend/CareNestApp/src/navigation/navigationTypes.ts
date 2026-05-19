@@ -76,6 +76,8 @@ export type CommunityTopTabParamList = {
 export type ProfileStackParamList = {
   UserProfileSettings: undefined;
   UserMedical: { memberId?: string };
+  DoctorVerification: undefined;
+  AdminVerification: undefined;
   Policy: undefined;
   MedicineSchedule: { memberId?: string } | undefined;
   AddMedicineSchedule: { editId?: string; memberId?: string } | undefined;
