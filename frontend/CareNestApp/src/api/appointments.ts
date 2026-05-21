@@ -38,6 +38,8 @@ interface RawAppointmentResponse {
 export async function getAppointmentOverview(profileId: number): Promise<AppointmentOverview> {
   const allAppointments = await apiGetCached<RawAppointmentResponse[]>(`/health-profiles/${profileId}/appointments`, undefined, {
     ttlMs: 20000,
+    persist: true,
+    offlineMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
   });
 
   const now = new Date();

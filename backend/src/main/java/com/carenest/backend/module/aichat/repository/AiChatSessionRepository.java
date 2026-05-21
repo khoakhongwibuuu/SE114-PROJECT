@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface AiChatSessionRepository extends JpaRepository<AiChatSession, Long> {
     Optional<AiChatSession> findByUserIdAndStatus(Long userId, String status);
+    Optional<AiChatSession> findByIdAndUserId(Long id, Long userId);
 }

@@ -29,15 +29,21 @@ export async function getStoredSession(): Promise<AuthSession | null> {
     console.warn("Keychain get session failed, trying fallback storage:", error);
   }
 
-  // 2. Fallback to AsyncStorage
+  // Migrate legacy plain-text sessions once, then delete them.
   try {
     const fallbackData = await AsyncStorage.getItem(FALLBACK_SESSION_KEY);
     if (fallbackData) {
-      inMemorySession = JSON.parse(fallbackData) as AuthSession;
+      const migratedSession = JSON.parse(fallbackData) as AuthSession;
+      await Keychain.setGenericPassword('carenest_user', JSON.stringify(migratedSession), {
+        service: KEYCHAIN_SERVICE,
+        securityLevel: Keychain.SECURITY_LEVEL.SECURE_SOFTWARE,
+      });
+      await AsyncStorage.removeItem(FALLBACK_SESSION_KEY);
+      inMemorySession = migratedSession;
       return inMemorySession;
     }
   } catch (fallbackError) {
-    console.error("Fallback AsyncStorage get session failed:", fallbackError);
+    console.warn("Legacy AsyncStorage session migration failed:", fallbackError);
   }
 
   return null;
@@ -60,21 +66,15 @@ export async function setStoredSession(session: AuthSession | null): Promise<voi
     return;
   }
 
-  // 1. Store in AsyncStorage as the primary fail-safe layer
-  try {
-    await AsyncStorage.setItem(FALLBACK_SESSION_KEY, JSON.stringify(session));
-  } catch (fallbackError) {
-    console.error("AsyncStorage set session failed:", fallbackError);
-  }
-
-  // 2. Also try storing in Keychain for dual-layer security
   try {
     await Keychain.setGenericPassword('carenest_user', JSON.stringify(session), {
       service: KEYCHAIN_SERVICE,
       securityLevel: Keychain.SECURITY_LEVEL.SECURE_SOFTWARE,
     });
+    await AsyncStorage.removeItem(FALLBACK_SESSION_KEY);
   } catch (error) {
     console.warn("Keychain set session failed:", error);
+    throw error;
   }
 }
 

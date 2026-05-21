@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   RefreshControl,
   StyleSheet,
   Text,
@@ -24,25 +25,25 @@ type Nav = NativeStackNavigationProp<CommunityStackParamList>;
 
 function parseTags(tags?: string | null): string[] {
   if (!tags) {
-    return ['Kien thuc'];
+    return ['Kiến thức'];
   }
   const values = tags.split(',').map(tag => tag.trim()).filter(Boolean);
-  return values.length ? values.slice(0, 4) : ['Kien thuc'];
+  return values.length ? values.slice(0, 4) : ['Kiến thức'];
 }
 
 function formatTime(value?: string | null): string {
   if (!value) {
-    return 'Vua dang';
+    return 'Vừa đăng';
   }
   const created = new Date(value);
   if (Number.isNaN(created.getTime())) {
-    return 'Vua dang';
+    return 'Vừa đăng';
   }
   const diffMinutes = Math.max(0, Math.floor((Date.now() - created.getTime()) / 60000));
-  if (diffMinutes < 1) return 'Vua xong';
-  if (diffMinutes < 60) return `${diffMinutes} phut`;
+  if (diffMinutes < 1) return 'Vừa xong';
+  if (diffMinutes < 60) return `${diffMinutes} phút`;
   const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours} gio`;
+  if (diffHours < 24) return `${diffHours} giờ`;
   return created.toLocaleDateString('vi-VN');
 }
 
@@ -55,7 +56,7 @@ function ArticleCard({ item }: { item: Article }) {
   const tags = parseTags(item.tags);
 
   const handleInteraction = (label: string) => {
-    Alert.alert(label, 'Tinh nang nay se duoc ket noi o phien ban tiep theo.');
+    Alert.alert(label, 'Tính năng này sẽ được kết nối ở phiên bản tiếp theo.');
   };
 
   return (
@@ -73,6 +74,10 @@ function ArticleCard({ item }: { item: Article }) {
       <Text style={styles.articleTitle} numberOfLines={2}>{item.title}</Text>
       <Text style={styles.articleContent} numberOfLines={3}>{item.content}</Text>
 
+      {item.imageUrl ? (
+        <Image source={{ uri: item.imageUrl }} style={styles.articleImage} resizeMode="cover" />
+      ) : null}
+
       <View style={styles.tagRow}>
         {tags.map(tag => (
           <View key={tag} style={styles.tagChip}>
@@ -87,18 +92,18 @@ function ArticleCard({ item }: { item: Article }) {
         <TouchableOpacity
           style={styles.actionButton}
           activeOpacity={0.75}
-          onPress={() => handleInteraction('Thich')}
+          onPress={() => handleInteraction('Thích')}
         >
           <MaterialCommunityIcons name="heart-outline" size={20} color="#64748b" />
-          <Text style={styles.actionText}>Thich</Text>
+          <Text style={styles.actionText}>Thích</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
           activeOpacity={0.75}
-          onPress={() => handleInteraction('Binh luan')}
+          onPress={() => handleInteraction('Bình luận')}
         >
           <MaterialCommunityIcons name="message-outline" size={20} color="#64748b" />
-          <Text style={styles.actionText}>Binh luan</Text>
+          <Text style={styles.actionText}>Bình luận</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -158,15 +163,15 @@ export default function CommunityWikiScreen() {
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Cam nang suc khoe</Text>
-            <Text style={styles.subtitle}>Bai viet chuyen mon tu bac si va cong dong CareNest.</Text>
+            <Text style={styles.title}>Cẩm nang sức khỏe</Text>
+            <Text style={styles.subtitle}>Bài viết chuyên môn từ bác sĩ và cộng đồng CareNest.</Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyCard}>
             <MaterialCommunityIcons name="file-document-outline" size={40} color="#94a3b8" />
-            <Text style={styles.emptyTitle}>Chua co bai viet</Text>
-            <Text style={styles.emptyText}>Noi dung wiki se hien thi tai day khi bac si dang bai.</Text>
+            <Text style={styles.emptyTitle}>Chưa có bài viết</Text>
+            <Text style={styles.emptyText}>Nội dung wiki sẽ hiển thị tại đây khi bác sĩ đăng bài.</Text>
           </View>
         }
       />
@@ -225,6 +230,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#475569',
     lineHeight: 21,
+  },
+  articleImage: {
+    width: '100%',
+    height: 210,
+    marginTop: 12,
+    backgroundColor: '#e2e8f0',
   },
   tagRow: {
     flexDirection: 'row',

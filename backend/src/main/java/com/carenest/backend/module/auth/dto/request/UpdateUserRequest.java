@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 @Data
 public class UpdateUserRequest {
-    @NotBlank(message = "Full name is required")
+    @NotBlank(message = "Vui lòng nhập họ và tên")
     private String fullName;
     
     private String phone;

@@ -176,7 +176,9 @@ function mapRawHealthProfile(raw: RawHealthProfileResponse): ProfileDetails {
 export async function getMyFamily(options?: { forceRefresh?: boolean }): Promise<FamilyDetailResponse> {
   const raw = await apiGetCached<RawFamilyDetailResponse>('/families', undefined, { 
     ttlMs: 20000,
-    forceRefresh: options?.forceRefresh
+    forceRefresh: options?.forceRefresh,
+    persist: true,
+    offlineMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
   });
   return mapRawFamilyToDetail(raw);
 }
@@ -187,7 +189,11 @@ export async function createFamily(name: string): Promise<void> {
 }
 
 export async function getFamilyProfile(profileId: number): Promise<ProfileDetails> {
-  const raw = await apiGetCached<RawHealthProfileResponse>(`/health-profiles/${profileId}`, undefined, { ttlMs: 20000 });
+  const raw = await apiGetCached<RawHealthProfileResponse>(`/health-profiles/${profileId}`, undefined, {
+    ttlMs: 20000,
+    persist: true,
+    offlineMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
+  });
   return mapRawHealthProfile(raw);
 }
 

@@ -79,7 +79,7 @@ public class FamilyServiceImpl implements FamilyService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Please sign in"));
+                .orElseThrow(() -> new UnauthorizedException("Vui lòng đăng nhập"));
     }
 
     @Override
@@ -174,14 +174,14 @@ public class FamilyServiceImpl implements FamilyService {
         String email = request.getEmail().trim().toLowerCase(Locale.ROOT);
         User recipient = userRepository.findByEmail(email).orElse(null);
         if (recipient != null && familyMemberRepository.existsByFamilyIdAndUserId(familyId, recipient.getId())) {
-            throw new DuplicateResourceException("Member already exists in this family");
+            throw new DuplicateResourceException("Thành viên đã tồn tại trong gia đình này");
         }
         if (familyInvitationRepository.existsByFamily_IdAndRecipientEmailIgnoreCaseAndStatus(
                 familyId,
                 email,
                 InvitationStatus.PENDING
         )) {
-            throw new DuplicateResourceException("A pending invitation already exists for this email");
+            throw new DuplicateResourceException("Email này đã có lời mời đang chờ xử lý");
         }
 
         FamilyInvitation invitation = FamilyInvitation.builder()
@@ -227,18 +227,18 @@ public class FamilyServiceImpl implements FamilyService {
                 && invitation.getRecipientEmail().equalsIgnoreCase(currentUser.getEmail());
 
         if (!belongsToCurrentUser && !invitedByEmail) {
-            throw new UnauthorizedException("You cannot handle this invitation");
+            throw new UnauthorizedException("Bạn không có quyền xử lý lời mời này");
         }
 
         if (invitation.getStatus() != InvitationStatus.PENDING) {
-            throw new BadRequestException("Invitation has already been handled");
+            throw new BadRequestException("Lời mời này đã được xử lý");
         }
 
         invitation.setStatus(request.getStatus());
 
         if (request.getStatus() == InvitationStatus.ACCEPTED) {
             if (familyMemberRepository.existsByFamilyIdAndUserId(invitation.getFamily().getId(), currentUser.getId())) {
-                throw new DuplicateResourceException("Member already exists in this family");
+                throw new DuplicateResourceException("Thành viên đã tồn tại trong gia đình này");
             }
             addMemberIfMissing(invitation.getFamily(), currentUser, invitation.getRole());
             if (invitation.getRecipient() == null) {
@@ -453,13 +453,13 @@ public class FamilyServiceImpl implements FamilyService {
 
     private String decodeQrPayload(MultipartFile image) {
         if (image == null || image.isEmpty()) {
-            throw new BadRequestException("QR image is required");
+            throw new BadRequestException("Vui lòng tải lên ảnh QR");
         }
 
         try {
             BufferedImage bufferedImage = ImageIO.read(image.getInputStream());
             if (bufferedImage == null) {
-                throw new BadRequestException("Invalid QR image");
+                throw new BadRequestException("Ảnh QR không hợp lệ");
             }
             BinaryBitmap bitmap = new BinaryBitmap(
                     new HybridBinarizer(new BufferedImageLuminanceSource(bufferedImage)));

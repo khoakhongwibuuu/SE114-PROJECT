@@ -66,15 +66,18 @@ export default function GroupDetailScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const groupId = Number(route.params?.groupId);
-  const groupName = route.params?.groupName || 'Hoi nhom';
+  const groupName = route.params?.groupName || 'Hội nhóm';
   const currentUserId = user?.userId ?? (user?.id ? Number(user.id) : null);
 
   const [posts, setPosts] = useState<GroupPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
 
-  const loadPosts = useCallback(async () => {
+  const loadPosts = useCallback(async (page = 0) => {
     if (!Number.isFinite(groupId)) {
       setPosts([]);
       setLoading(false);
@@ -82,18 +85,35 @@ export default function GroupDetailScreen() {
     }
 
     try {
-      setLoading(true);
-      setPosts(await getGroupPosts(groupId));
+      if (page === 0) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      const result = await getGroupPosts(groupId, page, 30);
+      setPosts(current => page === 0 ? result.content : [...current, ...result.content]);
+      setCurrentPage(result.page);
+      setHasMore(!result.last);
     } catch {
-      setPosts([]);
+      if (page === 0) {
+        setPosts([]);
+      }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, [groupId]);
 
   useFocusEffect(useCallback(() => {
     void loadPosts();
   }, [loadPosts]));
+
+  const handleLoadMore = useCallback(() => {
+    if (!hasMore || loadingMore || loading) {
+      return;
+    }
+    void loadPosts(currentPage + 1);
+  }, [currentPage, hasMore, loadPosts, loading, loadingMore]);
 
   const handleSend = async () => {
     const content = message.trim();
@@ -109,8 +129,8 @@ export default function GroupDetailScreen() {
     } catch (error) {
       setMessage(content);
       Alert.alert(
-        'Khong the gui tin nhan',
-        error instanceof Error ? error.message : 'Da co loi xay ra',
+        'Không thể gửi tin nhắn',
+        error instanceof Error ? error.message : 'Đã có lỗi xảy ra',
       );
     } finally {
       setSending(false);
@@ -129,7 +149,7 @@ export default function GroupDetailScreen() {
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.headerTitle} numberOfLines={1}>{groupName}</Text>
-          <Text style={styles.headerSubtitle}>Community chat</Text>
+          <Text style={styles.headerSubtitle}>Trò chuyện cộng đồng</Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -151,11 +171,20 @@ export default function GroupDetailScreen() {
           inverted
           contentContainerStyle={styles.messageList}
           keyboardShouldPersistTaps="handled"
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.25}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.loadingMore}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="chat-outline" size={42} color="#94a3b8" />
-              <Text style={styles.emptyTitle}>Chua co tin nhan</Text>
-              <Text style={styles.emptyText}>Hay bat dau cuoc trao doi dau tien trong nhom.</Text>
+              <Text style={styles.emptyTitle}>Chưa có tin nhắn</Text>
+              <Text style={styles.emptyText}>Hãy bắt đầu cuộc trao đổi đầu tiên trong nhóm.</Text>
             </View>
           }
         />
@@ -166,7 +195,7 @@ export default function GroupDetailScreen() {
           style={styles.composerInput}
           value={message}
           onChangeText={setMessage}
-          placeholder="Nhap tin nhan..."
+          placeholder="Nhập tin nhắn..."
           placeholderTextColor="#94a3b8"
           multiline
         />
@@ -263,6 +292,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { marginTop: 12, fontSize: 16, fontWeight: '900', color: '#0f172a' },
   emptyText: { marginTop: 6, fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20 },
+  loadingMore: { paddingVertical: 12, transform: [{ scaleY: -1 }] },
   composerWrap: {
     flexDirection: 'row',
     alignItems: 'flex-end',

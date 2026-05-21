@@ -128,7 +128,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         if (appointment.getHealthProfile().getFamily() != null
                 && healthProfile.getFamily() != null
                 && !appointment.getHealthProfile().getFamily().getId().equals(healthProfile.getFamily().getId())) {
-            throw new BadRequestException("Appointment cannot be moved to another family");
+            throw new BadRequestException("Không thể chuyển lịch khám sang gia đình khác");
         }
 
         appointment.setHealthProfile(healthProfile);

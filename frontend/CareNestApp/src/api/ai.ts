@@ -1,4 +1,4 @@
-import { apiClient, apiGet, apiPost } from './client';
+import { apiClient, apiGet, apiPost, type PageResponse } from './client';
 import { createCabinetMedicine, createMedicineSchedule } from './medicine';
 
 export interface ChatReply {
@@ -44,8 +44,12 @@ export async function listConversations(): Promise<{ conversations: Array<Record
   return apiGet('/ai/conversations');
 }
 
-export async function getConversationMessages(conversationId: number): Promise<{ conversation_id: number; messages: Array<Record<string, unknown>> }> {
-  return apiGet(`/ai/conversations/${conversationId}/messages`);
+export async function getConversationMessages(
+  conversationId: number,
+  page = 0,
+  size = 30,
+): Promise<PageResponse<Record<string, unknown>>> {
+  return apiGet(`/chat/sessions/${conversationId}/messages`, { page, size, sort: 'createdAt,desc' });
 }
 
 export async function submitOcr(payload: { profileId: number; imageBase64: string }): Promise<OcrReply> {
@@ -150,7 +154,7 @@ export async function confirmOcr(ocrId: number, payload: { profileId: number; st
 export async function voiceChat(payload: FormData): Promise<VoiceReply> {
   const response = await apiClient.post('/ai/voice/chat', payload, {
     headers: { Accept: 'application/json' },
-    timeout: 300000,
+    timeout: 45000,
   });
   return response.data.data as VoiceReply;
 }
@@ -159,7 +163,7 @@ export async function speakText(text: string): Promise<string> {
   const response = await apiClient.post(
     '/ai/voice/tts',
     { text, lang: 'vi' },
-    { timeout: 60000 },
+    { timeout: 45000 },
   );
   return (response.data.data as { audio_base64: string }).audio_base64;
 }

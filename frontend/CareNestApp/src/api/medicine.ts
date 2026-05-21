@@ -1,4 +1,4 @@
-import { apiDelete, apiGetCached, apiPost, apiPut, invalidateApiGetCache } from './client';
+import { apiDelete, apiGetCached, apiPost, apiPut, invalidateApiGetCache, type PageResponse } from './client';
 import { getMyFamily } from './family';
 import { getActiveFamilyHeaderId } from './activeFamily';
 
@@ -49,7 +49,11 @@ export async function getCabinetMedicines(): Promise<MedicineItem[]> {
   try {
     const activeFamilyId = await getActiveFamilyHeaderId();
     const familyId = activeFamilyId || (await getMyFamily()).id;
-    const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`, undefined, { ttlMs: 20000 });
+    const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`, undefined, {
+      ttlMs: 20000,
+      persist: true,
+      offlineMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
+    });
     return cabinet.medicines.map((m: any) => ({
       id: m.id,
       name: m.medicineName,
@@ -73,7 +77,10 @@ export async function createCabinetMedicine(payload: {
   const familyId = activeFamilyId || (await getMyFamily()).id;
   let cabinetId = null;
   try {
-    const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`);
+    const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`, undefined, {
+      persist: true,
+      offlineMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
+    });
     cabinetId = cabinet.id;
   } catch (e) {
     const newCabinet = await apiPost<any>('/cabinets', { familyId, name: 'Tủ thuốc gia đình' });
@@ -99,7 +106,10 @@ export async function updateCabinetMedicine(medicineId: number, payload: {
 }): Promise<void> {
   const activeFamilyId = await getActiveFamilyHeaderId();
   const familyId = activeFamilyId || (await getMyFamily()).id;
-  const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`);
+  const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`, undefined, {
+    persist: true,
+    offlineMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
+  });
   await apiPut(`/cabinets/${cabinet.id}/medicines/${medicineId}`, payload);
   invalidateApiGetCache([`/families/${familyId}/cabinets`, '/dashboard']);
 }
@@ -107,13 +117,20 @@ export async function updateCabinetMedicine(medicineId: number, payload: {
 export async function deleteCabinetMedicine(medicineId: number): Promise<void> {
   const activeFamilyId = await getActiveFamilyHeaderId();
   const familyId = activeFamilyId || (await getMyFamily()).id;
-  const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`);
+  const cabinet = await apiGetCached<any>(`/families/${familyId}/cabinets`, undefined, {
+    persist: true,
+    offlineMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
+  });
   await apiDelete(`/cabinets/${cabinet.id}/medicines/${medicineId}`);
   invalidateApiGetCache([`/families/${familyId}/cabinets`, '/dashboard']);
 }
 
 export async function getDailySchedule(profileId: number, date: string): Promise<DailyMedicineSchedule> {
-  const logs = await apiGetCached<any[]>(`/medications/today`, { profileId }, { ttlMs: 15000 });
+  const logs = await apiGetCached<any[]>(`/medications/today`, { profileId }, {
+    ttlMs: 15000,
+    persist: true,
+    offlineMaxAgeMs: 48 * 60 * 60 * 1000,
+  });
   
   const morning: any[] = [];
   const noon: any[] = [];
@@ -154,7 +171,16 @@ export async function getDailySchedule(profileId: number, date: string): Promise
 }
 
 export async function getMedicineSchedules(profileId: number): Promise<MedicineScheduleItem[]> {
-  const data = await apiGetCached<any[]>(`/health-profiles/${profileId}/medications`, undefined, { ttlMs: 20000 });
+  const page = await apiGetCached<PageResponse<any>>(
+    `/health-profiles/${profileId}/medications`,
+    { page: 0, size: 30, sort: 'createdAt,desc' },
+    {
+      ttlMs: 20000,
+      persist: true,
+      offlineMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
+    },
+  );
+  const data = page.content || [];
   return data.map(m => ({
     id: m.id,
     profileName: '',
@@ -172,7 +198,11 @@ export async function getScheduleFormData(): Promise<MedicineScheduleFormData> {
   const family = await getMyFamily();
   let medicines: any[] = [];
   try {
-    const cabinet = await apiGetCached<any>(`/families/${family.id}/cabinets`, undefined, { ttlMs: 30000 });
+    const cabinet = await apiGetCached<any>(`/families/${family.id}/cabinets`, undefined, {
+      ttlMs: 30000,
+      persist: true,
+      offlineMaxAgeMs: 7 * 24 * 60 * 60 * 1000,
+    });
     medicines = cabinet.medicines || [];
   } catch (error) {
     //

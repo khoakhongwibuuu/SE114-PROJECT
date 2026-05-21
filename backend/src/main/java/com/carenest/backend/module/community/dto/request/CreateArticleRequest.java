@@ -7,13 +7,16 @@ import lombok.Data;
 @Data
 public class CreateArticleRequest {
 
-    @NotBlank(message = "Title is required")
-    @Size(max = 200, message = "Title must be at most 200 characters")
+    @NotBlank(message = "Vui lòng nhập tiêu đề")
+    @Size(max = 200, message = "Tiêu đề không được vượt quá 200 ký tự")
     private String title;
 
-    @NotBlank(message = "Content is required")
+    @NotBlank(message = "Vui lòng nhập nội dung")
     private String content;
 
-    @Size(max = 500, message = "Tags must be at most 500 characters")
+    @Size(max = 500, message = "Thẻ không được vượt quá 500 ký tự")
     private String tags;
+
+    @Size(max = 1000, message = "Đường dẫn ảnh không được vượt quá 1000 ký tự")
+    private String imageUrl;
 }

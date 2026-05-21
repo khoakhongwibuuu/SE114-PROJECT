@@ -41,12 +41,12 @@ function CommunityTopTabs() {
       <TopTab.Screen
         name="WikiTab"
         component={CommunityWikiScreen}
-        options={{ tabBarLabel: 'Cam nang' }}
+        options={{ tabBarLabel: 'Cẩm nang' }}
       />
       <TopTab.Screen
         name="GroupsTab"
         component={CommunityGroupsScreen}
-        options={{ tabBarLabel: 'Hoi nhom' }}
+        options={{ tabBarLabel: 'Hội nhóm' }}
       />
     </TopTab.Navigator>
   );

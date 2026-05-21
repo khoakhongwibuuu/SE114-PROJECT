@@ -13,9 +13,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CabinetCreateRequest {
 
-    @NotNull(message = "Family ID is required")
+    @NotNull(message = "Vui lòng chọn gia đình")
     private Long familyId;
 
-    @Size(max = 100, message = "Name cannot exceed 100 characters")
+    @Size(max = 100, message = "Tên tủ thuốc không được vượt quá 100 ký tự")
     private String name;
 }

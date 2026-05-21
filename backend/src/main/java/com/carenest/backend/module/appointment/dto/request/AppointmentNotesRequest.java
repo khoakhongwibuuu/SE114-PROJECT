@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AppointmentNotesRequest {
 
-    @NotBlank(message = "Result notes cannot be blank")
+    @NotBlank(message = "Ghi chú kết quả không được để trống")
     private String resultNotes;
 }

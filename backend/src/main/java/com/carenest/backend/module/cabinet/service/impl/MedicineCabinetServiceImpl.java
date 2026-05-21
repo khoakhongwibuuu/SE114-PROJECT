@@ -47,7 +47,7 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
         // Check if cabinet already exists for family
         Optional<MedicineCabinet> existing = cabinetRepository.findByFamilyId(request.getFamilyId());
         if (existing.isPresent()) {
-            throw new IllegalArgumentException("Family already has a medicine cabinet");
+            throw new IllegalArgumentException("Gia đình này đã có tủ thuốc");
         }
 
         MedicineCabinet cabinet = MedicineCabinet.builder()

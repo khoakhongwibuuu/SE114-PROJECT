@@ -17,21 +17,21 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class GrowthRecordCreateRequest {
 
-    @NotNull(message = "Record date is required")
+    @NotNull(message = "Vui lòng nhập ngày ghi nhận")
     private LocalDate recordDate;
 
-    @NotNull(message = "Weight is required")
-    @DecimalMin(value = "1.0", message = "Weight must be at least 1.0 kg")
-    @DecimalMax(value = "150.0", message = "Weight must be at most 150.0 kg")
+    @NotNull(message = "Vui lòng nhập cân nặng")
+    @DecimalMin(value = "1.0", message = "Cân nặng phải tối thiểu 1.0 kg")
+    @DecimalMax(value = "150.0", message = "Cân nặng không được vượt quá 150.0 kg")
     private BigDecimal weightKg;
 
-    @NotNull(message = "Height is required")
-    @DecimalMin(value = "30.0", message = "Height must be at least 30.0 cm")
-    @DecimalMax(value = "250.0", message = "Height must be at most 250.0 cm")
+    @NotNull(message = "Vui lòng nhập chiều cao")
+    @DecimalMin(value = "30.0", message = "Chiều cao phải tối thiểu 30.0 cm")
+    @DecimalMax(value = "250.0", message = "Chiều cao không được vượt quá 250.0 cm")
     private BigDecimal heightCm;
 
-    @DecimalMin(value = "20.0", message = "Head circumference must be at least 20.0 cm")
-    @DecimalMax(value = "70.0", message = "Head circumference must be at most 70.0 cm")
+    @DecimalMin(value = "20.0", message = "Vòng đầu phải tối thiểu 20.0 cm")
+    @DecimalMax(value = "70.0", message = "Vòng đầu không được vượt quá 70.0 cm")
     private BigDecimal headCircumferenceCm;
 
     private String notes;

@@ -322,7 +322,7 @@ export default function FamilyManagementScreen() {
     try {
       setIsBusy(true);
       if (!family?.id) {
-        throw new Error('Khong tim thay thong tin gia dinh.');
+        throw new Error('Không tìm thấy thông tin gia đình.');
       }
       await inviteMember(family.id, inviteValue.trim(), mapRelationToRole(selectedRelation));
       setInviteValue('');

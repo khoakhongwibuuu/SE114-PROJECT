@@ -31,13 +31,13 @@ public class AdminVerificationController {
 
     @PatchMapping("/{id}/approve")
     public ApiResponse<DoctorVerificationResponse> approveRequest(@PathVariable("id") Long id) {
-        return ApiResponse.success("Doctor verification request approved", doctorVerificationService.approveRequest(id));
+        return ApiResponse.success("Đã phê duyệt hồ sơ bác sĩ", doctorVerificationService.approveRequest(id));
     }
 
     @PatchMapping("/{id}/reject")
     public ApiResponse<DoctorVerificationResponse> rejectRequest(
             @PathVariable("id") Long id,
             @Valid @RequestBody RejectDoctorVerificationRequest request) {
-        return ApiResponse.success("Doctor verification request rejected", doctorVerificationService.rejectRequest(id, request));
+        return ApiResponse.success("Đã từ chối hồ sơ bác sĩ", doctorVerificationService.rejectRequest(id, request));
     }
 }

@@ -1,5 +1,6 @@
 package com.carenest.backend.module.community.service.impl;
 
+import com.carenest.backend.common.dto.PageResponse;
 import com.carenest.backend.common.exception.ResourceNotFoundException;
 import com.carenest.backend.module.auth.entity.User;
 import com.carenest.backend.module.community.dto.request.CreateArticleRequest;
@@ -16,6 +17,8 @@ import com.carenest.backend.module.community.repository.GroupPostRepository;
 import com.carenest.backend.module.community.service.CommunityKnowledgeService;
 import com.carenest.backend.module.family.util.FamilySecurityUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +50,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .title(request.getTitle().trim())
                 .content(request.getContent().trim())
                 .tags(normalizeOptionalText(request.getTags()))
+                .imageUrl(normalizeOptionalText(request.getImageUrl()))
                 .author(currentUser)
                 .build();
         return toArticleResponse(articleRepository.save(article));
@@ -63,14 +67,14 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroupPostResponse> getGroupPosts(Long groupId) {
+    public PageResponse<GroupPostResponse> getGroupPosts(Long groupId, Pageable pageable) {
         if (!communityGroupRepository.existsById(groupId)) {
             throw new ResourceNotFoundException("CommunityGroup", groupId);
         }
-        return groupPostRepository.findAllByCommunityGroupIdOrderByCreatedAtDesc(groupId)
-                .stream()
-                .map(this::toPostResponse)
-                .toList();
+        Page<GroupPostResponse> page = groupPostRepository
+                .findAllByCommunityGroupIdOrderByCreatedAtDesc(groupId, pageable)
+                .map(this::toPostResponse);
+        return PageResponse.of(page);
     }
 
     @Override
@@ -102,6 +106,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .title(article.getTitle())
                 .content(article.getContent())
                 .tags(article.getTags())
+                .imageUrl(article.getImageUrl())
                 .authorId(author != null ? author.getId() : null)
                 .authorName(author != null ? author.getFullName() : null)
                 .createdAt(article.getCreatedAt())

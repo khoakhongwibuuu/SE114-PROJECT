@@ -20,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Vaccination", description = "Quản lý lịch tiêm chủng")
 @SecurityRequirement(name = "bearerAuth")
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class VaccinationController {
 
     private final VaccinationService vaccinationService;

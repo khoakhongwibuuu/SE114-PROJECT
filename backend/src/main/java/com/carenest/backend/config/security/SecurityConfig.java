@@ -56,6 +56,7 @@ public class SecurityConfig {
                     "/actuator/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/articles", "/articles/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/media/files/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

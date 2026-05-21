@@ -83,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
     public UserInfoResponse getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         return userMapper.toUserInfoResponse(user);
     }
 
@@ -92,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
         String userEmail = jwtService.extractUsername(refreshToken);
         if (userEmail != null) {
             User user = userRepository.findByEmail(userEmail)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
             if (jwtService.isTokenValid(refreshToken, user)) {
                 var accessToken = jwtService.generateToken(user);
                 return AuthResponse.builder()
@@ -102,14 +102,14 @@ public class AuthServiceImpl implements AuthService {
                         .build();
             }
         }
-        throw new IllegalArgumentException("Invalid refresh token");
+        throw new IllegalArgumentException("Refresh token không hợp lệ");
     }
     @Override
     @Transactional
     public UserInfoResponse updateCurrentUser(com.carenest.backend.module.auth.dto.request.UpdateUserRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         user.setFullName(request.getFullName());
         user.setPhone(request.getPhone());

@@ -9,6 +9,11 @@ spring:
   application:
     name: carenest-backend
 
+  servlet:
+    multipart:
+      max-file-size: 6MB
+      max-request-size: 8MB
+
   # Profile mặc định khi chạy local
   profiles:
     active: dev
@@ -62,6 +67,10 @@ app:
     refresh-token-expiration: 604800000   # 7 ngày (ms)
 
 # ── Server ──────────────────────────────────────────
+  media:
+    upload-dir: ${MEDIA_UPLOAD_DIR:uploads/media}
+    max-image-size-bytes: ${MEDIA_MAX_IMAGE_SIZE_BYTES:5242880}
+
 server:
   port: 8080
   servlet:

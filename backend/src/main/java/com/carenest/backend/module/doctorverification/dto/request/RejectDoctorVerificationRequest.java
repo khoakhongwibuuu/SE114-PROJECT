@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class RejectDoctorVerificationRequest {
 
-    @NotBlank(message = "Rejection reason is required")
-    @Size(max = 1000, message = "Rejection reason must be at most 1000 characters")
+    @NotBlank(message = "Vui lòng nhập lý do từ chối")
+    @Size(max = 1000, message = "Lý do từ chối không được vượt quá 1000 ký tự")
     private String rejectionReason;
 }

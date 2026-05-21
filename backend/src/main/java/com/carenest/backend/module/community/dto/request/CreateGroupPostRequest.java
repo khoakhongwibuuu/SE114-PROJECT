@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 public class CreateGroupPostRequest {
 
-    @NotBlank(message = "Content is required")
+    @NotBlank(message = "Vui lòng nhập nội dung")
     private String content;
 }

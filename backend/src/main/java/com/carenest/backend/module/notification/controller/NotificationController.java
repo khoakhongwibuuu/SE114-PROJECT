@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/notifications")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -28,7 +29,7 @@ public class NotificationController {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         
         Page<NotificationResponse> page = notificationService.getUserNotifications(user.getId(), type, pageable);
-        return ApiResponse.success("Fetched notifications successfully", page);
+        return ApiResponse.success("Lấy danh sách thông báo thành công", page);
     }
 
     @PatchMapping("/{id}/read")
@@ -37,7 +38,7 @@ public class NotificationController {
             @AuthenticationPrincipal User user) {
         
         NotificationResponse response = notificationService.markAsRead(id, user.getId());
-        return ApiResponse.success("Marked notification as read", response);
+        return ApiResponse.success("Đã đánh dấu thông báo là đã đọc", response);
     }
 
     @GetMapping("/unread-count")
@@ -45,6 +46,6 @@ public class NotificationController {
             @AuthenticationPrincipal User user) {
         
         UnreadCountResponse response = notificationService.getUnreadCount(user.getId());
-        return ApiResponse.success("Fetched unread count", response);
+        return ApiResponse.success("Lấy số thông báo chưa đọc thành công", response);
     }
 }

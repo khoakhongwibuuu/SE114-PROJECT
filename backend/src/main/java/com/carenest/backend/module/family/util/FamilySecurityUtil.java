@@ -27,27 +27,27 @@ public class FamilySecurityUtil {
     public User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Please sign in"));
+                .orElseThrow(() -> new UnauthorizedException("Vui lòng đăng nhập"));
     }
 
     public void checkUserBelongsToFamily(Long familyId) {
         User currentUser = getCurrentUser();
         boolean belongs = familyMemberRepository.findByFamilyIdAndUserId(familyId, currentUser.getId()).isPresent();
         if (!belongs) {
-            throw new AccessDeniedException("You do not have access to this family");
+            throw new AccessDeniedException("Bạn không có quyền truy cập gia đình này");
         }
     }
 
     public void checkUserBelongsToHealthProfile(Long profileId) {
         User currentUser = getCurrentUser();
         HealthProfile profile = healthProfileRepository.findById(profileId)
-                .orElseThrow(() -> new IllegalArgumentException("Health profile does not exist"));
+                .orElseThrow(() -> new IllegalArgumentException("Hồ sơ sức khỏe không tồn tại"));
 
         Long activeFamilyId = FamilyRequestContext.getFamilyId();
         if (activeFamilyId != null
                 && profile.getFamily() != null
                 && !profile.getFamily().getId().equals(activeFamilyId)) {
-            throw new AccessDeniedException("Health profile does not belong to the active family");
+            throw new AccessDeniedException("Hồ sơ sức khỏe không thuộc gia đình đang chọn");
         }
 
         if (profile.getFamily() != null) {
@@ -55,29 +55,29 @@ public class FamilySecurityUtil {
                     .findByFamilyIdAndUserId(profile.getFamily().getId(), currentUser.getId())
                     .isPresent();
             if (!belongs) {
-                throw new AccessDeniedException("You do not have access to this health profile");
+                throw new AccessDeniedException("Bạn không có quyền truy cập hồ sơ sức khỏe này");
             }
             return;
         }
 
         if (profile.getUser() == null || !profile.getUser().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("You do not have access to this personal health profile");
+            throw new AccessDeniedException("Bạn không có quyền truy cập hồ sơ sức khỏe cá nhân này");
         }
     }
 
     public void checkHealthProfileBelongsToFamily(Long profileId, Long familyId) {
         if (profileId == null || familyId == null) {
-            throw new AccessDeniedException("Family and health profile are required");
+            throw new AccessDeniedException("Cần có thông tin gia đình và hồ sơ sức khỏe");
         }
 
         checkUserBelongsToFamily(familyId);
         checkUserBelongsToHealthProfile(profileId);
 
         HealthProfile profile = healthProfileRepository.findById(profileId)
-                .orElseThrow(() -> new IllegalArgumentException("Health profile does not exist"));
+                .orElseThrow(() -> new IllegalArgumentException("Hồ sơ sức khỏe không tồn tại"));
 
         if (profile.getFamily() == null || !profile.getFamily().getId().equals(familyId)) {
-            throw new AccessDeniedException("Health profile does not belong to this family");
+            throw new AccessDeniedException("Hồ sơ sức khỏe không thuộc gia đình này");
         }
     }
 

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Medication Log", description = "Đánh dấu lịch uống thuốc hàng ngày (Check-in)")
 @SecurityRequirement(name = "bearerAuth")
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class MedicationLogController {
 
     private final MedicationService medicationService;

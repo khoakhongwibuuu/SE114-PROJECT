@@ -15,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/health-profiles/{id}")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class GrowthRecordController {
 
     private final GrowthRecordService growthRecordService;
@@ -26,7 +27,7 @@ public class GrowthRecordController {
             @Valid @RequestBody GrowthRecordCreateRequest request) {
         
         GrowthRecordResponse response = growthRecordService.addRecord(id, request);
-        return ApiResponse.success("Added growth record successfully", response);
+        return ApiResponse.success("Thêm chỉ số tăng trưởng thành công", response);
     }
 
     @GetMapping("/growth-records")
@@ -34,7 +35,7 @@ public class GrowthRecordController {
             @PathVariable("id") Long id) {
         
         List<GrowthRecordResponse> response = growthRecordService.getGrowthRecords(id);
-        return ApiResponse.success("Fetched growth records successfully", response);
+        return ApiResponse.success("Lấy lịch sử tăng trưởng thành công", response);
     }
 
     @GetMapping("/growth-chart")
@@ -42,6 +43,6 @@ public class GrowthRecordController {
             @PathVariable("id") Long id) {
         
         List<GrowthChartResponse> response = growthRecordService.getGrowthChartData(id);
-        return ApiResponse.success("Fetched growth chart data successfully", response);
+        return ApiResponse.success("Lấy dữ liệu biểu đồ tăng trưởng thành công", response);
     }
 }

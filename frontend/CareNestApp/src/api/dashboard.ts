@@ -26,6 +26,8 @@ export async function getDashboard(familyId?: number | null, profileId?: number)
   }
   return apiGetCached<DashboardPayload>('/dashboard', params, {
     ttlMs: 20000,
+    persist: true,
+    offlineMaxAgeMs: 48 * 60 * 60 * 1000,
   });
 }
 

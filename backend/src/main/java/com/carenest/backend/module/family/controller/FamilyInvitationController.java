@@ -18,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Family Invitation", description = "Family invitation management")
 @SecurityRequirement(name = "bearerAuth")
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class FamilyInvitationController {
 
     private final FamilyService familyService;
@@ -40,6 +41,6 @@ public class FamilyInvitationController {
             @PathVariable("id") Long id,
             @Valid @RequestBody UpdateInvitationRequest request) {
         familyService.handleInvitation(id, request);
-        return ApiResponse.success("Invitation handled successfully", null);
+        return ApiResponse.success("Đã xử lý lời mời gia đình", null);
     }
 }

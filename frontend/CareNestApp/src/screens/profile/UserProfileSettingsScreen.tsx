@@ -531,7 +531,7 @@ export default function UserProfileSettingsScreen() {
               <View style={[styles.rowIconWrap, { backgroundColor: '#ECFDF5' }]}>
                 <Icon name="verified" size={20} color="#16A34A" />
               </View>
-              <Text style={styles.rowLabelText}>Xac thuc Bac si</Text>
+              <Text style={styles.rowLabelText}>Xác thực Bác sĩ</Text>
               <Icon name="chevron_right" size={20} color="#CBD5E1" />
             </TouchableOpacity>
             {user?.role === 'ADMIN' ? (
@@ -542,13 +542,13 @@ export default function UserProfileSettingsScreen() {
                 <View style={[styles.rowIconWrap, { backgroundColor: '#EFF6FF' }]}>
                   <Icon name="medical_services" size={20} color="#2563EB" />
                 </View>
-                <Text style={styles.rowLabelText}>Duyet ho so Bac si</Text>
+                <Text style={styles.rowLabelText}>Duyệt hồ sơ Bác sĩ</Text>
                 <Icon name="chevron_right" size={20} color="#CBD5E1" />
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
               style={styles.settingsRow}
-              onPress={() => Alert.alert('Sap ra mat', 'Tuy chon ngon ngu se duoc bo sung sau.')}
+              onPress={() => Alert.alert('Sắp ra mắt', 'Tùy chọn ngôn ngữ sẽ được bổ sung sau.')}
             >
               <View style={[styles.rowIconWrap, { backgroundColor: '#F5F3FF' }]}>
                 <Icon name="language" size={20} color="#7C3AED" />
@@ -572,7 +572,7 @@ export default function UserProfileSettingsScreen() {
           <View style={[styles.formCard, shadows.sm]}>
             <TouchableOpacity
               style={styles.settingsRow}
-              onPress={() => Alert.alert('Sap ra mat', 'Trung tam ho tro se duoc bo sung sau.')}
+              onPress={() => Alert.alert('Sắp ra mắt', 'Trung tâm hỗ trợ sẽ được bổ sung sau.')}
             >
               <View style={[styles.rowIconWrap, { backgroundColor: '#FFF7ED' }]}>
                 <Icon name="help_center" size={20} color="#EA580C" />
@@ -582,7 +582,7 @@ export default function UserProfileSettingsScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.settingsRow}
-              onPress={() => Alert.alert('Sap ra mat', 'Tinh nang bao cao su co se duoc bo sung sau.')}
+              onPress={() => Alert.alert('Sắp ra mắt', 'Tính năng báo cáo sự cố sẽ được bổ sung sau.')}
             >
               <View style={[styles.rowIconWrap, { backgroundColor: '#EFF6FF' }]}>
                 <Icon name="bug_report" size={20} color="#2563EB" />
