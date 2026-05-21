@@ -15,6 +15,12 @@ public class ArticleResponse {
     private String imageUrl;
     private Long authorId;
     private String authorName;
+    private String authorAvatarUrl;
+    private String authorRole;
+    private String authorSpecialty;
+    private String authorHospitalName;
+    private Long authorPrivateGroupId;
+    private Long authorSpecialtyGroupId;
     private Instant createdAt;
     private long likeCount;
     private long commentCount;

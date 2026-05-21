@@ -1,4 +1,4 @@
-import { apiGet, apiPost, invalidateApiGetCache, type PageResponse } from './client';
+import { apiDelete, apiGet, apiPost, invalidateApiGetCache, type PageResponse } from './client';
 
 export interface Article {
   id: number;
@@ -8,6 +8,12 @@ export interface Article {
   imageUrl?: string | null;
   authorId?: number | null;
   authorName?: string | null;
+  authorAvatarUrl?: string | null;
+  authorRole?: 'USER' | 'DOCTOR' | 'ADMIN' | string | null;
+  authorSpecialty?: string | null;
+  authorHospitalName?: string | null;
+  authorPrivateGroupId?: number | null;
+  authorSpecialtyGroupId?: number | null;
   createdAt?: string | null;
   likeCount?: number;
   commentCount?: number;
@@ -33,6 +39,22 @@ export interface CommunityGroup {
   id: number;
   name: string;
   description?: string | null;
+  category?: string | null;
+  tags?: string | null;
+  isPrivate?: boolean;
+  leadDoctorId?: number | null;
+  leadDoctorName?: string | null;
+  memberCount?: number;
+  joined?: boolean;
+  latestMessage?: string | null;
+  latestActivityAt?: string | null;
+}
+
+export interface CommunityGroupPreview extends CommunityGroup {
+  memberCount: number;
+  joined: boolean;
+  myRole?: 'MEMBER' | 'HOST' | string | null;
+  rules?: string | null;
 }
 
 export interface GroupPost {
@@ -41,7 +63,10 @@ export interface GroupPost {
   communityGroupName?: string | null;
   authorId?: number | null;
   authorName?: string | null;
+  authorRole?: 'USER' | 'DOCTOR' | 'ADMIN' | string | null;
   content: string;
+  replyToPostId?: number | null;
+  imageUrl?: string | null;
   createdAt?: string | null;
 }
 
@@ -78,8 +103,34 @@ export async function createArticleComment(articleId: number, content: string): 
   return comment;
 }
 
-export async function getCommunityGroups(): Promise<CommunityGroup[]> {
-  return apiGet<CommunityGroup[]>('/communities');
+export async function getCommunityGroups(filters?: { search?: string; category?: string }): Promise<CommunityGroup[]> {
+  return apiGet<CommunityGroup[]>('/communities', {
+    search: filters?.search || undefined,
+    category: filters?.category && filters.category !== 'Tất cả' ? filters.category : undefined,
+  });
+}
+
+export async function getMyCommunityGroups(search?: string): Promise<CommunityGroup[]> {
+  return apiGet<CommunityGroup[]>('/communities/my', { search: search || undefined });
+}
+
+export async function getDiscoverCommunityGroups(search?: string): Promise<CommunityGroup[]> {
+  return apiGet<CommunityGroup[]>('/communities/discover', { search: search || undefined });
+}
+
+export async function getCommunityGroupPreview(groupId: number): Promise<CommunityGroupPreview> {
+  return apiGet<CommunityGroupPreview>(`/communities/${groupId}/preview`);
+}
+
+export async function joinCommunityGroup(groupId: number): Promise<CommunityGroupPreview> {
+  const preview = await apiPost<CommunityGroupPreview>(`/communities/${groupId}/join`);
+  invalidateApiGetCache(['/communities', '/communities/my', '/communities/discover', `/communities/${groupId}/preview`]);
+  return preview;
+}
+
+export async function leaveCommunityGroup(groupId: number): Promise<void> {
+  await apiPost<void>(`/communities/${groupId}/leave`);
+  invalidateApiGetCache(['/communities', '/communities/my', '/communities/discover', `/communities/${groupId}/preview`, `/communities/${groupId}/posts`]);
 }
 
 export async function getGroupPosts(
@@ -90,8 +141,24 @@ export async function getGroupPosts(
   return apiGet<PageResponse<GroupPost>>(`/communities/${groupId}/posts`, { page, size, sort: 'createdAt,desc' });
 }
 
-export async function createGroupPost(groupId: number, content: string): Promise<GroupPost> {
-  const post = await apiPost<GroupPost, { content: string }>(`/communities/${groupId}/posts`, { content });
+export async function createGroupPost(
+  groupId: number,
+  content: string,
+  options?: { replyToPostId?: number; imageUrl?: string },
+): Promise<GroupPost> {
+  const post = await apiPost<GroupPost, { content: string; replyToPostId?: number; imageUrl?: string }>(
+    `/communities/${groupId}/posts`,
+    { content, replyToPostId: options?.replyToPostId, imageUrl: options?.imageUrl },
+  );
   invalidateApiGetCache([`/communities/${groupId}/posts`]);
   return post;
+}
+
+export async function reportGroupPost(postId: number, reason: string): Promise<void> {
+  await apiPost<void, { reason: string }>(`/posts/${postId}/report`, { reason });
+}
+
+export async function kickCommunityMember(groupId: number, targetUserId: number): Promise<void> {
+  await apiDelete<void>(`/communities/${groupId}/members/${targetUserId}`);
+  invalidateApiGetCache([`/communities/${groupId}/preview`, `/communities/${groupId}/posts`]);
 }

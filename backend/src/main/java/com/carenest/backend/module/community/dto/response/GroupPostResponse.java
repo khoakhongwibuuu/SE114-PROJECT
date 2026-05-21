@@ -13,6 +13,9 @@ public class GroupPostResponse {
     private String communityGroupName;
     private Long authorId;
     private String authorName;
+    private String authorRole;
     private String content;
+    private Long replyToPostId;
+    private String imageUrl;
     private Instant createdAt;
 }

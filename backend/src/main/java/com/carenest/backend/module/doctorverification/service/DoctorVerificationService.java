@@ -21,5 +21,5 @@ public interface DoctorVerificationService {
 
     List<DoctorSummaryResponse> getAllDoctors();
 
-    void revokeDoctor(Long userId);
+    void revokeDoctorRights(Long userId);
 }
