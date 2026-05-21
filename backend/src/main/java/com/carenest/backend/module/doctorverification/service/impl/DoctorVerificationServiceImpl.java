@@ -7,6 +7,7 @@ import com.carenest.backend.module.auth.enums.Role;
 import com.carenest.backend.module.auth.repository.UserRepository;
 import com.carenest.backend.module.doctorverification.dto.request.RejectDoctorVerificationRequest;
 import com.carenest.backend.module.doctorverification.dto.request.SubmitDoctorVerificationRequest;
+import com.carenest.backend.module.doctorverification.dto.response.DoctorSummaryResponse;
 import com.carenest.backend.module.doctorverification.dto.response.DoctorVerificationResponse;
 import com.carenest.backend.module.doctorverification.entity.DoctorVerification;
 import com.carenest.backend.module.doctorverification.enums.VerificationStatus;
@@ -114,6 +115,48 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
         verification.setRejectionReason(request.getRejectionReason().trim());
 
         return toResponse(doctorVerificationRepository.save(verification));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DoctorSummaryResponse> getAllDoctors() {
+        return userRepository.findAllByRoleOrderByCreatedAtDesc(Role.DOCTOR).stream()
+                .map(user -> {
+                    var verification = doctorVerificationRepository.findByUserId(user.getId()).orElse(null);
+                    return DoctorSummaryResponse.builder()
+                            .id(user.getId())
+                            .email(user.getEmail())
+                            .fullName(user.getFullName())
+                            .avatarUrl(user.getAvatarUrl())
+                            .certificationNumber(verification != null ? verification.getCertificationNumber() : null)
+                            .specialty(verification != null ? verification.getSpecialty() : null)
+                            .hospitalName(verification != null ? verification.getHospitalName() : null)
+                            .documentUrl(verification != null ? verification.getDocumentUrl() : null)
+                            .approvedAt(verification != null ? verification.getUpdatedAt() : null)
+                            .build();
+                })
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void revokeDoctor(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        if (user.getRole() != Role.DOCTOR) {
+            throw new BadRequestException("Tài khoản này không phải Bác sĩ");
+        }
+
+        user.setRole(Role.USER);
+        userRepository.save(user);
+
+        // Also reset the verification status so they can re-apply
+        doctorVerificationRepository.findByUserId(userId).ifPresent(v -> {
+            v.setStatus(VerificationStatus.REJECTED);
+            v.setRejectionReason("Quyền Bác sĩ đã bị thu hồi bởi Admin");
+            doctorVerificationRepository.save(v);
+        });
     }
 
     private DoctorVerificationResponse toResponse(DoctorVerification verification) {

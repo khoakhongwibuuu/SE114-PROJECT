@@ -22,6 +22,7 @@ import { shadows } from '../../theme/spacing';
 import { BOTTOM_NAV_HEIGHT } from '../../utils/constants';
 import Icon from '../../components/common/Icon';
 import SelectField from '../../components/common/SelectField';
+import RoleGuard from '../../components/common/RoleGuard';
 import { useAuth } from '../../context/AuthContext';
 import { useFamily } from '../../context/FamilyContext';
 import { getCurrentUserProfile, updateCurrentUserProfile, uploadAvatar } from '../../api/auth';
@@ -524,16 +525,18 @@ export default function UserProfileSettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Ứng dụng</Text>
           <View style={[styles.formCard, shadows.sm]}>
-            <TouchableOpacity
-              style={styles.settingsRow}
-              onPress={() => navigation.navigate('DoctorVerification')}
-            >
-              <View style={[styles.rowIconWrap, { backgroundColor: '#ECFDF5' }]}>
-                <Icon name="verified" size={20} color="#16A34A" />
-              </View>
-              <Text style={styles.rowLabelText}>Xác thực Bác sĩ</Text>
-              <Icon name="chevron_right" size={20} color="#CBD5E1" />
-            </TouchableOpacity>
+            {user?.role === 'USER' ? (
+              <TouchableOpacity
+                style={styles.settingsRow}
+                onPress={() => navigation.navigate('DoctorVerification')}
+              >
+                <View style={[styles.rowIconWrap, { backgroundColor: '#ECFDF5' }]}>
+                  <Icon name="verified" size={20} color="#16A34A" />
+                </View>
+                <Text style={styles.rowLabelText}>Xác thực Bác sĩ</Text>
+                <Icon name="chevron_right" size={20} color="#CBD5E1" />
+              </TouchableOpacity>
+            ) : null}
             {user?.role === 'ADMIN' ? (
               <TouchableOpacity
                 style={styles.settingsRow}

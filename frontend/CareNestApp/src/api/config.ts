@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import Config from 'react-native-config';
 
-const localHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const localHost = 'localhost';
 
 const defaultApiUrl = `http://${localHost}:8080/api/v1`;
 const defaultWsUrl = `ws://${localHost}:8080/api/v1/ws`;

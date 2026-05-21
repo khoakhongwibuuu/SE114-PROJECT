@@ -23,7 +23,7 @@ spring:
   # ── JPA: validate schema, don't auto-migrate in prod!
   jpa:
     hibernate:
-      ddl-auto: validate             # KHÔNG tự sửa schema trên Production
+      ddl-auto: update               # Tạm thời để update để tự tạo các bảng mới
     show-sql: false                  # Tắt log SQL (giảm noise)
 
 # ── Logging: chỉ log WARN trở lên trên Production ────

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@Profile("dev")
 public class MockOcrServiceImpl implements OcrService {
 
     @Override

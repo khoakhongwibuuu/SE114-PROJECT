@@ -1,5 +1,6 @@
-import { apiClient, type ApiEnvelope } from './client';
 import { normalizeUploadUri } from '../utils/uploadUri';
+import { API_BASE_URL } from './config';
+import { getStoredSession } from './storage';
 
 export interface MediaUploadResult {
   fileName: string;
@@ -22,6 +23,25 @@ export async function uploadMedia(
   } as unknown as Blob);
   formData.append('category', category);
 
-  const response = await apiClient.post<ApiEnvelope<MediaUploadResult>>('/media/upload', formData);
-  return response.data.data;
+  const session = await getStoredSession();
+  
+  const response = await fetch(`${API_BASE_URL}/media/upload`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Đã có lỗi xảy ra khi tải ảnh lên';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch {}
+    throw new Error(errorMessage);
+  }
+
+  const json = await response.json();
+  return json.data;
 }

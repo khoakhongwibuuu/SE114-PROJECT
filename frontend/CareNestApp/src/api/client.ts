@@ -71,6 +71,10 @@ function shouldAttachActiveFamilyHeader(url?: string): boolean {
 
   return (
     !url.startsWith('/auth') &&
+    !url.startsWith('/media') &&
+    !url.startsWith('/articles') &&
+    !url.startsWith('/communities') &&
+    !url.startsWith('/admin') &&
     !url.startsWith('/families/my-list') &&
     !url.startsWith('/families/join-by-code') &&
     !url.startsWith('/families/join-by-qr')
@@ -180,9 +184,13 @@ apiClient.interceptors.response.use(
     }
 
     // Handle 403 Forbidden (BOLA/IDOR protection kick)
+    // Skip for admin endpoints — admin has no family so 403s there are unrelated
     if (error.response?.status === 403) {
-      console.warn('[API Client] 403 Forbidden detected. Emitting FAMILY_ACCESS_DENIED.');
-      DeviceEventEmitter.emit('FAMILY_ACCESS_DENIED');
+      const url = originalRequest?.url || '';
+      if (!url.startsWith('/admin') && !url.startsWith('/doctor-verifications')) {
+        console.warn('[API Client] 403 Forbidden detected. Emitting FAMILY_ACCESS_DENIED.');
+        DeviceEventEmitter.emit('FAMILY_ACCESS_DENIED');
+      }
     }
 
     return Promise.reject(error);

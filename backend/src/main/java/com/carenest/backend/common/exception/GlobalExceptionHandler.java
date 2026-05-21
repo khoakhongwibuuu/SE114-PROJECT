@@ -59,7 +59,7 @@ public class GlobalExceptionHandler {
         log.warn("Bad credentials: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Invalid email or password"));
+                .body(ApiResponse.error("Email hoặc mật khẩu không đúng"));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -67,7 +67,7 @@ public class GlobalExceptionHandler {
         log.warn("Access denied: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("You do not have permission to access this resource"));
+                .body(ApiResponse.error("Bạn không có quyền truy cập tài nguyên này"));
     }
 
     /**
@@ -83,7 +83,7 @@ public class GlobalExceptionHandler {
         log.warn("Validation failed: {}", fieldErrors);
         return ResponseEntity
                 .status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(ApiResponse.error("Validation failed", fieldErrors));
+                .body(ApiResponse.error("Dữ liệu không hợp lệ", fieldErrors));
     }
 
     /**
@@ -95,6 +95,6 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred. Please try again later."));
+                .body(ApiResponse.error("Đã có lỗi xảy ra. Vui lòng thử lại sau."));
     }
 }
