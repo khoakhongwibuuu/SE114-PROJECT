@@ -7,16 +7,11 @@ import java.time.Instant;
 
 @Data
 @Builder
-public class ArticleResponse {
+public class ArticleCommentResponse {
     private Long id;
-    private String title;
-    private String content;
-    private String tags;
-    private String imageUrl;
+    private Long articleId;
     private Long authorId;
     private String authorName;
+    private String content;
     private Instant createdAt;
-    private long likeCount;
-    private long commentCount;
-    private boolean likedByMe;
 }

@@ -9,6 +9,24 @@ export interface Article {
   authorId?: number | null;
   authorName?: string | null;
   createdAt?: string | null;
+  likeCount?: number;
+  commentCount?: number;
+  likedByMe?: boolean;
+}
+
+export interface ArticleComment {
+  id: number;
+  articleId: number;
+  authorId?: number | null;
+  authorName?: string | null;
+  content: string;
+  createdAt?: string | null;
+}
+
+export interface ArticleLikeResult {
+  articleId: number;
+  likedByMe: boolean;
+  likeCount: number;
 }
 
 export interface CommunityGroup {
@@ -42,6 +60,22 @@ export async function createArticle(payload: CreateArticlePayload): Promise<Arti
   const article = await apiPost<Article, CreateArticlePayload>('/articles', payload);
   invalidateApiGetCache(['/articles']);
   return article;
+}
+
+export async function toggleArticleLike(articleId: number): Promise<ArticleLikeResult> {
+  const result = await apiPost<ArticleLikeResult>(`/articles/${articleId}/like`);
+  invalidateApiGetCache(['/articles']);
+  return result;
+}
+
+export async function getArticleComments(articleId: number): Promise<ArticleComment[]> {
+  return apiGet<ArticleComment[]>(`/articles/${articleId}/comments`);
+}
+
+export async function createArticleComment(articleId: number, content: string): Promise<ArticleComment> {
+  const comment = await apiPost<ArticleComment, { content: string }>(`/articles/${articleId}/comments`, { content });
+  invalidateApiGetCache(['/articles', `/articles/${articleId}/comments`]);
+  return comment;
 }
 
 export async function getCommunityGroups(): Promise<CommunityGroup[]> {

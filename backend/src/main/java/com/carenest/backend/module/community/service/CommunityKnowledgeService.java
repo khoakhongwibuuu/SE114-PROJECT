@@ -1,8 +1,11 @@
 package com.carenest.backend.module.community.service;
 
 import com.carenest.backend.common.dto.PageResponse;
+import com.carenest.backend.module.community.dto.request.CreateArticleCommentRequest;
 import com.carenest.backend.module.community.dto.request.CreateArticleRequest;
 import com.carenest.backend.module.community.dto.request.CreateGroupPostRequest;
+import com.carenest.backend.module.community.dto.response.ArticleCommentResponse;
+import com.carenest.backend.module.community.dto.response.ArticleLikeResponse;
 import com.carenest.backend.module.community.dto.response.ArticleResponse;
 import com.carenest.backend.module.community.dto.response.CommunityGroupResponse;
 import com.carenest.backend.module.community.dto.response.GroupPostResponse;
@@ -13,6 +16,12 @@ public interface CommunityKnowledgeService {
     List<ArticleResponse> getArticles();
 
     ArticleResponse createArticle(CreateArticleRequest request);
+
+    ArticleLikeResponse toggleArticleLike(Long articleId);
+
+    List<ArticleCommentResponse> getArticleComments(Long articleId);
+
+    ArticleCommentResponse createArticleComment(Long articleId, CreateArticleCommentRequest request);
 
     List<CommunityGroupResponse> getCommunityGroups();
 

@@ -38,8 +38,8 @@ RUN addgroup -S carenest && adduser -S carenest -G carenest
 # Copy ONLY the compiled .jar from the builder stage
 COPY --from=builder /build/target/*.jar app.jar
 
-# Change ownership to the non-root user
-RUN chown carenest:carenest app.jar
+# Change ownership to the non-root user and prepare uploads directory
+RUN mkdir -p uploads/media && chown -R carenest:carenest app.jar uploads
 
 # Switch to non-root user
 USER carenest

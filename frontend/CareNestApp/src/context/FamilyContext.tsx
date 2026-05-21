@@ -150,23 +150,25 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   }, [isLoggedIn, user?.profileId, activeFamilyId]);
 
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && user?.role !== 'ADMIN') {
       void bootstrapFamilies();
-    } else {
+    } else if (!isLoggedIn) {
       resetFamily();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn]);
+  }, [isLoggedIn, user?.role]);
 
   // ── Listen for BOLA/IDOR kicks (403 Forbidden) to recover gracefully ───────
+  // Skip recovery for ADMIN — they have no family, so 403s are expected
   useEffect(() => {
+    if (user?.role === 'ADMIN') return;
     const handler = () => {
       console.log('[FamilyContext] Recovering from 403 access denied...');
       void bootstrapFamilies();
     };
     const subscription = DeviceEventEmitter.addListener('FAMILY_ACCESS_DENIED', handler);
     return () => subscription.remove();
-  }, [bootstrapFamilies]);
+  }, [bootstrapFamilies, user?.role]);
 
   // ── Public: switch active family ─────────────────────────────────────────
   const setActiveFamilyId = useCallback(async (id: number) => {

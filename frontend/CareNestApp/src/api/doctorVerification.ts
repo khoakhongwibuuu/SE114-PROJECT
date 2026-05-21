@@ -18,6 +18,18 @@ export interface DoctorVerification {
   updatedAt?: string | null;
 }
 
+export interface DoctorSummary {
+  id: number;
+  email: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  certificationNumber?: string | null;
+  specialty?: string | null;
+  hospitalName?: string | null;
+  documentUrl?: string | null;
+  approvedAt?: string | null;
+}
+
 export interface SubmitDoctorVerificationPayload {
   certificationNumber: string;
   specialty: string;
@@ -66,3 +78,13 @@ export async function rejectVerification(id: number, rejectionReason: string): P
   invalidateApiGetCache(['/admin/doctor-verifications']);
   return verification;
 }
+
+export async function getAllDoctors(): Promise<DoctorSummary[]> {
+  return apiGet<DoctorSummary[]>('/admin/doctor-verifications/doctors');
+}
+
+export async function revokeDoctor(userId: number): Promise<void> {
+  await apiPatch<void>(`/admin/doctor-verifications/doctors/${userId}/revoke`);
+  invalidateApiGetCache(['/admin/doctor-verifications/doctors']);
+}
+
