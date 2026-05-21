@@ -20,7 +20,8 @@ import lombok.Setter;
 @Table(name = "group_posts", indexes = {
         @Index(name = "idx_group_posts_group", columnList = "community_group_id"),
         @Index(name = "idx_group_posts_author", columnList = "author_id"),
-        @Index(name = "idx_group_posts_created_at", columnList = "created_at")
+        @Index(name = "idx_group_posts_created_at", columnList = "created_at"),
+        @Index(name = "idx_group_posts_reply", columnList = "reply_to_post_id")
 })
 @Getter
 @Setter
@@ -37,7 +38,14 @@ public class GroupPost extends BaseEntity {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_post_id")
+    private GroupPost replyToPost;
+
     @Lob
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl;
 }

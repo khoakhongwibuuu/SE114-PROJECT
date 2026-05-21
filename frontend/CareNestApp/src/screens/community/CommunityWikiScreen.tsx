@@ -24,6 +24,7 @@ import {
   createArticleComment,
   getArticleComments,
   getArticles,
+  joinCommunityGroup,
   toggleArticleLike,
   type Article,
   type ArticleComment,
@@ -68,14 +69,43 @@ function formatCount(value?: number): string {
   return count > 0 ? String(count) : '';
 }
 
+function DoctorAvatar({ article, onPress }: { article: Article; onPress: () => void }) {
+  const authorName = article.authorName || 'CareNest Doctor';
+  const canOpenDoctor = article.authorRole === 'DOCTOR';
+
+  return (
+    <TouchableOpacity
+      style={styles.avatarButton}
+      activeOpacity={canOpenDoctor ? 0.78 : 1}
+      disabled={!canOpenDoctor}
+      onPress={onPress}
+    >
+      {article.authorAvatarUrl ? (
+        <Image source={{ uri: article.authorAvatarUrl }} style={styles.avatarImage} />
+      ) : (
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{getInitial(authorName)}</Text>
+        </View>
+      )}
+      {canOpenDoctor ? (
+        <View style={styles.avatarBadge}>
+          <MaterialCommunityIcons name="check" size={10} color="#fff" />
+        </View>
+      ) : null}
+    </TouchableOpacity>
+  );
+}
+
 function ArticleCard({
   item,
   onToggleLike,
   onOpenComments,
+  onOpenDoctor,
 }: {
   item: Article;
   onToggleLike: (article: Article) => void;
   onOpenComments: (article: Article) => void;
+  onOpenDoctor: (article: Article) => void;
 }) {
   const authorName = item.authorName || 'CareNest Doctor';
   const tags = parseTags(item.tags);
@@ -84,13 +114,21 @@ function ArticleCard({
   return (
     <View style={styles.feedCard}>
       <View style={styles.postHeader}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{getInitial(authorName)}</Text>
-        </View>
-        <View style={styles.authorMeta}>
-          <Text style={styles.authorName} numberOfLines={1}>{authorName}</Text>
-          <Text style={styles.postTime}>{formatTime(item.createdAt)}</Text>
-        </View>
+        <DoctorAvatar article={item} onPress={() => onOpenDoctor(item)} />
+        <TouchableOpacity
+          style={styles.authorMeta}
+          activeOpacity={item.authorRole === 'DOCTOR' ? 0.78 : 1}
+          disabled={item.authorRole !== 'DOCTOR'}
+          onPress={() => onOpenDoctor(item)}
+        >
+          <View style={styles.authorNameRow}>
+            <Text style={styles.authorName} numberOfLines={1}>{authorName}</Text>
+            {item.authorRole === 'DOCTOR' ? (
+              <MaterialCommunityIcons name="check-decagram" size={15} color="#0ea5e9" />
+            ) : null}
+          </View>
+          <Text style={styles.postTime}>{item.authorSpecialty || formatTime(item.createdAt)}</Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.articleTitle} numberOfLines={2}>{item.title}</Text>
@@ -120,25 +158,13 @@ function ArticleCard({
       <View style={styles.divider} />
 
       <View style={styles.actionRow}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          activeOpacity={0.75}
-          onPress={() => onToggleLike(item)}
-        >
-          <MaterialCommunityIcons
-            name={liked ? 'heart' : 'heart-outline'}
-            size={20}
-            color={liked ? '#ef4444' : '#64748b'}
-          />
+        <TouchableOpacity style={styles.actionButton} activeOpacity={0.75} onPress={() => onToggleLike(item)}>
+          <MaterialCommunityIcons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? '#ef4444' : '#64748b'} />
           <Text style={[styles.actionText, liked && styles.likedActionText]}>
             Thích {formatCount(item.likeCount)}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          activeOpacity={0.75}
-          onPress={() => onOpenComments(item)}
-        >
+        <TouchableOpacity style={styles.actionButton} activeOpacity={0.75} onPress={() => onOpenComments(item)}>
           <MaterialCommunityIcons name="message-outline" size={20} color="#64748b" />
           <Text style={styles.actionText}>Bình luận {formatCount(item.commentCount)}</Text>
         </TouchableOpacity>
@@ -173,10 +199,12 @@ export default function CommunityWikiScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [doctorArticle, setDoctorArticle] = useState<Article | null>(null);
   const [comments, setComments] = useState<ArticleComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
+  const [joiningGroupId, setJoiningGroupId] = useState<number | null>(null);
   const [likingIds, setLikingIds] = useState<Set<number>>(() => new Set());
 
   const canCreateArticle = useMemo(
@@ -280,6 +308,27 @@ export default function CommunityWikiScreen() {
     }
   }, [commentText, selectedArticle, sendingComment, updateArticle]);
 
+  const joinAndOpenGroup = async (groupId?: number | null, fallbackName?: string | null) => {
+    if (!groupId) {
+      Alert.alert('Chưa có phòng tư vấn', 'Bác sĩ này chưa có phòng tư vấn hoặc cộng đồng chuyên khoa được liên kết.');
+      return;
+    }
+
+    try {
+      setJoiningGroupId(groupId);
+      const preview = await joinCommunityGroup(groupId);
+      setDoctorArticle(null);
+      navigation.navigate('GroupDetail', {
+        groupId: preview.id,
+        groupName: preview.name || fallbackName || 'Hội nhóm',
+      });
+    } catch (error) {
+      Alert.alert('Không thể tham gia nhóm', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
+    } finally {
+      setJoiningGroupId(null);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centerState}>
@@ -287,6 +336,8 @@ export default function CommunityWikiScreen() {
       </View>
     );
   }
+
+  const doctorName = doctorArticle?.authorName || 'Bác sĩ CareNest';
 
   return (
     <View style={styles.root}>
@@ -298,6 +349,7 @@ export default function CommunityWikiScreen() {
             item={item}
             onToggleLike={handleToggleLike}
             onOpenComments={handleOpenComments}
+            onOpenDoctor={setDoctorArticle}
           />
         )}
         contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 108 }]}
@@ -319,12 +371,72 @@ export default function CommunityWikiScreen() {
         }
       />
 
-      <Modal
-        visible={Boolean(selectedArticle)}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedArticle(null)}
-      >
+      <Modal visible={Boolean(doctorArticle)} transparent animationType="slide" onRequestClose={() => setDoctorArticle(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.doctorSheet, { paddingBottom: insets.bottom + 18 }]}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.doctorHeader}>
+              {doctorArticle?.authorAvatarUrl ? (
+                <Image source={{ uri: doctorArticle.authorAvatarUrl }} style={styles.doctorAvatarImage} />
+              ) : (
+                <View style={styles.doctorAvatarLarge}>
+                  <Text style={styles.doctorAvatarText}>{getInitial(doctorName)}</Text>
+                </View>
+              )}
+              <TouchableOpacity style={styles.closeButton} onPress={() => setDoctorArticle(null)} hitSlop={10}>
+                <MaterialCommunityIcons name="close" size={22} color="#0f172a" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.doctorNameRow}>
+              <Text style={styles.doctorName}>{doctorName}</Text>
+              <MaterialCommunityIcons name="check-decagram" size={20} color="#0ea5e9" />
+            </View>
+            <Text style={styles.doctorSpecialty}>
+              {doctorArticle?.authorSpecialty || 'Bác sĩ CareNest'}
+            </Text>
+            {doctorArticle?.authorHospitalName ? (
+              <Text style={styles.doctorHospital}>{doctorArticle.authorHospitalName}</Text>
+            ) : null}
+            <Text style={styles.doctorBio}>
+              Bạn có thể tham gia phòng tư vấn riêng của bác sĩ hoặc cộng đồng chuyên khoa để trao đổi cùng những người quan tâm cùng chủ đề.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.doctorActionButton, joiningGroupId === doctorArticle?.authorPrivateGroupId && styles.doctorActionButtonDisabled]}
+              disabled={joiningGroupId !== null}
+              onPress={() => void joinAndOpenGroup(doctorArticle?.authorPrivateGroupId, `Phòng tư vấn - BS. ${doctorName}`)}
+              activeOpacity={0.84}
+            >
+              {joiningGroupId === doctorArticle?.authorPrivateGroupId ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="doctor" size={20} color="#fff" />
+                  <Text style={styles.doctorActionText}>Tham gia phòng tư vấn riêng</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.secondaryDoctorButton, joiningGroupId === doctorArticle?.authorSpecialtyGroupId && styles.doctorActionButtonDisabled]}
+              disabled={joiningGroupId !== null}
+              onPress={() => void joinAndOpenGroup(doctorArticle?.authorSpecialtyGroupId, doctorArticle?.authorSpecialty)}
+              activeOpacity={0.84}
+            >
+              {joiningGroupId === doctorArticle?.authorSpecialtyGroupId ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="account-group" size={20} color={colors.primary} />
+                  <Text style={styles.secondaryDoctorText}>Tham gia cộng đồng chuyên khoa</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={Boolean(selectedArticle)} transparent animationType="slide" onRequestClose={() => setSelectedArticle(null)}>
         <View style={styles.modalBackdrop}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -332,17 +444,11 @@ export default function CommunityWikiScreen() {
           >
             <View style={styles.commentSheetHeader}>
               <Text style={styles.commentSheetTitle}>Bình luận</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setSelectedArticle(null)}
-                hitSlop={10}
-              >
+              <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedArticle(null)} hitSlop={10}>
                 <MaterialCommunityIcons name="close" size={22} color="#0f172a" />
               </TouchableOpacity>
             </View>
-            <Text style={styles.commentArticleTitle} numberOfLines={2}>
-              {selectedArticle?.title}
-            </Text>
+            <Text style={styles.commentArticleTitle} numberOfLines={2}>{selectedArticle?.title}</Text>
 
             {commentsLoading ? (
               <View style={styles.commentLoading}>
@@ -389,9 +495,11 @@ export default function CommunityWikiScreen() {
         </View>
       </Modal>
 
-      <RoleGuard allowedRoles={['DOCTOR', 'ADMIN']}>
-        <FAB iconName="add" onPress={() => navigation.navigate('CreateArticle')} />
-      </RoleGuard>
+      {canCreateArticle ? (
+        <RoleGuard allowedRoles={['DOCTOR', 'ADMIN']}>
+          <FAB iconName="add" onPress={() => navigation.navigate('CreateArticle')} />
+        </RoleGuard>
+      ) : null}
     </View>
   );
 }
@@ -412,11 +520,8 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     ...shadows.sm,
   },
-  postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-  },
+  postHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 },
+  avatarButton: { width: 46, height: 46, marginRight: 10 },
   avatar: {
     width: 42,
     height: 42,
@@ -424,135 +529,96 @@ const styles = StyleSheet.create({
     backgroundColor: '#dbeafe',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+  },
+  avatarImage: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#dbeafe' },
+  avatarBadge: {
+    position: 'absolute',
+    right: 1,
+    bottom: 1,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0ea5e9',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   avatarText: { fontSize: 16, fontWeight: '900', color: colors.primary },
   authorMeta: { flex: 1, minWidth: 0 },
-  authorName: { fontSize: 15, fontWeight: '900', color: '#0f172a' },
+  authorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  authorName: { flexShrink: 1, fontSize: 15, fontWeight: '900', color: '#0f172a' },
   postTime: { marginTop: 2, fontSize: 12, fontWeight: '600', color: '#94a3b8' },
-  articleTitle: {
-    marginTop: 14,
-    paddingHorizontal: 14,
-    fontSize: 19,
-    fontWeight: '900',
-    color: '#0f172a',
-    lineHeight: 25,
-  },
-  articleContent: {
-    marginTop: 8,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: '#475569',
-    lineHeight: 21,
-  },
-  articleImage: {
-    width: '100%',
-    height: 210,
-    marginTop: 12,
-    backgroundColor: '#e2e8f0',
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 14,
-    marginTop: 12,
-  },
-  tagChip: {
-    backgroundColor: '#f1f5f9',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
+  articleTitle: { marginTop: 14, paddingHorizontal: 14, fontSize: 19, fontWeight: '900', color: '#0f172a', lineHeight: 25 },
+  articleContent: { marginTop: 8, paddingHorizontal: 14, fontSize: 14, color: '#475569', lineHeight: 21 },
+  articleImage: { width: '100%', height: 210, marginTop: 12, backgroundColor: '#e2e8f0' },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 14, marginTop: 12 },
+  tagChip: { backgroundColor: '#f1f5f9', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   tagText: { fontSize: 12, fontWeight: '800', color: '#2563eb' },
-  metricRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingHorizontal: 14,
-    marginTop: 12,
-  },
+  metricRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingHorizontal: 14, marginTop: 12 },
   metricText: { flexShrink: 1, fontSize: 12, fontWeight: '700', color: '#64748b' },
   divider: { height: 1, backgroundColor: '#e2e8f0', marginTop: 12 },
   actionRow: { flexDirection: 'row', height: 46 },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-  },
+  actionButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   actionText: { fontSize: 14, fontWeight: '800', color: '#64748b' },
   likedActionText: { color: '#ef4444' },
-  emptyCard: {
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 28,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
+  emptyCard: { alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, padding: 28, borderWidth: 1, borderColor: '#e2e8f0' },
   emptyTitle: { marginTop: 12, fontSize: 16, fontWeight: '900', color: '#0f172a' },
   emptyText: { marginTop: 6, fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20 },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.48)',
-    justifyContent: 'flex-end',
-  },
-  commentSheet: {
-    maxHeight: '86%',
-    minHeight: '62%',
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.48)', justifyContent: 'flex-end' },
+  doctorSheet: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    paddingTop: 14,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 18,
+    paddingTop: 10,
   },
-  commentSheetHeader: {
+  sheetHandle: { alignSelf: 'center', width: 44, height: 5, borderRadius: 999, backgroundColor: '#cbd5e1', marginBottom: 14 },
+  doctorHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  doctorAvatarLarge: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#dbeafe', alignItems: 'center', justifyContent: 'center' },
+  doctorAvatarImage: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#dbeafe' },
+  doctorAvatarText: { fontSize: 26, fontWeight: '900', color: colors.primary },
+  doctorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
+  doctorName: { flexShrink: 1, fontSize: 21, fontWeight: '900', color: '#0f172a' },
+  doctorSpecialty: { marginTop: 5, fontSize: 14, fontWeight: '800', color: colors.primary },
+  doctorHospital: { marginTop: 4, fontSize: 13, fontWeight: '700', color: '#64748b' },
+  doctorBio: { marginTop: 12, fontSize: 14, color: '#334155', lineHeight: 21 },
+  doctorActionButton: {
+    marginTop: 18,
+    height: 48,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
   },
-  commentSheetTitle: { fontSize: 18, fontWeight: '900', color: '#0f172a' },
-  closeButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  doctorActionButtonDisabled: { opacity: 0.62 },
+  doctorActionText: { fontSize: 15, fontWeight: '900', color: '#fff' },
+  secondaryDoctorButton: {
+    marginTop: 10,
+    height: 48,
+    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
+    gap: 8,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
   },
-  commentArticleTitle: {
-    paddingHorizontal: 16,
-    marginTop: 8,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748b',
-    lineHeight: 18,
-  },
+  secondaryDoctorText: { fontSize: 15, fontWeight: '900', color: colors.primary },
+  commentSheet: { maxHeight: '86%', minHeight: '62%', backgroundColor: '#fff', borderTopLeftRadius: 8, borderTopRightRadius: 8, paddingTop: 14 },
+  commentSheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
+  commentSheetTitle: { fontSize: 18, fontWeight: '900', color: '#0f172a' },
+  closeButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f1f5f9' },
+  commentArticleTitle: { paddingHorizontal: 16, marginTop: 8, fontSize: 13, fontWeight: '700', color: '#64748b', lineHeight: 18 },
   commentLoading: { minHeight: 180, alignItems: 'center', justifyContent: 'center' },
   commentList: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 12 },
   commentItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-  commentAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#dbeafe',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 9,
-  },
+  commentAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#dbeafe', alignItems: 'center', justifyContent: 'center', marginRight: 9 },
   commentAvatarText: { fontSize: 13, fontWeight: '900', color: colors.primary },
-  commentBubble: {
-    flex: 1,
-    minWidth: 0,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
-    paddingHorizontal: 11,
-    paddingVertical: 9,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
+  commentBubble: { flex: 1, minWidth: 0, backgroundColor: '#f8fafc', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 9, borderWidth: 1, borderColor: '#e2e8f0' },
   commentHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   commentAuthor: { flex: 1, fontSize: 13, fontWeight: '900', color: '#0f172a' },
   commentTime: { fontSize: 11, fontWeight: '700', color: '#94a3b8' },
@@ -560,34 +626,8 @@ const styles = StyleSheet.create({
   commentEmpty: { alignItems: 'center', paddingVertical: 34, paddingHorizontal: 24 },
   commentEmptyTitle: { fontSize: 15, fontWeight: '900', color: '#0f172a' },
   commentEmptyText: { marginTop: 6, fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 19 },
-  commentComposer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 9,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-  },
-  commentInput: {
-    flex: 1,
-    maxHeight: 104,
-    minHeight: 42,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#0f172a',
-    textAlignVertical: 'top',
-  },
-  sendButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-  },
+  commentComposer: { flexDirection: 'row', alignItems: 'flex-end', gap: 9, paddingHorizontal: 14, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e2e8f0' },
+  commentInput: { flex: 1, maxHeight: 104, minHeight: 42, borderRadius: 8, backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#0f172a', textAlignVertical: 'top' },
+  sendButton: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
   sendButtonDisabled: { opacity: 0.45 },
 });

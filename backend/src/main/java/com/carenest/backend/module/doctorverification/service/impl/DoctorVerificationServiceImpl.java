@@ -5,6 +5,12 @@ import com.carenest.backend.common.exception.ResourceNotFoundException;
 import com.carenest.backend.module.auth.entity.User;
 import com.carenest.backend.module.auth.enums.Role;
 import com.carenest.backend.module.auth.repository.UserRepository;
+import com.carenest.backend.module.community.entity.CommunityGroup;
+import com.carenest.backend.module.community.entity.UserGroupMembership;
+import com.carenest.backend.module.community.enums.GroupRole;
+import com.carenest.backend.module.community.repository.CommunityGroupRepository;
+import com.carenest.backend.module.community.repository.GroupPostRepository;
+import com.carenest.backend.module.community.repository.UserGroupMembershipRepository;
 import com.carenest.backend.module.doctorverification.dto.request.RejectDoctorVerificationRequest;
 import com.carenest.backend.module.doctorverification.dto.request.SubmitDoctorVerificationRequest;
 import com.carenest.backend.module.doctorverification.dto.response.DoctorSummaryResponse;
@@ -27,6 +33,9 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
     private final DoctorVerificationRepository doctorVerificationRepository;
     private final UserRepository userRepository;
     private final FamilySecurityUtil familySecurityUtil;
+    private final CommunityGroupRepository communityGroupRepository;
+    private final GroupPostRepository groupPostRepository;
+    private final UserGroupMembershipRepository membershipRepository;
 
     @Override
     @Transactional
@@ -98,6 +107,8 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
         user.setRole(Role.DOCTOR);
         userRepository.save(user);
 
+        createCommunityChannelsForDoctor(verification, user);
+
         return toResponse(doctorVerificationRepository.save(verification));
     }
 
@@ -140,23 +151,78 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
 
     @Override
     @Transactional
-    public void revokeDoctor(Long userId) {
+    public void revokeDoctorRights(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
         if (user.getRole() != Role.DOCTOR) {
-            throw new BadRequestException("Tài khoản này không phải Bác sĩ");
+            throw new BadRequestException("Tài khoản này không phải bác sĩ");
         }
 
         user.setRole(Role.USER);
         userRepository.save(user);
 
-        // Also reset the verification status so they can re-apply
-        doctorVerificationRepository.findByUserId(userId).ifPresent(v -> {
-            v.setStatus(VerificationStatus.REJECTED);
-            v.setRejectionReason("Quyền Bác sĩ đã bị thu hồi bởi Admin");
-            doctorVerificationRepository.save(v);
+        doctorVerificationRepository.findByUserId(userId).ifPresent(verification -> {
+            verification.setStatus(VerificationStatus.REJECTED);
+            verification.setRejectionReason("Quyền bác sĩ đã bị thu hồi bởi Admin");
+            doctorVerificationRepository.save(verification);
         });
+
+        communityGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(userId).ifPresent(privateGroup -> {
+            groupPostRepository.clearRepliesByCommunityGroupId(privateGroup.getId());
+            groupPostRepository.deleteAllByCommunityGroupId(privateGroup.getId());
+            membershipRepository.deleteAllByGroupId(privateGroup.getId());
+            communityGroupRepository.delete(privateGroup);
+        });
+    }
+
+    private void createCommunityChannelsForDoctor(DoctorVerification verification, User user) {
+        String specialty = normalizeSpecialty(verification.getSpecialty());
+
+        CommunityGroup publicGroup = communityGroupRepository.findFirstByCategoryIgnoreCaseAndIsPrivateFalse(specialty)
+                .orElseGet(() -> communityGroupRepository.save(CommunityGroup.builder()
+                        .name("Cộng đồng " + specialty)
+                        .description("Không gian trao đổi kiến thức và kinh nghiệm chăm sóc sức khỏe về " + specialty + ".")
+                        .category(specialty)
+                        .tags(specialty)
+                        .isPrivate(false)
+                        .build()));
+        ensureHostMembership(publicGroup, user);
+
+        if (communityGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(user.getId()).isEmpty()) {
+            CommunityGroup privateGroup = communityGroupRepository.save(CommunityGroup.builder()
+                    .name("Phòng tư vấn - BS. " + resolveDoctorDisplayName(user))
+                    .description("Phòng tư vấn riêng của bác sĩ " + resolveDoctorDisplayName(user) + ".")
+                    .category(specialty)
+                    .tags(specialty + ", tư vấn bác sĩ")
+                    .isPrivate(true)
+                    .leadDoctor(user)
+                    .build());
+            ensureHostMembership(privateGroup, user);
+        }
+    }
+
+    private void ensureHostMembership(CommunityGroup group, User user) {
+        membershipRepository.findByGroupIdAndUserId(group.getId(), user.getId())
+                .orElseGet(() -> membershipRepository.save(UserGroupMembership.builder()
+                        .group(group)
+                        .user(user)
+                        .groupRole(GroupRole.HOST)
+                        .build()));
+    }
+
+    private String normalizeSpecialty(String specialty) {
+        if (specialty == null || specialty.trim().isEmpty()) {
+            throw new BadRequestException("Chuyên khoa của hồ sơ bác sĩ không hợp lệ");
+        }
+        return specialty.trim();
+    }
+
+    private String resolveDoctorDisplayName(User user) {
+        if (user.getFullName() != null && !user.getFullName().trim().isEmpty()) {
+            return user.getFullName().trim();
+        }
+        return user.getEmail();
     }
 
     private DoctorVerificationResponse toResponse(DoctorVerification verification) {
