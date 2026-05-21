@@ -17,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
@@ -25,19 +26,19 @@ public class AppointmentController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<AppointmentResponse> createAppointment(@Valid @RequestBody AppointmentCreateRequest request) {
         AppointmentResponse response = appointmentService.createAppointment(request);
-        return ApiResponse.success("Created appointment successfully", response);
+        return ApiResponse.success("Tạo lịch khám thành công", response);
     }
 
     @GetMapping("/health-profiles/{id}/appointments")
     public ApiResponse<List<AppointmentResponse>> getProfileAppointments(@PathVariable("id") Long id) {
         List<AppointmentResponse> responses = appointmentService.getProfileAppointments(id);
-        return ApiResponse.success("Fetched profile appointments", responses);
+        return ApiResponse.success("Lấy danh sách lịch khám của hồ sơ thành công", responses);
     }
 
     @GetMapping("/appointments/upcoming")
     public ApiResponse<List<AppointmentResponse>> getUpcomingAppointments(@RequestParam("profileId") Long profileId) {
         List<AppointmentResponse> responses = appointmentService.getUpcomingAppointments(profileId);
-        return ApiResponse.success("Fetched upcoming appointments", responses);
+        return ApiResponse.success("Lấy danh sách lịch khám sắp tới thành công", responses);
     }
 
     @PutMapping("/appointments/{id}")
@@ -45,13 +46,13 @@ public class AppointmentController {
             @PathVariable("id") Long id,
             @Valid @RequestBody AppointmentUpdateRequest request) {
         AppointmentResponse response = appointmentService.updateAppointment(id, request);
-        return ApiResponse.success("Updated appointment successfully", response);
+        return ApiResponse.success("Cập nhật lịch khám thành công", response);
     }
 
     @PutMapping("/appointments/{id}/cancel")
     public ApiResponse<AppointmentResponse> cancelAppointment(@PathVariable("id") Long id) {
         AppointmentResponse response = appointmentService.cancelAppointment(id);
-        return ApiResponse.success("Cancelled appointment successfully", response);
+        return ApiResponse.success("Đã hủy lịch khám", response);
     }
 
     @PostMapping("/appointments/{id}/members")
@@ -59,13 +60,13 @@ public class AppointmentController {
             @PathVariable("id") Long id,
             @Valid @RequestBody AppointmentMemberRequest request) {
         AppointmentResponse response = appointmentService.assignMember(id, request);
-        return ApiResponse.success("Assigned member to appointment successfully", response);
+        return ApiResponse.success("Đã gán thành viên vào lịch khám", response);
     }
 
     @GetMapping("/appointments/{id}/notes")
     public ApiResponse<String> getNotes(@PathVariable("id") Long id) {
         String notes = appointmentService.getNotes(id);
-        return ApiResponse.success("Fetched appointment result notes", notes);
+        return ApiResponse.success("Lấy ghi chú kết quả khám thành công", notes);
     }
 
     @PutMapping("/appointments/{id}/notes")
@@ -73,6 +74,6 @@ public class AppointmentController {
             @PathVariable("id") Long id,
             @Valid @RequestBody AppointmentNotesRequest request) {
         AppointmentResponse response = appointmentService.updateNotes(id, request);
-        return ApiResponse.success("Updated appointment result notes successfully", response);
+        return ApiResponse.success("Cập nhật ghi chú kết quả khám thành công", response);
     }
 }

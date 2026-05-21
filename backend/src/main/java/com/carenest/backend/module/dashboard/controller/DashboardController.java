@@ -14,6 +14,7 @@ import com.carenest.backend.module.family.context.FamilyRequestContext;
 @RestController
 @RequestMapping("/dashboard")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class DashboardController {
 
     private final DashboardService dashboardService;

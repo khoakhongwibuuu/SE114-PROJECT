@@ -21,18 +21,18 @@ public class HealthProfileCreateRequest {
 
     private Long familyId; // Optional
 
-    @NotBlank(message = "Full name is required")
-    @Size(max = 100, message = "Full name cannot exceed 100 characters")
+    @NotBlank(message = "Vui lòng nhập họ và tên")
+    @Size(max = 100, message = "Họ và tên không được vượt quá 100 ký tự")
     private String fullName;
 
-    @NotNull(message = "Date of birth is required")
-    @PastOrPresent(message = "Date of birth cannot be in the future")
+    @NotNull(message = "Vui lòng nhập ngày sinh")
+    @PastOrPresent(message = "Ngày sinh không được nằm trong tương lai")
     private LocalDate dateOfBirth;
 
-    @NotNull(message = "Gender is required")
+    @NotNull(message = "Vui lòng chọn giới tính")
     private Gender gender;
 
-    @Size(max = 50, message = "Relationship cannot exceed 50 characters")
+    @Size(max = 50, message = "Quan hệ không được vượt quá 50 ký tự")
     private String relationship;
 
     private BloodType bloodType;
@@ -43,7 +43,7 @@ public class HealthProfileCreateRequest {
 
     private String notes;
 
-    @Size(max = 500, message = "Avatar URL cannot exceed 500 characters")
+    @Size(max = 500, message = "Đường dẫn ảnh đại diện không được vượt quá 500 ký tự")
     private String avatarUrl;
 
     @Builder.Default

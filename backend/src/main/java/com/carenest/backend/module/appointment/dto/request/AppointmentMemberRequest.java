@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AppointmentMemberRequest {
 
-    @NotNull(message = "Health Profile ID is required")
+    @NotNull(message = "Vui lòng chọn hồ sơ sức khỏe")
     private Long healthProfileId;
 }

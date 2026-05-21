@@ -33,6 +33,6 @@ public class ArticleController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
     public ApiResponse<ArticleResponse> createArticle(@Valid @RequestBody CreateArticleRequest request) {
-        return ApiResponse.success("Article created successfully", communityKnowledgeService.createArticle(request));
+        return ApiResponse.success("Đã tạo bài viết", communityKnowledgeService.createArticle(request));
     }
 }

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/doctor-verifications")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class DoctorVerificationController {
 
     private final DoctorVerificationService doctorVerificationService;
@@ -25,7 +26,7 @@ public class DoctorVerificationController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<DoctorVerificationResponse> submitRequest(
             @Valid @RequestBody SubmitDoctorVerificationRequest request) {
-        return ApiResponse.success("Doctor verification request submitted", doctorVerificationService.submitRequest(request));
+        return ApiResponse.success("Đã gửi hồ sơ xác thực bác sĩ", doctorVerificationService.submitRequest(request));
     }
 
     @GetMapping("/me")

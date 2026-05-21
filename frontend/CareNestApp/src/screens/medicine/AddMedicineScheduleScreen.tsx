@@ -173,7 +173,7 @@ export default function AddMedicineScheduleScreen() {
                   </View>
                 </TouchableOpacity>
               )) : (
-                <Text style={styles.emptyText}>Chua co thuoc trong tu. Hay them thuoc truoc khi tao lich.</Text>
+                <Text style={styles.emptyText}>Chưa có thuốc trong tủ. Hãy thêm thuốc trước khi tạo lịch.</Text>
               )}
             </View>
           </View>

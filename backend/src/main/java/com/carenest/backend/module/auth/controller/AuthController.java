@@ -6,8 +6,8 @@ import com.carenest.backend.module.auth.dto.request.RegisterRequest;
 import com.carenest.backend.module.auth.dto.response.AuthResponse;
 import com.carenest.backend.module.auth.dto.response.UserInfoResponse;
 import com.carenest.backend.module.auth.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,42 +16,43 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
     private final AuthService authService;
-    private final Bucket bucket;
+    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
     public AuthController(AuthService authService) {
         this.authService = authService;
-        Refill refill = Refill.greedy(5, Duration.ofMinutes(1));
-        Bandwidth limit = Bandwidth.classic(5, refill);
-        this.bucket = Bucket.builder()
-                .addLimit(limit)
-                .build();
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(@RequestBody @Valid RegisterRequest request) {
-        if (!bucket.tryConsume(1)) {
+    public ResponseEntity<ApiResponse<AuthResponse>> register(
+            @RequestBody @Valid RegisterRequest request,
+            HttpServletRequest httpRequest) {
+        if (!resolveBucket(httpRequest).tryConsume(1)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(ApiResponse.error("Too many requests. Please try again later."));
+                    .body(ApiResponse.error("Quá nhiều yêu cầu. Vui lòng thử lại sau."));
         }
         AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("User registered successfully", response));
+                .body(ApiResponse.success("Đăng ký tài khoản thành công", response));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody @Valid LoginRequest request) {
-        if (!bucket.tryConsume(1)) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @RequestBody @Valid LoginRequest request,
+            HttpServletRequest httpRequest) {
+        if (!resolveBucket(httpRequest).tryConsume(1)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(ApiResponse.error("Too many requests. Please try again later."));
+                    .body(ApiResponse.error("Quá nhiều yêu cầu. Vui lòng thử lại sau."));
         }
         AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
     }
 
     @GetMapping("/me")
@@ -65,12 +66,33 @@ public class AuthController {
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
     public ResponseEntity<ApiResponse<UserInfoResponse>> updateCurrentUser(@RequestBody @Valid com.carenest.backend.module.auth.dto.request.UpdateUserRequest request) {
         UserInfoResponse response = authService.updateCurrentUser(request);
-        return ResponseEntity.ok(ApiResponse.success("User updated successfully", response));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thông tin tài khoản thành công", response));
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@RequestBody @Valid com.carenest.backend.module.auth.dto.request.RefreshTokenRequest request) {
         AuthResponse response = authService.refreshToken(request.getRefreshToken());
-        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", response));
+        return ResponseEntity.ok(ApiResponse.success("Làm mới phiên đăng nhập thành công", response));
+    }
+
+    private Bucket resolveBucket(HttpServletRequest request) {
+        String key = resolveClientIp(request);
+        return buckets.computeIfAbsent(key, ignored -> {
+            Refill refill = Refill.greedy(5, Duration.ofMinutes(1));
+            Bandwidth limit = Bandwidth.classic(5, refill);
+            return Bucket.builder().addLimit(limit).build();
+        });
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

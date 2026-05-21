@@ -1,6 +1,7 @@
 package com.carenest.backend.module.medication.controller;
 
 import com.carenest.backend.common.dto.ApiResponse;
+import com.carenest.backend.common.dto.PageResponse;
 import com.carenest.backend.module.medication.dto.request.BatchCreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.CreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.UpdateMedicationRequest;
@@ -12,6 +13,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Medication", description = "Quản lý đơn thuốc và lịch uống thuốc")
 @SecurityRequirement(name = "bearerAuth")
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class MedicationController {
 
     private final MedicationService medicationService;
@@ -46,8 +51,10 @@ public class MedicationController {
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Lấy danh sách thành công")
     })
-    public com.carenest.backend.common.dto.ApiResponse<List<MedicationResponse>> getMedicationsByProfile(@PathVariable("profileId") Long profileId) {
-        List<MedicationResponse> response = medicationService.getMedicationsByProfile(profileId);
+    public com.carenest.backend.common.dto.ApiResponse<PageResponse<MedicationResponse>> getMedicationsByProfile(
+            @PathVariable("profileId") Long profileId,
+            @PageableDefault(size = 30, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PageResponse<MedicationResponse> response = medicationService.getMedicationsByProfile(profileId, pageable);
         return ApiResponse.success(response);
     }
 

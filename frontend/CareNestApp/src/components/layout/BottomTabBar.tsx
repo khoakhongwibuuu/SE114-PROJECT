@@ -8,12 +8,12 @@ import { CARENEST_LOGO_HOUSE } from '../../assets/branding';
 import Icon from '../common/Icon';
 
 const TAB_CONFIG: Array<{ name: string; iconName: string; label: string; useBrandIcon?: boolean }> = [
-  { name: 'HomeTab', iconName: 'home', label: 'Trang chu' },
-  { name: 'FamilyTab', iconName: 'group', label: 'Gia dinh' },
-  { name: 'MedicineTab', iconName: 'medication', label: 'Thuoc' },
-  { name: 'AiChatTab', iconName: 'chat-processing', label: 'Tin nhan' },
-  { name: 'CommunityTab', iconName: 'globe', label: 'Cong dong' },
-  { name: 'ProfileTab', iconName: 'person', label: 'Toi' },
+  { name: 'HomeTab', iconName: 'home', label: 'Trang chủ' },
+  { name: 'FamilyTab', iconName: 'group', label: 'Gia đình' },
+  { name: 'MedicineTab', iconName: 'medication', label: 'Thuốc' },
+  { name: 'AiChatTab', iconName: 'chat-processing', label: 'Tin nhắn' },
+  { name: 'CommunityTab', iconName: 'globe', label: 'Cộng đồng' },
+  { name: 'ProfileTab', iconName: 'person', label: 'Tôi' },
 ];
 
 export default function BottomTabBar({ state, navigation }: BottomTabBarProps) {

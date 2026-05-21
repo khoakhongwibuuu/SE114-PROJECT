@@ -249,7 +249,7 @@ export default function UserMedicalScreen() {
     try {
       setIsUpdatingRole(true);
       if (!family?.id) {
-        throw new Error('Khong tim thay thong tin gia dinh.');
+        throw new Error('Không tìm thấy thông tin gia đình.');
       }
       await updateFamilyMemberRole(family.id, viewedProfileId, nextRole);
       await Promise.all([refreshFamily(), loadProfile()]);

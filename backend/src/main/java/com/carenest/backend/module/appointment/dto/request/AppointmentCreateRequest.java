@@ -16,19 +16,19 @@ import java.time.Instant;
 @AllArgsConstructor
 public class AppointmentCreateRequest {
 
-    @NotNull(message = "Health Profile ID is required")
+    @NotNull(message = "Vui lòng chọn hồ sơ sức khỏe")
     private Long healthProfileId;
 
-    @Size(max = 200, message = "Doctor name cannot exceed 200 characters")
+    @Size(max = 200, message = "Tên bác sĩ không được vượt quá 200 ký tự")
     private String doctorName;
 
-    @Size(max = 200, message = "Hospital name cannot exceed 200 characters")
+    @Size(max = 200, message = "Tên bệnh viện không được vượt quá 200 ký tự")
     private String hospitalName;
 
     private String address;
 
-    @NotNull(message = "Appointment date is required")
-    @FutureOrPresent(message = "Appointment date cannot be in the past")
+    @NotNull(message = "Vui lòng chọn ngày khám")
+    @FutureOrPresent(message = "Ngày khám không được nằm trong quá khứ")
     private Instant appointmentDate;
 
     private String notes;

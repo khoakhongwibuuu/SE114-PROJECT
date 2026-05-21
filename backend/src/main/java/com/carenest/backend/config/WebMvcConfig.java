@@ -2,9 +2,13 @@ package com.carenest.backend.config;
 
 import com.carenest.backend.module.family.interceptor.FamilyContextInterceptor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.nio.file.Path;
 
 /**
  * Registers Spring MVC interceptors.
@@ -19,6 +23,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final FamilyContextInterceptor familyContextInterceptor;
+
+    @Value("${app.media.upload-dir:uploads/media}")
+    private String mediaUploadDir;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -42,5 +49,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/families/join-by-qr",
                         "/auth/**"
                 );
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String mediaLocation = Path.of(mediaUploadDir).toAbsolutePath().normalize().toUri().toString();
+        if (!mediaLocation.endsWith("/")) {
+            mediaLocation = mediaLocation + "/";
+        }
+        registry.addResourceHandler("/media/files/**")
+                .addResourceLocations(mediaLocation);
     }
 }

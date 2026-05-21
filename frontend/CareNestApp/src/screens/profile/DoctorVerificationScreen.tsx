@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,12 +14,14 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { launchImageLibrary } from 'react-native-image-picker';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   getMyVerificationStatus,
   submitVerification,
   type DoctorVerification,
 } from '../../api/doctorVerification';
+import { uploadMedia } from '../../api/media';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
 
@@ -87,6 +90,7 @@ export default function DoctorVerificationScreen() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
 
   const canSubmit = useMemo(() => {
     return (
@@ -94,9 +98,10 @@ export default function DoctorVerificationScreen() {
       form.specialty.trim().length > 0 &&
       form.hospitalName.trim().length > 0 &&
       form.documentUrl.trim().length > 0 &&
-      !submitting
+      !submitting &&
+      !uploadingDocument
     );
-  }, [form, submitting]);
+  }, [form, submitting, uploadingDocument]);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -105,7 +110,7 @@ export default function DoctorVerificationScreen() {
       setVerification(result);
       setForm(buildFormFromVerification(result));
     } catch (error) {
-      Alert.alert('Khong the tai ho so', error instanceof Error ? error.message : 'Da co loi xay ra');
+      Alert.alert('Không thể tải hồ sơ', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     } finally {
       setLoading(false);
     }
@@ -119,9 +124,44 @@ export default function DoctorVerificationScreen() {
     setForm(current => ({ ...current, [key]: value }));
   };
 
+  const handlePickDocumentImage = async () => {
+    try {
+      setUploadingDocument(true);
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        maxWidth: 1400,
+        maxHeight: 1400,
+        quality: 0.7,
+        selectionLimit: 1,
+      });
+
+      if (result.didCancel) {
+        return;
+      }
+
+      const asset = result.assets?.[0];
+      if (!asset?.uri) {
+        Alert.alert('Không có ảnh', 'Vui lòng chọn ảnh chứng chỉ hợp lệ.');
+        return;
+      }
+
+      const uploaded = await uploadMedia(
+        asset.uri,
+        asset.fileName || `doctor-certificate-${Date.now()}.jpg`,
+        asset.type || 'image/jpeg',
+        'doctor-verifications',
+      );
+      updateForm('documentUrl', uploaded.url);
+    } catch (error) {
+      Alert.alert('Không thể tải ảnh lên', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!canSubmit) {
-      Alert.alert('Thieu thong tin', 'Vui long dien day du thong tin chung chi hanh nghe.');
+      Alert.alert('Thiếu thông tin', 'Vui lòng điền đầy đủ thông tin chứng chỉ hành nghề.');
       return;
     }
 
@@ -135,9 +175,9 @@ export default function DoctorVerificationScreen() {
       });
       setVerification(result);
       setForm(buildFormFromVerification(result));
-      Alert.alert('Da gui ho so', 'Ho so cua ban dang duoc xet duyet.');
+      Alert.alert('Đã gửi hồ sơ', 'Hồ sơ của bạn đang được xét duyệt.');
     } catch (error) {
-      Alert.alert('Khong the gui ho so', error instanceof Error ? error.message : 'Da co loi xay ra');
+      Alert.alert('Không thể gửi hồ sơ', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     } finally {
       setSubmitting(false);
     }
@@ -151,30 +191,51 @@ export default function DoctorVerificationScreen() {
   const renderForm = () => (
     <View style={styles.formCard}>
       <Field
-        label="So chung chi hanh nghe"
+        label="Số chứng chỉ hành nghề"
         value={form.certificationNumber}
         onChangeText={value => updateForm('certificationNumber', value)}
         placeholder="VD: CCHN-012345"
       />
       <Field
-        label="Chuyen khoa"
+        label="Chuyên khoa"
         value={form.specialty}
         onChangeText={value => updateForm('specialty', value)}
         placeholder="VD: Nhi khoa"
       />
       <Field
-        label="Benh vien / phong kham"
+        label="Bệnh viện / phòng khám"
         value={form.hospitalName}
         onChangeText={value => updateForm('hospitalName', value)}
         placeholder="VD: Benh vien Nhi Dong"
       />
-      <Field
-        label="Anh chung chi / tai lieu"
-        value={form.documentUrl}
-        onChangeText={value => updateForm('documentUrl', value)}
-        placeholder="Nhap URL tai lieu hoac chuoi Base64 tam thoi"
-        multiline
-      />
+      <Text style={styles.label}>Ảnh chứng chỉ / tài liệu</Text>
+      <TouchableOpacity
+        style={styles.documentPicker}
+        onPress={() => void handlePickDocumentImage()}
+        disabled={uploadingDocument || submitting}
+        activeOpacity={0.86}
+      >
+        {form.documentUrl ? (
+          <Image source={{ uri: form.documentUrl }} style={styles.documentPreview} resizeMode="cover" />
+        ) : (
+          <View style={styles.documentPlaceholder}>
+            {uploadingDocument ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="file-image-plus" size={30} color={colors.primary} />
+                <Text style={styles.documentPlaceholderText}>Chọn ảnh chứng chỉ để tải lên</Text>
+              </>
+            )}
+          </View>
+        )}
+      </TouchableOpacity>
+      {form.documentUrl ? (
+        <View style={styles.uploadedUrlBox}>
+          <MaterialCommunityIcons name="link-variant" size={16} color="#64748b" />
+          <Text style={styles.uploadedUrlText} numberOfLines={1}>{form.documentUrl}</Text>
+        </View>
+      ) : null}
       <TouchableOpacity
         style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
         onPress={() => void handleSubmit()}
@@ -186,7 +247,9 @@ export default function DoctorVerificationScreen() {
         ) : (
           <>
             <MaterialCommunityIcons name="send-check" size={20} color="#fff" />
-            <Text style={styles.submitText}>Gui ho so xac thuc</Text>
+            <Text style={styles.submitText}>
+              {uploadingDocument ? 'Đang tải ảnh...' : 'Gửi hồ sơ xác thực'}
+            </Text>
           </>
         )}
       </TouchableOpacity>
@@ -198,7 +261,7 @@ export default function DoctorVerificationScreen() {
       return (
         <View style={styles.centerState}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.stateText}>Dang tai trang thai ho so...</Text>
+          <Text style={styles.stateText}>Đang tải trạng thái hồ sơ...</Text>
         </View>
       );
     }
@@ -209,8 +272,8 @@ export default function DoctorVerificationScreen() {
           <View style={styles.introCard}>
             <MaterialCommunityIcons name="doctor" size={28} color={colors.primary} />
             <View style={styles.introCopy}>
-              <Text style={styles.introTitle}>Xac thuc Bac si CareNest</Text>
-              <Text style={styles.introText}>Ho so se duoc admin kiem tra truoc khi cap quyen viet cam nang y te.</Text>
+              <Text style={styles.introTitle}>Xác thực Bác sĩ CareNest</Text>
+              <Text style={styles.introText}>Hồ sơ sẽ được quản trị viên kiểm tra trước khi cấp quyền viết cẩm nang y tế.</Text>
             </View>
           </View>
           {renderForm()}
@@ -224,8 +287,8 @@ export default function DoctorVerificationScreen() {
           <View style={[styles.bigIconCircle, styles.pendingCircle]}>
             <MaterialCommunityIcons name="timer-sand" size={58} color="#b45309" />
           </View>
-          <Text style={styles.stateTitle}>Ho so dang duoc xet duyet</Text>
-          <Text style={styles.stateText}>Ho so cua ban dang duoc xet duyet. Vui long cho 24h-48h.</Text>
+          <Text style={styles.stateTitle}>Hồ sơ đang được xét duyệt</Text>
+          <Text style={styles.stateText}>Hồ sơ của bạn đang được xét duyệt. Vui lòng chờ 24h-48h.</Text>
         </View>
       );
     }
@@ -236,10 +299,10 @@ export default function DoctorVerificationScreen() {
           <View style={[styles.bigIconCircle, styles.approvedCircle]}>
             <MaterialCommunityIcons name="check-circle" size={64} color="#16a34a" />
           </View>
-          <Text style={styles.stateTitle}>Ban da la Bac si cua CareNest!</Text>
-          <Text style={styles.stateText}>Tai khoan cua ban da duoc cap quyen tao bai viet chuyen mon.</Text>
+          <Text style={styles.stateTitle}>Bạn đã là Bác sĩ của CareNest!</Text>
+          <Text style={styles.stateText}>Tài khoản của bạn đã được cấp quyền tạo bài viết chuyên môn.</Text>
           <TouchableOpacity style={styles.communityButton} onPress={goToCommunity} activeOpacity={0.86}>
-            <Text style={styles.communityButtonText}>Den trang Cong dong</Text>
+            <Text style={styles.communityButtonText}>Đến trang Cộng đồng</Text>
             <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -251,9 +314,9 @@ export default function DoctorVerificationScreen() {
         <View style={styles.rejectedCard}>
           <MaterialCommunityIcons name="alert-circle" size={24} color="#dc2626" />
           <View style={styles.rejectedCopy}>
-            <Text style={styles.rejectedTitle}>Ho so bi tu choi</Text>
+            <Text style={styles.rejectedTitle}>Hồ sơ bị từ chối</Text>
             <Text style={styles.rejectedText}>
-              {verification.rejectionReason || 'Admin chua cung cap ly do cu the.'}
+              {verification.rejectionReason || 'Quản trị viên chưa cung cấp lý do cụ thể.'}
             </Text>
           </View>
         </View>
@@ -271,7 +334,7 @@ export default function DoctorVerificationScreen() {
         <TouchableOpacity style={styles.iconButton} onPress={() => navigation.goBack()} hitSlop={10}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#0f172a" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Xac thuc Bac si</Text>
+        <Text style={styles.headerTitle}>Xác thực Bác sĩ</Text>
         <View style={styles.iconButton} />
       </View>
 
@@ -340,6 +403,41 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   textArea: { minHeight: 92, lineHeight: 21 },
+  documentPicker: {
+    height: 190,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#bfdbfe',
+    backgroundColor: '#eff6ff',
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  documentPreview: { width: '100%', height: '100%' },
+  documentPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 8,
+  },
+  documentPlaceholderText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.primary,
+    textAlign: 'center',
+  },
+  uploadedUrlBox: {
+    minHeight: 38,
+    borderRadius: 8,
+    backgroundColor: '#f8fafc',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    marginBottom: 14,
+  },
+  uploadedUrlText: { flex: 1, fontSize: 12, color: '#64748b' },
   submitButton: {
     height: 52,
     borderRadius: 8,

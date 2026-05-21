@@ -180,7 +180,7 @@ export default function GrowthTrackerScreen() {
             </View>
             {(summary?.history || []).length === 0 ? (
               <View style={styles.historyEmpty}>
-                <Text style={styles.chartEmptyText}>Chua co lan ghi nhan nao.</Text>
+                <Text style={styles.chartEmptyText}>Chưa có lần ghi nhận nào.</Text>
               </View>
             ) : (summary?.history || []).map((item, index) => (
               <View key={`${item.date}-${index}`} style={[styles.tableRow, index < (summary?.history.length || 0) - 1 && styles.tableRowDivider]}>

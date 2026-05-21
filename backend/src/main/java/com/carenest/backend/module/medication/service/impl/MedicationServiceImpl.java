@@ -1,5 +1,6 @@
 package com.carenest.backend.module.medication.service.impl;
 
+import com.carenest.backend.common.dto.PageResponse;
 import com.carenest.backend.common.exception.BadRequestException;
 import com.carenest.backend.common.exception.ResourceNotFoundException;
 import com.carenest.backend.module.cabinet.entity.CabinetMedicine;
@@ -26,6 +27,8 @@ import com.carenest.backend.module.medication.repository.MedicationRepository;
 import com.carenest.backend.module.medication.service.MedicationService;
 import com.carenest.backend.module.ocr.dto.response.ParsedMedicationDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.CacheManager;
@@ -171,13 +174,12 @@ public class MedicationServiceImpl implements MedicationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MedicationResponse> getMedicationsByProfile(Long profileId) {
+    public PageResponse<MedicationResponse> getMedicationsByProfile(Long profileId, Pageable pageable) {
         familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
 
-        return medicationRepository.findAllByHealthProfileId(profileId)
-                .stream()
-                .map(medicationMapper::toMedicationResponse)
-                .collect(Collectors.toList());
+        Page<MedicationResponse> page = medicationRepository.findAllByHealthProfileId(profileId, pageable)
+                .map(medicationMapper::toMedicationResponse);
+        return PageResponse.of(page);
     }
 
     @Override

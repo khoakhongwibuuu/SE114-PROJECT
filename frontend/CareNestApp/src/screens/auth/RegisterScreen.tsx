@@ -150,7 +150,7 @@ export default function RegisterScreen() {
           <TouchableOpacity
             style={styles.googleBtn}
             activeOpacity={0.8}
-            onPress={() => Alert.alert('Sap ra mat', 'Dang ky bang Google se duoc bo sung trong phien ban tiep theo.')}
+            onPress={() => Alert.alert('Sắp ra mắt', 'Đăng ký bằng Google sẽ được bổ sung trong phiên bản tiếp theo.')}
           >
             <Icon name="google" size={20} color="#4285F4" />
             <Text style={styles.googleText}>Tiếp tục với Google</Text>

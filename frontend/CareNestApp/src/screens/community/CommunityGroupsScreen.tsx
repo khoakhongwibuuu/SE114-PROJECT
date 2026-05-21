@@ -28,7 +28,7 @@ function GroupCard({ item, onPress }: { item: CommunityGroup; onPress: () => voi
       <View style={styles.groupInfo}>
         <Text style={styles.groupName} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.groupDescription} numberOfLines={2}>
-          {item.description || 'Trao doi kinh nghiem cham soc va theo doi suc khoe.'}
+          {item.description || 'Trao đổi kinh nghiệm chăm sóc và theo dõi sức khỏe.'}
         </Text>
       </View>
       <MaterialCommunityIcons name="chevron-right" size={24} color="#94a3b8" />
@@ -91,15 +91,15 @@ export default function CommunityGroupsScreen() {
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Hoi nhom benh ly</Text>
-            <Text style={styles.subtitle}>Cac nhom thao luan theo chu de suc khoe va tinh trang benh ly.</Text>
+            <Text style={styles.title}>Hội nhóm bệnh lý</Text>
+            <Text style={styles.subtitle}>Các nhóm thảo luận theo chủ đề sức khỏe và tình trạng bệnh lý.</Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyCard}>
             <MaterialCommunityIcons name="account-group-outline" size={42} color="#94a3b8" />
-            <Text style={styles.emptyTitle}>Chua co hoi nhom</Text>
-            <Text style={styles.emptyText}>Danh sach nhom se xuat hien khi backend co du lieu.</Text>
+            <Text style={styles.emptyTitle}>Chưa có hội nhóm</Text>
+            <Text style={styles.emptyText}>Danh sách nhóm sẽ xuất hiện khi backend có dữ liệu.</Text>
           </View>
         }
       />

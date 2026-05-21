@@ -1,5 +1,6 @@
 package com.carenest.backend.module.medication.service;
 
+import com.carenest.backend.common.dto.PageResponse;
 import com.carenest.backend.module.medication.dto.request.CheckInMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.BatchCreateMedicationRequest;
 import com.carenest.backend.module.medication.dto.request.CreateMedicationRequest;
@@ -17,7 +18,7 @@ public interface MedicationService {
 
     void completeMedication(Long medicationId);
 
-    List<MedicationResponse> getMedicationsByProfile(Long profileId);
+    PageResponse<MedicationResponse> getMedicationsByProfile(Long profileId, org.springframework.data.domain.Pageable pageable);
 
     List<MedicationLogResponse> getMedicationsForToday(Long profileId);
 

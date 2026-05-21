@@ -28,6 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Family", description = "Family management")
 @SecurityRequirement(name = "bearerAuth")
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class FamilyController {
 
     private final FamilyService familyService;
@@ -48,7 +49,7 @@ public class FamilyController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new family")
     public ApiResponse<FamilyResponse> createFamily(@Valid @RequestBody CreateFamilyRequest request) {
-        return ApiResponse.success("Family created successfully", familyService.createFamily(request));
+        return ApiResponse.success("Tạo gia đình thành công", familyService.createFamily(request));
     }
 
     @GetMapping("/{id}")
@@ -63,7 +64,7 @@ public class FamilyController {
             @PathVariable("id") Long id,
             @Valid @RequestBody InviteMemberRequest request) {
         familyService.inviteMember(id, request);
-        return ApiResponse.success("Invitation sent successfully", null);
+        return ApiResponse.success("Đã gửi lời mời gia đình", null);
     }
 
     @PutMapping("/{id}/members/{memberId}/role")
@@ -73,7 +74,7 @@ public class FamilyController {
             @PathVariable("memberId") Long memberId,
             @Valid @RequestBody UpdateRoleRequest request) {
         familyService.updateMemberRole(id, memberId, request);
-        return ApiResponse.success("Member role updated successfully", null);
+        return ApiResponse.success("Cập nhật vai trò thành viên thành công", null);
     }
 
     @GetMapping("/join-code")

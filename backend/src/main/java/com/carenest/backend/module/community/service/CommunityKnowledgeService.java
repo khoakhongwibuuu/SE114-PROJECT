@@ -1,5 +1,6 @@
 package com.carenest.backend.module.community.service;
 
+import com.carenest.backend.common.dto.PageResponse;
 import com.carenest.backend.module.community.dto.request.CreateArticleRequest;
 import com.carenest.backend.module.community.dto.request.CreateGroupPostRequest;
 import com.carenest.backend.module.community.dto.response.ArticleResponse;
@@ -15,7 +16,7 @@ public interface CommunityKnowledgeService {
 
     List<CommunityGroupResponse> getCommunityGroups();
 
-    List<GroupPostResponse> getGroupPosts(Long groupId);
+    PageResponse<GroupPostResponse> getGroupPosts(Long groupId, org.springframework.data.domain.Pageable pageable);
 
     GroupPostResponse createGroupPost(Long groupId, CreateGroupPostRequest request);
 }

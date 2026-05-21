@@ -18,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("")
 @RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class HealthProfileController {
 
     private final HealthProfileService healthProfileService;
@@ -25,7 +26,7 @@ public class HealthProfileController {
     @GetMapping("/health-profiles/me")
     public ApiResponse<HealthProfileResponse> getMyHealthProfile(@AuthenticationPrincipal User user) {
         HealthProfileResponse response = healthProfileService.getMyHealthProfile(user.getId());
-        return ApiResponse.success("Fetched current user health profile", response);
+        return ApiResponse.success("Lấy hồ sơ sức khỏe của người dùng hiện tại thành công", response);
     }
 
     @PostMapping("/health-profiles")
@@ -34,19 +35,19 @@ public class HealthProfileController {
             @AuthenticationPrincipal User user,
             @Valid @RequestBody HealthProfileCreateRequest request) {
         HealthProfileResponse response = healthProfileService.createHealthProfile(user.getId(), request);
-        return ApiResponse.success("Created health profile successfully", response);
+        return ApiResponse.success("Tạo hồ sơ sức khỏe thành công", response);
     }
 
     @GetMapping("/families/{familyId}/health-profiles")
     public ApiResponse<List<HealthProfileResponse>> getFamilyHealthProfiles(@PathVariable("familyId") Long familyId) {
         List<HealthProfileResponse> profiles = healthProfileService.getFamilyHealthProfiles(familyId);
-        return ApiResponse.success("Fetched family health profiles", profiles);
+        return ApiResponse.success("Lấy danh sách hồ sơ sức khỏe gia đình thành công", profiles);
     }
 
     @GetMapping("/health-profiles/{id}")
     public ApiResponse<HealthProfileResponse> getHealthProfileById(@PathVariable("id") Long id) {
         HealthProfileResponse response = healthProfileService.getHealthProfileById(id);
-        return ApiResponse.success("Fetched health profile details", response);
+        return ApiResponse.success("Lấy chi tiết hồ sơ sức khỏe thành công", response);
     }
 
     @PutMapping("/health-profiles/{id}")
@@ -54,13 +55,13 @@ public class HealthProfileController {
             @PathVariable("id") Long id,
             @Valid @RequestBody HealthProfileUpdateRequest request) {
         HealthProfileResponse response = healthProfileService.updateHealthProfile(id, request);
-        return ApiResponse.success("Updated health profile successfully", response);
+        return ApiResponse.success("Cập nhật hồ sơ sức khỏe thành công", response);
     }
 
     @DeleteMapping("/health-profiles/{id}")
     public ApiResponse<Void> deleteHealthProfile(@PathVariable("id") Long id) {
         healthProfileService.deleteHealthProfile(id);
-        return ApiResponse.success("Deleted health profile successfully", null);
+        return ApiResponse.success("Xóa hồ sơ sức khỏe thành công", null);
     }
 
     @PutMapping("/health-profiles/{id}/medical-info")
@@ -68,6 +69,6 @@ public class HealthProfileController {
             @PathVariable("id") Long id,
             @Valid @RequestBody MedicalInfoUpdateRequest request) {
         HealthProfileResponse response = healthProfileService.updateMedicalInfo(id, request);
-        return ApiResponse.success("Updated medical info successfully", response);
+        return ApiResponse.success("Cập nhật thông tin y tế thành công", response);
     }
 }

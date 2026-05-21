@@ -17,17 +17,17 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class CabinetMedicineRequest {
 
-    @NotBlank(message = "Medicine name is required")
-    @Size(max = 200, message = "Medicine name cannot exceed 200 characters")
+    @NotBlank(message = "Vui lòng nhập tên thuốc")
+    @Size(max = 200, message = "Tên thuốc không được vượt quá 200 ký tự")
     private String medicineName;
 
-    @Min(value = 1, message = "Quantity must be at least 1")
+    @Min(value = 1, message = "Số lượng phải lớn hơn hoặc bằng 1")
     private Integer quantity;
 
-    @Size(max = 50, message = "Unit cannot exceed 50 characters")
+    @Size(max = 50, message = "Đơn vị không được vượt quá 50 ký tự")
     private String unit;
 
-    @FutureOrPresent(message = "Expiry date cannot be in the past")
+    @FutureOrPresent(message = "Ngày hết hạn không được nằm trong quá khứ")
     private LocalDate expiryDate;
 
     private String notes;

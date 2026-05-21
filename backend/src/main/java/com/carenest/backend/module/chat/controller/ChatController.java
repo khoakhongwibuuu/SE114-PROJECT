@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Chat", description = "Chat box gia đình real-time")
 @SecurityRequirement(name = "bearerAuth")
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;

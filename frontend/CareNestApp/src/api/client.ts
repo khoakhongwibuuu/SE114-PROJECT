@@ -1,7 +1,9 @@
 import axios, { AxiosError } from 'axios';
 import { DeviceEventEmitter } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { getActiveFamilyHeaderId } from './activeFamily';
 import { API_BASE_URL } from './config';
+import { readOfflineCache, removeOfflineCaches, saveOfflineCache } from './offlineCache';
 import { getStoredSession, setStoredSession } from './storage';
 
 export interface ApiEnvelope<T> {
@@ -12,11 +14,21 @@ export interface ApiEnvelope<T> {
   timestamp?: string;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 300000,
+  timeout: 15000,
 });
+
+let refreshSessionPromise: Promise<Awaited<ReturnType<typeof getStoredSession>>> | null = null;
 
 const DEFAULT_GET_CACHE_TTL_MS = 20000;
 
@@ -81,11 +93,13 @@ function readFreshCache<T>(cacheKey: string): T | null {
 
 export function invalidateApiGetCache(matchers?: Array<string | RegExp>): void {
   if (!matchers || matchers.length === 0) {
+    void removeOfflineCaches();
     getResponseCache.clear();
     inflightGetRequests.clear();
     return;
   }
 
+  void removeOfflineCaches(matchers);
   for (const cacheKey of Array.from(getResponseCache.keys())) {
     const matched = matchers.some(matcher =>
       typeof matcher === 'string' ? cacheKey.includes(matcher) : matcher.test(cacheKey),
@@ -128,21 +142,35 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const session = await getStoredSession();
-        if (session && session.refreshToken) {
-          const { data } = await axios.post<{ data: { accessToken: string, refreshToken: string } }>(
-            `${API_BASE_URL}/auth/refresh`,
-            { refreshToken: session.refreshToken }
-          );
+        if (!refreshSessionPromise) {
+          refreshSessionPromise = (async () => {
+            const session = await getStoredSession();
+            if (!session?.refreshToken) {
+              return null;
+            }
 
-          const newSession = {
-            ...session,
-            token: data.data.accessToken,
-            refreshToken: data.data.refreshToken
-          };
-          await setStoredSession(newSession);
+            const { data } = await axios.post<{ data: { accessToken: string, refreshToken: string } }>(
+              `${API_BASE_URL}/auth/refresh`,
+              { refreshToken: session.refreshToken },
+              { timeout: 15000 },
+            );
 
-          originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
+            const newSession = {
+              ...session,
+              token: data.data.accessToken,
+              refreshToken: data.data.refreshToken,
+            };
+            await setStoredSession(newSession);
+            return newSession;
+          })().finally(() => {
+            refreshSessionPromise = null;
+          });
+        }
+
+        const refreshedSession = await refreshSessionPromise;
+        if (refreshedSession) {
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${refreshedSession.token}`;
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
@@ -186,7 +214,7 @@ export async function apiGet<T>(url: string, params?: Record<string, unknown>): 
 export async function apiGetCached<T>(
   url: string,
   params?: Record<string, unknown>,
-  options?: { ttlMs?: number; forceRefresh?: boolean },
+  options?: { ttlMs?: number; forceRefresh?: boolean; persist?: boolean; offlineMaxAgeMs?: number },
 ): Promise<T> {
   const cacheKey = buildGetCacheKey(url, params);
   if (!options?.forceRefresh) {
@@ -210,7 +238,20 @@ export async function apiGetCached<T>(
           expiresAt: Date.now() + ttlMs,
         });
       }
+      if (options?.persist) {
+        void saveOfflineCache(cacheKey, data);
+      }
       return data;
+    })
+    .catch(async error => {
+      if (options?.persist) {
+        const cached = await readOfflineCache<T>(cacheKey, options.offlineMaxAgeMs);
+        if (cached) {
+          return cached.data;
+        }
+      }
+
+      throw error;
     })
     .finally(() => {
       inflightGetRequests.delete(cacheKey);
@@ -220,16 +261,24 @@ export async function apiGetCached<T>(
   return request;
 }
 
+async function assertOnlineForMutation(): Promise<void> {
+  const state = await NetInfo.fetch();
+  if (state.isConnected === false || state.isInternetReachable === false) {
+    throw new Error('Bạn đang ngoại tuyến. Vui lòng kết nối mạng để tạo, sửa hoặc xóa dữ liệu.');
+  }
+}
+
 export async function prefetchApiGet(
   url: string,
   params?: Record<string, unknown>,
-  options?: { ttlMs?: number },
+  options?: { ttlMs?: number; persist?: boolean; offlineMaxAgeMs?: number },
 ): Promise<void> {
   await apiGetCached(url, params, options).catch(() => undefined);
 }
 
 export async function apiPost<T, B = unknown>(url: string, body?: B, config?: Record<string, unknown>): Promise<T> {
   try {
+    await assertOnlineForMutation();
     const response = await apiClient.post<ApiEnvelope<T>>(url, body, config);
     return response.data.data;
   } catch (error) {
@@ -239,6 +288,7 @@ export async function apiPost<T, B = unknown>(url: string, body?: B, config?: Re
 
 export async function apiPatch<T, B = unknown>(url: string, body?: B): Promise<T> {
   try {
+    await assertOnlineForMutation();
     const response = await apiClient.patch<ApiEnvelope<T>>(url, body);
     return response.data.data;
   } catch (error) {
@@ -248,6 +298,7 @@ export async function apiPatch<T, B = unknown>(url: string, body?: B): Promise<T
 
 export async function apiPut<T, B = unknown>(url: string, body?: B): Promise<T> {
   try {
+    await assertOnlineForMutation();
     const response = await apiClient.put<ApiEnvelope<T>>(url, body);
     return response.data.data;
   } catch (error) {
@@ -257,6 +308,7 @@ export async function apiPut<T, B = unknown>(url: string, body?: B): Promise<T> 
 
 export async function apiDelete<T>(url: string): Promise<T> {
   try {
+    await assertOnlineForMutation();
     const response = await apiClient.delete<ApiEnvelope<T>>(url);
     return response.data.data;
   } catch (error) {

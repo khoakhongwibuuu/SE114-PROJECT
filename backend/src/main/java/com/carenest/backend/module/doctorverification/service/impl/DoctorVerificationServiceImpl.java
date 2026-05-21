@@ -33,11 +33,11 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
         User currentUser = familySecurityUtil.getCurrentUser();
 
         if (currentUser.getRole() == Role.DOCTOR) {
-            throw new BadRequestException("User is already verified as a doctor");
+            throw new BadRequestException("Tài khoản đã được xác thực là bác sĩ");
         }
 
         if (doctorVerificationRepository.existsByUserIdAndStatus(currentUser.getId(), VerificationStatus.PENDING)) {
-            throw new BadRequestException("A doctor verification request is already pending");
+            throw new BadRequestException("Bạn đã có hồ sơ xác thực bác sĩ đang chờ duyệt");
         }
 
         DoctorVerification verification = doctorVerificationRepository.findByUserId(currentUser.getId())
@@ -46,7 +46,7 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
                         .build());
 
         if (verification.getStatus() == VerificationStatus.APPROVED) {
-            throw new BadRequestException("Doctor verification request has already been approved");
+            throw new BadRequestException("Hồ sơ xác thực bác sĩ đã được phê duyệt");
         }
 
         verification.setCertificationNumber(request.getCertificationNumber().trim());
@@ -84,12 +84,12 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
                 .orElseThrow(() -> new ResourceNotFoundException("DoctorVerification", requestId));
 
         if (verification.getStatus() == VerificationStatus.APPROVED) {
-            throw new BadRequestException("Doctor verification request is already approved");
+            throw new BadRequestException("Hồ sơ xác thực bác sĩ đã được phê duyệt");
         }
 
         User user = verification.getUser();
         if (user == null) {
-            throw new ResourceNotFoundException("User not found for doctor verification request");
+            throw new ResourceNotFoundException("Không tìm thấy người dùng của hồ sơ xác thực bác sĩ");
         }
 
         verification.setStatus(VerificationStatus.APPROVED);
@@ -107,7 +107,7 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
                 .orElseThrow(() -> new ResourceNotFoundException("DoctorVerification", requestId));
 
         if (verification.getStatus() == VerificationStatus.APPROVED) {
-            throw new BadRequestException("Approved doctor verification requests cannot be rejected");
+            throw new BadRequestException("Không thể từ chối hồ sơ bác sĩ đã được phê duyệt");
         }
 
         verification.setStatus(VerificationStatus.REJECTED);

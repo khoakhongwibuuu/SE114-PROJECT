@@ -38,7 +38,7 @@ export default function AdminVerificationScreen() {
       const result = await getPendingVerifications();
       setItems(result);
     } catch (error) {
-      Alert.alert('Khong the tai danh sach', error instanceof Error ? error.message : 'Da co loi xay ra');
+      Alert.alert('Không thể tải danh sách', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     } finally {
       setLoading(false);
     }
@@ -53,9 +53,9 @@ export default function AdminVerificationScreen() {
       setActionId(id);
       await approveVerification(id);
       setItems(current => current.filter(item => item.id !== id));
-      Alert.alert('Da phe duyet', 'Tai khoan da duoc cap quyen Bac si.');
+      Alert.alert('Đã phê duyệt', 'Tài khoản đã được cấp quyền Bác sĩ.');
     } catch (error) {
-      Alert.alert('Khong the phe duyet', error instanceof Error ? error.message : 'Da co loi xay ra');
+      Alert.alert('Không thể phê duyệt', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     } finally {
       setActionId(null);
     }
@@ -81,7 +81,7 @@ export default function AdminVerificationScreen() {
 
     const reason = rejectionReason.trim();
     if (!reason) {
-      Alert.alert('Thieu ly do', 'Vui long nhap ly do tu choi ho so.');
+      Alert.alert('Thiếu lý do', 'Vui lòng nhập lý do từ chối hồ sơ.');
       return;
     }
 
@@ -91,9 +91,9 @@ export default function AdminVerificationScreen() {
       setItems(current => current.filter(item => item.id !== rejectTarget.id));
       setRejectTarget(null);
       setRejectionReason('');
-      Alert.alert('Da tu choi', 'Ly do tu choi da duoc luu vao ho so.');
+      Alert.alert('Đã từ chối', 'Lý do từ chối đã được lưu vào hồ sơ.');
     } catch (error) {
-      Alert.alert('Khong the tu choi', error instanceof Error ? error.message : 'Da co loi xay ra');
+      Alert.alert('Không thể từ chối', error instanceof Error ? error.message : 'Đã có lỗi xảy ra');
     } finally {
       setActionId(null);
     }
@@ -119,19 +119,19 @@ export default function AdminVerificationScreen() {
 
         <View style={styles.infoGrid}>
           <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>So chung chi</Text>
+            <Text style={styles.infoLabel}>Số chứng chỉ</Text>
             <Text style={styles.infoValue}>{item.certificationNumber}</Text>
           </View>
           <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>Chuyen khoa</Text>
+            <Text style={styles.infoLabel}>Chuyên khoa</Text>
             <Text style={styles.infoValue}>{item.specialty}</Text>
           </View>
           <View style={styles.infoBlockWide}>
-            <Text style={styles.infoLabel}>Don vi cong tac</Text>
+            <Text style={styles.infoLabel}>Đơn vị công tác</Text>
             <Text style={styles.infoValue}>{item.hospitalName}</Text>
           </View>
           <View style={styles.infoBlockWide}>
-            <Text style={styles.infoLabel}>Tai lieu</Text>
+            <Text style={styles.infoLabel}>Tài liệu</Text>
             <Text style={styles.documentValue} numberOfLines={2}>{item.documentUrl}</Text>
           </View>
         </View>
@@ -144,7 +144,7 @@ export default function AdminVerificationScreen() {
             activeOpacity={0.86}
           >
             <MaterialCommunityIcons name="close-circle" size={18} color="#dc2626" />
-            <Text style={styles.rejectText}>Tu choi</Text>
+            <Text style={styles.rejectText}>Từ chối</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.approveButton]}
@@ -157,7 +157,7 @@ export default function AdminVerificationScreen() {
             ) : (
               <>
                 <MaterialCommunityIcons name="check-circle" size={18} color="#fff" />
-                <Text style={styles.approveText}>Phe duyet</Text>
+                <Text style={styles.approveText}>Phê duyệt</Text>
               </>
             )}
           </TouchableOpacity>
@@ -172,7 +172,7 @@ export default function AdminVerificationScreen() {
         <TouchableOpacity style={styles.iconButton} onPress={() => navigation.goBack()} hitSlop={10}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#0f172a" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Duyet Bac si</Text>
+        <Text style={styles.headerTitle}>Duyệt Bác sĩ</Text>
         <TouchableOpacity style={styles.iconButton} onPress={() => void loadPending()} hitSlop={10}>
           <MaterialCommunityIcons name="refresh" size={22} color={colors.primary} />
         </TouchableOpacity>
@@ -181,7 +181,7 @@ export default function AdminVerificationScreen() {
       {loading ? (
         <View style={styles.centerState}>
           <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.emptyText}>Dang tai danh sach ho so...</Text>
+          <Text style={styles.emptyText}>Đang tải danh sách hồ sơ...</Text>
         </View>
       ) : (
         <FlatList
@@ -196,8 +196,8 @@ export default function AdminVerificationScreen() {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="clipboard-check-outline" size={56} color="#94a3b8" />
-              <Text style={styles.emptyTitle}>Khong co ho so cho duyet</Text>
-              <Text style={styles.emptyText}>Tat ca yeu cau hien tai da duoc xu ly.</Text>
+              <Text style={styles.emptyTitle}>Không có hồ sơ chờ duyệt</Text>
+              <Text style={styles.emptyText}>Tất cả yêu cầu hiện tại đã được xử lý.</Text>
             </View>
           }
         />
@@ -209,15 +209,15 @@ export default function AdminVerificationScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Ly do tu choi</Text>
+            <Text style={styles.modalTitle}>Lý do từ chối</Text>
             <Text style={styles.modalSubtitle}>
-              Ly do nay se hien thi cho nguoi nop ho so de ho sua va gui lai.
+              Lý do này sẽ hiển thị cho người nộp hồ sơ để họ sửa và gửi lại.
             </Text>
             <TextInput
               style={styles.reasonInput}
               value={rejectionReason}
               onChangeText={setRejectionReason}
-              placeholder="Nhap ly do tu choi..."
+              placeholder="Nhập lý do từ chối..."
               placeholderTextColor="#94a3b8"
               multiline
               textAlignVertical="top"
@@ -228,7 +228,7 @@ export default function AdminVerificationScreen() {
                 onPress={closeRejectModal}
                 disabled={!!actionId}
               >
-                <Text style={styles.cancelText}>Huy</Text>
+                <Text style={styles.cancelText}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmRejectButton, !!actionId && styles.disabledButton]}
@@ -238,7 +238,7 @@ export default function AdminVerificationScreen() {
                 {actionId ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.confirmRejectText}>Gui tu choi</Text>
+                  <Text style={styles.confirmRejectText}>Gửi từ chối</Text>
                 )}
               </TouchableOpacity>
             </View>

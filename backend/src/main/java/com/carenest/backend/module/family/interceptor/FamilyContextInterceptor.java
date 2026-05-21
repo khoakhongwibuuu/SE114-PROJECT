@@ -57,14 +57,14 @@ public class FamilyContextInterceptor implements HandlerInterceptor {
         try {
             familyId = Long.parseLong(headerValue.trim());
         } catch (NumberFormatException e) {
-            writeForbidden(response, "Invalid X-Family-Id header value");
+            writeForbidden(response, "Giá trị X-Family-Id không hợp lệ");
             return false;
         }
 
         // Identify current user from Spring Security context
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            writeForbidden(response, "Not authenticated");
+            writeForbidden(response, "Bạn chưa đăng nhập");
             return false;
         }
 
@@ -77,7 +77,7 @@ public class FamilyContextInterceptor implements HandlerInterceptor {
 
         if (membership == null) {
             log.warn("BOLA/IDOR attempt blocked: user '{}' tried to access familyId={}", email, familyId);
-            writeForbidden(response, "You do not have access to this family");
+            writeForbidden(response, "Bạn không có quyền truy cập gia đình này");
             return false;
         }
 

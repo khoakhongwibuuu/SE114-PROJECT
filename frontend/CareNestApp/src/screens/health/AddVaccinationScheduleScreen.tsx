@@ -98,7 +98,7 @@ export default function AddVaccinationScheduleScreen() {
     }
 
     if (!profileId) {
-      Alert.alert('Thieu ho so', 'Khong tim thay ho so suc khoe de luu mui tiem.');
+      Alert.alert('Thiếu hồ sơ', 'Không tìm thấy hồ sơ sức khỏe để lưu mũi tiêm.');
       return;
     }
 
