@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.community.presentation
+package com.example.carenest.feature.community.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,9 +33,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -93,7 +93,7 @@ fun CommunityScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 )
-                TabRow(selectedTabIndex = pagerState.currentPage, containerColor = Color.White, contentColor = PrimaryBlue) {
+                PrimaryTabRow(selectedTabIndex = pagerState.currentPage, containerColor = Color.White, contentColor = PrimaryBlue) {
                     tabs.forEachIndexed { index, label ->
                         Tab(
                             selected = pagerState.currentPage == index,
