@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.carenest.feature.chat.data.repository.ChatRepository
 import com.example.carenest.feature.chat.data.repository.ChatRepositoryEvent
 import com.example.carenest.feature.chat.domain.model.ChatMessage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class ChatUiState(
     val isLoading: Boolean = true,
@@ -53,22 +55,28 @@ class ChatViewModel(
         _uiState.update { it.copy(inputText = "", messages = listOf(optimistic) + it.messages, error = null) }
         startSlowMode()
 
-        val sent = _uiState.value.isConnected && repository.send(groupId, content) { error ->
-            val message = error.localizedMessage.orEmpty()
-            _uiState.update { current ->
-                current.copy(
-                    error = if (message.contains("slow", ignoreCase = true)) {
-                        "Bạn đang gửi quá nhanh. Vui lòng chờ vài giây."
-                    } else {
-                        "Không thể gửi tin nhắn. Vui lòng thử lại."
+        viewModelScope.launch {
+            val sent = _uiState.value.isConnected && withContext(Dispatchers.IO) {
+                repository.send(groupId, content) { error ->
+                    val message = error.localizedMessage.orEmpty()
+                    _uiState.update { current ->
+                        current.copy(
+                            error = if (message.contains("slow", ignoreCase = true)) {
+                                "Bạn đang gửi quá nhanh. Vui lòng chờ vài giây."
+                            } else {
+                                "Không thể gửi tin nhắn. Vui lòng thử lại."
+                            }
+                        )
                     }
-                )
+                }
             }
-        }
 
-        if (!sent) {
-            _uiState.update { it.copy(error = "Đang mất kết nối. Tin nhắn sẽ được gửi lại khi kết nối ổn định.") }
-            reconnect()
+            if (!sent) {
+                _uiState.update {
+                    it.copy(error = "Đang mất kết nối. Tin nhắn sẽ được gửi lại khi kết nối ổn định.")
+                }
+                reconnect()
+            }
         }
     }
 
@@ -76,7 +84,10 @@ class ChatViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                _uiState.update { it.copy(isLoading = false, messages = repository.loadHistory(groupId)) }
+                val messages = withContext(Dispatchers.IO) {
+                    repository.loadHistory(groupId)
+                }
+                _uiState.update { it.copy(isLoading = false, messages = messages) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.localizedMessage ?: "Không thể tải lịch sử tin nhắn") }
             }
@@ -84,16 +95,18 @@ class ChatViewModel(
     }
 
     private fun connect() {
-        repository.connect(groupId) { event ->
-            when (event) {
-                ChatRepositoryEvent.Connected -> _uiState.update { it.copy(isConnected = true, error = null) }
-                is ChatRepositoryEvent.Disconnected -> {
-                    _uiState.update { it.copy(isConnected = false, error = event.message) }
-                    reconnect()
-                }
-                is ChatRepositoryEvent.MessageReceived -> _uiState.update { current ->
-                    if (current.messages.any { it.id == event.message.id }) current
-                    else current.copy(messages = listOf(event.message) + current.messages)
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.connect(groupId) { event ->
+                when (event) {
+                    ChatRepositoryEvent.Connected -> _uiState.update { it.copy(isConnected = true, error = null) }
+                    is ChatRepositoryEvent.Disconnected -> {
+                        _uiState.update { it.copy(isConnected = false, error = event.message) }
+                        reconnect()
+                    }
+                    is ChatRepositoryEvent.MessageReceived -> _uiState.update { current ->
+                        if (current.messages.any { it.id == event.message.id }) current
+                        else current.copy(messages = listOf(event.message) + current.messages)
+                    }
                 }
             }
         }
