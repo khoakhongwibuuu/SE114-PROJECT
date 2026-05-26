@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.medical.presentation
+package com.example.carenest.feature.medical.presentation
 
 import android.graphics.Bitmap
 import android.net.Uri
@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -110,7 +111,7 @@ fun OcrScannerScreen() {
                 title = { Text("QuÃ©t toa thuá»‘c OCR", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { /* Go Back */ }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF8FAFC))
@@ -216,7 +217,7 @@ fun OcrScannerScreen() {
                         Spacer(modifier = Modifier.height(16.dp))
 
                         medicines.forEachIndexed { index, medicine ->
-                            Divider(color = Color(0xFFE2E8F0))
+                            HorizontalDivider(color = Color(0xFFE2E8F0))
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("Thuá»‘c ${index + 1}", fontWeight = FontWeight.Bold, color = TextPrimary)
                             Spacer(modifier = Modifier.height(8.dp))

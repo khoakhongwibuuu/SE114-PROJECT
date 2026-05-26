@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.medical.presentation
+package com.example.carenest.feature.medical.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -64,7 +65,7 @@ fun MedicalScreen() {
                 title = { Text("Lá»‹ch háº¹n má»›i", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { /* TODO: Go Back */ }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF8FAFC))
@@ -137,7 +138,7 @@ fun MedicalScreen() {
                 Column(modifier = Modifier.weight(1f)) {
                     SectionLabel("NGÃ€Y KHÃM")
                     ReadOnlyInputCard(
-                        value = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN")).format(Date()),
+                        value = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")).format(Date()),
                         icon = Icons.Default.CalendarToday,
                         onClick = { /* TODO: Show DatePicker */ }
                     )
@@ -145,7 +146,7 @@ fun MedicalScreen() {
                 Column(modifier = Modifier.weight(1f)) {
                     SectionLabel("GIá»œ KHÃM")
                     ReadOnlyInputCard(
-                        value = SimpleDateFormat("HH:mm", Locale("vi", "VN")).format(Date()),
+                        value = SimpleDateFormat("HH:mm", Locale.forLanguageTag("vi-VN")).format(Date()),
                         icon = Icons.Default.AccessTime,
                         onClick = { /* TODO: Show TimePicker */ }
                     )
