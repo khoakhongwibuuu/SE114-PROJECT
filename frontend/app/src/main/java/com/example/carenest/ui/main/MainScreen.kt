@@ -41,17 +41,14 @@ import com.example.carenest.viewmodel.MedicineViewModel
 fun MainScreen(
     onItemClick: (Any) -> Unit,
     onNavigateToAddMedicine: () -> Unit = {},
+    dashboardViewModel: DashboardViewModel,
+    familyViewModel: com.example.carenest.viewmodel.FamilyViewModel,
+    profileViewModel: com.example.carenest.viewmodel.ProfileViewModel,
+    medicineViewModel: MedicineViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var openedCommunityGroup by remember { mutableStateOf<CommunityGroup?>(null) }
-
-    val context = LocalContext.current
-    val application = context.applicationContext as CareNestApplication
-    val dashboardViewModel: DashboardViewModel = viewModel(
-        factory = DashboardViewModelFactory(application.dashboardApi, application.dataStoreManager)
-    )
-    val medicineViewModel: MedicineViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -106,10 +103,19 @@ fun MainScreen(
     ) { paddingValues ->
         Surface(modifier = modifier.padding(paddingValues)) {
             when (selectedTab) {
-                0 -> DashboardScreen(viewModel = dashboardViewModel)
-                1 -> Text("Gia đình Screen", modifier = Modifier.padding(16.dp))
+                0 -> com.example.carenest.ui.main.HomeDashboardScreen(
+                    viewModel = dashboardViewModel,
+                    onNavigateToMedicine = {},
+                    onNavigateToAppointment = {},
+                    onNavigateToVaccine = {},
+                    onNavigateToTask = {}
+                )
+                1 -> com.example.carenest.ui.family.FamilyPickerScreen(
+                    viewModel = familyViewModel,
+                    onNavigateToManagement = { /* handle nested nav if needed */ }
+                )
                 2 -> MedicineScreen(viewModel = medicineViewModel, onAddMedicineClick = onNavigateToAddMedicine)
-                3 -> Text("Tin nhắn Screen", modifier = Modifier.padding(16.dp))
+                3 -> Text("Tin nhắn Screen (Đang phát triển)", modifier = Modifier.padding(16.dp))
                 4 -> {
                     val group = openedCommunityGroup
                     if (group == null) {
@@ -118,7 +124,11 @@ fun MainScreen(
                         ChatScreen(groupId = group.id, groupName = group.name, onBack = { openedCommunityGroup = null })
                     }
                 }
-                5 -> Text("Profile Screen", modifier = Modifier.padding(16.dp))
+                5 -> com.example.carenest.ui.medical.HealthProfileDetailScreen(
+                    viewModel = profileViewModel,
+                    memberId = 1,
+                    onBack = { selectedTab = 0 }
+                )
             }
         }
     }

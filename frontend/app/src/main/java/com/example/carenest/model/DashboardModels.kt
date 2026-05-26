@@ -49,3 +49,18 @@ data class Vaccine(
     val date: String,
     val isCompleted: Boolean = false
 )
+
+enum class TaskType {
+    MEDICATION, VACCINATION, APPOINTMENT
+}
+
+data class DashboardTask(
+    val id: String,
+    val type: TaskType,
+    val title: String,
+    val subtitle: String,
+    val icon: String,
+    val iconBgColor: Long,
+    val iconColor: Long,
+    val badge: String? = null
+)
