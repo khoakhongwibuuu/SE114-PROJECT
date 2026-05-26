@@ -91,6 +91,7 @@ dependencies {
 
   // DataStore
   implementation(libs.androidx.datastore.preferences)
+  implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
   // CameraX
   val cameraxVersion = "1.3.3"

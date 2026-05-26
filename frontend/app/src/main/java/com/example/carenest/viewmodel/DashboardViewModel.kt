@@ -43,16 +43,14 @@ class DashboardViewModel(
             _dashboardState.value = DashboardState.Loading
             try {
                 val response = dashboardApi.getDashboard()
-                if (response.isSuccessful && response.body() != null) {
-                    _dashboardState.value = DashboardState.Success(response.body()!!)
+                val dashboard = response.body()?.data
+                _dashboardState.value = if (response.isSuccessful && dashboard != null) {
+                    DashboardState.Success(dashboard)
                 } else {
-                    _dashboardState.value = DashboardState.Error("Không thể tải dữ liệu Dashboard")
+                    DashboardState.Error(response.body()?.message ?: "Không thể tải dữ liệu Dashboard")
                 }
             } catch (e: Exception) {
-                // For demonstration, mock data if network fails
-                _dashboardState.value = DashboardState.Success(getMockData())
-                // Uncomment to show actual error
-                // _dashboardState.value = DashboardState.Error(e.localizedMessage ?: "Lỗi kết nối")
+                _dashboardState.value = DashboardState.Error(e.localizedMessage ?: "Lỗi kết nối")
             }
         }
     }
@@ -60,26 +58,7 @@ class DashboardViewModel(
     fun switchFamily(family: Family) {
         viewModelScope.launch {
             dataStoreManager.saveFamilyId(family.id)
-            // fetchDashboard() is called automatically because we collect familyIdFlow
         }
-    }
-
-    private fun getMockData(): DashboardResponse {
-        return DashboardResponse(
-            families = listOf(Family("1", "Gia đình Nhỏ"), Family("2", "Nhà Nội")),
-            members = listOf(
-                com.example.carenest.model.Member("1", "Bố", null),
-                com.example.carenest.model.Member("2", "Mẹ", null),
-                com.example.carenest.model.Member("3", "Con Gái", null)
-            ),
-            medications = listOf(
-                com.example.carenest.model.Medication("1", "Panadol", "08:00 AM", false),
-                com.example.carenest.model.Medication("2", "Vitamin C", "12:00 PM", true)
-            ),
-            appointments = listOf(
-                com.example.carenest.model.Appointment("1", "BS. Nguyễn Văn A", "20/10/2026", "Khám định kỳ")
-            )
-        )
     }
 }
 
