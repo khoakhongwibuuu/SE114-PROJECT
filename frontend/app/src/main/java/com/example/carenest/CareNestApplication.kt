@@ -13,6 +13,7 @@ class CareNestApplication : Application() {
     lateinit var authApi: AuthApi
     lateinit var dashboardApi: DashboardApi
     lateinit var communityRepository: CommunityRepository
+    lateinit var familyApi: com.example.carenest.network.FamilyApi
 
     override fun onCreate() {
         super.onCreate()
@@ -21,5 +22,6 @@ class CareNestApplication : Application() {
         authApi = retrofit.create(AuthApi::class.java)
         dashboardApi = retrofit.create(DashboardApi::class.java)
         communityRepository = CommunityRepository(retrofit.create(CommunityApi::class.java))
+        familyApi = retrofit.create(com.example.carenest.network.FamilyApi::class.java)
     }
 }
