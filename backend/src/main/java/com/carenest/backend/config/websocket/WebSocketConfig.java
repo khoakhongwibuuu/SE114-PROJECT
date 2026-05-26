@@ -9,11 +9,11 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 /**
- * Cấu hình WebSocket + STOMP Broker cho module Family Chat.
+ * Cáº¥u hÃ¬nh WebSocket + STOMP Broker cho module Family Chat.
  *
- * Luồng tin nhắn:
- *   Client → /app/chat.sendMessage → ChatController.sendMessage()
- *   ChatController → /topic/family/{id} → Tất cả Client đang subscribe
+ * Luá»“ng tin nháº¯n:
+ *   Client â†’ /app/chat.sendMessage â†’ ChatController.sendMessage()
+ *   ChatController â†’ /topic/family/{id} â†’ Táº¥t cáº£ Client Ä‘ang subscribe
  */
 @Configuration
 @EnableWebSocketMessageBroker
@@ -24,24 +24,24 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // Server sẽ broadcast đến các kênh có prefix /topic
+        // Server sáº½ broadcast Ä‘áº¿n cÃ¡c kÃªnh cÃ³ prefix /topic
         registry.enableSimpleBroker("/topic");
 
-        // Client gửi lên địa chỉ /app/...
+        // Client gá»­i lÃªn Ä‘á»‹a chá»‰ /app/...
         registry.setApplicationDestinationPrefixes("/app");
 
-        // Prefix cho tin nhắn tới user cụ thể (dự phòng)
+        // Prefix cho tin nháº¯n tá»›i user cá»¥ thá»ƒ (dá»± phÃ²ng)
         registry.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Endpoint handshake — React Native dùng native WebSocket (ws://)
-        // withSockJS() là fallback cho browser, để ở đây không ảnh hưởng React Native
+        // Endpoint handshake â€” React Native dÃ¹ng native WebSocket (ws://)
+        // withSockJS() lÃ  fallback cho browser, Ä‘á»ƒ á»Ÿ Ä‘Ã¢y khÃ´ng áº£nh hÆ°á»Ÿng React Native
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*");
 
-        // Endpoint riêng cho SockJS (browser/testing tools)
+        // Endpoint riÃªng cho SockJS (browser/testing tools)
         registry.addEndpoint("/ws-sockjs")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
@@ -49,7 +49,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        // Đăng ký JWT interceptor vào đây — đây là "cửa" duy nhất để vào hệ thống chat
+        // ÄÄƒng kÃ½ JWT interceptor vÃ o Ä‘Ã¢y â€” Ä‘Ã¢y lÃ  "cá»­a" duy nháº¥t Ä‘á»ƒ vÃ o há»‡ thá»‘ng chat
         registration.interceptors(jwtChannelInterceptor);
     }
 }

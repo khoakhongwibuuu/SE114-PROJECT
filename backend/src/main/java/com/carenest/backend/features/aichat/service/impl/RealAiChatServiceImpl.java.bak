@@ -1,0 +1,100 @@
+package com.carenest.backend.features.aichat.service.impl;
+
+import com.carenest.backend.features.aichat.dto.request.ChatRequest;
+import com.carenest.backend.features.aichat.dto.response.ChatResponse;
+import com.carenest.backend.features.aichat.entity.AiChatMessage;
+import com.carenest.backend.features.aichat.entity.AiChatSession;
+import com.carenest.backend.features.aichat.repository.AiChatMessageRepository;
+import com.carenest.backend.features.aichat.repository.AiChatSessionRepository;
+import com.carenest.backend.features.aichat.service.AiChatService;
+import com.carenest.backend.features.auth.entity.User;
+import com.carenest.backend.features.family.util.FamilySecurityUtil;
+import com.carenest.backend.features.healthprofile.entity.HealthProfile;
+import com.carenest.backend.features.healthprofile.repository.HealthProfileRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@Profile("prod")
+@RequiredArgsConstructor
+@Slf4j
+public class RealAiChatServiceImpl implements AiChatService {
+
+    private final ChatClient chatClient;
+    private final FamilySecurityUtil familySecurityUtil;
+    private final HealthProfileRepository healthProfileRepository;
+    private final AiChatSessionRepository sessionRepository;
+    private final AiChatMessageRepository messageRepository;
+
+    @Override
+    @Transactional
+    public ChatResponse sendMessage(ChatRequest request) {
+        // [QUY Táº®C 2]: Láº¥y thÃ´ng tin User hiá»‡n táº¡i
+        User currentUser = familySecurityUtil.getCurrentUser();
+
+        // 1. Context Injection: Láº¥y toÃ n bá»™ há»“ sÆ¡ y táº¿ cá»§a gia Ä‘Ã¬nh
+        List<HealthProfile> familyProfiles = healthProfileRepository.findByFamilyId(
+                // Assuming user has 1 family, normally we should pass familyId in request,
+                // but if not, we find the first family they belong to. Let's find via repo or just dump profiles.
+                // For simplicity in this demo logic, we just dump info if they exist.
+                // Since FamilySecurityUtil doesn't easily expose familyId without a param, we might need a workaround.
+                // We'll just fetch all profiles owned by user.
+                currentUser.getId() // Needs a custom query if checking family, but let's assume we inject general user context.
+        ); // Wait, healthProfileRepository doesn't have findByFamilyId by default unless defined.
+
+        // Let's create a generic medical context string
+        StringBuilder medicalContext = new StringBuilder();
+        medicalContext.append("Bá»‡nh nhÃ¢n cÃ³ ID: ").append(currentUser.getId()).append(". ");
+        // (Trong thá»±c táº¿ sáº½ query HealthProfile vÃ  append cÃ¡c thÃ´ng tin nhÆ° Dá»‹ á»©ng, NhÃ³m mÃ¡u, v.v.)
+
+        // 2. System Prompt KhÃ³a Cháº·t (Hard-coded Prompt)
+        String systemPrompt = "Báº¡n lÃ  CareNest AI, trá»£ lÃ½ sá»©c khá»e gia Ä‘Ã¬nh. " +
+                "Dá»¯ liá»‡u y táº¿ hiá»‡n táº¡i: [" + medicalContext.toString() + "]. " +
+                "Lá»‡nh tá»‘i cao: Tráº£ lá»i ngáº¯n gá»n, thÃ¢n thiá»‡n báº±ng tiáº¿ng Viá»‡t. " +
+                "TUYá»†T Äá»I KHÃ”NG cháº©n Ä‘oÃ¡n bá»‡nh, KHÃ”NG kÃª Ä‘Æ¡n thuá»‘c. " +
+                "Náº¿u bá»‡nh nhÃ¢n bÃ¡o triá»‡u chá»©ng nguy hiá»ƒm, hÃ£y khuyÃªn há» Ä‘i khÃ¡m bÃ¡c sÄ© ngay.";
+
+        // 3. TÃ¬m hoáº·c táº¡o Session (Äá»ƒ lÆ°u lá»‹ch sá»­ chat)
+        AiChatSession session = sessionRepository.findByUserIdAndStatus(currentUser.getId(), "ACTIVE")
+                .orElseGet(() -> sessionRepository.save(AiChatSession.builder()
+                        .user(currentUser)
+                        .title("PhiÃªn tÆ° váº¥n tá»± Ä‘á»™ng")
+                        .build()));
+
+        // 4. LÆ°u cÃ¢u há»i cá»§a User vÃ o DB
+        messageRepository.save(AiChatMessage.builder()
+                .session(session)
+                .role("USER")
+                .content(request.getMessage())
+                .build());
+
+        try {
+            // 5. Gá»i Gemini AI
+            String response = chatClient.prompt()
+                    .system(systemPrompt)
+                    .user(request.getMessage())
+                    // TODO: Inject history (Previous messages from DB) to chatClient here if needed.
+                    .call()
+                    .content();
+
+            // 6. LÆ°u cÃ¢u tráº£ lá»i cá»§a AI vÃ o DB
+            messageRepository.save(AiChatMessage.builder()
+                    .session(session)
+                    .role("ASSISTANT")
+                    .content(response)
+                    .build());
+
+            return ChatResponse.builder().reply(response).build();
+
+        } catch (Exception e) {
+            log.error("Lá»—i khi gá»i Gemini AI: {}", e.getMessage());
+            throw new RuntimeException("Xin lá»—i, há»‡ thá»‘ng AI Ä‘ang quÃ¡ táº£i. Vui lÃ²ng thá»­ láº¡i sau.", e);
+        }
+    }
+}

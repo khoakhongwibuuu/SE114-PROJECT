@@ -14,9 +14,9 @@ import org.springframework.context.annotation.Configuration;
         info = @Info(
                 title = "CareNest RESTful API",
                 version = "1.0",
-                description = "Tài liệu API cho ứng dụng quản lý sức khỏe gia đình CareNest.",
+                description = "TÃ i liá»‡u API cho á»©ng dá»¥ng quáº£n lÃ½ sá»©c khá»e gia Ä‘Ã¬nh CareNest.",
                 contact = @Contact(
-                        name = "Tuấn Kiệt & Anh Khoa",
+                        name = "Tuáº¥n Kiá»‡t & Anh Khoa",
                         email = "contact@carenest.com",
                         url = "https://github.com/khoakhongwibuuu/SE114-PROJECT"
                 )
@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Configuration;
 )
 @SecurityScheme(
         name = "bearerAuth",
-        description = "Nhập JWT Token tại đây để truy cập các API bị khóa bảo mật (có ổ khóa). Format: Bearer <token>",
+        description = "Nháº­p JWT Token táº¡i Ä‘Ã¢y Ä‘á»ƒ truy cáº­p cÃ¡c API bá»‹ khÃ³a báº£o máº­t (cÃ³ á»• khÃ³a). Format: Bearer <token>",
         scheme = "bearer",
         type = SecuritySchemeType.HTTP,
         bearerFormat = "JWT",
