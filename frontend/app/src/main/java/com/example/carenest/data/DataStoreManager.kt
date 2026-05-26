@@ -1,45 +1,81 @@
 package com.example.carenest.data
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
-
-class DataStoreManager(private val context: Context) {
+class DataStoreManager(context: Context) {
     companion object {
-        val TOKEN_KEY = stringPreferencesKey("jwt_token")
-        val FAMILY_ID_KEY = stringPreferencesKey("x_family_id")
+        private const val PREFS_NAME = "secure_carenest_session"
+        private const val ACCESS_TOKEN_KEY = "access_token"
+        private const val REFRESH_TOKEN_KEY = "refresh_token"
+        private const val FAMILY_ID_KEY = "x_family_id"
     }
 
-    val tokenFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[TOKEN_KEY]
-    }
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
 
-    val familyIdFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[FAMILY_ID_KEY]
-    }
+    private val encryptedPrefs = EncryptedSharedPreferences.create(
+        context,
+        PREFS_NAME,
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    private val _tokenFlow = MutableStateFlow(encryptedPrefs.getString(ACCESS_TOKEN_KEY, null))
+    val tokenFlow: StateFlow<String?> = _tokenFlow
+
+    private val _refreshTokenFlow = MutableStateFlow(encryptedPrefs.getString(REFRESH_TOKEN_KEY, null))
+    val refreshTokenFlow: StateFlow<String?> = _refreshTokenFlow
+
+    private val _familyIdFlow = MutableStateFlow(encryptedPrefs.getString(FAMILY_ID_KEY, null))
+    val familyIdFlow: StateFlow<String?> = _familyIdFlow
+
+    fun getAccessToken(): String? = encryptedPrefs.getString(ACCESS_TOKEN_KEY, null)
+
+    fun getRefreshToken(): String? = encryptedPrefs.getString(REFRESH_TOKEN_KEY, null)
+
+    fun getFamilyId(): String? = encryptedPrefs.getString(FAMILY_ID_KEY, null)
 
     suspend fun saveToken(token: String) {
-        context.dataStore.edit { preferences ->
-            preferences[TOKEN_KEY] = token
-        }
+        saveAccessToken(token)
+    }
+
+    suspend fun saveAccessToken(token: String) {
+        encryptedPrefs.edit().putString(ACCESS_TOKEN_KEY, token).apply()
+        _tokenFlow.value = token
+    }
+
+    suspend fun saveRefreshToken(token: String) {
+        encryptedPrefs.edit().putString(REFRESH_TOKEN_KEY, token).apply()
+        _refreshTokenFlow.value = token
     }
 
     suspend fun saveFamilyId(familyId: String) {
-        context.dataStore.edit { preferences ->
-            preferences[FAMILY_ID_KEY] = familyId
+        encryptedPrefs.edit().putString(FAMILY_ID_KEY, familyId).apply()
+        _familyIdFlow.value = familyId
+    }
+
+    suspend fun saveSession(accessToken: String, refreshToken: String, familyId: String? = null) {
+        encryptedPrefs.edit()
+            .putString(ACCESS_TOKEN_KEY, accessToken)
+            .putString(REFRESH_TOKEN_KEY, refreshToken)
+            .apply()
+        _tokenFlow.value = accessToken
+        _refreshTokenFlow.value = refreshToken
+        if (!familyId.isNullOrBlank()) {
+            saveFamilyId(familyId)
         }
     }
 
     suspend fun clearAll() {
-        context.dataStore.edit { preferences ->
-            preferences.clear()
-        }
+        encryptedPrefs.edit().clear().apply()
+        _tokenFlow.value = null
+        _refreshTokenFlow.value = null
+        _familyIdFlow.value = null
     }
 }

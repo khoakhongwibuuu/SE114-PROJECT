@@ -32,19 +32,13 @@ class AuthViewModel(
             _authState.value = AuthState.Loading
             try {
                 val response = authApi.login(LoginRequest(email, password))
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body != null) {
-                        dataStoreManager.saveToken(body.token)
-                        if (body.familyId != null) {
-                            dataStoreManager.saveFamilyId(body.familyId)
-                        }
-                        _authState.value = AuthState.Success("Đăng nhập thành công")
-                    } else {
-                        _authState.value = AuthState.Error("Phản hồi không hợp lệ")
-                    }
+                val envelope = response.body()
+                val auth = envelope?.data
+                if (response.isSuccessful && auth != null) {
+                    dataStoreManager.saveSession(auth.accessToken, auth.refreshToken)
+                    _authState.value = AuthState.Success(envelope.message ?: "Đăng nhập thành công")
                 } else {
-                    _authState.value = AuthState.Error("Đăng nhập thất bại: ${response.code()}")
+                    _authState.value = AuthState.Error(envelope?.message ?: "Đăng nhập thất bại: ${response.code()}")
                 }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
@@ -57,10 +51,15 @@ class AuthViewModel(
             _authState.value = AuthState.Loading
             try {
                 val response = authApi.register(RegisterRequest(email, password, fullName, phoneNumber))
+                val envelope = response.body()
+                val auth = envelope?.data
                 if (response.isSuccessful) {
-                    _authState.value = AuthState.Success("Đăng ký thành công, vui lòng đăng nhập")
+                    if (auth != null) {
+                        dataStoreManager.saveSession(auth.accessToken, auth.refreshToken)
+                    }
+                    _authState.value = AuthState.Success(envelope?.message ?: "Đăng ký thành công")
                 } else {
-                    _authState.value = AuthState.Error("Đăng ký thất bại: ${response.code()}")
+                    _authState.value = AuthState.Error(envelope?.message ?: "Đăng ký thất bại: ${response.code()}")
                 }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")

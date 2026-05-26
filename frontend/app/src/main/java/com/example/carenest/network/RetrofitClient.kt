@@ -8,11 +8,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private const val BASE_URL = "http://10.0.2.2:8080" // Emulator localhost, change if needed
+    const val BASE_URL = "http://10.0.2.2:8080"
 
     fun create(dataStoreManager: DataStoreManager): Retrofit {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = HttpLoggingInterceptor.Level.NONE
         }
 
         val authInterceptor = AuthInterceptor(dataStoreManager)
@@ -20,6 +20,7 @@ object RetrofitClient {
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .addInterceptor(authInterceptor)
+            .authenticator(TokenAuthenticator(dataStoreManager, BASE_URL))
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()
