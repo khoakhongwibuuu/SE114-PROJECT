@@ -1,0 +1,41 @@
+package com.example.carenest.network
+
+import com.example.carenest.model.ApiResponse
+import com.example.carenest.model.CommunityGroup
+import com.example.carenest.model.CommunityGroupPreview
+import com.example.carenest.model.CreateGroupPostRequest
+import com.example.carenest.model.GroupPost
+import com.example.carenest.model.PageResponse
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
+
+interface CommunityApi {
+    @GET("/api/v1/communities/my")
+    suspend fun myGroups(@Query("search") search: String? = null): Response<ApiResponse<List<CommunityGroup>>>
+
+    @GET("/api/v1/communities/discover")
+    suspend fun discoverGroups(@Query("search") search: String? = null): Response<ApiResponse<List<CommunityGroup>>>
+
+    @GET("/api/v1/communities/{id}/preview")
+    suspend fun preview(@Path("id") id: Long): Response<ApiResponse<CommunityGroupPreview>>
+
+    @POST("/api/v1/communities/{id}/join")
+    suspend fun join(@Path("id") id: Long): Response<ApiResponse<CommunityGroupPreview>>
+
+    @GET("/api/v1/communities/{id}/posts")
+    suspend fun posts(
+        @Path("id") id: Long,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 30
+    ): Response<ApiResponse<PageResponse<GroupPost>>>
+
+    @POST("/api/v1/communities/{id}/posts")
+    suspend fun sendPost(
+        @Path("id") id: Long,
+        @Body request: CreateGroupPostRequest
+    ): Response<ApiResponse<GroupPost>>
+}
