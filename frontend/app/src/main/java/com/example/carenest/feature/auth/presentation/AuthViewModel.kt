@@ -1,16 +1,18 @@
-﻿package com.example.carenest.feature.auth.presentation
+package com.example.carenest.feature.auth.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.storage.SecureSessionManager
+import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.feature.auth.domain.model.LoginRequest
 import com.example.carenest.feature.auth.domain.model.RegisterRequest
-import com.example.carenest.feature.auth.data.remote.AuthApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed class AuthState {
     object Idle : AuthState()
@@ -31,17 +33,21 @@ class AuthViewModel(
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                val response = authApi.login(LoginRequest(email, password))
+                val response = withContext(Dispatchers.IO) {
+                    authApi.login(LoginRequest(email, password))
+                }
                 val envelope = response.body()
                 val auth = envelope?.data
                 if (response.isSuccessful && auth != null) {
-                    secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
-                    _authState.value = AuthState.Success(envelope.message ?: "ÄÄƒng nháº­p thÃ nh cÃ´ng")
+                    withContext(Dispatchers.IO) {
+                        secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
+                    }
+                    _authState.value = AuthState.Success(envelope.message ?: "Đăng nhập thành công")
                 } else {
-                    _authState.value = AuthState.Error(envelope?.message ?: "ÄÄƒng nháº­p tháº¥t báº¡i: ${response.code()}")
+                    _authState.value = AuthState.Error(envelope?.message ?: "Đăng nhập thất bại: ${response.code()}")
                 }
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Lá»—i káº¿t ná»‘i")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
             }
         }
     }
@@ -50,19 +56,23 @@ class AuthViewModel(
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                val response = authApi.register(RegisterRequest(email, password, fullName, phoneNumber))
+                val response = withContext(Dispatchers.IO) {
+                    authApi.register(RegisterRequest(email, password, fullName, phoneNumber))
+                }
                 val envelope = response.body()
                 val auth = envelope?.data
                 if (response.isSuccessful) {
                     if (auth != null) {
-                        secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
+                        withContext(Dispatchers.IO) {
+                            secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
+                        }
                     }
-                    _authState.value = AuthState.Success(envelope?.message ?: "ÄÄƒng kÃ½ thÃ nh cÃ´ng")
+                    _authState.value = AuthState.Success(envelope?.message ?: "Đăng ký thành công")
                 } else {
-                    _authState.value = AuthState.Error(envelope?.message ?: "ÄÄƒng kÃ½ tháº¥t báº¡i: ${response.code()}")
+                    _authState.value = AuthState.Error(envelope?.message ?: "Đăng ký thất bại: ${response.code()}")
                 }
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Lá»—i káº¿t ná»‘i")
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
             }
         }
     }

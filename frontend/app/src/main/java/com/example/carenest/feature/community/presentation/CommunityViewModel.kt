@@ -1,16 +1,18 @@
-﻿package com.example.carenest.feature.community.presentation
+package com.example.carenest.feature.community.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.feature.community.data.repository.CommunityRepository
 import com.example.carenest.feature.community.domain.model.CommunityGroup
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class CommunityUiState(
     val isLoading: Boolean = true,
@@ -50,11 +52,13 @@ class CommunityViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(joiningGroupId = group.id, error = null)
             try {
-                val preview = repository.join(group.id)
+                val preview = withContext(Dispatchers.IO) {
+                    repository.join(group.id)
+                }
                 val joinedGroup = group.copy(
                     joined = true,
                     memberCount = preview.memberCount,
-                    latestMessage = group.latestMessage ?: "NhÃ³m vá»«a Ä‘Æ°á»£c táº¡o"
+                    latestMessage = group.latestMessage ?: "Nhóm vừa được tạo"
                 )
                 _uiState.value = _uiState.value.copy(
                     joiningGroupId = null,
@@ -67,7 +71,7 @@ class CommunityViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     joiningGroupId = null,
-                    error = e.localizedMessage ?: "KhÃ´ng thá»ƒ tham gia nhÃ³m"
+                    error = e.localizedMessage ?: "Không thể tham gia nhóm"
                 )
             }
         }
@@ -76,8 +80,13 @@ class CommunityViewModel(
     private suspend fun loadGroups(search: String) {
         _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         try {
-            val mine = repository.myGroups(search.ifBlank { null })
-            val discover = repository.discoverGroups(search.ifBlank { null })
+            val query = search.ifBlank { null }
+            val mine = withContext(Dispatchers.IO) {
+                repository.myGroups(query)
+            }
+            val discover = withContext(Dispatchers.IO) {
+                repository.discoverGroups(query)
+            }
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 myGroups = mine,
@@ -88,7 +97,7 @@ class CommunityViewModel(
                 isLoading = false,
                 myGroups = emptyList(),
                 discoverGroups = emptyList(),
-                error = e.localizedMessage ?: "KhÃ´ng thá»ƒ táº£i danh sÃ¡ch há»™i nhÃ³m"
+                error = e.localizedMessage ?: "Không thể tải danh sách hội nhóm"
             )
         }
     }
@@ -102,6 +111,6 @@ class CommunityViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return CommunityViewModel(repository) as T
         }
-        throw IllegalArgumentException("KhÃ´ng tÃ¬m tháº¥y ViewModel phÃ¹ há»£p")
+        throw IllegalArgumentException("Không tìm thấy ViewModel phù hợp")
     }
 }
