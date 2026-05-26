@@ -1,0 +1,36 @@
+package com.carenest.backend.features.doctorverification.controller;
+
+import com.carenest.backend.core.api.ApiResponse;
+import com.carenest.backend.features.doctorverification.dto.request.SubmitDoctorVerificationRequest;
+import com.carenest.backend.features.doctorverification.dto.response.DoctorVerificationResponse;
+import com.carenest.backend.features.doctorverification.service.DoctorVerificationService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/doctor-verifications")
+@RequiredArgsConstructor
+@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
+public class DoctorVerificationController {
+
+    private final DoctorVerificationService doctorVerificationService;
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<DoctorVerificationResponse> submitRequest(
+            @Valid @RequestBody SubmitDoctorVerificationRequest request) {
+        return ApiResponse.success("Đã gửi hồ sơ xác thực bác sĩ", doctorVerificationService.submitRequest(request));
+    }
+
+    @GetMapping("/me")
+    public ApiResponse<DoctorVerificationResponse> getMyRequest() {
+        return ApiResponse.success(doctorVerificationService.getMyRequest());
+    }
+}

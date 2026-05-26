@@ -1,6 +1,6 @@
 package com.carenest.backend.config.security;
 
-import com.carenest.backend.module.auth.repository.UserRepository;
+import com.carenest.backend.features.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

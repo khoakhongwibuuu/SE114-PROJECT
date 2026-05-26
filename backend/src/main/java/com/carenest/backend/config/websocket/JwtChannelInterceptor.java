@@ -17,9 +17,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 /**
- * Chặn và xác thực JWT Token khi Client gửi gói tin STOMP CONNECT.
- * WebSocket không hỗ trợ HTTP Authorization header tiêu chuẩn,
- * nên token phải được đính vào STOMP Connect Headers.
+ * Cháº·n vÃ  xÃ¡c thá»±c JWT Token khi Client gá»­i gÃ³i tin STOMP CONNECT.
+ * WebSocket khÃ´ng há»— trá»£ HTTP Authorization header tiÃªu chuáº©n,
+ * nÃªn token pháº£i Ä‘Æ°á»£c Ä‘Ã­nh vÃ o STOMP Connect Headers.
  */
 @Slf4j
 @Component
@@ -34,25 +34,25 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        // Chỉ kiểm tra khi Client gửi gói CONNECT
+        // Chá»‰ kiá»ƒm tra khi Client gá»­i gÃ³i CONNECT
         if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
             String authHeader = accessor.getFirstNativeHeader("Authorization");
 
-            // Bước 1: Kiểm tra header
+            // BÆ°á»›c 1: Kiá»ƒm tra header
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                log.warn("[WS] CONNECT bị từ chối: Thiếu hoặc sai format Authorization header.");
+                log.warn("[WS] CONNECT bá»‹ tá»« chá»‘i: Thiáº¿u hoáº·c sai format Authorization header.");
                 throw new AccessDeniedException("Unauthorized WebSocket connection: Missing token.");
             }
 
-            // Bước 2: Bóc JWT
+            // BÆ°á»›c 2: BÃ³c JWT
             String jwt = authHeader.substring(7);
 
-            // Bước 3: Lấy username (email) từ token
+            // BÆ°á»›c 3: Láº¥y username (email) tá»« token
             String username;
             try {
                 username = jwtService.extractUsername(jwt);
             } catch (Exception e) {
-                log.warn("[WS] CONNECT bị từ chối: Không đọc được token — {}", e.getMessage());
+                log.warn("[WS] CONNECT bá»‹ tá»« chá»‘i: KhÃ´ng Ä‘á»c Ä‘Æ°á»£c token â€” {}", e.getMessage());
                 throw new AccessDeniedException("Unauthorized WebSocket connection: Malformed token.");
             }
 
@@ -60,22 +60,22 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                 throw new AccessDeniedException("Unauthorized WebSocket connection: Invalid token payload.");
             }
 
-            // Bước 4: Load user và validate token
+            // BÆ°á»›c 4: Load user vÃ  validate token
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             if (!jwtService.isTokenValid(jwt, userDetails)) {
-                log.warn("[WS] CONNECT bị từ chối cho '{}': Token hết hạn hoặc không hợp lệ.", username);
+                log.warn("[WS] CONNECT bá»‹ tá»« chá»‘i cho '{}': Token háº¿t háº¡n hoáº·c khÃ´ng há»£p lá»‡.", username);
                 throw new AccessDeniedException("Unauthorized WebSocket connection: Token expired or invalid.");
             }
 
-            // Bước 5: Gán Authentication vào STOMP session
-            // Từ đây @AuthenticationPrincipal trong @MessageMapping sẽ hoạt động
+            // BÆ°á»›c 5: GÃ¡n Authentication vÃ o STOMP session
+            // Tá»« Ä‘Ã¢y @AuthenticationPrincipal trong @MessageMapping sáº½ hoáº¡t Ä‘á»™ng
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
             accessor.setUser(authToken);
             SecurityContextHolder.getContext().setAuthentication(authToken);
 
-            log.info("[WS] CONNECT thành công: user='{}'", username);
+            log.info("[WS] CONNECT thÃ nh cÃ´ng: user='{}'", username);
         }
 
         return message;
