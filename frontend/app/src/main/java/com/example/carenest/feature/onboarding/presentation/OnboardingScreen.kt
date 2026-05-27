@@ -44,6 +44,11 @@ import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
 import kotlinx.coroutines.launch
 
+// Legacy RN onboarding colors from colors.ts
+private val OnboardingPrimary = Color(0xFF00629D)
+private val OnboardingOutline = Color(0xFF707882)
+private val OnboardingOutlineVariant = Color(0xFFBFC7D3)
+
 private data class OnboardingSlide(
     val id: String,
     val title: String,
@@ -111,7 +116,7 @@ fun OnboardingScreen(
                 .statusBarsPadding()
                 .padding(top = 16.dp, end = 24.dp)
         ) {
-            Text("Bỏ qua", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF64748B))
+            Text("Bỏ qua", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = OnboardingOutline)
         }
 
         Column(
@@ -140,7 +145,7 @@ fun OnboardingScreen(
                         }
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                colors = ButtonDefaults.buttonColors(containerColor = OnboardingPrimary),
                 shape = RoundedCornerShape(999.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -217,7 +222,7 @@ private fun DotsIndicator(currentIndex: Int, count: Int) {
                     .height(8.dp)
                     .width(if (index == currentIndex) 24.dp else 8.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(if (index == currentIndex) PrimaryBlue else Color(0xFFCBD5E1))
+                    .background(if (index == currentIndex) OnboardingPrimary else OnboardingOutlineVariant)
             )
         }
     }
