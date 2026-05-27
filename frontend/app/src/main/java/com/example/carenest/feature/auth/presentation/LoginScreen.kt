@@ -176,7 +176,7 @@ fun LoginScreen(
                             value = email,
                             onValueChange = { email = it },
                             placeholder = "email@vi-du.com",
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = LegacyOutline) },
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
                             keyboardType = KeyboardType.Email
                         )
                         AuthField(
@@ -184,13 +184,14 @@ fun LoginScreen(
                             value = password,
                             onValueChange = { password = it },
                             placeholder = "••••••••",
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = LegacyOutline) },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
                             trailingIcon = {
                                 IconButton(onClick = { showPassword = !showPassword }) {
                                     Icon(
                                         if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                         contentDescription = null,
-                                        tint = LegacyOutline
+                                        tint = LegacyOutline,
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             },
@@ -213,7 +214,7 @@ fun LoginScreen(
                         enabled = !isLoading,
                         onClick = { viewModel.login(email, password) },
                         icon = {
-                            Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = Color.White)
+                            Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                         }
                     )
 
@@ -335,6 +336,8 @@ internal fun PrimaryPillButton(
                     color = Color.White,
                     strokeWidth = 2.dp
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             } else {
                 Text(text, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 if (icon != null) {
@@ -388,7 +391,7 @@ internal fun OutlinePillButton(
             containerColor = Color.White,
             contentColor = LegacyOnSurface
         ),
-        border = androidx.compose.foundation.BorderStroke(1.5.dp, LegacyOutlineVariant.copy(alpha = 0.5f)),
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, LegacyOutlineVariant.copy(alpha = 0.31f)),
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp)
