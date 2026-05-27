@@ -1,165 +1,149 @@
 package com.example.carenest.feature.medical.presentation
 
-import android.graphics.Bitmap
-import android.net.Uri
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-import com.example.carenest.core.presentation.theme.TextPrimary
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import kotlinx.coroutines.launch
 
-data class EditableMedicine(
-    var name: String = "",
-    var dosage: String = "",
-    var frequency: String = "1",
-    var duration: String = "7 ngÃ y",
-    var note: String = ""
+private data class EditableMedicine(
+    val name: String,
+    val dosage: String,
+    val frequency: String,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OcrScannerScreen() {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    
-    var ocrState by remember { mutableStateOf("idle") } // idle, scanning, result
-    var clinicName by remember { mutableStateOf("") }
-    var doctorName by remember { mutableStateOf("") }
-    var prescriptionDate by remember { mutableStateOf("") }
-    var medicines by remember { mutableStateOf(listOf<EditableMedicine>()) }
-    var isConfirming by remember { mutableStateOf(false) }
-
-    val scrollState = rememberScrollState()
-
-    val recognizer = remember {
-        TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+fun OcrScannerScreen(
+    onBack: () -> Unit,
+) {
+    var state by remember { mutableStateOf("idle") }
+    var clinicName by remember { mutableStateOf("Phòng khám Đa khoa CareNest") }
+    var doctorName by remember { mutableStateOf("BS. Nguyễn Văn A") }
+    var prescriptionDate by remember { mutableStateOf("25/05/2026") }
+    var medicines by remember {
+        mutableStateOf(
+            listOf(
+                EditableMedicine("Panadol Extra", "1 viên", "2"),
+                EditableMedicine("Vitamin C", "1 viên", "1"),
+            ),
+        )
     }
 
-    fun processImage(image: InputImage) {
-        ocrState = "scanning"
-        recognizer.process(image)
-            .addOnSuccessListener { visionText ->
-                // Basic parsing for demonstration
-                val text = visionText.text
-                clinicName = "PhÃ²ng khÃ¡m Äa khoa CareNest" // Mock parsed data
-                doctorName = "BS. Nguyá»…n VÄƒn A"
-                prescriptionDate = "25/05/2026"
-                
-                val lines = text.split("\n")
-                val foundMeds = mutableListOf<EditableMedicine>()
-                // Giáº£ láº­p bÃ³c tÃ¡ch thuá»‘c tá»« raw text (ML Kit chá»‰ tráº£ raw text)
-                foundMeds.add(EditableMedicine(name = "Panadol Extra", dosage = "1 viÃªn", frequency = "2", note = "Uá»‘ng sau Äƒn"))
-                if (lines.size > 2) {
-                    foundMeds.add(EditableMedicine(name = "Vitamin C", dosage = "1 viÃªn", frequency = "1"))
-                }
-                
-                medicines = foundMeds
-                ocrState = "result"
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8FAFC))
+            .statusBarsPadding(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
             }
-            .addOnFailureListener { e ->
-                ocrState = "idle"
-                Toast.makeText(context, "Lá»—i nháº­n diá»‡n: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap: Bitmap? ->
-        if (bitmap != null) {
-            val image = InputImage.fromBitmap(bitmap, 0)
-            processImage(image)
-        }
-    }
-
-    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        if (uri != null) {
-            try {
-                val image = InputImage.fromFilePath(context, uri)
-                processImage(image)
-            } catch (e: Exception) {
-                Toast.makeText(context, "KhÃ´ng thá»ƒ Ä‘á»c áº£nh", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    Scaffold(
-        containerColor = Color(0xFFF8FAFC),
-        topBar = {
-            TopAppBar(
-                title = { Text("QuÃ©t toa thuá»‘c OCR", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = { /* Go Back */ }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF8FAFC))
+            Text(
+                text = "Quét toa thuốc OCR",
+                color = Color(0xFF0F172A),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
             )
         }
-    ) { paddingValues ->
+
         Column(
             modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
         ) {
-            // Camera Box Placeholder
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(240.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color(0xFF1A1A2E)),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
-                when (ocrState) {
+                when (state) {
                     "scanning" -> {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(color = PrimaryBlue)
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("Äang nháº­n diá»‡n toa thuá»‘c...", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("Đang nhận diện toa thuốc...", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
+
                     "result" -> {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(48.dp))
                             Spacer(modifier = Modifier.height(10.dp))
-                            Text("Nháº­n diá»‡n thÃ nh cÃ´ng!", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text("Nhận diện thành công!", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
                     }
+
                     else -> {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
                                 modifier = Modifier
                                     .size(width = 180.dp, height = 120.dp)
-                                    .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                    .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(8.dp)),
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Icon(Icons.Default.DocumentScanner, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(40.dp))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("DÃ¹ng camera hoáº·c chá»n áº£nh toa thuá»‘c Ä‘á»ƒ AI trÃ­ch xuáº¥t", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            Text(
+                                "Dùng camera hoặc chọn ảnh toa thuốc để AI trích xuất",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 13.sp,
+                                textAlign = TextAlign.Center,
+                            )
                         }
                     }
                 }
@@ -167,92 +151,106 @@ fun OcrScannerScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (ocrState != "scanning") {
+            if (state != "scanning") {
                 Button(
-                    onClick = { cameraLauncher.launch() },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    onClick = {
+                        state = "scanning"
+                        state = "result"
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                    shape = RoundedCornerShape(999.dp)
+                    shape = RoundedCornerShape(999.dp),
                 ) {
                     Icon(Icons.Default.PhotoCamera, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Chá»¥p trá»±c tiáº¿p", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Chụp trực tiếp", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Button(
-                    onClick = { galleryLauncher.launch("image/*") },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    onClick = { state = "result" },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0F2FE), contentColor = PrimaryBlue),
-                    shape = RoundedCornerShape(999.dp)
+                    shape = RoundedCornerShape(999.dp),
                 ) {
                     Icon(Icons.Default.PhotoLibrary, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (ocrState == "result") "Chá»n áº£nh khÃ¡c" else "Chá»n tá»« thÆ° viá»‡n", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(
+                        if (state == "result") "Chọn ảnh khác" else "Chọn từ thư viện",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                    )
                 }
             }
 
-            if (ocrState == "result") {
+            if (state == "result") {
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Kiá»ƒm tra vÃ  chá»‰nh sá»­a káº¿t quáº£ OCR trÆ°á»›c khi lÆ°u", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Kiểm tra và chỉnh sửa kết quả OCR trước khi lưu",
+                        color = PrimaryBlue,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        OutlinedTextField(value = clinicName, onValueChange = { clinicName = it }, label = { Text("PhÃ²ng khÃ¡m") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = clinicName, onValueChange = { clinicName = it }, label = { Text("Phòng khám") }, modifier = Modifier.fillMaxWidth())
                         Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(value = doctorName, onValueChange = { doctorName = it }, label = { Text("BÃ¡c sÄ©") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = doctorName, onValueChange = { doctorName = it }, label = { Text("Bác sĩ") }, modifier = Modifier.fillMaxWidth())
                         Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(value = prescriptionDate, onValueChange = { prescriptionDate = it }, label = { Text("NgÃ y kÃª toa") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = prescriptionDate, onValueChange = { prescriptionDate = it }, label = { Text("Ngày kê toa") }, modifier = Modifier.fillMaxWidth())
                         Spacer(modifier = Modifier.height(16.dp))
 
                         medicines.forEachIndexed { index, medicine ->
                             HorizontalDivider(color = Color(0xFFE2E8F0))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Thuá»‘c ${index + 1}", fontWeight = FontWeight.Bold, color = TextPrimary)
+                            Text("Thuốc ${index + 1}", fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                             Spacer(modifier = Modifier.height(8.dp))
-                            
                             OutlinedTextField(
                                 value = medicine.name,
-                                onValueChange = { newName ->
-                                    val newMeds = medicines.toMutableList()
-                                    newMeds[index] = newMeds[index].copy(name = newName)
-                                    medicines = newMeds
+                                onValueChange = { newValue ->
+                                    medicines = medicines.mapIndexed { i, current ->
+                                        if (i == index) current.copy(name = newValue) else current
+                                    }
                                 },
-                                label = { Text("TÃªn thuá»‘c") },
-                                modifier = Modifier.fillMaxWidth()
+                                label = { Text("Tên thuốc") },
+                                modifier = Modifier.fillMaxWidth(),
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 OutlinedTextField(
                                     value = medicine.dosage,
-                                    onValueChange = { newDosage ->
-                                        val newMeds = medicines.toMutableList()
-                                        newMeds[index] = newMeds[index].copy(dosage = newDosage)
-                                        medicines = newMeds
+                                    onValueChange = { newValue ->
+                                        medicines = medicines.mapIndexed { i, current ->
+                                            if (i == index) current.copy(dosage = newValue) else current
+                                        }
                                     },
-                                    label = { Text("Liá»u dÃ¹ng") },
-                                    modifier = Modifier.weight(1f)
+                                    label = { Text("Liều dùng") },
+                                    modifier = Modifier.weight(1f),
                                 )
                                 OutlinedTextField(
                                     value = medicine.frequency,
-                                    onValueChange = { newFreq ->
-                                        val newMeds = medicines.toMutableList()
-                                        newMeds[index] = newMeds[index].copy(frequency = newFreq)
-                                        medicines = newMeds
+                                    onValueChange = { newValue ->
+                                        medicines = medicines.mapIndexed { i, current ->
+                                            if (i == index) current.copy(frequency = newValue) else current
+                                        }
                                     },
-                                    label = { Text("Sá»‘ láº§n/ngÃ y") },
-                                    modifier = Modifier.weight(1f)
+                                    label = { Text("Số lần/ngày") },
+                                    modifier = Modifier.weight(1f),
                                 )
                             }
                             Spacer(modifier = Modifier.height(16.dp))
@@ -262,29 +260,19 @@ fun OcrScannerScreen() {
 
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
-                    onClick = {
-                        isConfirming = true
-                        coroutineScope.launch {
-                            kotlinx.coroutines.delay(1000)
-                            isConfirming = false
-                            Toast.makeText(context, "ÄÃ£ lÆ°u toa thuá»‘c", Toast.LENGTH_SHORT).show()
-                            // Go back
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    onClick = onBack,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                     shape = RoundedCornerShape(999.dp),
-                    enabled = !isConfirming
                 ) {
-                    if (isConfirming) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                    } else {
-                        Icon(Icons.Default.Check, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("XÃ¡c nháº­n vÃ  lÆ°u vÃ o há»‡ thá»‘ng", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    }
+                    Icon(Icons.Default.Check, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Xác nhận và lưu vào hệ thống", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 }
             }
+
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
