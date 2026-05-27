@@ -2,6 +2,7 @@ package com.example.carenest.feature.dashboard.presentation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -227,7 +228,6 @@ fun DashboardScreen(
                                 FamilyRow(
                                     family = family,
                                     active = family.id == currentFamilyId,
-                                    memberCount = data.members.size,
                                     onClick = {
                                         viewModel.switchFamily(family)
                                         selectedMemberId = null
@@ -320,7 +320,7 @@ private fun DashboardHeader(
 @Composable
 private fun GreetingSection() {
     Text(
-        text = "Xin chào, bạn!",
+        text = "Xin chào, bạn!", // TODO: Replace with user?.fullName when available
         fontSize = 26.sp,
         fontWeight = FontWeight.ExtraBold,
         color = Color(0xFF1E293B),
@@ -541,6 +541,10 @@ private fun HeroStat(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White.copy(alpha = 0.2f))
+            .then(
+                Modifier
+                    .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+            )
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -615,17 +619,18 @@ private fun TaskRow(
                 )
             }
             if (badge != null) {
+                // Badge colors extracted 1:1 from legacy RN HomeDashboardScreen.tsx
                 val bg = when {
-                    badge.contains("Hôm nay", ignoreCase = true) -> Color(0xFFDBEAFE)
-                    badge.contains("Ngày mai", ignoreCase = true) -> Color(0xFFF3E8FF)
-                    badge.contains("Ngày kia", ignoreCase = true) -> Color(0xFFFEE2E2)
+                    badge.contains("Hôm nay", ignoreCase = true) -> Color(0xFFFEE2E2)
+                    badge.contains("Ngày mai", ignoreCase = true) -> Color(0xFFFFEDD5)
+                    badge.contains("Ngày kia", ignoreCase = true) -> Color(0xFFECFDF5)
                     badge.contains("ĐÃ UỐNG") -> Color(0xFFF0FDF4)
                     else -> Color(0xFFEEF2FF)
                 }
                 val fg = when {
-                    badge.contains("Hôm nay", ignoreCase = true) -> Color(0xFF1D4ED8)
-                    badge.contains("Ngày mai", ignoreCase = true) -> Color(0xFF7C3AED)
-                    badge.contains("Ngày kia", ignoreCase = true) -> Color(0xFFDC2626)
+                    badge.contains("Hôm nay", ignoreCase = true) -> Color(0xFFEF4444)
+                    badge.contains("Ngày mai", ignoreCase = true) -> Color(0xFFF97316)
+                    badge.contains("Ngày kia", ignoreCase = true) -> Color(0xFF10B981)
                     badge.contains("ĐÃ UỐNG") -> Color(0xFF16A34A)
                     else -> Color(0xFF4F46E5)
                 }
@@ -695,7 +700,6 @@ private fun AiAdvisorCard(summary: String) {
 private fun FamilyRow(
     family: Family,
     active: Boolean,
-    memberCount: Int,
     onClick: () -> Unit,
 ) {
     Row(
@@ -716,7 +720,7 @@ private fun FamilyRow(
                 color = if (active) PrimaryBlue else Color(0xFF1E293B),
             )
             Text(
-                text = "$memberCount thành viên • Thành viên",
+                text = "${family.memberCount} thành viên • ${family.role}",
                 fontSize = 12.sp,
                 color = Color(0xFF64748B),
             )
