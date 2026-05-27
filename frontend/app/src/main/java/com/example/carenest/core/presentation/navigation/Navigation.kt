@@ -65,6 +65,8 @@ fun MainNavigation() {
           LoginScreen(
             viewModel = authViewModel,
             onNavigateToRegister = { backStack.add(Register) },
+            viewModel = authViewModel,
+            onNavigateToRegister = { backStack.add(Register) },
             onLoginSuccess = { 
                 backStack.clear()
                 backStack.add(MainDashboard) 
@@ -84,6 +86,13 @@ fun MainNavigation() {
               onNavigateToMedicineSchedule = { backStack.add(MedicineSchedule) },
               onNavigateToAddMedicineSchedule = { backStack.add(AddMedicineSchedule) },
               onNavigateToOcrScanner = { backStack.add(OcrScanner) },
+              onLogout = {
+                  scope.launch {
+                      application.secureSessionManager.logout()
+                      backStack.clear()
+                      backStack.add(Login)
+                  }
+              },
               modifier = Modifier
           )
         }
