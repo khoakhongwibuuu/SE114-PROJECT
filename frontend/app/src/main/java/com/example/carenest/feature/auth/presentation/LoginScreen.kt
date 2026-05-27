@@ -1,45 +1,93 @@
-﻿package com.example.carenest.feature.auth.presentation
+package com.example.carenest.feature.auth.presentation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.carenest.core.presentation.theme.PrimaryBlue
-import com.example.carenest.core.presentation.theme.PrimaryLight
-import com.example.carenest.core.presentation.theme.TextPrimary
-import com.example.carenest.core.presentation.theme.TextSecondary
-import com.example.carenest.feature.auth.presentation.AuthState
-import com.example.carenest.feature.auth.presentation.AuthViewModel
+import com.example.carenest.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+internal val LegacyPrimary = Color(0xFF00629D)
+internal val LegacyPrimaryContainer = Color(0xFF42A5F5)
+internal val LegacyTertiaryContainer = Color(0xFF57A1FF)
+internal val LegacyBackground = Color(0xFFF7FAFE)
+internal val LegacySurface = Color(0xFFFFFFFF)
+internal val LegacySurfaceHighest = Color(0xFFE0E3E7)
+internal val LegacyOnSurface = Color(0xFF181C1F)
+internal val LegacyOnSurfaceVariant = Color(0xFF404751)
+internal val LegacyOutline = Color(0xFF707882)
+internal val LegacyOutlineVariant = Color(0xFFBFC7D3)
+internal val LegacyError = Color(0xFFBA1A1A)
+
 @Composable
 fun LoginScreen(
     viewModel: AuthViewModel,
     onNavigateToRegister: () -> Unit,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var showPassword by remember { mutableStateOf(false) }
+    var googleDialog by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
-    val scrollState = rememberScrollState()
+    val isLoading = authState is AuthState.Loading
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
@@ -48,128 +96,309 @@ fun LoginScreen(
         }
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        Column(
+    if (googleDialog) {
+        AlertDialog(
+            onDismissRequest = { googleDialog = false },
+            confirmButton = {
+                TextButton(onClick = { googleDialog = false }) {
+                    Text("Đóng")
+                }
+            },
+            title = { Text("Sắp ra mắt") },
+            text = { Text("Đăng nhập bằng Google sẽ được bổ sung trong phiên bản tiếp theo.") }
+        )
+    }
+
+    Scaffold(containerColor = LegacyBackground) { paddingValues ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(LegacyBackground)
+                .windowInsetsPadding(WindowInsets.ime)
                 .padding(paddingValues)
-                .verticalScroll(scrollState)
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = androidx.compose.ui.res.painterResource(id = com.example.carenest.R.drawable.carenest_logo_full),
-                contentDescription = "Logo",
-                modifier = Modifier.size(140.dp).padding(top = 32.dp),
-                contentScale = androidx.compose.ui.layout.ContentScale.Fit
+            Box(
+                modifier = Modifier
+                    .size(300.dp)
+                    .align(Alignment.TopEnd)
+                    .offset(x = 60.dp, y = (-30).dp)
+                    .clip(CircleShape)
+                    .background(LegacyPrimaryContainer.copy(alpha = 0.12f))
             )
-            // Text CARENEST removed as it is in the logo
+            Box(
+                modifier = Modifier
+                    .size(240.dp)
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 100.dp)
+                    .offset(x = (-60).dp)
+                    .clip(CircleShape)
+                    .background(LegacyTertiaryContainer.copy(alpha = 0.10f))
+            )
 
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = "ÄÄƒng nháº­p",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "ChÃ o má»«ng báº¡n quay trá»Ÿ láº¡i",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = TextSecondary
-                    ),
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
-            }
-
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 40.dp, bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(bottom = 40.dp)
                 ) {
-                    CustomTextField(
-                        label = "Email",
-                        value = email,
-                        onValueChange = { email = it },
-                        icon = { Icon(Icons.Default.Email, contentDescription = null, tint = TextSecondary) },
-                        keyboardType = KeyboardType.Email
+                    Image(
+                        painter = painterResource(R.drawable.carenest_logo_full),
+                        contentDescription = "CareNest",
+                        modifier = Modifier.size(172.dp),
+                        contentScale = ContentScale.Fit
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    CustomTextField(
-                        label = "Máº­t kháº©u",
-                        value = password,
-                        onValueChange = { password = it },
-                        icon = { Icon(Icons.Default.Lock, contentDescription = null, tint = TextSecondary) },
-                        isPassword = true,
-                        passwordVisible = passwordVisible,
-                        onPasswordVisibilityChange = { passwordVisible = it }
-                    )
-                    
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "QuÃªn máº­t kháº©u?",
-                        color = PrimaryBlue,
-                        fontSize = 12.sp,
-                        modifier = Modifier.align(Alignment.End).clickable { /* TODO */ }
+                        text = "Chào mừng bạn quay trở lại",
+                        fontSize = 14.sp,
+                        color = LegacyOnSurfaceVariant
                     )
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
+                }
 
-                    Button(
-                        onClick = { viewModel.login(email, password) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        enabled = authState !is AuthState.Loading,
-                        shape = RoundedCornerShape(25.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = LegacySurface.copy(alpha = 0.9f)),
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        if (authState is AuthState.Loading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("ÄÄƒng nháº­p", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
+                        AuthField(
+                            label = "Email",
+                            value = email,
+                            onValueChange = { email = it },
+                            placeholder = "email@vi-du.com",
+                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = LegacyOutline) },
+                            keyboardType = KeyboardType.Email
+                        )
+                        AuthField(
+                            label = "Mật khẩu",
+                            value = password,
+                            onValueChange = { password = it },
+                            placeholder = "••••••••",
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = LegacyOutline) },
+                            trailingIcon = {
+                                IconButton(onClick = { showPassword = !showPassword }) {
+                                    Icon(
+                                        if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = null,
+                                        tint = LegacyOutline
+                                    )
+                                }
+                            },
+                            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation()
+                        )
 
-                    if (authState is AuthState.Error) {
-                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = (authState as AuthState.Error).error,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
+                            text = "Quên mật khẩu?",
+                            color = LegacyPrimary,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .align(Alignment.End)
+                                .clickable(onClick = onNavigateToForgotPassword)
+                        )
+
+                        PrimaryPillButton(
+                            text = if (isLoading) "Đang đăng nhập..." else "Đăng nhập",
+                            loading = isLoading,
+                        enabled = !isLoading,
+                        onClick = { viewModel.login(email, password) },
+                        icon = {
+                            Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = Color.White)
+                        }
+                    )
+
+                        if (authState is AuthState.Error) {
+                            Text(
+                                text = (authState as AuthState.Error).error,
+                                color = LegacyError,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+
+                        DividerRow()
+
+                        OutlinePillButton(
+                            text = "Tiếp tục với Google",
+                            onClick = { googleDialog = true },
+                            leading = {
+                                Text(
+                                    text = "G",
+                                    color = Color(0xFF4285F4),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         )
                     }
                 }
+
+                Row(
+                    modifier = Modifier.padding(top = 32.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Chưa có tài khoản?", fontSize = 14.sp, color = LegacyOnSurfaceVariant)
+                    Text(
+                        text = " Đăng ký",
+                        fontSize = 14.sp,
+                        color = LegacyPrimary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable(onClick = onNavigateToRegister)
+                    )
+                }
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(24.dp))
+@Composable
+internal fun AuthField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    visualTransformation: VisualTransformation = VisualTransformation.None
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = LegacyOnSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            leadingIcon = leadingIcon,
+            trailingIcon = trailingIcon,
+            placeholder = {
+                Text(placeholder, color = LegacyOutlineVariant, fontSize = 15.sp)
+            },
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = keyboardType),
+            visualTransformation = visualTransformation,
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LegacySurfaceHighest,
+                unfocusedContainerColor = LegacySurfaceHighest,
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                focusedTextColor = LegacyOnSurface,
+                unfocusedTextColor = LegacyOnSurface,
+                cursorColor = LegacyPrimary
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        )
+    }
+}
 
-            Row {
-                Text("ChÆ°a cÃ³ tÃ i khoáº£n? ", color = TextSecondary)
-                Text(
-                    text = "ÄÄƒng kÃ½",
-                    color = PrimaryBlue,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { onNavigateToRegister() }
+@Composable
+internal fun PrimaryPillButton(
+    text: String,
+    loading: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable (() -> Unit)? = null
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(999.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = LegacyPrimary),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
                 )
+            } else {
+                Text(text, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                if (icon != null) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    icon()
+                }
             }
+        }
+    }
+}
+
+@Composable
+internal fun DividerRow() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(LegacyOutlineVariant.copy(alpha = 0.25f))
+        )
+        Text(
+            text = "HOẶC",
+            fontSize = 11.sp,
+            color = LegacyOutline,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.5.sp
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(LegacyOutlineVariant.copy(alpha = 0.25f))
+        )
+    }
+}
+
+@Composable
+internal fun OutlinePillButton(
+    text: String,
+    onClick: () -> Unit,
+    leading: @Composable (() -> Unit)? = null
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(999.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White,
+            contentColor = LegacyOnSurface
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, LegacyOutlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (leading != null) {
+                leading()
+                Spacer(modifier = Modifier.width(10.dp))
+            }
+            Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = LegacyOnSurface)
         }
     }
 }

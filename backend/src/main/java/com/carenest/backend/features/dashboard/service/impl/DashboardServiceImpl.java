@@ -44,6 +44,13 @@ public class DashboardServiceImpl implements DashboardService {
     @Transactional(readOnly = true)
     @Cacheable(value = "dashboard", key = "#familyId", condition = "#profileId == null && #familyId != null")
     public DashboardResponse getDashboardOverview(Long familyId, Long profileId) {
+        if (familyId == null) {
+            familyId = familySecurityUtil.getDefaultFamilyId();
+        }
+        if (familyId == null) {
+            return DashboardResponse.builder().unreadNotifications(0L).todayTasks(new ArrayList<>()).build();
+        }
+
         // 1. Kiá»ƒm tra báº£o máº­t: User hiá»‡n táº¡i pháº£i thuá»™c familyId nÃ y
         familySecurityUtil.checkUserBelongsToFamily(familyId);
         Long userId = familySecurityUtil.getCurrentUser().getId();

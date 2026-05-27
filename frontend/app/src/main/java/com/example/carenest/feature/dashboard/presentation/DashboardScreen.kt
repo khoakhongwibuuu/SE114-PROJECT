@@ -1,19 +1,53 @@
-﻿package com.example.carenest.feature.dashboard.presentation
+package com.example.carenest.feature.dashboard.presentation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Vaccines
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,247 +56,186 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.R
-import com.example.carenest.feature.dashboard.domain.model.Family
-import com.example.carenest.feature.dashboard.domain.model.Member
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-import com.example.carenest.core.presentation.theme.TextPrimary
-import com.example.carenest.core.presentation.theme.TextSecondary
-import com.example.carenest.feature.dashboard.presentation.DashboardState
-import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
+import com.example.carenest.feature.dashboard.domain.model.Appointment
+import com.example.carenest.feature.dashboard.domain.model.DashboardTask
+import com.example.carenest.feature.dashboard.domain.model.Family
+import com.example.carenest.feature.dashboard.domain.model.Medication
+import com.example.carenest.feature.dashboard.domain.model.Member
+import com.example.carenest.feature.dashboard.domain.model.Vaccine
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+private val HeaderBlue = Color(0xFF0047AB)
+private val PageBackground = Color.White
+private val SectionOverline = Color(0xFF94A3B8)
+private val InactivePill = Color(0xFFF1F5F9)
+private val HeroStart = Color(0xFF007BFF)
+private val HeroEnd = Color(0xFF0047AB)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel) {
+fun DashboardScreen(
+    viewModel: DashboardViewModel,
+    modifier: Modifier = Modifier,
+) {
     val dashboardState by viewModel.dashboardState.collectAsState()
     val currentFamilyId by viewModel.currentFamilyId.collectAsState()
+    val sheetState = rememberModalBottomSheetState()
     var showFamilySheet by remember { mutableStateOf(false) }
     var selectedMemberId by remember { mutableStateOf<String?>(null) }
-    val sheetState = rememberModalBottomSheetState()
     val scrollState = rememberScrollState()
 
-    Scaffold(
-        containerColor = Color.White,
-        topBar = {
-            TopAppBar(
-                title = { },
-                actions = {
-                    IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.Person, contentDescription = "Avatar", tint = TextSecondary)
-                    }
-                    IconButton(onClick = { /* TODO */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notification", tint = TextSecondary)
-                    }
-                },
-                navigationIcon = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .padding(start = 16.dp)
-                            .clickable { showFamilySheet = true }
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.carenest_logo_house),
-                            contentDescription = "Logo",
-                            modifier = Modifier.size(24.dp),
-                            contentScale = ContentScale.Fit
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        val familyName = if (dashboardState is DashboardState.Success) {
-                            val data = (dashboardState as DashboardState.Success).data
-                            data.families.find { it.id == currentFamilyId }?.name ?: "CareNest"
-                        } else "CareNest"
-                        
-                        Text(
-                            text = familyName,
-                            color = PrimaryBlue,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 20.sp
-                        )
-                        Icon(Icons.Default.ExpandMore, contentDescription = "Switch Family", tint = PrimaryBlue)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
-        }
-    ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            when (dashboardState) {
-                is DashboardState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
-                }
-                is DashboardState.Error -> {
-                    Text(
-                        text = (dashboardState as DashboardState.Error).error,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(PageBackground),
+    ) {
+        when (val state = dashboardState) {
+            DashboardState.Loading -> {
+                CircularProgressIndicator(
+                    color = PrimaryBlue,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
+
+            is DashboardState.Error -> {
+                Text(
+                    text = state.error,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(24.dp),
+                )
+            }
+
+            is DashboardState.Success -> {
+                val data = state.data
+                val activeFamilyName = data.families.firstOrNull { it.id == currentFamilyId }?.name
+                    ?: data.families.firstOrNull()?.name
+                    ?: "CareNest"
+                val tasks = buildDashboardTasks(
+                    tasks = data.todayTasks,
+                    medications = data.medications,
+                    appointments = data.appointments,
+                    vaccines = data.vaccines,
+                )
+                val targetLabel = selectedMemberText(selectedMemberId, data.members)
+                val medicineCount = tasks.count { it.icon == Icons.Default.MedicalServices }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .statusBarsPadding()
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 10.dp, bottom = 20.dp)
+                        .background(Color.White),
+                ) {
+                    DashboardHeader(
+                        familyName = activeFamilyName,
+                        unreadCount = data.unreadNotifications.toInt(),
+                        onOpenSwitcher = { showFamilySheet = true },
                     )
-                }
-                is DashboardState.Success -> {
-                    val data = (dashboardState as DashboardState.Success).data
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(scrollState)
-                            .padding(horizontal = 20.dp, vertical = 10.dp)
-                    ) {
-                        // Greeting
-                        Text(
-                            text = "Xin chÃ o, báº¡n!",
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Hy vá»ng gia Ä‘Ã¬nh mÃ¬nh cÃ³ má»™t ngÃ y khá»e máº¡nh.",
-                            fontSize = 14.sp,
-                            color = TextSecondary,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
-                        )
 
-                        // Members
-                        Text(
-                            text = "THÃ€NH VIÃŠN",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF94A3B8),
-                            letterSpacing = 1.2.sp,
-                            modifier = Modifier.padding(bottom = 12.dp)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    GreetingSection()
+
+                    SectionTitle("THÀNH VIÊN")
+                    MemberRow(
+                        members = data.members,
+                        selectedMemberId = selectedMemberId,
+                        onSelect = { selectedMemberId = it },
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    ShortcutRow()
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    HeroCard(
+                        status = if (data.unreadNotifications > 0) "Có việc cần chú ý" else "Mọi thứ đều ổn",
+                        memberCount = data.members.size,
+                        unreadCount = data.unreadNotifications.toInt(),
+                        medicineCount = medicineCount,
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    SectionTitle("HÔM NAY CẦN LÀM", bottomPadding = 0.dp)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (tasks.isEmpty()) {
+                        TaskRow(
+                            icon = Icons.Default.CheckCircle,
+                            iconBg = Color(0xFFEFF6FF),
+                            iconTint = Color(0xFF2563EB),
+                            title = "Chưa có việc nào cần xử lý",
+                            subtitle = "Dashboard sẽ tự cập nhật khi có lịch thuốc, khám hoặc tiêm chủng.",
                         )
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.padding(bottom = 24.dp)
-                        ) {
-                            item {
-                                MemberPill(
-                                    name = "Cáº£ nhÃ ",
-                                    isActive = selectedMemberId == null,
-                                    onClick = { selectedMemberId = null }
-                                )
-                            }
-                            items(data.members) { member ->
-                                MemberPill(
-                                    name = member.name.split(" ").last(),
-                                    isActive = selectedMemberId == member.id,
-                                    onClick = { selectedMemberId = member.id }
-                                )
-                            }
-                        }
-
-                        // Shortcuts
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 24.dp)
-                        ) {
-                            ShortcutCard(icon = Icons.Default.MedicalServices, label = "Lá»‹ch thuá»‘c", iconBg = Color(0xFFE0F2FE), iconTint = Color(0xFF0EA5E9), modifier = Modifier.weight(1f))
-                            ShortcutCard(icon = Icons.Default.CalendarMonth, label = "Lá»‹ch háº¹n", iconBg = Color(0xFFF3E8FF), iconTint = Color(0xFFA855F7), modifier = Modifier.weight(1f))
-                            ShortcutCard(icon = Icons.Default.Vaccines, label = "TiÃªm chá»§ng", iconBg = Color(0xFFE0F7FA), iconTint = Color(0xFF0097A7), modifier = Modifier.weight(1f))
-                        }
-
-                        // Hero Card
-                        HeroCard(memberCount = data.members.size, unreadCount = 2, medCount = data.medications.size)
-
-                        // Tasks
-                        Text(
-                            text = "HÃ”M NAY Cáº¦N LÃ€M",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF94A3B8),
-                            letterSpacing = 1.2.sp,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-                        
-                        if (data.medications.isEmpty() && data.appointments.isEmpty()) {
-                            TaskCard(
-                                icon = Icons.Default.CheckCircle,
-                                title = "ChÆ°a cÃ³ viá»‡c nÃ o cáº§n xá»­ lÃ½",
-                                subtitle = "Dashboard sáº½ tá»± cáº­p nháº­t khi cÃ³ lá»‹ch thuá»‘c, khÃ¡m hoáº·c tiÃªm chá»§ng.",
-                                iconBg = Color(0xFFEFF6FF),
-                                iconTint = Color(0xFF2563EB)
+                    } else {
+                        tasks.forEachIndexed { index, task ->
+                            TaskRow(
+                                icon = task.icon,
+                                iconBg = task.iconBg,
+                                iconTint = task.iconTint,
+                                title = task.title,
+                                subtitle = task.subtitle,
+                                badge = task.badge,
                             )
-                        } else {
-                            data.medications.forEach { med ->
-                                TaskCard(
-                                    icon = Icons.Default.MedicalServices,
-                                    title = med.name,
-                                    subtitle = med.time,
-                                    iconBg = Color(0xFFEFF6FF),
-                                    iconTint = Color(0xFF2563EB),
-                                    badge = if (med.isTaken) "ÄÃƒ Uá»NG" else "CHÆ¯A Uá»NG"
-                                )
+                            if (index != tasks.lastIndex) {
                                 Spacer(modifier = Modifier.height(12.dp))
                             }
                         }
-
-                        // AI Advisor
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0xFFE1F5FE))
-                                .padding(20.dp)
-                        ) {
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.carenest_logo_house),
-                                        contentDescription = "AI",
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("AI Cá» Váº¤N", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = PrimaryBlue)
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "HÃ´m nay cáº£ nhÃ  cÃ³ ${data.medications.size} viá»‡c cáº§n chÃº Ã½. HÃ£y lÆ°u Ã½ chuáº©n bá»‹ Ä‘áº§y Ä‘á»§ nhÃ©!",
-                                    fontSize = 14.sp,
-                                    color = TextPrimary
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(40.dp))
                     }
 
-                    if (showFamilySheet) {
-                        ModalBottomSheet(
-                            onDismissRequest = { showFamilySheet = false },
-                            sheetState = sheetState,
-                            containerColor = Color.White
-                        ) {
-                            Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
-                                Text("Chá»n gia Ä‘Ã¬nh", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = TextPrimary)
-                                Spacer(Modifier.height(16.dp))
-                                data.families.forEach { family ->
-                                    val isActive = family.id == currentFamilyId
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(if (isActive) Color(0xFFEFF6FF) else Color.Transparent)
-                                            .clickable {
-                                                viewModel.switchFamily(family)
-                                                showFamilySheet = false
-                                            }
-                                            .padding(16.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column {
-                                            Text(family.name, fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal, color = if (isActive) PrimaryBlue else TextPrimary, fontSize = 16.sp)
-                                            Text("ThÃ nh viÃªn", color = TextSecondary, fontSize = 12.sp)
-                                        }
-                                        if (isActive) {
-                                            Icon(Icons.Default.Check, contentDescription = "Active", tint = PrimaryBlue)
-                                        }
-                                    }
-                                }
-                                Spacer(Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    AiAdvisorCard(
+                        summary = if (tasks.isEmpty()) {
+                            "Hôm nay chưa có cảnh báo lớn. Bạn có thể kiểm tra lịch thuốc, lịch khám và hỏi CareNest AI nếu cần tra cứu nhanh."
+                        } else {
+                            "Hôm nay $targetLabel có ${tasks.size} việc cần chú ý thực hiện. Hãy lưu ý chuẩn bị đầy đủ nhé!"
+                        },
+                    )
+                }
+
+                if (showFamilySheet) {
+                    ModalBottomSheet(
+                        onDismissRequest = { showFamilySheet = false },
+                        sheetState = sheetState,
+                        containerColor = Color.White,
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+                            Text(
+                                text = "Chọn gia đình",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF1E293B),
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            data.families.forEach { family ->
+                                FamilyRow(
+                                    family = family,
+                                    active = family.id == currentFamilyId,
+                                    memberCount = data.members.size,
+                                    onClick = {
+                                        viewModel.switchFamily(family)
+                                        selectedMemberId = null
+                                        showFamilySheet = false
+                                    },
+                                )
                             }
+                            Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
                 }
@@ -272,144 +245,401 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
 }
 
 @Composable
-fun MemberPill(name: String, isActive: Boolean, onClick: () -> Unit) {
+private fun DashboardHeader(
+    familyName: String,
+    unreadCount: Int,
+    onOpenSwitcher: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier = Modifier.clickable(onClick = onOpenSwitcher),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.carenest_logo_house),
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                contentScale = ContentScale.Fit,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = familyName,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = HeaderBlue,
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(Icons.Default.ExpandMore, contentDescription = null, tint = HeaderBlue)
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFCFE5FF)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    tint = HeaderBlue,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Box {
+                IconButton(onClick = {}) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Thông báo",
+                        tint = Color(0xFF64748B),
+                    )
+                }
+                if (unreadCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 10.dp, end = 10.dp)
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFEF4444)),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GreetingSection() {
+    Text(
+        text = "Xin chào, bạn!",
+        fontSize = 26.sp,
+        fontWeight = FontWeight.ExtraBold,
+        color = Color(0xFF1E293B),
+    )
+    Text(
+        text = "Hy vọng gia đình mình có một ngày khỏe mạnh.",
+        fontSize = 14.sp,
+        color = Color(0xFF64748B),
+        modifier = Modifier.padding(top = 4.dp, bottom = 24.dp),
+    )
+}
+
+@Composable
+private fun SectionTitle(text: String, bottomPadding: Dp = 12.dp) {
+    Text(
+        text = text,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.ExtraBold,
+        color = SectionOverline,
+        letterSpacing = 1.2.sp,
+        modifier = Modifier.padding(bottom = bottomPadding),
+    )
+}
+
+@Composable
+private fun MemberRow(
+    members: List<Member>,
+    selectedMemberId: String?,
+    onSelect: (String?) -> Unit,
+) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        MemberPill(
+            name = "Cả nhà",
+            active = selectedMemberId == null,
+            onClick = { onSelect(null) },
+        )
+        members.forEach { member ->
+            val displayName = member.name.trim().split(" ").lastOrNull()?.ifBlank { "Thành viên" } ?: "Thành viên"
+            MemberPill(
+                name = displayName,
+                active = selectedMemberId == member.id,
+                onClick = {
+                    onSelect(if (selectedMemberId == member.id) null else member.id)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun MemberPill(name: String, active: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(25.dp))
-            .background(if (isActive) PrimaryBlue else Color(0xFFF1F5F9))
+            .background(if (active) HeaderBlue else InactivePill)
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 10.dp)
+            .padding(horizontal = 20.dp, vertical = 10.dp),
     ) {
         Text(
             text = name,
-            color = if (isActive) Color.White else Color(0xFF475569),
+            fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            fontSize = 14.sp
+            color = if (active) Color.White else Color(0xFF475569),
         )
     }
 }
 
 @Composable
-fun ShortcutCard(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, iconBg: Color, iconTint: Color, modifier: Modifier = Modifier) {
+private fun ShortcutRow() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        ShortcutCard(
+            icon = Icons.Default.MedicalServices,
+            label = "Lịch thuốc",
+            iconBg = Color(0xFFE0F2FE),
+            iconTint = Color(0xFF0EA5E9),
+            modifier = Modifier.weight(1f),
+        )
+        ShortcutCard(
+            icon = Icons.Default.CalendarMonth,
+            label = "Lịch hẹn",
+            iconBg = Color(0xFFF3E8FF),
+            iconTint = Color(0xFFA855F7),
+            modifier = Modifier.weight(1f),
+        )
+        ShortcutCard(
+            icon = Icons.Default.Vaccines,
+            label = "Tiêm chủng",
+            iconBg = Color(0xFFE0F7FA),
+            iconTint = Color(0xFF0097A7),
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun ShortcutCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    iconBg: Color,
+    iconTint: Color,
+    modifier: Modifier = Modifier,
+) {
     Card(
+        modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = modifier.aspectRatio(1f)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
                 modifier = Modifier
                     .size(54.dp)
                     .clip(CircleShape)
                     .background(iconBg),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(icon, contentDescription = label, tint = iconTint, modifier = Modifier.size(26.dp))
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E293B),
+            )
         }
     }
 }
 
 @Composable
-fun HeroCard(memberCount: Int, unreadCount: Int, medCount: Int) {
+private fun HeroCard(
+    status: String,
+    memberCount: Int,
+    unreadCount: Int,
+    medicineCount: Int,
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(240.dp)
             .clip(RoundedCornerShape(28.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFF007BFF), Color(0xFF0047AB))))
-            .padding(24.dp)
+            .background(Brush.linearGradient(listOf(HeroStart, HeroEnd)))
+            .padding(24.dp),
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Column {
-                    Text("HÃ´m nay", color = Color(0xB3FFFFFF), fontSize = 14.sp)
-                    Text("CÃ³ viá»‡c cáº§n chÃº Ã½", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(
+                        text = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")).format(Date()),
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 14.sp,
+                    )
+                    Text(
+                        text = status,
+                        color = Color.White,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
                 }
-                Icon(Icons.Default.WbSunny, contentDescription = "Weather", tint = Color(0xCCFFFFFF), modifier = Modifier.size(40.dp))
+                Icon(
+                    Icons.Default.WbSunny,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(40.dp),
+                )
             }
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                GlassModule(icon = Icons.Default.Group, label = "ThÃ nh viÃªn", value = memberCount.toString(), modifier = Modifier.weight(1f))
-                GlassModule(icon = Icons.Default.Notifications, label = "Nháº¯c nhá»Ÿ", value = unreadCount.toString(), modifier = Modifier.weight(1f))
-                GlassModule(icon = Icons.Default.MedicalServices, label = "Thuá»‘c hÃ´m nay", value = medCount.toString(), modifier = Modifier.weight(1f))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                HeroStat(
+                    icon = Icons.Default.Group,
+                    label = "Thành viên",
+                    value = memberCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                HeroStat(
+                    icon = Icons.Default.Notifications,
+                    label = "Nhắc nhở",
+                    value = unreadCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+                HeroStat(
+                    icon = Icons.Default.MedicalServices,
+                    label = "Thuốc hôm nay",
+                    value = medicineCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
 }
 
 @Composable
-fun GlassModule(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String, modifier: Modifier = Modifier) {
+private fun HeroStat(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(Color(0x33FFFFFF))
+            .background(Color.White.copy(alpha = 0.2f))
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
     ) {
-        Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(18.dp))
+        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.height(4.dp))
-        Text(label, color = Color(0xCCFFFFFF), fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        Text(value, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = label,
+            color = Color.White.copy(alpha = 0.8f),
+            fontSize = 9.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+        )
+        Text(
+            text = value,
+            color = Color.White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
+private data class DashboardTaskUi(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val iconBg: Color,
+    val iconTint: Color,
+    val title: String,
+    val subtitle: String,
+    val badge: String? = null,
+)
+
 @Composable
-fun TaskCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, iconBg: Color, iconTint: Color, badge: String? = null) {
+private fun TaskRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    title: String,
+    subtitle: String,
+    badge: String? = null,
+) {
     Card(
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(18.dp))
                     .background(iconBg),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, contentDescription = null, tint = iconTint)
+                Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
             }
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(15.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                Text(subtitle, fontSize = 14.sp, color = TextSecondary)
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E293B),
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 13.sp,
+                    color = Color(0xFF64748B),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
             }
             if (badge != null) {
+                val bg = when {
+                    badge.contains("Hôm nay", ignoreCase = true) -> Color(0xFFDBEAFE)
+                    badge.contains("Ngày mai", ignoreCase = true) -> Color(0xFFF3E8FF)
+                    badge.contains("Ngày kia", ignoreCase = true) -> Color(0xFFFEE2E2)
+                    badge.contains("ĐÃ UỐNG") -> Color(0xFFF0FDF4)
+                    else -> Color(0xFFEEF2FF)
+                }
+                val fg = when {
+                    badge.contains("Hôm nay", ignoreCase = true) -> Color(0xFF1D4ED8)
+                    badge.contains("Ngày mai", ignoreCase = true) -> Color(0xFF7C3AED)
+                    badge.contains("Ngày kia", ignoreCase = true) -> Color(0xFFDC2626)
+                    badge.contains("ĐÃ UỐNG") -> Color(0xFF16A34A)
+                    else -> Color(0xFF4F46E5)
+                }
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (badge.contains("ÄÃƒ Uá»NG")) Color(0xFFF0FDF4) else Color(0xFFEFF6FF))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(bg)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
                 ) {
                     Text(
-                        badge,
-                        fontSize = 10.sp,
+                        text = badge,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (badge.contains("ÄÃƒ Uá»NG")) Color(0xFF16A34A) else Color(0xFF2563EB)
+                        color = fg,
                     )
                 }
             } else {
@@ -417,4 +647,174 @@ fun TaskCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: Strin
             }
         }
     }
+}
+
+@Composable
+private fun AiAdvisorCard(summary: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFE1F5FE)),
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(HeaderBlue),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.carenest_logo_house),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "AI CỐ VẤN",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = HeaderBlue,
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "\"$summary\"",
+                fontSize = 14.sp,
+                color = Color(0xFF1E293B),
+                lineHeight = 22.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FamilyRow(
+    family: Family,
+    active: Boolean,
+    memberCount: Int,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (active) Color(0xFFEFF6FF) else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            Text(
+                text = family.name,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (active) PrimaryBlue else Color(0xFF1E293B),
+            )
+            Text(
+                text = "$memberCount thành viên • Thành viên",
+                fontSize = 12.sp,
+                color = Color(0xFF64748B),
+            )
+        }
+        if (active) {
+            Icon(Icons.Default.Check, contentDescription = null, tint = PrimaryBlue)
+        }
+    }
+}
+
+private fun buildDashboardTasks(
+    tasks: List<DashboardTask>,
+    medications: List<Medication>,
+    appointments: List<Appointment>,
+    vaccines: List<Vaccine>,
+): List<DashboardTaskUi> {
+    if (tasks.isNotEmpty()) {
+        return tasks.map { task ->
+            when (task.type?.uppercase()) {
+                "MEDICATION" -> DashboardTaskUi(
+                    icon = Icons.Default.MedicalServices,
+                    iconBg = Color(0xFFEFF6FF),
+                    iconTint = Color(0xFF2563EB),
+                    title = task.title,
+                    subtitle = task.dueTime ?: task.description.orEmpty(),
+                    badge = task.description,
+                )
+
+                "APPOINTMENT" -> DashboardTaskUi(
+                    icon = Icons.Default.CalendarMonth,
+                    iconBg = Color(0xFFF0FDF4),
+                    iconTint = Color(0xFF16A34A),
+                    title = task.title,
+                    subtitle = task.dueTime ?: task.description.orEmpty(),
+                    badge = task.description,
+                )
+
+                "VACCINATION" -> DashboardTaskUi(
+                    icon = Icons.Default.Vaccines,
+                    iconBg = Color(0xFFFFF7ED),
+                    iconTint = Color(0xFFEA580C),
+                    title = task.title,
+                    subtitle = task.dueTime ?: task.description.orEmpty(),
+                    badge = task.description,
+                )
+
+                else -> DashboardTaskUi(
+                    icon = Icons.Default.CheckCircle,
+                    iconBg = Color(0xFFEFF6FF),
+                    iconTint = Color(0xFF2563EB),
+                    title = task.title,
+                    subtitle = task.description.orEmpty(),
+                )
+            }
+        }
+    }
+
+    val fallback = mutableListOf<DashboardTaskUi>()
+    medications.firstOrNull()?.let {
+        fallback += DashboardTaskUi(
+            icon = Icons.Default.MedicalServices,
+            iconBg = Color(0xFFEFF6FF),
+            iconTint = Color(0xFF2563EB),
+            title = it.name,
+            subtitle = it.time,
+            badge = if (it.isTaken) "ĐÃ UỐNG" else "CHƯA UỐNG",
+        )
+    }
+    appointments.firstOrNull()?.let {
+        fallback += DashboardTaskUi(
+            icon = Icons.Default.CalendarMonth,
+            iconBg = Color(0xFFF0FDF4),
+            iconTint = Color(0xFF16A34A),
+            title = if (it.doctorName.isBlank()) "Lịch hẹn khám" else it.doctorName,
+            subtitle = it.date,
+            badge = it.note,
+        )
+    }
+    vaccines.firstOrNull()?.let {
+        fallback += DashboardTaskUi(
+            icon = Icons.Default.Vaccines,
+            iconBg = Color(0xFFFFF7ED),
+            iconTint = Color(0xFFEA580C),
+            title = it.name,
+            subtitle = it.date,
+            badge = if (it.isCompleted) "ĐÃ TIÊM" else "CẦN THEO DÕI",
+        )
+    }
+    return fallback
+}
+
+private fun selectedMemberText(selectedMemberId: String?, members: List<Member>): String {
+    if (selectedMemberId == null) return "cả nhà"
+    val member = members.firstOrNull { it.id == selectedMemberId } ?: return "thành viên"
+    return member.name
+        .trim()
+        .split(" ")
+        .lastOrNull()
+        ?.lowercase(Locale.forLanguageTag("vi-VN"))
+        ?: "thành viên"
 }

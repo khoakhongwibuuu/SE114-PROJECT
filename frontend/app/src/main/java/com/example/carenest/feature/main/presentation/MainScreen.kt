@@ -137,7 +137,11 @@ fun MainScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                1 -> FamilyFlowScreen(viewModel = dashboardViewModel, modifier = Modifier.fillMaxSize())
+                1 -> FamilyFlowScreen(
+                    viewModel = dashboardViewModel,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
                 2 -> MedicineScreen(
                     viewModel = medicineViewModel,
                     onAddMedicineClick = onNavigateToAddMedicine,
@@ -146,7 +150,10 @@ fun MainScreen(
                     onOcrClick = onNavigateToOcrScanner,
                 )
 
-                3 -> Text("Tin nhắn Screen", modifier = Modifier.padding(16.dp))
+                3 -> ChatHubScreen(
+                    dashboardViewModel = dashboardViewModel,
+                )
+
                 4 -> {
                     val group = openedCommunityGroup
                     if (group == null) {

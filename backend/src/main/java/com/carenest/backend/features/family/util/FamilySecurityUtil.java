@@ -34,14 +34,22 @@ public class FamilySecurityUtil {
         User currentUser = getCurrentUser();
         boolean belongs = familyMemberRepository.findByFamilyIdAndUserId(familyId, currentUser.getId()).isPresent();
         if (!belongs) {
-            throw new AccessDeniedException("Báº¡n khÃ´ng cÃ³ quyá»n truy cáº­p gia Ä‘Ã¬nh nÃ y");
+            throw new AccessDeniedException("Báº¡n khÃ´ng cÃ³ quyá» n truy cáº­p gia Ä‘Ã¬nh nÃ y");
         }
+    }
+
+    public Long getDefaultFamilyId() {
+        User currentUser = getCurrentUser();
+        return familyMemberRepository.findAllByUserId(currentUser.getId()).stream()
+                .findFirst()
+                .map(fm -> fm.getFamily().getId())
+                .orElse(null);
     }
 
     public void checkUserBelongsToHealthProfile(Long profileId) {
         User currentUser = getCurrentUser();
         HealthProfile profile = healthProfileRepository.findById(profileId)
-                .orElseThrow(() -> new IllegalArgumentException("Há»“ sÆ¡ sá»©c khá»e khÃ´ng tá»“n táº¡i"));
+                .orElseThrow(() -> new IllegalArgumentException("Há»“ sÆ¡ sá»©c khá» e khÃ´ng tá»“n táº¡i"));
 
         Long activeFamilyId = FamilyRequestContext.getFamilyId();
         if (activeFamilyId != null
