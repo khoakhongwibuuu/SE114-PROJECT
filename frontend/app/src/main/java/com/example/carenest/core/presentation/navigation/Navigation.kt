@@ -1,4 +1,4 @@
-﻿package com.example.carenest.core.presentation.navigation
+package com.example.carenest.core.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -27,7 +27,15 @@ fun MainNavigation() {
   val context = LocalContext.current
   val application = context.applicationContext as CareNestApplication
   val startDestination = remember {
-    if (application.secureSessionManager.isOnboardingDone()) Login else Onboarding
+    if (application.secureSessionManager.isOnboardingDone()) {
+      if (application.secureSessionManager.getAccessToken()?.isNotBlank() == true) {
+        MainDashboard
+      } else {
+        Login
+      }
+    } else {
+      Onboarding
+    }
   }
   val backStack = rememberNavBackStack(startDestination)
   val scope = rememberCoroutineScope()
