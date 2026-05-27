@@ -57,3 +57,43 @@ data class PageResponse<T>(
     val totalPages: Int = 0,
     val last: Boolean = true
 )
+
+data class Article(
+    val id: Long,
+    val title: String,
+    val content: String,
+    val tags: String? = null,
+    val imageUrl: String? = null,
+    val authorId: Long? = null,
+    val authorName: String? = null,
+    val authorRole: String? = null,
+    val authorAvatarUrl: String? = null,
+    val authorSpecialty: String? = null,
+    val authorHospitalName: String? = null,
+    val authorPrivateGroupId: Long? = null,
+    val authorSpecialtyGroupId: Long? = null,
+    val createdAt: String? = null,
+    val likeCount: Long = 0,
+    val commentCount: Long = 0,
+    val likedByMe: Boolean = false
+)
+
+data class ArticleLikeResponse(
+    val articleId: Long,
+    val likedByMe: Boolean,
+    val likeCount: Long
+)
+
+data class ArticleComment(
+    val id: Long,
+    val articleId: Long,
+    val authorId: Long? = null,
+    val authorName: String? = null,
+    val authorAvatarUrl: String? = null,
+    val content: String,
+    val createdAt: String? = null
+)
+
+data class CreateArticleCommentRequest(
+    val content: String
+)

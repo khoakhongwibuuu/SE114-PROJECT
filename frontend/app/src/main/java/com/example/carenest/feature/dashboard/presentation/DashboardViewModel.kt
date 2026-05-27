@@ -47,10 +47,10 @@ class DashboardViewModel(
                 _dashboardState.value = if (response.isSuccessful && dashboard != null) {
                     DashboardState.Success(dashboard)
                 } else {
-                    DashboardState.Error(response.body()?.message ?: "KhÃ´ng thá»ƒ táº£i dá»¯ liá»‡u Dashboard")
+                    DashboardState.Error(response.body()?.message ?: "Không thể tải dữ liệu trang chủ")
                 }
             } catch (e: Exception) {
-                _dashboardState.value = DashboardState.Error(e.localizedMessage ?: "Lá»—i káº¿t ná»‘i")
+                _dashboardState.value = DashboardState.Error(e.localizedMessage ?: "Lỗi kết nối")
             }
         }
     }

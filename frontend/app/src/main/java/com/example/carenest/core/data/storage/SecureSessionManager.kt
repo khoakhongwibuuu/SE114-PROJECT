@@ -12,6 +12,7 @@ class SecureSessionManager(context: Context) {
         private const val ACCESS_TOKEN_KEY = "access_token"
         private const val REFRESH_TOKEN_KEY = "refresh_token"
         private const val FAMILY_ID_KEY = "x_family_id"
+        private const val ONBOARDING_DONE_KEY = "@carenest_onboarding_done"
     }
 
     private val masterKey = MasterKey.Builder(context)
@@ -40,6 +41,8 @@ class SecureSessionManager(context: Context) {
     fun getRefreshToken(): String? = encryptedPrefs.getString(REFRESH_TOKEN_KEY, null)
 
     fun getFamilyId(): String? = encryptedPrefs.getString(FAMILY_ID_KEY, null)
+
+    fun isOnboardingDone(): Boolean = encryptedPrefs.getString(ONBOARDING_DONE_KEY, null) != null
 
     suspend fun saveToken(token: String) {
         saveAccessToken(token)
@@ -72,8 +75,16 @@ class SecureSessionManager(context: Context) {
         }
     }
 
+    suspend fun completeOnboarding() {
+        encryptedPrefs.edit().putString(ONBOARDING_DONE_KEY, "true").apply()
+    }
+
     suspend fun clearAll() {
+        val onboardingDone = encryptedPrefs.getString(ONBOARDING_DONE_KEY, null)
         encryptedPrefs.edit().clear().apply()
+        if (onboardingDone != null) {
+            encryptedPrefs.edit().putString(ONBOARDING_DONE_KEY, onboardingDone).apply()
+        }
         _tokenFlow.value = null
         _refreshTokenFlow.value = null
         _familyIdFlow.value = null

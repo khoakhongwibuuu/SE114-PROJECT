@@ -16,7 +16,7 @@ sealed interface ChatSocketEvent {
 
 class ChatWebSocketClient(
     private val secureSessionManager: SecureSessionManager,
-    private val webSocketUrl: String = "ws://10.0.2.2:8080/ws"
+    private val webSocketUrl: String = "ws://localhost:8080/ws"
 ) {
     private val disposables = CompositeDisposable()
     private var stompClient: StompClient? = null
