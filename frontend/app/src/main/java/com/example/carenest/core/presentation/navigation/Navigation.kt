@@ -65,8 +65,6 @@ fun MainNavigation() {
           LoginScreen(
             viewModel = authViewModel,
             onNavigateToRegister = { backStack.add(Register) },
-            viewModel = authViewModel,
-            onNavigateToRegister = { backStack.add(Register) },
             onLoginSuccess = { 
                 backStack.clear()
                 backStack.add(MainDashboard) 
