@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.dashboard.domain.model
+package com.example.carenest.feature.dashboard.domain.model
 
 data class DashboardResponse(
     val unreadNotifications: Long = 0,
@@ -20,7 +20,9 @@ data class DashboardTask(
 
 data class Family(
     val id: String,
-    val name: String
+    val name: String,
+    val role: String = "Thành viên",
+    val memberCount: Int = 0
 )
 
 data class Member(
