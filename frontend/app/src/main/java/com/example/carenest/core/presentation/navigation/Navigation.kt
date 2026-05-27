@@ -86,7 +86,7 @@ fun MainNavigation() {
               onNavigateToOcrScanner = { backStack.add(OcrScanner) },
               onLogout = {
                   scope.launch {
-                      application.secureSessionManager.logout()
+                      application.secureSessionManager.clearAll()
                       backStack.clear()
                       backStack.add(Login)
                   }
