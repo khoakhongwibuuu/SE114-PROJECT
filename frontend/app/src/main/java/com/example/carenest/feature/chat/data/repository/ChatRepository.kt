@@ -47,7 +47,7 @@ class ChatRepository(
         return runCatching { gson.fromJson(payload, GroupPost::class.java).toChatMessage(false) }
             .getOrElse {
                 ChatMessage(
-                    id = "raw-${System.currentTimeMillis()}",
+                    id = "raw-${java.util.UUID.randomUUID()}",
                     text = payload,
                     isMe = false,
                     senderName = "Thành viên",
@@ -58,8 +58,8 @@ class ChatRepository(
 
     private fun GroupPost.toChatMessage(isMe: Boolean): ChatMessage {
         return ChatMessage(
-            id = id.toString(),
-            text = content,
+            id = id?.toString() ?: java.util.UUID.randomUUID().toString(),
+            text = content ?: "",
             isMe = isMe,
             senderName = authorName ?: "Thành viên",
             senderRole = authorRole,

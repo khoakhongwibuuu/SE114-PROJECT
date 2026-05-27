@@ -46,7 +46,7 @@ class ChatViewModel(
         if (content.isBlank() || _uiState.value.slowCountdown > 0) return
 
         val optimistic = ChatMessage(
-            id = "local-${System.currentTimeMillis()}",
+            id = "local-${java.util.UUID.randomUUID()}",
             text = content,
             isMe = true,
             senderName = "Tôi",
