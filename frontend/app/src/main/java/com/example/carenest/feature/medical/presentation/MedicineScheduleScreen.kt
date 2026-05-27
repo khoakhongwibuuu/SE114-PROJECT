@@ -1,6 +1,7 @@
 package com.example.carenest.feature.medical.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -256,20 +257,13 @@ private fun ScheduleRow(
                 .background(if (item.taken) PrimaryBlue else Color.Transparent)
                 .then(
                     if (!item.taken) Modifier
-                        .clip(CircleShape)
-                        .background(Color.Transparent) else Modifier,
+                        .border(2.dp, Color(0xFFBFC7D3), CircleShape)
+                    else Modifier,
                 ),
             contentAlignment = Alignment.Center,
         ) {
             if (item.taken) {
                 Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(Color.Transparent),
-                )
             }
         }
 
