@@ -161,14 +161,14 @@ fun RegisterScreen(
                         value = fullName,
                         onValueChange = { fullName = it },
                         placeholder = "Nguyễn Văn A",
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = LegacyOutline) }
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) }
                     )
                     AuthField(
                         label = "Email",
                         value = email,
                         onValueChange = { email = it },
                         placeholder = "email@vi-du.com",
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = LegacyOutline) },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
                         keyboardType = KeyboardType.Email
                     )
                     AuthField(
@@ -176,7 +176,7 @@ fun RegisterScreen(
                         value = phoneNumber,
                         onValueChange = { phoneNumber = it },
                         placeholder = "0901234567",
-                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = LegacyOutline) },
+                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
                         keyboardType = KeyboardType.Phone
                     )
                     AuthField(
@@ -184,13 +184,14 @@ fun RegisterScreen(
                         value = password,
                         onValueChange = { password = it },
                         placeholder = "Tối thiểu 8 ký tự",
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = LegacyOutline) },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
                         trailingIcon = {
                             IconButton(onClick = { showPassword = !showPassword }) {
                                 Icon(
                                     if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                     contentDescription = null,
-                                    tint = LegacyOutline
+                                    tint = LegacyOutline,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         },
@@ -241,7 +242,7 @@ fun RegisterScreen(
                         enabled = agreed && !isLoading,
                         onClick = { viewModel.register(email, password, fullName, phoneNumber) },
                         icon = {
-                            Icon(Icons.Default.PersonAdd, contentDescription = null, tint = Color.White)
+                            Icon(Icons.Default.PersonAdd, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                         }
                     )
 
