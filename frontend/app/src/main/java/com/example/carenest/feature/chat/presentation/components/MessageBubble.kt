@@ -31,6 +31,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Legacy RN uses #1a73e8 for "my" message bubbles and send button
+private val ChatBlueSelf = Color(0xFF1A73E8)
+
 @Composable
 fun MessageBubble(msg: ChatMessage) {
     val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(msg.timestamp))
@@ -79,7 +82,7 @@ fun MessageBubble(msg: ChatMessage) {
                             bottomEnd = if (msg.isMe) 4.dp else 18.dp
                         )
                     )
-                    .background(if (msg.isMe) PrimaryBlue else if (isDoctor) Color(0xFFECFEFF) else Color(0xFFF1F5F9))
+                    .background(if (msg.isMe) ChatBlueSelf else if (isDoctor) Color(0xFFECFEFF) else Color(0xFFF1F5F9))
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 msg.replyPreview?.let {

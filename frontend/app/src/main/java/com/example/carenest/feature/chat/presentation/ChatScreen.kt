@@ -57,6 +57,10 @@ import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.chat.presentation.components.MessageBubble
 
+// Legacy RN chat colors
+private val ChatBlue = Color(0xFF1A73E8)
+private val ChatBackIcon = Color(0xFF0369A1)
+
 @Composable
 fun ChatScreen(
     groupId: Long,
@@ -88,7 +92,7 @@ fun ChatScreen(
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại",
-                    tint = Color(0xFF0F172A),
+                    tint = ChatBackIcon,
                 )
             }
 
@@ -245,7 +249,7 @@ fun ChatScreen(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(if (canSend) PrimaryBlue else Color(0xFFCBD5E1)),
+                        .background(if (canSend) ChatBlue else Color(0xFFCBD5E1)),
                     contentAlignment = Alignment.Center,
                 ) {
                     IconButton(onClick = viewModel::sendMessage, enabled = canSend) {
