@@ -14,6 +14,8 @@ class CareNestApplication : Application() {
     lateinit var dashboardApi: DashboardApi
     lateinit var communityRepository: CommunityRepository
     lateinit var familyApi: com.example.carenest.network.FamilyApi
+    lateinit var appointmentRepository: com.example.carenest.feature.medical.data.repository.AppointmentRepository
+    lateinit var vaccineRepository: com.example.carenest.feature.medical.data.repository.VaccineRepository
 
     override fun onCreate() {
         super.onCreate()
@@ -23,5 +25,7 @@ class CareNestApplication : Application() {
         dashboardApi = retrofit.create(DashboardApi::class.java)
         communityRepository = CommunityRepository(retrofit.create(CommunityApi::class.java))
         familyApi = retrofit.create(com.example.carenest.network.FamilyApi::class.java)
+        appointmentRepository = com.example.carenest.feature.medical.data.repository.AppointmentRepository(retrofit.create(com.example.carenest.feature.medical.data.remote.AppointmentApi::class.java))
+        vaccineRepository = com.example.carenest.feature.medical.data.repository.VaccineRepository(retrofit.create(com.example.carenest.feature.medical.data.remote.VaccineApi::class.java))
     }
 }
