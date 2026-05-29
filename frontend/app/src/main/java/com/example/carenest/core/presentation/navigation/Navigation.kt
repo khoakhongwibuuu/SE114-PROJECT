@@ -94,7 +94,17 @@ fun MainNavigation() {
             )
         }
         entry<MedicalAppointment> {
-            MedicalScreen(
+            val key = it as MedicalAppointment
+            com.example.carenest.feature.appointment.presentation.AppointmentListScreen(
+                profileId = key.profileId,
+                onBack = { backStack.removeLastOrNull() },
+                onAddAppointment = { backStack.add(AddAppointment(key.profileId)) }
+            )
+        }
+        entry<AddAppointment> {
+            val key = it as AddAppointment
+            com.example.carenest.feature.appointment.presentation.AddAppointmentScreen(
+                profileId = key.profileId,
                 onBack = { backStack.removeLastOrNull() }
             )
         }
@@ -129,7 +139,7 @@ fun MainNavigation() {
               onNavigateToOcrScanner = { backStack.add(OcrScanner) },
               onNavigateToAppointment = { backStack.add(AppointmentSchedule) },
               onNavigateToVaccine = { backStack.add(VaccineSchedule) },
-              onNavigateToAppointments = { backStack.add(MedicalAppointment) },
+              onNavigateToAppointments = { backStack.add(MedicalAppointment(0L)) },
               onNavigateToVaccinations = { profileId -> backStack.add(VaccinationTracker(profileId)) },
               onLogout = {
                   scope.launch {
