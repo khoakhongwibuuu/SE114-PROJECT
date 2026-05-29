@@ -1,4 +1,4 @@
-package com.example.carenest.ui.main
+package com.example.carenest.feature.main.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,11 +26,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.R
-import com.example.carenest.model.DashboardTask
-import com.example.carenest.model.Family
-import com.example.carenest.model.Member
-import com.example.carenest.viewmodel.DashboardState
-import com.example.carenest.viewmodel.DashboardViewModel
+import com.example.carenest.feature.dashboard.domain.model.DashboardTask
+import com.example.carenest.feature.dashboard.domain.model.Family
+import com.example.carenest.feature.dashboard.domain.model.Member
+import com.example.carenest.feature.dashboard.presentation.DashboardState
+import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,7 +103,7 @@ fun HomeDashboardScreen(
                     HeroCard(
                         memberCount = dashboard.members.size,
                         unreadCount = state.unreadCount,
-                        medCount = state.tasks.count { it.type == com.example.carenest.model.TaskType.MEDICATION }
+                        medCount = state.tasks.count { it.type == "MEDICATION" }
                     )
                     
                     Spacer(modifier = Modifier.height(24.dp))

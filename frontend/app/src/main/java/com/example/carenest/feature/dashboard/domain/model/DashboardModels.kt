@@ -12,10 +12,15 @@ data class DashboardResponse(
 
 data class DashboardTask(
     val id: String = "",
-    val title: String = "",
-    val description: String? = null,
     val type: String? = null,
-    val dueTime: String? = null
+    val title: String = "",
+    val subtitle: String = "",
+    val description: String? = null,
+    val dueTime: String? = null,
+    val icon: String = "",
+    val iconBgColor: Long = 0xFFFFFFFF,
+    val iconColor: Long = 0xFF000000,
+    val badge: String? = null
 )
 
 data class Family(

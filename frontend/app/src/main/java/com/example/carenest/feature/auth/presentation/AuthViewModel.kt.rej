@@ -1,0 +1,55 @@
+diff a/frontend/app/src/main/java/com/example/carenest/feature/auth/presentation/AuthViewModel.kt b/frontend/app/src/main/java/com/example/carenest/feature/auth/presentation/AuthViewModel.kt	(rejected hunks)
+@@ -36,15 +36,27 @@ class AuthViewModel(
+                 val response = withContext(Dispatchers.IO) {
+                     authApi.login(LoginRequest(email, password))
+                 }
+-                val envelope = response.body()
+-                val auth = envelope?.data
+-                if (response.isSuccessful && auth != null) {
+-                    withContext(Dispatchers.IO) {
+-                        secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
++                if (response.isSuccessful) {
++                    val envelope = response.body()
++                    val auth = envelope?.data
++                    if (auth != null) {
++                        withContext(Dispatchers.IO) {
++                            secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
++                        }
+                     }
+-                    _authState.value = AuthState.Success(envelope.message ?: "─É─âng nhß║¡p th├ánh c├┤ng")
++                    _authState.value = AuthState.Success(envelope?.message ?: "─É─âng nhß║¡p th├ánh c├┤ng")
+                 } else {
+-                    _authState.value = AuthState.Error(envelope?.message ?: "─É─âng nhß║¡p thß║Ñt bß║íi: ${response.code()}")
++                    var errorMessage = "─É─âng nhß║¡p thß║Ñt bß║íi: ${response.code()}"
++                    try {
++                        val errorString = response.errorBody()?.string()
++                        if (errorString != null) {
++                            val jsonObject = org.json.JSONObject(errorString)
++                            if (jsonObject.has("message")) {
++                                errorMessage = jsonObject.getString("message")
++                            }
++                        }
++                    } catch (e: Exception) {}
++                    _authState.value = AuthState.Error(errorMessage)
+                 }
+             } catch (e: Exception) {
+                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lß╗ùi kß║┐t nß╗æi")
+@@ -69,7 +81,17 @@ class AuthViewModel(
+                     }
+                     _authState.value = AuthState.Success(envelope?.message ?: "─É─âng k├╜ th├ánh c├┤ng")
+                 } else {
+-                    _authState.value = AuthState.Error(envelope?.message ?: "─É─âng k├╜ thß║Ñt bß║íi: ${response.code()}")
++                    var errorMessage = "─É─âng k├╜ thß║Ñt bß║íi: ${response.code()}"
++                    try {
++                        val errorString = response.errorBody()?.string()
++                        if (errorString != null) {
++                            val jsonObject = org.json.JSONObject(errorString)
++                            if (jsonObject.has("message")) {
++                                errorMessage = jsonObject.getString("message")
++                            }
++                        }
++                    } catch (e: Exception) {}
++                    _authState.value = AuthState.Error(errorMessage)
+                 }
+             } catch (e: Exception) {
+                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lß╗ùi kß║┐t nß╗æi")
