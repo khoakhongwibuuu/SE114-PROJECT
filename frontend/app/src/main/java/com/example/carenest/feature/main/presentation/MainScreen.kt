@@ -57,6 +57,8 @@ fun MainScreen(
     onNavigateToAppointment: () -> Unit = {},
     onNavigateToVaccine: () -> Unit = {},
     onNavigateToOcrScanner: () -> Unit = {},
+    onNavigateToAppointments: () -> Unit = {},
+    onNavigateToVaccinations: (Long) -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -66,7 +68,7 @@ fun MainScreen(
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
     val dashboardViewModel: DashboardViewModel = viewModel(
-        factory = DashboardViewModelFactory(application.dashboardApi, application.secureSessionManager),
+        factory = DashboardViewModelFactory(application.dashboardApi, application.authApi, application.secureSessionManager),
     )
     val aiChatViewModel: AiChatViewModel = viewModel(
         factory = AiChatViewModelFactory(application.aiChatApi)
@@ -144,8 +146,8 @@ fun MainScreen(
                 0 -> HomeDashboardScreen(
                     viewModel = dashboardViewModel,
                     onNavigateToMedicine = onNavigateToMedicineSchedule,
-                    onNavigateToAppointment = onNavigateToAppointment,
-                    onNavigateToVaccine = onNavigateToVaccine,
+                    onNavigateToAppointment = onNavigateToAppointments,
+                    onNavigateToVaccine = { onNavigateToVaccinations(0L) },
                     onNavigateToTask = {}
                 )
 

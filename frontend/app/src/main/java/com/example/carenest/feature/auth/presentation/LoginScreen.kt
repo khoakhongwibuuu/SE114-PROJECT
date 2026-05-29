@@ -198,15 +198,18 @@ fun LoginScreen(
                             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation()
                         )
 
-                        Text(
-                            text = "Quên mật khẩu?",
-                            color = LegacyPrimary,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .align(Alignment.End)
-                                .clickable(onClick = onNavigateToForgotPassword)
-                        )
+                        TextButton(
+                            onClick = onNavigateToForgotPassword,
+                            modifier = Modifier.align(Alignment.End),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "Quên mật khẩu?",
+                                color = LegacyPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
 
                         PrimaryPillButton(
                             text = if (isLoading) "Đang đăng nhập..." else "Đăng nhập",

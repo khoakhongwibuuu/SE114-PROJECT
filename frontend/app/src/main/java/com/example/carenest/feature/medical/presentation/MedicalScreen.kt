@@ -43,7 +43,9 @@ val dummyMembers = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MedicalScreen() {
+fun MedicalScreen(
+    onBack: () -> Unit = {}
+) {
     var selectedMemberId by remember { mutableStateOf<String?>(dummyMembers.first().id) }
     var facility by remember { mutableStateOf("") }
     var doctor by remember { mutableStateOf("") }
@@ -62,9 +64,9 @@ fun MedicalScreen() {
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Lá»‹ch háº¹n má»›i", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Lịch hẹn mới", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { /* TODO: Go Back */ }) {
+                    IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },

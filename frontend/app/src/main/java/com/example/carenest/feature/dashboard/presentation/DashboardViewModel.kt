@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.storage.SecureSessionManager
-import com.example.carenest.feature.dashboard.domain.model.DashboardResponse
+import com.example.carenest.feature.auth.data.remote.AuthApi
+import com.example.carenest.feature.auth.domain.model.UserInfo
 import com.example.carenest.feature.dashboard.domain.model.Family
 import com.example.carenest.feature.dashboard.data.remote.DashboardApi
+import com.example.carenest.feature.dashboard.domain.model.DashboardResponse
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +30,7 @@ sealed class DashboardState {
 
 class DashboardViewModel(
     private val dashboardApi: DashboardApi,
+    private val authApi: AuthApi,
     private val secureSessionManager: SecureSessionManager
 ) : ViewModel() {
 
@@ -39,6 +43,9 @@ class DashboardViewModel(
     private val _selectedMemberId = MutableStateFlow<String?>(null)
     val selectedMemberId: StateFlow<String?> = _selectedMemberId.asStateFlow()
 
+    private val _currentUser = MutableStateFlow<UserInfo?>(null)
+    val currentUser: StateFlow<UserInfo?> = _currentUser.asStateFlow()
+
     init {
         viewModelScope.launch {
             secureSessionManager.familyIdFlow.collect { id ->
@@ -46,13 +53,28 @@ class DashboardViewModel(
                 fetchDashboard()
             }
         }
+        fetchCurrentUser()
+    }
+
+    fun fetchCurrentUser() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = authApi.getMe()
+                if (response.isSuccessful) {
+                    _currentUser.value = response.body()?.data
+                }
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
     }
 
     fun fetchDashboard() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _dashboardState.value = DashboardState.Loading
             try {
-                val response = dashboardApi.getDashboard()
+                val familyId = _currentFamilyId.value
+                val response = dashboardApi.getDashboard(familyId)
                 val dashboard = response.body()?.data
                 if (response.isSuccessful && dashboard != null) {
                     processDashboardResponse(dashboard)
@@ -141,12 +163,13 @@ class DashboardViewModel(
 
 class DashboardViewModelFactory(
     private val dashboardApi: DashboardApi,
+    private val authApi: AuthApi,
     private val secureSessionManager: SecureSessionManager
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DashboardViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return DashboardViewModel(dashboardApi, secureSessionManager) as T
+            return DashboardViewModel(dashboardApi, authApi, secureSessionManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -72,6 +72,8 @@ import com.example.carenest.feature.dashboard.domain.model.Vaccine
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 private val HeaderBlue = Color(0xFF0047AB)
 private val PageBackground = Color.White
@@ -84,14 +86,28 @@ private val HeroEnd = Color(0xFF0047AB)
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
+    onNavigateToMedicineSchedule: () -> Unit = {},
+    onNavigateToAppointments: () -> Unit = {},
+    onNavigateToVaccinations: (Long) -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val dashboardState by viewModel.dashboardState.collectAsState()
     val currentFamilyId by viewModel.currentFamilyId.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState()
     val sheetState = rememberModalBottomSheetState()
     var showFamilySheet by remember { mutableStateOf(false) }
     var selectedMemberId by remember { mutableStateOf<String?>(null) }
     val scrollState = rememberScrollState()
+
+    val onNavigateToVaccination = {
+        val profileId = currentFamilyId?.toLongOrNull() ?: 1L
+        onNavigateToVaccinations(profileId)
+    }
+    val onNavigateToNotifications = {
+        Toast.makeText(context, "Tính năng thông báo đang được phát triển", Toast.LENGTH_SHORT).show()
+    }
 
     Box(
         modifier = modifier
@@ -130,6 +146,7 @@ fun DashboardScreen(
                 )
                 val targetLabel = selectedMemberText(selectedMemberId, data.members)
                 val medicineCount = tasks.count { it.icon == Icons.Default.MedicalServices }
+                val userName = currentUser?.fullName ?: "bạn"
 
                 Column(
                     modifier = Modifier
@@ -144,11 +161,13 @@ fun DashboardScreen(
                         familyName = activeFamilyName,
                         unreadCount = data.unreadNotifications.toInt(),
                         onOpenSwitcher = { showFamilySheet = true },
+                        onNavigateToProfile = onNavigateToProfile,
+                        onNavigateToNotifications = onNavigateToNotifications,
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    GreetingSection()
+                    GreetingSection(userName = userName)
 
                     SectionTitle("THÀNH VIÊN")
                     MemberRow(
@@ -159,7 +178,11 @@ fun DashboardScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    ShortcutRow()
+                    ShortcutRow(
+                        onNavigateToMedicineSchedule = onNavigateToMedicineSchedule,
+                        onNavigateToAppointments = onNavigateToAppointments,
+                        onNavigateToVaccination = onNavigateToVaccination,
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -249,6 +272,8 @@ private fun DashboardHeader(
     familyName: String,
     unreadCount: Int,
     onOpenSwitcher: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -283,7 +308,8 @@ private fun DashboardHeader(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFCFE5FF)),
+                    .background(Color(0xFFCFE5FF))
+                    .clickable(onClick = onNavigateToProfile),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -295,7 +321,7 @@ private fun DashboardHeader(
             }
             Spacer(modifier = Modifier.width(8.dp))
             Box {
-                IconButton(onClick = {}) {
+                IconButton(onClick = onNavigateToNotifications) {
                     Icon(
                         Icons.Default.Notifications,
                         contentDescription = "Thông báo",
@@ -318,9 +344,9 @@ private fun DashboardHeader(
 }
 
 @Composable
-private fun GreetingSection() {
+private fun GreetingSection(userName: String) {
     Text(
-        text = "Xin chào, bạn!", // TODO: Replace with user?.fullName when available
+        text = "Xin chào, $userName!",
         fontSize = 26.sp,
         fontWeight = FontWeight.ExtraBold,
         color = Color(0xFF1E293B),
@@ -392,7 +418,11 @@ private fun MemberPill(name: String, active: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ShortcutRow() {
+private fun ShortcutRow(
+    onNavigateToMedicineSchedule: () -> Unit,
+    onNavigateToAppointments: () -> Unit,
+    onNavigateToVaccination: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -403,6 +433,7 @@ private fun ShortcutRow() {
             iconBg = Color(0xFFE0F2FE),
             iconTint = Color(0xFF0EA5E9),
             modifier = Modifier.weight(1f),
+            onClick = onNavigateToMedicineSchedule,
         )
         ShortcutCard(
             icon = Icons.Default.CalendarMonth,
@@ -410,6 +441,7 @@ private fun ShortcutRow() {
             iconBg = Color(0xFFF3E8FF),
             iconTint = Color(0xFFA855F7),
             modifier = Modifier.weight(1f),
+            onClick = onNavigateToAppointments,
         )
         ShortcutCard(
             icon = Icons.Default.Vaccines,
@@ -417,6 +449,7 @@ private fun ShortcutRow() {
             iconBg = Color(0xFFE0F7FA),
             iconTint = Color(0xFF0097A7),
             modifier = Modifier.weight(1f),
+            onClick = onNavigateToVaccination,
         )
     }
 }
@@ -427,10 +460,11 @@ private fun ShortcutCard(
     label: String,
     iconBg: Color,
     iconTint: Color,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),

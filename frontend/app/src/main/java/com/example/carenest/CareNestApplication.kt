@@ -22,6 +22,7 @@ class CareNestApplication : Application() {
     lateinit var secureSessionManager: SecureSessionManager
     lateinit var authApi: AuthApi
     lateinit var dashboardApi: DashboardApi
+    lateinit var vaccinationApi: com.example.carenest.feature.health.data.remote.VaccinationApi
     lateinit var communityRepository: CommunityRepository
     lateinit var familyApi: com.example.carenest.network.FamilyApi
     lateinit var chatRepository: ChatRepository
@@ -37,6 +38,7 @@ class CareNestApplication : Application() {
         val mediaApi = retrofit.create(MediaApi::class.java)
         authApi = retrofit.create(AuthApi::class.java)
         dashboardApi = retrofit.create(DashboardApi::class.java)
+        vaccinationApi = retrofit.create(com.example.carenest.feature.health.data.remote.VaccinationApi::class.java)
         communityRepository = CommunityRepository(communityApi)
         familyApi = retrofit.create(com.example.carenest.network.FamilyApi::class.java)
         chatRepository = ChatRepository(communityApi, ChatWebSocketClient(secureSessionManager))
