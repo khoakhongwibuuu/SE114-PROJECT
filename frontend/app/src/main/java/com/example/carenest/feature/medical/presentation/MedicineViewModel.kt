@@ -1,15 +1,63 @@
 package com.example.carenest.feature.medical.presentation
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.feature.medical.domain.model.Medicine
-import com.example.carenest.feature.medical.domain.model.MedicineStatus
+import com.example.carenest.core.data.storage.SecureSessionManager
+import com.example.carenest.feature.medical.data.remote.CabinetMedicineResponse
+import com.example.carenest.feature.medical.data.remote.CheckInRequest
+import com.example.carenest.feature.medical.data.remote.CreateCabinetMedicineRequest
+import com.example.carenest.feature.medical.data.remote.CreateMedicationScheduleRequest
+import com.example.carenest.feature.medical.data.remote.MedicationLogResponse
+import com.example.carenest.feature.medical.data.remote.MedicationScheduleResponse
+import com.example.carenest.feature.medical.data.remote.MedicineApi
+import com.example.carenest.feature.medical.data.remote.UpdateCabinetMedicineRequest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
-class MedicineViewModel : ViewModel() {
+// ── Cabinet State ──────────────────────────────────────────────────────────
+sealed class CabinetState {
+    object Loading : CabinetState()
+    data class Success(
+        val cabinetId: Long,
+        val medicines: List<CabinetMedicineResponse>
+    ) : CabinetState()
+    data class Error(val message: String) : CabinetState()
+}
+
+// ── Daily Schedule State ───────────────────────────────────────────────────
+data class DoseSection(
+    val session: String,   // "MORNING" | "NOON" | "EVENING"
+    val label: String,
+    val items: List<MedicationLogResponse>
+)
+
+sealed class ScheduleState {
+    object Loading : ScheduleState()
+    data class Success(
+        val profileName: String,
+        val sections: List<DoseSection>,
+        val takenCount: Int,
+        val totalCount: Int
+    ) : ScheduleState()
+    data class Error(val message: String) : ScheduleState()
+    object Empty : ScheduleState()
+}
+
+// ── MedicineViewModel ──────────────────────────────────────────────────────
+class MedicineViewModel(
+    private val medicineApi: MedicineApi,
+    private val secureSessionManager: SecureSessionManager
+) : ViewModel() {
+
+    // ── Cabinet ─────────────────────────────────────────────────────────────
+    private val _cabinetState = MutableStateFlow<CabinetState>(CabinetState.Loading)
+    val cabinetState: StateFlow<CabinetState> = _cabinetState.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -17,84 +65,300 @@ class MedicineViewModel : ViewModel() {
     private val _selectedFilter = MutableStateFlow("Tất cả")
     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
 
-    private val _medicines = MutableStateFlow<List<Medicine>>(emptyList())
-    val medicines: StateFlow<List<Medicine>> = _medicines.asStateFlow()
+    // ── Daily Schedule ───────────────────────────────────────────────────────
+    private val _scheduleState = MutableStateFlow<ScheduleState>(ScheduleState.Loading)
+    val scheduleState: StateFlow<ScheduleState> = _scheduleState.asStateFlow()
 
-    private val allMedicines = listOf(
-        Medicine(
-            id = "1",
-            name = "Panadol Extra",
-            quantity = 12,
-            unit = "viên",
-            expiryDate = "15/01/2024",
-            status = MedicineStatus.EXPIRED
-        ),
-        Medicine(
-            id = "2",
-            name = "Amoxicillin",
-            quantity = 8,
-            unit = "gói",
-            expiryDate = "Còn 12 ngày",
-            status = MedicineStatus.EXPIRING_SOON
-        ),
-        Medicine(
-            id = "3",
-            name = "Berberin",
-            quantity = 50,
-            unit = "viên",
-            expiryDate = "HSD: 12/2026",
-            status = MedicineStatus.NORMAL
-        ),
-        Medicine(
-            id = "4",
-            name = "Efferalgan 500mg",
-            quantity = 0,
-            unit = "viên",
-            expiryDate = "Dùng lần cuối: 2 ngày trước",
-            status = MedicineStatus.OUT_OF_STOCK
-        ),
-        Medicine(
-            id = "5",
-            name = "Siro Ho Prospan",
-            quantity = 1,
-            unit = "chai (100ml)",
-            expiryDate = "HSD: 09/2025",
-            status = MedicineStatus.NORMAL
-        )
-    )
+    // ── Long-term schedules (for form data) ─────────────────────────────────
+    private val _schedules = MutableStateFlow<List<MedicationScheduleResponse>>(emptyList())
+    val schedules: StateFlow<List<MedicationScheduleResponse>> = _schedules.asStateFlow()
 
+    private val _isActionLoading = MutableStateFlow(false)
+    val isActionLoading: StateFlow<Boolean> = _isActionLoading.asStateFlow()
+
+    // ── Init ─────────────────────────────────────────────────────────────────
     init {
-        _medicines.value = allMedicines
-    }
-
-    fun onSearchQueryChanged(query: String) {
-        _searchQuery.value = query
-        filterMedicines()
-    }
-
-    fun onFilterSelected(filter: String) {
-        _selectedFilter.value = filter
-        filterMedicines()
-    }
-
-    private fun filterMedicines() {
-        var filteredList = allMedicines
-
-        // Apply Search
-        val query = _searchQuery.value
-        if (query.isNotBlank()) {
-            filteredList = filteredList.filter {
-                it.name.contains(query, ignoreCase = true)
+        viewModelScope.launch {
+            secureSessionManager.familyIdFlow.collect { familyId ->
+                if (familyId != null) {
+                    fetchCabinet(familyId)
+                }
             }
         }
+    }
 
-        // Apply Category Filter
-        filteredList = when (_selectedFilter.value) {
-            "Sắp hết hạn" -> filteredList.filter { it.status == MedicineStatus.EXPIRING_SOON }
-            "Hết hàng" -> filteredList.filter { it.status == MedicineStatus.OUT_OF_STOCK }
-            else -> filteredList // "Tất cả"
+    // ── Cabinet operations ───────────────────────────────────────────────────
+
+    fun fetchCabinet(familyId: String? = null) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _cabinetState.value = CabinetState.Loading
+            try {
+                val fid = familyId ?: secureSessionManager.familyIdFlow.value ?: run {
+                    _cabinetState.value = CabinetState.Error("Chưa chọn gia đình")
+                    return@launch
+                }
+                val response = medicineApi.getCabinet(fid)
+                if (response.isSuccessful) {
+                    val cabinet = response.body()?.data
+                    if (cabinet != null) {
+                        _cabinetState.value = CabinetState.Success(
+                            cabinetId = cabinet.id,
+                            medicines = cabinet.medicines
+                        )
+                    } else {
+                        _cabinetState.value = CabinetState.Success(cabinetId = 0, medicines = emptyList())
+                    }
+                } else {
+                    _cabinetState.value = CabinetState.Error("Không thể tải tủ thuốc")
+                }
+            } catch (e: Exception) {
+                _cabinetState.value = CabinetState.Error(e.localizedMessage ?: "Lỗi kết nối")
+            }
         }
+    }
 
-        _medicines.value = filteredList
+    fun addMedicine(name: String, quantity: Int, unit: String, expiryDate: String?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isActionLoading.value = true
+            try {
+                val currentState = _cabinetState.value as? CabinetState.Success ?: run {
+                    _isActionLoading.value = false
+                    return@launch
+                }
+                var cabinetId = currentState.cabinetId
+                // If cabinet doesn't exist yet, create one
+                if (cabinetId == 0L) {
+                    val fid = secureSessionManager.familyIdFlow.value ?: return@launch
+                    val createResponse = medicineApi.createCabinet(
+                        mapOf("familyId" to fid, "name" to "Tủ thuốc gia đình")
+                    )
+                    cabinetId = createResponse.body()?.data?.id ?: return@launch
+                }
+                medicineApi.addMedicineToCabinet(
+                    cabinetId,
+                    CreateCabinetMedicineRequest(
+                        medicineName = name,
+                        quantity = quantity,
+                        unit = unit,
+                        expiryDate = expiryDate?.ifBlank { null }
+                    )
+                )
+                fetchCabinet()
+            } catch (e: Exception) {
+                // ignore — UI handles toast
+            } finally {
+                _isActionLoading.value = false
+            }
+        }
+    }
+
+    fun updateMedicineQuantity(medicineId: Long, newQuantity: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isActionLoading.value = true
+            try {
+                val cabinetId = (cabinetState.value as? CabinetState.Success)?.cabinetId ?: return@launch
+                medicineApi.updateCabinetMedicine(
+                    cabinetId, medicineId,
+                    UpdateCabinetMedicineRequest(quantity = newQuantity)
+                )
+                fetchCabinet()
+            } catch (e: Exception) {
+                // ignore
+            } finally {
+                _isActionLoading.value = false
+            }
+        }
+    }
+
+    fun deleteMedicine(medicineId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val cabinetId = (cabinetState.value as? CabinetState.Success)?.cabinetId ?: return@launch
+                medicineApi.deleteCabinetMedicine(cabinetId, medicineId)
+                fetchCabinet()
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+    }
+
+    // ── Filter ────────────────────────────────────────────────────────────────
+    fun onSearchQueryChanged(query: String) { _searchQuery.value = query }
+    fun onFilterSelected(filter: String) { _selectedFilter.value = filter }
+
+    fun filteredMedicines(): List<CabinetMedicineResponse> {
+        val all = (cabinetState.value as? CabinetState.Success)?.medicines ?: return emptyList()
+        val q = _searchQuery.value
+        var result = if (q.isBlank()) all else all.filter { it.medicineName.contains(q, ignoreCase = true) }
+        result = when (_selectedFilter.value) {
+            "Sắp hết hạn" -> result.filter { it.isExpiring }
+            "Hết hàng" -> result.filter { it.quantity <= 0 }
+            "Hết hạn" -> result.filter { it.isExpired }
+            else -> result
+        }
+        return result
+    }
+
+    // ── Daily Schedule ────────────────────────────────────────────────────────
+
+    fun fetchTodaySchedule(profileId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _scheduleState.value = ScheduleState.Loading
+            try {
+                val response = medicineApi.getTodayLogs(profileId)
+                if (response.isSuccessful) {
+                    val logs = response.body()?.data ?: emptyList()
+                    if (logs.isEmpty()) {
+                        _scheduleState.value = ScheduleState.Empty
+                        return@launch
+                    }
+                    _scheduleState.value = ScheduleState.Success(
+                        profileName = "Hôm nay",
+                        sections = groupIntosessions(logs),
+                        takenCount = logs.count { it.status == "TAKEN" },
+                        totalCount = logs.size
+                    )
+                } else {
+                    _scheduleState.value = ScheduleState.Error("Không thể tải lịch thuốc")
+                }
+            } catch (e: Exception) {
+                _scheduleState.value = ScheduleState.Error(e.localizedMessage ?: "Lỗi kết nối")
+            }
+        }
+    }
+
+    private fun groupIntosessions(logs: List<MedicationLogResponse>): List<DoseSection> {
+        val morning = mutableListOf<MedicationLogResponse>()
+        val noon = mutableListOf<MedicationLogResponse>()
+        val evening = mutableListOf<MedicationLogResponse>()
+        val fmt = DateTimeFormatter.ofPattern("HH:mm")
+
+        logs.forEach { log ->
+            try {
+                // scheduledTime could be ISO datetime or just HH:mm
+                val timeStr = log.scheduledTime.takeLast(5) // "HH:mm"
+                val time = LocalTime.parse(timeStr, fmt)
+                when {
+                    time.hour < 12 -> morning.add(log)
+                    time.hour < 17 -> noon.add(log)
+                    else -> evening.add(log)
+                }
+            } catch (e: Exception) {
+                morning.add(log) // default fallback
+            }
+        }
+        return buildList {
+            if (morning.isNotEmpty()) add(DoseSection("MORNING", "Buổi sáng", morning))
+            if (noon.isNotEmpty()) add(DoseSection("NOON", "Buổi trưa", noon))
+            if (evening.isNotEmpty()) add(DoseSection("EVENING", "Buổi tối", evening))
+        }
+    }
+
+    fun toggleDose(logId: Long, currentTaken: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // Optimistic update
+            val current = _scheduleState.value as? ScheduleState.Success ?: return@launch
+            _scheduleState.value = current.copy(
+                sections = current.sections.map { section ->
+                    section.copy(items = section.items.map { item ->
+                        if (item.id == logId) item.copy(status = if (!currentTaken) "TAKEN" else "PENDING") else item
+                    })
+                },
+                takenCount = if (!currentTaken) current.takenCount + 1 else current.takenCount - 1
+            )
+            try {
+                medicineApi.checkInDose(logId, CheckInRequest(
+                    status = if (!currentTaken) "TAKEN" else "PENDING"
+                ))
+            } catch (e: Exception) {
+                // Revert on failure — re-fetch
+                val profileId = secureSessionManager.familyIdFlow.value?.toLongOrNull() ?: return@launch
+                fetchTodaySchedule(profileId)
+            }
+        }
+    }
+
+    // ── Long-term schedule (for AddMedicineScheduleScreen form data) ──────────
+
+    fun fetchSchedules(profileId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = medicineApi.getMedicationSchedules(profileId)
+                if (response.isSuccessful) {
+                    _schedules.value = response.body()?.data?.content ?: emptyList()
+                }
+            } catch (e: Exception) {
+                // ignore — form data fallback is empty list
+            }
+        }
+    }
+
+    fun createSchedule(
+        profileId: Long,
+        medicineName: String,
+        dosage: String,
+        timesPerDay: Int,
+        startDate: String,
+        endDate: String,
+        notes: String?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isActionLoading.value = true
+            try {
+                val timeSlots = when (timesPerDay) {
+                    1 -> listOf("08:00")
+                    2 -> listOf("08:00", "20:00")
+                    else -> listOf("08:00", "13:00", "20:00")
+                }
+                val response = medicineApi.createMedicationSchedule(
+                    profileId,
+                    CreateMedicationScheduleRequest(
+                        medicineName = medicineName,
+                        dosage = dosage,
+                        timesPerDay = timesPerDay,
+                        timeSlots = timeSlots,
+                        startDate = startDate,
+                        endDate = endDate,
+                        notes = notes?.ifBlank { null }
+                    )
+                )
+                if (response.isSuccessful) {
+                    onSuccess()
+                } else {
+                    onError(response.body()?.message ?: "Không thể tạo lịch thuốc")
+                }
+            } catch (e: Exception) {
+                onError(e.localizedMessage ?: "Lỗi kết nối")
+            } finally {
+                _isActionLoading.value = false
+            }
+        }
+    }
+
+    fun deleteSchedule(scheduleId: Long, profileId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                medicineApi.deleteMedicationSchedule(scheduleId)
+                fetchTodaySchedule(profileId)
+                fetchSchedules(profileId)
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+    }
+}
+
+class MedicineViewModelFactory(
+    private val medicineApi: MedicineApi,
+    private val secureSessionManager: SecureSessionManager
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MedicineViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MedicineViewModel(medicineApi, secureSessionManager) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
