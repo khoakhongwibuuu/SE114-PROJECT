@@ -22,6 +22,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object VaccineSchedule : NavKey
 @Serializable data class AddVaccine(val profileId: Long, val editVaccineId: Long? = null) : NavKey
 // Our completed vaccination module keys
-@Serializable data object MedicalAppointment : NavKey
+@Serializable data class MedicalAppointment(val profileId: Long) : NavKey
+@Serializable data class AddAppointment(val profileId: Long) : NavKey
 @Serializable data class VaccinationTracker(val profileId: Long) : NavKey
 @Serializable data class AddVaccinationSchedule(val profileId: Long, val vaccineId: Long? = null, val doseId: Long? = null) : NavKey
