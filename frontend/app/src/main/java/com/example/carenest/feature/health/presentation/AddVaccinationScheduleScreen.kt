@@ -171,7 +171,7 @@ fun AddVaccinationScheduleScreen(
                 .padding(horizontal = 24.dp)
         ) {
             Text(
-                if (isEdit) "Cập nhật lại thông tin mũi tiêm đã ghi nhận trong hồ sơ sức khỏe."
+                if (isEdit) "C?p nh?t l?i th�ng tin mui ti�m d� ghi nh?n trong h? so s?c kh?e."
                 else "Ghi nhận từng mũi tiêm cụ thể để theo dõi đầy đủ và chính xác lịch trình phòng bệnh của bé.",
                 color = Color(0xFF64748B),
                 fontSize = 13.sp,
@@ -204,7 +204,7 @@ fun AddVaccinationScheduleScreen(
                             )
                         )
                         
-                        Text("ĐÂY LÀ MŨI THỨ MẤY?", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
+                        Text("��Y L� MUI TH? M?Y?", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
                         Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(1 to "Mũi 1", 2 to "Mũi 2", 3 to "Mũi 3", 4 to "Mũi 4", 99 to "Nhắc lại").forEach { (value, label) ->
                                 val isSelected = selectedDose == value
@@ -232,7 +232,7 @@ fun AddVaccinationScheduleScreen(
                         ) {
                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (isCompleted) Color.White else Color(0xFF64748B), modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Đã tiêm", color = if (isCompleted) Color.White else Color(0xFF475569), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("�� ti�m", color = if (isCompleted) Color.White else Color(0xFF475569), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
                         
                         Row(
@@ -273,7 +273,7 @@ fun AddVaccinationScheduleScreen(
                         onValueChange = { clinicName = it },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        placeholder = { Text("Ví dụ: Trung tâm Tiêm chủng VNVC", color = Color(0xFF94A3B8)) },
+                        placeholder = { Text("V� d?: Trung t�m Ti�m ch?ng VNVC", color = Color(0xFF94A3B8)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedContainerColor = Color(0xFFF1F5F9),
                             focusedContainerColor = Color(0xFFF1F5F9),

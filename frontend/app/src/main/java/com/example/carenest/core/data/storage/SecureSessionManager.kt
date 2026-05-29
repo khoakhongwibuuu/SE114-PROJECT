@@ -13,6 +13,7 @@ class SecureSessionManager(context: Context) {
         private const val REFRESH_TOKEN_KEY = "refresh_token"
         private const val FAMILY_ID_KEY = "x_family_id"
         private const val PROFILE_ID_KEY = "profile_id"
+        private const val ACTIVE_PROFILE_ID_KEY = "active_profile_id"
         private const val ONBOARDING_DONE_KEY = "@carenest_onboarding_done"
     }
 
@@ -37,6 +38,11 @@ class SecureSessionManager(context: Context) {
     private val _familyIdFlow = MutableStateFlow(encryptedPrefs.getString(FAMILY_ID_KEY, null))
     val familyIdFlow: StateFlow<String?> = _familyIdFlow
 
+    private val _activeProfileIdFlow = MutableStateFlow(
+        encryptedPrefs.getLong(ACTIVE_PROFILE_ID_KEY, -1L).takeIf { it > 0 }
+    )
+    val activeProfileIdFlow: StateFlow<Long?> = _activeProfileIdFlow
+
     fun getAccessToken(): String? = encryptedPrefs.getString(ACCESS_TOKEN_KEY, null)
 
     fun getRefreshToken(): String? = encryptedPrefs.getString(REFRESH_TOKEN_KEY, null)
@@ -46,6 +52,8 @@ class SecureSessionManager(context: Context) {
     fun isOnboardingDone(): Boolean = encryptedPrefs.getString(ONBOARDING_DONE_KEY, null) != null
 
     fun getProfileId(): Long? = encryptedPrefs.getLong(PROFILE_ID_KEY, -1L).takeIf { it > 0 }
+
+    fun getActiveProfileId(): Long? = encryptedPrefs.getLong(ACTIVE_PROFILE_ID_KEY, -1L).takeIf { it > 0 }
 
     suspend fun saveToken(token: String) {
         saveAccessToken(token)
@@ -68,6 +76,16 @@ class SecureSessionManager(context: Context) {
 
     fun saveProfileIdSync(profileId: Long) {
         encryptedPrefs.edit().putLong(PROFILE_ID_KEY, profileId).apply()
+    }
+
+    suspend fun saveActiveProfileId(profileId: Long?) {
+        if (profileId == null || profileId <= 0) {
+            encryptedPrefs.edit().remove(ACTIVE_PROFILE_ID_KEY).apply()
+            _activeProfileIdFlow.value = null
+        } else {
+            encryptedPrefs.edit().putLong(ACTIVE_PROFILE_ID_KEY, profileId).apply()
+            _activeProfileIdFlow.value = profileId
+        }
     }
 
     suspend fun saveSession(accessToken: String, refreshToken: String, familyId: String? = null) {
@@ -95,5 +113,6 @@ class SecureSessionManager(context: Context) {
         _tokenFlow.value = null
         _refreshTokenFlow.value = null
         _familyIdFlow.value = null
+        _activeProfileIdFlow.value = null
     }
 }

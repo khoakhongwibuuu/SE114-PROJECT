@@ -62,7 +62,7 @@ class ChatViewModel(
                     _uiState.update { current ->
                         current.copy(
                             error = if (message.contains("slow", ignoreCase = true)) {
-                                "Bạn đang gửi quá nhanh. Vui lòng chờ vài giây."
+                                "B?n dang g?i qu� nhanh. Vui l�ng ch? v�i gi�y."
                             } else {
                                 "Không thể gửi tin nhắn. Vui lòng thử lại."
                             }

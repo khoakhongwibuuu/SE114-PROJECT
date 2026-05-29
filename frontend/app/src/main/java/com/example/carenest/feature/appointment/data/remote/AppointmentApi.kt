@@ -1,6 +1,8 @@
 package com.example.carenest.feature.appointment.data.remote
 
+import com.example.carenest.core.data.network.ApiResponse
 import com.google.gson.annotations.SerializedName
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -25,25 +27,24 @@ data class CreateAppointmentRequest(
     @SerializedName("healthProfileId") val healthProfileId: Long,
     @SerializedName("hospitalName") val hospitalName: String,
     @SerializedName("doctorName") val doctorName: String,
-    @SerializedName("appointmentDate") val appointmentDate: String, // ISO8601
+    @SerializedName("appointmentDate") val appointmentDate: String,
     @SerializedName("address") val address: String?,
     @SerializedName("notes") val notes: String?
 )
 
 interface AppointmentApi {
-
-    @GET("health-profiles/{profileId}/appointments")
+    @GET("/api/v1/health-profiles/{profileId}/appointments")
     suspend fun getAppointments(
         @Path("profileId") profileId: Long
-    ): List<AppointmentResponse>
+    ): Response<ApiResponse<List<AppointmentResponse>>>
 
-    @POST("appointments")
+    @POST("/api/v1/appointments")
     suspend fun createAppointment(
         @Body request: CreateAppointmentRequest
-    )
+    ): Response<ApiResponse<AppointmentResponse>>
 
-    @PUT("appointments/{appointmentId}/cancel")
+    @PUT("/api/v1/appointments/{appointmentId}/cancel")
     suspend fun cancelAppointment(
         @Path("appointmentId") appointmentId: Long
-    )
+    ): Response<ApiResponse<AppointmentResponse>>
 }

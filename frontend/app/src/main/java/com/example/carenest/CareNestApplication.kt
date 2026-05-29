@@ -15,6 +15,7 @@ import com.example.carenest.feature.ekyc.data.repository.EkycRepository
 import com.example.carenest.feature.chat.data.remote.AiChatApi
 import com.example.carenest.feature.medical.data.remote.MedicineApi
 import com.example.carenest.feature.appointment.data.remote.AppointmentApi
+import com.example.carenest.feature.notifications.data.remote.NotificationApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -33,6 +34,7 @@ class CareNestApplication : Application() {
     lateinit var aiChatApi: AiChatApi
     lateinit var medicineApi: MedicineApi
     lateinit var appointmentApi: AppointmentApi
+    lateinit var notificationApi: NotificationApi
 
     override fun onCreate() {
         super.onCreate()
@@ -51,6 +53,7 @@ class CareNestApplication : Application() {
         ekycRepository = EkycRepository(ekycApi, mediaApi)
         medicineApi = retrofit.create(MedicineApi::class.java)
         appointmentApi = retrofit.create(AppointmentApi::class.java)
+        notificationApi = retrofit.create(NotificationApi::class.java)
 
         val aiOkHttpClient = OkHttpClient.Builder()
             .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })

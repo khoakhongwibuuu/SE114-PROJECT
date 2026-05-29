@@ -21,7 +21,7 @@ class FamilyRepository(
         return try {
             val response = familyApi.getMyFamilyList()
             if (response.isSuccessful) {
-                Result.success(response.body() ?: emptyList())
+                Result.success(response.body()?.data.orEmpty())
             } else {
                 Result.failure(Exception("Failed to fetch family list: ${response.code()}"))
             }
@@ -33,8 +33,9 @@ class FamilyRepository(
     suspend fun getFamilyById(familyId: Int): Result<FamilyDetailResponse> {
         return try {
             val response = familyApi.getFamilyById(familyId)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val family = response.body()?.data
+            if (response.isSuccessful && family != null) {
+                Result.success(family)
             } else {
                 Result.failure(Exception("Failed to fetch family: ${response.code()}"))
             }
@@ -46,8 +47,8 @@ class FamilyRepository(
     suspend fun getFamilyProfile(profileId: Int): Result<HealthProfile> {
         return try {
             val response = familyApi.getFamilyProfile(profileId)
-            if (response.isSuccessful && response.body() != null) {
-                val raw = response.body()!!
+            val raw = response.body()?.data
+            if (response.isSuccessful && raw != null) {
                 val bmiValue = if (raw.weight != null && raw.height != null && raw.height > 0) {
                     val heightM = raw.height / 100f
                     raw.weight / (heightM * heightM)
@@ -122,8 +123,9 @@ class FamilyRepository(
     suspend fun joinFamilyByCode(code: String, role: String? = null): Result<FamilyDetailResponse> {
         return try {
             val response = familyApi.joinFamilyByCode(JoinFamilyByCodeRequest(code, role))
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val family = response.body()?.data
+            if (response.isSuccessful && family != null) {
+                Result.success(family)
             } else {
                 Result.failure(Exception("Failed to join family"))
             }
@@ -136,11 +138,10 @@ class FamilyRepository(
         return try {
             val reqFile = file.asRequestBody("image/*".toMediaTypeOrNull())
             val imagePart = MultipartBody.Part.createFormData("image", file.name, reqFile)
-            val rolePart = MultipartBody.Part.createFormData("role", role)
-            
-            val response = familyApi.joinFamilyByQr(rolePart, imagePart)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val response = familyApi.joinFamilyByQr(imagePart, role)
+            val family = response.body()?.data
+            if (response.isSuccessful && family != null) {
+                Result.success(family)
             } else {
                 Result.failure(Exception("Failed to join family via QR"))
             }
@@ -166,7 +167,7 @@ class FamilyRepository(
         return try {
             val response = familyApi.getReceivedInvitations()
             if (response.isSuccessful) {
-                Result.success(response.body() ?: emptyList())
+                Result.success(response.body()?.data.orEmpty())
             } else {
                 Result.failure(Exception("Failed to fetch received invitations"))
             }
@@ -179,7 +180,7 @@ class FamilyRepository(
         return try {
             val response = familyApi.getSentInvitations()
             if (response.isSuccessful) {
-                Result.success(response.body() ?: emptyList())
+                Result.success(response.body()?.data.orEmpty())
             } else {
                 Result.failure(Exception("Failed to fetch sent invitations"))
             }
@@ -217,8 +218,9 @@ class FamilyRepository(
     suspend fun getFamilyJoinCode(): Result<FamilyJoinCodeResponse> {
         return try {
             val response = familyApi.getFamilyJoinCode()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val joinCode = response.body()?.data
+            if (response.isSuccessful && joinCode != null) {
+                Result.success(joinCode)
             } else {
                 Result.failure(Exception("Failed to get join code"))
             }
@@ -230,8 +232,9 @@ class FamilyRepository(
     suspend fun rotateFamilyJoinCode(): Result<FamilyJoinCodeResponse> {
         return try {
             val response = familyApi.rotateFamilyJoinCode()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val joinCode = response.body()?.data
+            if (response.isSuccessful && joinCode != null) {
+                Result.success(joinCode)
             } else {
                 Result.failure(Exception("Failed to rotate join code"))
             }
@@ -246,5 +249,50 @@ class FamilyRepository(
 
     suspend fun getActiveFamilyId(): String? {
         return dataStoreManager.familyIdFlow.first()
+    }
+
+    suspend fun updateProfile(
+        profileId: Int,
+        fullName: String,
+        birthday: String?,
+        gender: String?,
+        relationship: String,
+        height: Double?,
+        weight: Double?,
+        bloodType: String?,
+        allergy: String?,
+        medicalHistory: String?
+    ): Result<Unit> {
+        return try {
+            val detailsResponse = familyApi.updateProfileDetails(
+                profileId,
+                UpdateProfileDetailsRequest(
+                    fullName = fullName,
+                    dateOfBirth = birthday,
+                    gender = gender,
+                    relationship = relationship,
+                    isChild = false,
+                    height = height,
+                    weight = weight
+                )
+            )
+            if (!detailsResponse.isSuccessful) {
+                return Result.failure(Exception("Failed to update profile details"))
+            }
+            val medResponse = familyApi.updateProfileMedicalInfo(
+                profileId,
+                UpdateMedicalInfoRequest(
+                    bloodType = bloodType,
+                    allergies = allergy,
+                    chronicDiseases = medicalHistory
+                )
+            )
+            if (!medResponse.isSuccessful) {
+                return Result.failure(Exception("Failed to update profile medical info"))
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

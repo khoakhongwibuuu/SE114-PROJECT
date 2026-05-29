@@ -9,11 +9,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object ForgotPassword : NavKey
 @Serializable data object MainDashboard : NavKey
 @Serializable data object AddMedicine : NavKey
-@Serializable data object FamilyPicker : NavKey
-@Serializable data class FamilyManagement(val mode: String? = null) : NavKey
-@Serializable data object FamilyList : NavKey
-@Serializable data class ChatRoom(val familyId: Int, val familyName: String) : NavKey
-@Serializable data class HealthProfileDetail(val memberId: Int) : NavKey
 @Serializable data object MedicineSchedule : NavKey
 @Serializable data object AddMedicineSchedule : NavKey
 @Serializable data object OcrScanner : NavKey
@@ -26,3 +21,11 @@ import kotlinx.serialization.Serializable
 @Serializable data class AddAppointment(val profileId: Long) : NavKey
 @Serializable data class VaccinationTracker(val profileId: Long) : NavKey
 @Serializable data class AddVaccinationSchedule(val profileId: Long, val vaccineId: Long? = null, val doseId: Long? = null) : NavKey
+
+// Module 8 Route Keys
+@Serializable data object NotificationsCenter : NavKey
+@Serializable data object AdminVerification : NavKey
+@Serializable data object DoctorVerification : NavKey
+@Serializable data class UserMedical(val profileId: Int) : NavKey
+@Serializable data object Policy : NavKey
+

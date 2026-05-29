@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.community.data.repository
+package com.example.carenest.feature.community.data.repository
 
 import com.example.carenest.feature.community.domain.model.CommunityGroup
 import com.example.carenest.feature.community.domain.model.CommunityGroupPreview
@@ -14,7 +14,7 @@ class CommunityRepository(private val api: CommunityApi) {
     suspend fun myGroups(search: String?): List<CommunityGroup> {
         val response = api.myGroups(search)
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "KhÃ´ng thá»ƒ táº£i danh sÃ¡ch nhÃ³m cá»§a báº¡n")
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách nhóm của bạn")
         }
         return response.body()?.data.orEmpty()
     }
@@ -22,7 +22,7 @@ class CommunityRepository(private val api: CommunityApi) {
     suspend fun discoverGroups(search: String?): List<CommunityGroup> {
         val response = api.discoverGroups(search)
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "KhÃ´ng thá»ƒ táº£i danh sÃ¡ch nhÃ³m gá»£i Ã½")
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách nhóm gợi ý")
         }
         return response.body()?.data.orEmpty()
     }
@@ -30,15 +30,15 @@ class CommunityRepository(private val api: CommunityApi) {
     suspend fun join(groupId: Long): CommunityGroupPreview {
         val response = api.join(groupId)
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "KhÃ´ng thá»ƒ tham gia nhÃ³m")
+            throw IllegalStateException(response.body()?.message ?: "Không thể tham gia nhóm")
         }
-        return response.body()?.data ?: throw IllegalStateException("KhÃ´ng thá»ƒ tham gia nhÃ³m")
+        return response.body()?.data ?: throw IllegalStateException("Không thể tham gia nhóm")
     }
 
     suspend fun posts(groupId: Long): List<GroupPost> {
         val response = api.posts(groupId)
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "KhÃ´ng thá»ƒ táº£i tin nháº¯n")
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải tin nhắn")
         }
         return response.body()?.data?.content.orEmpty()
     }
@@ -46,9 +46,9 @@ class CommunityRepository(private val api: CommunityApi) {
     suspend fun sendPost(groupId: Long, content: String, replyToPostId: Long? = null): GroupPost {
         val response = api.sendPost(groupId, CreateGroupPostRequest(content, replyToPostId))
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "KhÃ´ng thá»ƒ gá»­i tin nháº¯n")
+            throw IllegalStateException(response.body()?.message ?: "Không thể gửi tin nhắn")
         }
-        return response.body()?.data ?: throw IllegalStateException("KhÃ´ng thá»ƒ gá»­i tin nháº¯n")
+        return response.body()?.data ?: throw IllegalStateException("Không thể gửi tin nhắn")
     }
 
     suspend fun getArticles(): List<Article> {

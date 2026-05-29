@@ -24,7 +24,9 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -56,13 +58,11 @@ import com.example.carenest.feature.ekyc.domain.model.VerificationStatus
 
 @Composable
 fun DoctorVerificationScreen(
+    viewModel: EkycViewModel,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val application = context.applicationContext as CareNestApplication
-    val viewModel: EkycViewModel = viewModel(
-        factory = EkycViewModelFactory(application.ekycRepository)
-    )
     val state by viewModel.uiState.collectAsState()
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         viewModel.onCertificateSelected(uri)
@@ -92,7 +92,7 @@ fun DoctorVerificationScreen(
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Header()
+                    Header(onBack = onBack)
                     StatusBanner(state)
                     VerificationForm(
                         state = state,
@@ -109,18 +109,31 @@ fun DoctorVerificationScreen(
 }
 
 @Composable
-private fun Header() {
+private fun Header(onBack: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text = "Xác thực Bác sĩ",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Black,
-            color = Color(0xFF0F172A)
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Quay lại",
+                    tint = Color(0xFF0F172A)
+                )
+            }
+            Text(
+                text = "Xác thực Bác sĩ",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Black,
+                color = Color(0xFF0F172A)
+            )
+        }
         Text(
             text = "Nộp chứng chỉ hành nghề để mở quyền đăng bài chuyên môn và phòng tư vấn riêng trong cộng đồng CareNest.",
             color = TextSecondary,
-            fontSize = 14.sp
+            fontSize = 14.sp,
+            modifier = Modifier.padding(start = 12.dp)
         )
     }
 }

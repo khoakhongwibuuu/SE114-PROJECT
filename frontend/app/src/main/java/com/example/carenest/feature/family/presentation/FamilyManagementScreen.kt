@@ -114,7 +114,7 @@ fun CreateFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
             value = familyName,
             onValueChange = { familyName = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("VD: Tổ ấm thân thương") },
+            placeholder = { Text("VD: T? ?m th�n thuong") },
             shape = RoundedCornerShape(12.dp)
         )
         Spacer(modifier = Modifier.height(24.dp))
@@ -141,13 +141,13 @@ fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
         Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFF0369A1))
         Spacer(modifier = Modifier.height(16.dp))
         Text("Tham gia gia đình", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("Nhập mã để tham gia", color = Color.Gray, modifier = Modifier.padding(bottom = 24.dp))
+        Text("Nh?p m� d? tham gia", color = Color.Gray, modifier = Modifier.padding(bottom = 24.dp))
         
         OutlinedTextField(
             value = joinCode,
             onValueChange = { joinCode = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Nhập mã gia đình") },
+            placeholder = { Text("Nh?p m� gia d�nh") },
             leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
             shape = RoundedCornerShape(12.dp)
         )
@@ -199,7 +199,7 @@ fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
         ) {
             Icon(Icons.Default.QrCode, contentDescription = null, tint = Color(0xFF0369A1))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Quét mã QR", color = Color(0xFF0369A1), fontWeight = FontWeight.Bold)
+            Text("Qu�t m� QR", color = Color(0xFF0369A1), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -221,7 +221,7 @@ fun ManagementContent(viewModel: FamilyViewModel) {
 
     // Received Invitations
     if (uiState.receivedInvitations.isNotEmpty()) {
-        Text("Lời mời bạn đã nhận", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
+        Text("L?i m?i b?n d� nh?n", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
         uiState.receivedInvitations.forEach { invite ->
             Surface(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -356,8 +356,8 @@ fun ManagementContent(viewModel: FamilyViewModel) {
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(invite.receiverEmail ?: "Người thân", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(if (invite.status == "PENDING") "Đang chờ xác nhận" else "Đã xử lý", fontSize = 12.sp, color = Color.Gray)
+                    Text(invite.receiverEmail ?: "Ngu?i th�n", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(if (invite.status == "PENDING") "�ang ch? x�c nh?n" else "�� x? l�", fontSize = 12.sp, color = Color.Gray)
                 }
             }
         }

@@ -3,7 +3,6 @@ package com.example.carenest.feature.family.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-
 import com.example.carenest.feature.family.data.repository.FamilyRepository
 import com.example.carenest.feature.family.domain.model.FamilyDetailResponse
 import com.example.carenest.feature.family.domain.model.FamilyInvitationItem
@@ -89,7 +88,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.createFamily(name)
             result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "Táº¡o gia Ä‘Ã¬nh thÃ nh cÃ´ng") }
+                _uiState.update { it.copy(isBusy = false, message = "Tạo gia đình thành công") }
                 loadFamilies()
             }.onFailure { e ->
                 _uiState.update { it.copy(isBusy = false, error = e.message) }
@@ -103,8 +102,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             receivedRes.onSuccess { list ->
                 _uiState.update { it.copy(receivedInvitations = list) }
             }
-            
-            // Should conditionally load sent ones if owner, but we can load both and let UI handle
+
             val sentRes = repository.getSentInvitations()
             sentRes.onSuccess { list ->
                 _uiState.update { it.copy(sentInvitations = list) }
@@ -118,10 +116,8 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.inviteMember(activeFamilyId, email, role)
             result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "ÄÃ£ gá»­i lá»i má»i") }
-                // Reload sent invitations
-                val sentRes = repository.getSentInvitations()
-                sentRes.onSuccess { list ->
+                _uiState.update { it.copy(isBusy = false, message = "Đã gửi lời mời") }
+                repository.getSentInvitations().onSuccess { list ->
                     _uiState.update { it.copy(sentInvitations = list) }
                 }
             }.onFailure { e ->
@@ -138,7 +134,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             } else {
                 repository.rejectInvitation(inviteId)
             }
-            
+
             result.onSuccess {
                 _uiState.update { it.copy(isBusy = false) }
                 loadInvitations()
@@ -156,7 +152,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.joinFamilyByCode(code, role)
             result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "Tham gia thÃ nh cÃ´ng") }
+                _uiState.update { it.copy(isBusy = false, message = "Tham gia thành công") }
                 loadFamilies()
             }.onFailure { e ->
                 _uiState.update { it.copy(isBusy = false, error = e.message) }
@@ -169,7 +165,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.joinFamilyByQr(file, role)
             result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "Tham gia bÃ¢Ì£ng QR thÃ nh cÃ´ng") }
+                _uiState.update { it.copy(isBusy = false, message = "Tham gia bằng QR thành công") }
                 loadFamilies()
             }.onFailure { e ->
                 _uiState.update { it.copy(isBusy = false, error = e.message) }
@@ -184,7 +180,6 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             result.onSuccess { codeInfo ->
                 _uiState.update { it.copy(isBusy = false, joinCodeInfo = codeInfo) }
             }.onFailure {
-                // Ignore error if not owner
                 _uiState.update { it.copy(isBusy = false, joinCodeInfo = null) }
             }
         }
