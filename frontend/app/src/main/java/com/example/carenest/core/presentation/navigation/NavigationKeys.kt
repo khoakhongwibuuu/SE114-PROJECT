@@ -16,3 +16,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object MedicineSchedule : NavKey
 @Serializable data object AddMedicineSchedule : NavKey
 @Serializable data object OcrScanner : NavKey
+@Serializable data object AppointmentSchedule : NavKey
+@Serializable data object VaccineSchedule : NavKey
+@Serializable data class AddVaccine(val profileId: Long, val editVaccineId: Long? = null) : NavKey
