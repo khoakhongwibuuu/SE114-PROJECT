@@ -33,12 +33,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Giáº£ láº­p model members nhÆ° bÃªn Dashboard
+// Giả lập model members như bên Dashboard
 data class SimpleMember(val id: String, val name: String)
 val dummyMembers = listOf(
-    SimpleMember("1", "Bá»‘"),
-    SimpleMember("2", "Máº¹"),
-    SimpleMember("3", "Con GÃ¡i")
+    SimpleMember("1", "Bố"),
+    SimpleMember("2", "Mẹ"),
+    SimpleMember("3", "Con Gái")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,22 +91,22 @@ fun MedicalScreen(
                 letterSpacing = 1.sp
             )
             Text(
-                "Táº¡o lá»‹ch háº¹n má»›i",
+                "Tạo lịch hẹn mới",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFF0F172A),
                 modifier = Modifier.padding(top = 8.dp)
             )
             Text(
-                "Sáº¯p xáº¿p cÃ¡c buá»•i khÃ¡m bá»‡nh cá»§a gia Ä‘Ã¬nh báº¡n vá»›i dá»¯ liá»‡u tháº­t tá»« há»‡ thá»‘ng CareNest.",
+                "Sắp xếp các buổi khám bệnh của gia đình bạn với dữ liệu thật từ hệ thống CareNest.",
                 fontSize = 13.sp,
                 color = Color(0xFF64748B),
                 lineHeight = 20.sp,
                 modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
             )
 
-            // ThÃ nh viÃªn
-            SectionLabel("THÃ€NH VIÃŠN GIA ÄÃŒNH")
+            // Thành viên
+            SectionLabel("THÀNH VIÊN GIA ĐÌNH")
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 24.dp)) {
                 items(dummyMembers) { member ->
                     MemberSelectCard(
@@ -117,28 +117,28 @@ fun MedicalScreen(
                 }
             }
 
-            // PhÃ²ng khÃ¡m & BÃ¡c sÄ©
-            SectionLabel("PHÃ’NG KHÃM / Bá»†NH VIá»†N")
+            // Phòng khám & Bác sĩ
+            SectionLabel("PHÒNG KHÁM / BỆNH VIỆN")
             InputCard(
                 value = facility,
                 onValueChange = { facility = it },
-                placeholder = "TÃªn phÃ²ng khÃ¡m...",
+                placeholder = "Tên phòng khám...",
                 icon = Icons.Default.LocalHospital
             )
             Spacer(modifier = Modifier.height(20.dp))
-            SectionLabel("BÃC SÄ¨ CHUYÃŠN KHOA")
+            SectionLabel("BÁC SĨ CHUYÊN KHOA")
             InputCard(
                 value = doctor,
                 onValueChange = { doctor = it },
-                placeholder = "TÃªn bÃ¡c sÄ©...",
+                placeholder = "Tên bác sĩ...",
                 icon = Icons.Default.MedicalServices
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            // NgÃ y giá»
+            // Ngày giờ
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    SectionLabel("NGÃ€Y KHÃM")
+                    SectionLabel("NGÀY KHÁM")
                     ReadOnlyInputCard(
                         value = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")).format(Date()),
                         icon = Icons.Default.CalendarToday,
@@ -146,7 +146,7 @@ fun MedicalScreen(
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    SectionLabel("GIá»œ KHÃM")
+                    SectionLabel("GIỜ KHÁM")
                     ReadOnlyInputCard(
                         value = SimpleDateFormat("HH:mm", Locale.forLanguageTag("vi-VN")).format(Date()),
                         icon = Icons.Default.AccessTime,
@@ -156,22 +156,22 @@ fun MedicalScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Äá»‹a chá»‰
-            SectionLabel("Äá»ŠA CHá»ˆ")
+            // Địa chỉ
+            SectionLabel("ĐỊA CHỈ")
             InputCard(
                 value = address,
                 onValueChange = { address = it },
-                placeholder = "Äá»‹a chá»‰ phÃ²ng khÃ¡m...",
+                placeholder = "Địa chỉ phòng khám...",
                 icon = Icons.Default.LocationOn
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Ghi chÃº
-            SectionLabel("GHI CHÃš THÄ‚M KHÃM")
+            // Ghi chú
+            SectionLabel("GHI CHÚ THĂM KHÁM")
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                placeholder = { Text("Ghi chÃº cÃ¡c triá»‡u chá»©ng hoáº·c Ä‘iá»u cáº§n há»i bÃ¡c sÄ©...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
+                placeholder = { Text("Ghi chú các triệu chứng hoặc điều cần hỏi bác sĩ...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
@@ -188,14 +188,14 @@ fun MedicalScreen(
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            // NÃºt LÆ°u (Chá»‘ng double-submit)
+            // Nút Lưu (Chống double-submit)
             Button(
                 onClick = {
                     if (isSaving) return@Button
                     isSaving = true
                     coroutineScope.launch {
-                        delay(2000) // Giáº£ láº­p call API
-                        snackbarHostState.showSnackbar("ÄÃ£ lÆ°u thÃ nh cÃ´ng!")
+                        delay(2000) // Giả lập call API
+                        snackbarHostState.showSnackbar("Đã lưu thành công!")
                         facility = ""
                         doctor = ""
                         address = ""
@@ -216,12 +216,12 @@ fun MedicalScreen(
                 if (isSaving) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 } else {
-                    Text("LÆ°u lá»‹ch háº¹n", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                    Text("Lưu lịch hẹn", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
                 }
             }
 
             Text(
-                "Lá»‹ch háº¹n nÃ y sáº½ Ä‘Æ°á»£c Ä‘á»“ng bá»™ vá»›i há»“ sÆ¡ sá»©c khá»e Ä‘Ã£ chá»n.",
+                "Lịch hẹn này sẽ được đồng bộ với hồ sơ sức khỏe đã chọn.",
                 fontSize = 11.sp,
                 color = Color(0xFF94A3B8),
                 modifier = Modifier

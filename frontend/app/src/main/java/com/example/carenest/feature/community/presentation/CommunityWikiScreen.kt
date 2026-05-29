@@ -135,7 +135,7 @@ fun CommunityWikiScreen() {
                             Text("Chưa có bài viết", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                "Nội dung wiki sẽ hiển thị tại đây khi bác sĩ đăng bài.",
+                                "N?i dung wiki s? hi?n th? t?i d�y khi b�c si dang b�i.",
                                 fontSize = 14.sp,
                                 color = Color(0xFF64748B),
                                 lineHeight = 20.sp,
@@ -285,7 +285,7 @@ fun CommunityWikiScreen() {
                                     Text("Chưa có bình luận", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        "Hãy là người đầu tiên đặt câu hỏi hoặc chia sẻ thêm.",
+                                        "H�y l� ngu?i d?u ti�n d?t c�u h?i ho?c chia s? th�m.",
                                         fontSize = 13.sp,
                                         color = Color(0xFF64748B),
                                         lineHeight = 19.sp,

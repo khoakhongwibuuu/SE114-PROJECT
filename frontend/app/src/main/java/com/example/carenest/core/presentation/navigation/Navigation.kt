@@ -1,4 +1,4 @@
-﻿package com.example.carenest.core.presentation.navigation
+package com.example.carenest.core.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -15,7 +15,6 @@ import com.example.carenest.feature.auth.presentation.RegisterScreen
 import com.example.carenest.feature.main.presentation.MainScreen
 import com.example.carenest.feature.medical.presentation.AddMedicineScreen
 import com.example.carenest.feature.medical.presentation.AddMedicineScheduleScreen
-import com.example.carenest.feature.medical.presentation.MedicalScreen
 import com.example.carenest.feature.medical.presentation.MedicineScheduleScreen
 import com.example.carenest.feature.medical.presentation.OcrScannerScreen
 import com.example.carenest.feature.auth.presentation.AuthViewModel
@@ -25,6 +24,19 @@ import com.example.carenest.feature.onboarding.presentation.OnboardingScreen
 import com.example.carenest.feature.medical.presentation.AppointmentScheduleScreen
 import com.example.carenest.feature.medical.presentation.VaccineScheduleScreen
 import com.example.carenest.feature.medical.presentation.AddVaccineScreen
+import com.example.carenest.feature.notifications.presentation.NotificationsCenterScreen
+import com.example.carenest.feature.notifications.presentation.NotificationsCenterViewModel
+import com.example.carenest.feature.notifications.presentation.NotificationsCenterViewModelFactory
+import com.example.carenest.feature.ekyc.presentation.AdminVerificationScreen
+import com.example.carenest.feature.ekyc.presentation.AdminVerificationViewModel
+import com.example.carenest.feature.ekyc.presentation.AdminVerificationViewModelFactory
+import com.example.carenest.feature.ekyc.presentation.DoctorVerificationScreen
+import com.example.carenest.feature.profile.presentation.UserMedicalScreen
+import com.example.carenest.feature.profile.presentation.UserMedicalViewModel
+import com.example.carenest.feature.profile.presentation.UserMedicalViewModelFactory
+import com.example.carenest.feature.profile.presentation.PolicyScreen
+import com.example.carenest.feature.ekyc.presentation.EkycViewModel
+import com.example.carenest.feature.ekyc.presentation.EkycViewModelFactory
 
 import kotlinx.coroutines.launch
 
@@ -139,8 +151,13 @@ fun MainNavigation() {
               onNavigateToOcrScanner = { backStack.add(OcrScanner) },
               onNavigateToAppointment = { backStack.add(AppointmentSchedule) },
               onNavigateToVaccine = { backStack.add(VaccineSchedule) },
-              onNavigateToAppointments = { backStack.add(MedicalAppointment(0L)) },
+              onNavigateToAppointments = { profileId -> backStack.add(MedicalAppointment(profileId)) },
               onNavigateToVaccinations = { profileId -> backStack.add(VaccinationTracker(profileId)) },
+              onNavigateToNotifications = { backStack.add(NotificationsCenter) },
+              onNavigateToDoctorVerification = { backStack.add(DoctorVerification) },
+              onNavigateToAdminVerification = { backStack.add(AdminVerification) },
+              onNavigateToPolicy = { backStack.add(Policy) },
+              onNavigateToMedicalRecord = { profileId -> backStack.add(UserMedical(profileId)) },
               onLogout = {
                   scope.launch {
                       application.secureSessionManager.clearAll()
@@ -188,6 +205,53 @@ fun MainNavigation() {
             AddVaccineScreen(
                 profileId = args.profileId,
                 editVaccineId = args.editVaccineId,
+                onBack = { backStack.removeLastOrNull() }
+            )
+        }
+        entry<NotificationsCenter> {
+            val viewModel: NotificationsCenterViewModel = viewModel(
+                factory = NotificationsCenterViewModelFactory(application.notificationApi)
+            )
+            NotificationsCenterScreen(
+                profileId = null,
+                viewModel = viewModel,
+                onBack = { backStack.removeLastOrNull() }
+            )
+        }
+        entry<AdminVerification> {
+            val viewModel: AdminVerificationViewModel = viewModel(
+                factory = AdminVerificationViewModelFactory(application.ekycRepository)
+            )
+            AdminVerificationScreen(
+                viewModel = viewModel,
+                onBack = { backStack.removeLastOrNull() }
+            )
+        }
+        entry<DoctorVerification> {
+            val viewModel: EkycViewModel = viewModel(
+                factory = EkycViewModelFactory(application.ekycRepository)
+            )
+            DoctorVerificationScreen(
+                viewModel = viewModel,
+                onBack = { backStack.removeLastOrNull() }
+            )
+        }
+        entry<UserMedical> {
+            val key = it as UserMedical
+            val viewModel: UserMedicalViewModel = viewModel(
+                factory = UserMedicalViewModelFactory(application.familyRepository)
+            )
+            UserMedicalScreen(
+                profileId = key.profileId,
+                viewModel = viewModel,
+                onBack = { backStack.removeLastOrNull() },
+                onNavigateToMedicineSchedule = { backStack.add(MedicineSchedule) },
+                onNavigateToAppointmentList = { backStack.add(MedicalAppointment(key.profileId.toLong())) },
+                onNavigateToVaccinationTracker = { backStack.add(VaccinationTracker(key.profileId.toLong())) }
+            )
+        }
+        entry<Policy> {
+            PolicyScreen(
                 onBack = { backStack.removeLastOrNull() }
             )
         }

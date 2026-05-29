@@ -61,7 +61,7 @@ class VaccineScheduleViewModel : ViewModel() {
                             doseNumber = 1,
                             status = "PENDING",
                             plannedDate = "10/07/2026",
-                            clinicName = "Trung tâm Tiêm chủng VNVC"
+                            clinicName = "Trung t�m Ti�m ch?ng VNVC"
                         ),
                         VaccinationItem(
                             id = 4,
@@ -69,7 +69,7 @@ class VaccineScheduleViewModel : ViewModel() {
                             doseNumber = 1,
                             status = "PENDING",
                             plannedDate = "10/07/2026",
-                            clinicName = "Trung tâm Tiêm chủng VNVC"
+                            clinicName = "Trung t�m Ti�m ch?ng VNVC"
                         )
                     )
                 )

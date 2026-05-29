@@ -65,3 +65,20 @@ data class InviteMemberRequest(
 data class UpdateInvitationRequest(
     val status: String
 )
+
+data class UpdateProfileDetailsRequest(
+    val fullName: String,
+    val dateOfBirth: String?,
+    val gender: String?,
+    val relationship: String,
+    val isChild: Boolean,
+    val height: Double?,
+    val weight: Double?
+)
+
+data class UpdateMedicalInfoRequest(
+    val bloodType: String?,
+    val allergies: String?,
+    val chronicDiseases: String?
+)
+

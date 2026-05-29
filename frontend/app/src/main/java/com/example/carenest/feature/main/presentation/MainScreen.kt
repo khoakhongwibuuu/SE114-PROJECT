@@ -20,6 +20,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -59,8 +60,13 @@ fun MainScreen(
     onNavigateToAppointment: () -> Unit = {},
     onNavigateToVaccine: () -> Unit = {},
     onNavigateToOcrScanner: () -> Unit = {},
-    onNavigateToAppointments: () -> Unit = {},
+    onNavigateToAppointments: (Long) -> Unit = {},
     onNavigateToVaccinations: (Long) -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToDoctorVerification: () -> Unit = {},
+    onNavigateToAdminVerification: () -> Unit = {},
+    onNavigateToPolicy: () -> Unit = {},
+    onNavigateToMedicalRecord: (Int) -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -70,7 +76,12 @@ fun MainScreen(
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
     val dashboardViewModel: DashboardViewModel = viewModel(
-        factory = DashboardViewModelFactory(application.dashboardApi, application.authApi, application.secureSessionManager),
+        factory = DashboardViewModelFactory(
+            application.dashboardApi,
+            application.authApi,
+            application.familyRepository,
+            application.secureSessionManager
+        ),
     )
     val aiChatViewModel: AiChatViewModel = viewModel(
         factory = AiChatViewModelFactory(application.aiChatApi)
@@ -78,6 +89,7 @@ fun MainScreen(
     val medicineViewModel: MedicineViewModel = viewModel(
         factory = MedicineViewModelFactory(application.medicineApi, application.secureSessionManager)
     )
+    val currentProfileId by dashboardViewModel.currentProfileId.collectAsState()
 
     Scaffold(
         modifier = modifier
@@ -150,8 +162,15 @@ fun MainScreen(
                 0 -> HomeDashboardScreen(
                     viewModel = dashboardViewModel,
                     onNavigateToMedicine = onNavigateToMedicineSchedule,
-                    onNavigateToAppointment = onNavigateToAppointments,
-                    onNavigateToVaccine = { onNavigateToVaccinations(0L) },
+                    onNavigateToAppointment = {
+                        val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
+                        onNavigateToAppointments(profileId)
+                    },
+                    onNavigateToVaccine = {
+                        val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
+                        onNavigateToVaccinations(profileId)
+                    },
+                    onNavigateToNotifications = onNavigateToNotifications,
                     onNavigateToTask = {}
                 )
 
@@ -186,7 +205,16 @@ fun MainScreen(
                     }
                 }
 
-                5 -> ProfileScreen(onLogout = onLogout)
+                5 -> ProfileScreen(
+                    onLogout = onLogout,
+                    onNavigateToMedicalRecord = {
+                        val profileId = (currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L).toInt()
+                        onNavigateToMedicalRecord(profileId)
+                    },
+                    onNavigateToDoctorVerification = onNavigateToDoctorVerification,
+                    onNavigateToAdminVerification = onNavigateToAdminVerification,
+                    onNavigateToPolicy = onNavigateToPolicy
+                )
             }
         }
     }

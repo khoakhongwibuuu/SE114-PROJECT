@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.family.presentation
+package com.example.carenest.feature.family.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -106,7 +106,7 @@ fun FamilyListItem(name: String, onClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Báº¥m Ä‘á»ƒ báº¯t Ä‘áº§u trÃ² chuyá»‡n",
+                    text = "Bấm để bắt đầu trò chuyện",
                     fontSize = 14.sp,
                     color = Color(0xFF64748B)
                 )
@@ -146,7 +146,7 @@ fun EmptyFamilyState() {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Báº¡n chÆ°a thuá»™c gia Ä‘Ã¬nh nÃ o.",
+            text = "Bạn chưa thuộc gia đình nào.",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF1E293B),
@@ -154,7 +154,7 @@ fun EmptyFamilyState() {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "VÃ o tab Gia Ä‘Ã¬nh Ä‘á»ƒ táº¡o hoáº·c tham gia má»™t tá»• áº¥m nhÃ©!",
+            text = "Vào tab Gia đình để tạo hoặc tham gia một tổ ấm nhé!",
             fontSize = 14.sp,
             color = Color(0xFF64748B),
             textAlign = TextAlign.Center,

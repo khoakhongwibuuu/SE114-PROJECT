@@ -39,6 +39,7 @@ fun HomeDashboardScreen(
     onNavigateToMedicine: () -> Unit,
     onNavigateToAppointment: () -> Unit,
     onNavigateToVaccine: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
     onNavigateToTask: (DashboardTask) -> Unit
 ) {
     val uiState by viewModel.dashboardState.collectAsState()
@@ -79,7 +80,8 @@ fun HomeDashboardScreen(
                         activeFamilyName = activeFamily?.name ?: "CareNest",
                         hasMultipleFamilies = dashboard.families.size > 1,
                         unreadCount = state.unreadCount,
-                        onOpenSwitcher = { showFamilySwitcher = true }
+                        onOpenSwitcher = { showFamilySwitcher = true },
+                        onNavigateToNotifications = onNavigateToNotifications
                     )
                     
                     Spacer(modifier = Modifier.height(24.dp))
@@ -163,7 +165,8 @@ fun HomeHeader(
     activeFamilyName: String,
     hasMultipleFamilies: Boolean,
     unreadCount: Int,
-    onOpenSwitcher: () -> Unit
+    onOpenSwitcher: () -> Unit,
+    onNavigateToNotifications: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -192,8 +195,12 @@ fun HomeHeader(
                 Icon(Icons.Default.Person, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(24.dp))
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Box {
-                Icon(Icons.Default.Notifications, contentDescription = null, tint = Color(0xFF475569), modifier = Modifier.size(28.dp))
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .clickable { onNavigateToNotifications() }
+            ) {
+                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color(0xFF475569), modifier = Modifier.size(28.dp))
                 if (unreadCount > 0) {
                     Box(
                         modifier = Modifier

@@ -7,6 +7,8 @@ import com.example.carenest.core.data.network.MediaApi
 import com.example.carenest.feature.ekyc.data.remote.EkycApi
 import com.example.carenest.feature.ekyc.domain.model.DoctorVerificationResponse
 import com.example.carenest.feature.ekyc.domain.model.SubmitDoctorVerificationRequest
+import com.example.carenest.feature.ekyc.domain.model.RejectVerificationRequest
+import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -60,6 +62,45 @@ class EkycRepository(
             throw IllegalStateException(response.body()?.message ?: "Không thể gửi hồ sơ xác thực bác sĩ")
         }
         return response.body()?.data ?: throw IllegalStateException("Không nhận được trạng thái hồ sơ")
+    }
+
+    suspend fun getPendingVerifications(): List<DoctorVerificationResponse> {
+        val response = ekycApi.getPendingVerifications()
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách chờ duyệt")
+        }
+        return response.body()?.data ?: emptyList()
+    }
+
+    suspend fun approveVerification(id: Long): DoctorVerificationResponse {
+        val response = ekycApi.approveVerification(id)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể phê duyệt hồ sơ")
+        }
+        return response.body()?.data ?: throw IllegalStateException("Không nhận được thông tin phản hồi")
+    }
+
+    suspend fun rejectVerification(id: Long, rejectionReason: String): DoctorVerificationResponse {
+        val response = ekycApi.rejectVerification(id, RejectVerificationRequest(rejectionReason))
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể từ chối hồ sơ")
+        }
+        return response.body()?.data ?: throw IllegalStateException("Không nhận được thông tin phản hồi")
+    }
+
+    suspend fun getAllDoctors(): List<DoctorSummary> {
+        val response = ekycApi.getAllDoctors()
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách bác sĩ")
+        }
+        return response.body()?.data ?: emptyList()
+    }
+
+    suspend fun revokeDoctor(userId: Long) {
+        val response = ekycApi.revokeDoctor(userId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể thu hồi quyền bác sĩ")
+        }
     }
 }
 

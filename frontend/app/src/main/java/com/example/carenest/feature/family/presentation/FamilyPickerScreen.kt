@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.family.presentation
+package com.example.carenest.feature.family.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -55,7 +55,7 @@ fun FamilyPickerScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Gia Ä‘Ã¬nh cá»§a tÃ´i",
+                    text = "Gia đình của tôi",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF1E293B)
@@ -68,7 +68,7 @@ fun FamilyPickerScreen(
                         .clickable { showBottomSheet = true },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "ThÃªm", tint = Color.White)
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Thêm", tint = Color.White)
                 }
             }
         }
@@ -93,7 +93,7 @@ fun FamilyPickerScreen(
                 ) {
                     item {
                         Text(
-                            text = "ÄANG THAM GIA",
+                            text = "ĐANG THAM GIA",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFF94A3B8),
@@ -134,7 +134,7 @@ fun FamilyPickerScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "ThÃªm gia Ä‘Ã¬nh",
+                                    text = "Thêm gia đình",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF0369A1)
@@ -160,7 +160,7 @@ fun FamilyPickerScreen(
                         .padding(bottom = 24.dp)
                 ) {
                     Text(
-                        text = "ThÃªm gia Ä‘Ã¬nh",
+                        text = "Thêm gia đình",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFF1E293B),
@@ -171,8 +171,8 @@ fun FamilyPickerScreen(
                         icon = Icons.Default.Home,
                         iconBgColor = Color(0xFFEFF6FF),
                         iconColor = Color(0xFF0369A1),
-                        title = "Táº¡o gia Ä‘Ã¬nh má»›i",
-                        subtitle = "Báº¡n sáº½ lÃ  Chá»§ há»™ cá»§a gia Ä‘Ã¬nh nÃ y",
+                        title = "Tạo gia đình mới",
+                        subtitle = "Bạn sẽ là Chủ hộ của gia đình này",
                         onClick = {
                             scope.launch { sheetState.hide() }.invokeOnCompletion {
                                 if (!sheetState.isVisible) {
@@ -189,8 +189,8 @@ fun FamilyPickerScreen(
                         icon = Icons.Default.QrCodeScanner,
                         iconBgColor = Color(0xFFF0FDF4),
                         iconColor = Color(0xFF16A34A),
-                        title = "Tham gia báº±ng mÃ£",
-                        subtitle = "Nháº­p code hoáº·c quÃ©t QR tá»« Chá»§ há»™",
+                        title = "Tham gia bằng mã",
+                        subtitle = "Nhập code hoặc quét QR từ Chủ hộ",
                         onClick = {
                             scope.launch { sheetState.hide() }.invokeOnCompletion {
                                 if (!sheetState.isVisible) {
@@ -231,14 +231,14 @@ fun FamilyPickerEmptyState(onStart: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = "ChÆ°a cÃ³ gia Ä‘Ã¬nh nÃ o",
+            text = "Chưa có gia đình nào",
             fontSize = 18.sp,
             fontWeight = FontWeight.ExtraBold,
             color = Color(0xFF1E293B)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Táº¡o gia Ä‘Ã¬nh má»›i hoáº·c tham gia báº±ng mÃ£ má»i tá»« chá»§ há»™ nhÃ©!",
+            text = "Tạo gia đình mới hoặc tham gia bằng mã mời từ chủ hộ nhé!",
             fontSize = 14.sp,
             color = Color(0xFF64748B),
             textAlign = TextAlign.Center,
@@ -251,7 +251,7 @@ fun FamilyPickerEmptyState(onStart: () -> Unit) {
             shape = RoundedCornerShape(16.dp),
             contentPadding = PaddingValues(horizontal = 28.dp, vertical = 14.dp)
         ) {
-            Text("Báº¯t Ä‘áº§u ngay", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text("Bắt đầu ngay", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }
@@ -296,7 +296,7 @@ fun FamilyCard(item: FamilySummary, isActive: Boolean, onPress: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${item.memberCount} thÃ nh viÃªn â€¢ ${item.ownerName}",
+                    text = "${item.memberCount} thành viên • ${item.ownerName}",
                     fontSize = 12.sp,
                     color = Color(0xFF64748B)
                 )
@@ -318,13 +318,13 @@ fun FamilyCard(item: FamilySummary, isActive: Boolean, onPress: () -> Unit) {
 fun RoleBadge(role: String) {
     val isOwner = role == "OWNER"
     val label = when (role) {
-        "OWNER" -> "Chá»§ há»™"
-        "FATHER" -> "Bá»‘"
-        "MOTHER" -> "Máº¹"
+        "OWNER" -> "Chủ hộ"
+        "FATHER" -> "Bố"
+        "MOTHER" -> "Mẹ"
         "OLDER_BROTHER" -> "Anh"
-        "OLDER_SISTER" -> "Chá»‹"
+        "OLDER_SISTER" -> "Chị"
         "YOUNGER" -> "Em"
-        else -> "ThÃ nh viÃªn"
+        else -> "Thành viên"
     }
 
     Box(

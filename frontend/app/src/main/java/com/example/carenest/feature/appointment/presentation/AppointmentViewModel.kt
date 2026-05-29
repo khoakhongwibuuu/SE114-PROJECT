@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.appointment.data.remote.AppointmentApi
-import com.example.carenest.feature.appointment.data.remote.AppointmentResponse
 import com.example.carenest.feature.appointment.data.remote.CreateAppointmentRequest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,10 +66,15 @@ class AppointmentViewModel(
     val isActionLoading: StateFlow<Boolean> = _isActionLoading.asStateFlow()
 
     fun fetchAppointments(profileId: Long) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _appointmentState.value = AppointmentState.Loading
             try {
-                val responses = api.getAppointments(profileId)
+                val response = api.getAppointments(profileId)
+                val responses = if (response.isSuccessful) {
+                    response.body()?.data.orEmpty()
+                } else {
+                    throw IllegalStateException(response.body()?.message ?: "Không thể tải lịch hẹn")
+                }
                 if (responses.isEmpty()) {
                     _appointmentState.value = AppointmentState.Empty
                     return@launch
@@ -129,7 +134,7 @@ class AppointmentViewModel(
                 }
 
             } catch (e: Exception) {
-                _appointmentState.value = AppointmentState.Error(e.message ?: "Failed to fetch appointments")
+                _appointmentState.value = AppointmentState.Error(e.message ?: "Không thể tải lịch hẹn")
             }
         }
     }
@@ -144,10 +149,10 @@ class AppointmentViewModel(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _isActionLoading.value = true
             try {
-                api.createAppointment(
+                val response = api.createAppointment(
                     CreateAppointmentRequest(
                         healthProfileId = profileId,
                         hospitalName = hospitalName,
@@ -157,10 +162,14 @@ class AppointmentViewModel(
                         notes = notes
                     )
                 )
+                if (!response.isSuccessful) {
+                    onError(response.body()?.message ?: "Không thể tạo lịch hẹn")
+                    return@launch
+                }
                 onSuccess()
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                onError(e.message ?: "Failed to create appointment")
+                onError(e.message ?: "Không thể tạo lịch hẹn")
             } finally {
                 _isActionLoading.value = false
             }
@@ -168,7 +177,7 @@ class AppointmentViewModel(
     }
 
     fun cancelAppointment(appointmentId: Long, profileId: Long) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 api.cancelAppointment(appointmentId)
                 fetchAppointments(profileId)

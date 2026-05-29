@@ -45,7 +45,7 @@ class ProfileViewModel(private val repository: FamilyRepository) : ViewModel() {
         return HealthProfile(
             id = 1,
             name = "Nguyễn Văn A",
-            role = "Bản thân",
+            role = "B?n th�n",
             age = 36,
             location = "TP.HCM",
             avatarUrl = null,

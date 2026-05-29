@@ -242,7 +242,7 @@ fun ProfileScreen(
             }
 
             // Personal Info
-            SectionLabel("Thông tin cá nhân")
+            SectionLabel("Th�ng tin c� nh�n")
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(24.dp),
@@ -376,7 +376,7 @@ fun ProfileScreen(
                     .padding(bottom = 24.dp)
             ) {
                 Column {
-                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung tâm hỗ trợ", onClick = { Toast.makeText(context, "Sắp ra mắt", Toast.LENGTH_SHORT).show() })
+                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung t�m h? tr?", onClick = { Toast.makeText(context, "S?p ra m?t", Toast.LENGTH_SHORT).show() })
                     HorizontalDivider(color = Color(0xFFF1F5F9))
                     SettingsRow(icon = Icons.Default.BugReport, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Báo cáo sự cố", onClick = { Toast.makeText(context, "Sắp ra mắt", Toast.LENGTH_SHORT).show() })
                 }

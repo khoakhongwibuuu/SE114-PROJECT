@@ -9,6 +9,7 @@ import retrofit2.http.Query
 interface DashboardApi {
     @GET("/api/v1/dashboard")
     suspend fun getDashboard(
-        @Query("familyId") familyId: String? = null
+        @Query("familyId") familyId: String? = null,
+        @Query("profileId") profileId: Long? = null
     ): Response<ApiResponse<DashboardResponse>>
 }

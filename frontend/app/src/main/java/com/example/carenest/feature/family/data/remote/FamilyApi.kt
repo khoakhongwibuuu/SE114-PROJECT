@@ -1,54 +1,84 @@
 package com.example.carenest.feature.family.data.remote
 
-import com.example.carenest.feature.family.domain.model.*
+import com.example.carenest.core.data.network.ApiResponse
+import com.example.carenest.feature.family.domain.model.CreateFamilyRequest
+import com.example.carenest.feature.family.domain.model.FamilyDetailResponse
+import com.example.carenest.feature.family.domain.model.FamilyInvitationItem
+import com.example.carenest.feature.family.domain.model.FamilyJoinCodeResponse
+import com.example.carenest.feature.family.domain.model.FamilySummary
+import com.example.carenest.feature.family.domain.model.InviteMemberRequest
+import com.example.carenest.feature.family.domain.model.JoinFamilyByCodeRequest
+import com.example.carenest.feature.family.domain.model.UpdateInvitationRequest
+import com.example.carenest.feature.family.domain.model.UpdateMedicalInfoRequest
+import com.example.carenest.feature.family.domain.model.UpdateProfileDetailsRequest
+import com.example.carenest.model.RawHealthProfileResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Multipart
+import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Part
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface FamilyApi {
-    @GET("/families/my-list")
-    suspend fun getMyFamilyList(): Response<List<FamilySummary>>
+    @GET("/api/v1/families/my-list")
+    suspend fun getMyFamilyList(): Response<ApiResponse<List<FamilySummary>>>
 
-    @GET("/families/{id}")
-    suspend fun getFamilyById(@Path("id") familyId: Int): Response<FamilyDetailResponse>
+    @GET("/api/v1/families/{id}")
+    suspend fun getFamilyById(@Path("id") familyId: Int): Response<ApiResponse<FamilyDetailResponse>>
 
-    @GET("/health-profiles/{id}")
-    suspend fun getFamilyProfile(@Path("id") profileId: Int): Response<com.example.carenest.model.RawHealthProfileResponse>
+    @GET("/api/v1/health-profiles/{id}")
+    suspend fun getFamilyProfile(@Path("id") profileId: Int): Response<ApiResponse<RawHealthProfileResponse>>
 
-    @POST("/families")
-    suspend fun createFamily(@Body request: CreateFamilyRequest): Response<Unit>
+    @POST("/api/v1/families")
+    suspend fun createFamily(@Body request: CreateFamilyRequest): Response<ApiResponse<Unit>>
 
-    @POST("/families/join-by-code")
-    suspend fun joinFamilyByCode(@Body request: JoinFamilyByCodeRequest): Response<FamilyDetailResponse>
+    @POST("/api/v1/families/join-by-code")
+    suspend fun joinFamilyByCode(@Body request: JoinFamilyByCodeRequest): Response<ApiResponse<FamilyDetailResponse>>
 
     @Multipart
-    @POST("/families/join-by-qr")
+    @POST("/api/v1/families/join-by-qr")
     suspend fun joinFamilyByQr(
-        @Part role: MultipartBody.Part,
-        @Part image: MultipartBody.Part
-    ): Response<FamilyDetailResponse>
+        @Part image: MultipartBody.Part,
+        @Query("role") role: String? = null
+    ): Response<ApiResponse<FamilyDetailResponse>>
 
-    @POST("/families/{id}/invitations")
+    @POST("/api/v1/families/{id}/invitations")
     suspend fun inviteMember(
         @Path("id") familyId: Int,
         @Body request: InviteMemberRequest
-    ): Response<Unit>
+    ): Response<ApiResponse<Unit>>
 
-    @GET("/invitations/received")
-    suspend fun getReceivedInvitations(): Response<List<FamilyInvitationItem>>
+    @GET("/api/v1/invitations/received")
+    suspend fun getReceivedInvitations(): Response<ApiResponse<List<FamilyInvitationItem>>>
 
-    @GET("/invitations/sent")
-    suspend fun getSentInvitations(): Response<List<FamilyInvitationItem>>
+    @GET("/api/v1/invitations/sent")
+    suspend fun getSentInvitations(): Response<ApiResponse<List<FamilyInvitationItem>>>
 
-    @PUT("/invitations/{id}")
+    @PUT("/api/v1/invitations/{id}")
     suspend fun updateInvitationStatus(
         @Path("id") inviteId: Int,
         @Body request: UpdateInvitationRequest
-    ): Response<Unit>
+    ): Response<ApiResponse<Unit>>
 
-    @GET("/families/join-code")
-    suspend fun getFamilyJoinCode(): Response<FamilyJoinCodeResponse>
+    @GET("/api/v1/families/join-code")
+    suspend fun getFamilyJoinCode(): Response<ApiResponse<FamilyJoinCodeResponse>>
 
-    @POST("/families/join-code/rotate")
-    suspend fun rotateFamilyJoinCode(): Response<FamilyJoinCodeResponse>
+    @POST("/api/v1/families/join-code/rotate")
+    suspend fun rotateFamilyJoinCode(): Response<ApiResponse<FamilyJoinCodeResponse>>
+
+    @PUT("/api/v1/health-profiles/{id}")
+    suspend fun updateProfileDetails(
+        @Path("id") profileId: Int,
+        @Body request: UpdateProfileDetailsRequest
+    ): Response<ApiResponse<Unit>>
+
+    @PUT("/api/v1/health-profiles/{id}/medical-info")
+    suspend fun updateProfileMedicalInfo(
+        @Path("id") profileId: Int,
+        @Body request: UpdateMedicalInfoRequest
+    ): Response<ApiResponse<Unit>>
 }
