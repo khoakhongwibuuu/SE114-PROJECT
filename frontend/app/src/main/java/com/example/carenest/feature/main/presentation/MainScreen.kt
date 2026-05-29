@@ -37,7 +37,7 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.chat.presentation.ChatScreen
 import com.example.carenest.feature.community.domain.model.CommunityGroup
 import com.example.carenest.feature.community.presentation.CommunityScreen
-import com.example.carenest.feature.dashboard.presentation.DashboardScreen
+
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModelFactory
 import com.example.carenest.feature.ekyc.presentation.DoctorVerificationScreen
@@ -52,6 +52,8 @@ fun MainScreen(
     onNavigateToAddMedicine: () -> Unit = {},
     onNavigateToMedicineSchedule: () -> Unit = {},
     onNavigateToAddMedicineSchedule: () -> Unit = {},
+    onNavigateToAppointment: () -> Unit = {},
+    onNavigateToVaccine: () -> Unit = {},
     onNavigateToOcrScanner: () -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -134,9 +136,12 @@ fun MainScreen(
                 .padding(paddingValues),
         ) {
             when (selectedTab) {
-                0 -> DashboardScreen(
+                0 -> HomeDashboardScreen(
                     viewModel = dashboardViewModel,
-                    modifier = Modifier.fillMaxSize(),
+                    onNavigateToMedicine = onNavigateToMedicineSchedule,
+                    onNavigateToAppointment = onNavigateToAppointment,
+                    onNavigateToVaccine = onNavigateToVaccine,
+                    onNavigateToTask = {}
                 )
 
                 1 -> FamilyFlowScreen(
