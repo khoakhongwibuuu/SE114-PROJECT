@@ -47,6 +47,7 @@ import com.example.carenest.feature.family.presentation.FamilyFlowScreen
 import com.example.carenest.feature.profile.presentation.ProfileScreen
 import com.example.carenest.feature.medical.presentation.MedicineScreen
 import com.example.carenest.feature.medical.presentation.MedicineViewModel
+import com.example.carenest.feature.medical.presentation.MedicineViewModelFactory
 
 @Composable
 fun MainScreen(
@@ -73,7 +74,9 @@ fun MainScreen(
     val aiChatViewModel: AiChatViewModel = viewModel(
         factory = AiChatViewModelFactory(application.aiChatApi)
     )
-    val medicineViewModel: MedicineViewModel = viewModel()
+    val medicineViewModel: MedicineViewModel = viewModel(
+        factory = MedicineViewModelFactory(application.medicineApi, application.secureSessionManager)
+    )
 
     Scaffold(
         modifier = modifier

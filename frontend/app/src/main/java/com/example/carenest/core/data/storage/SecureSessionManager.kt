@@ -1,4 +1,4 @@
-﻿package com.example.carenest.core.data.storage
+package com.example.carenest.core.data.storage
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -12,6 +12,7 @@ class SecureSessionManager(context: Context) {
         private const val ACCESS_TOKEN_KEY = "access_token"
         private const val REFRESH_TOKEN_KEY = "refresh_token"
         private const val FAMILY_ID_KEY = "x_family_id"
+        private const val PROFILE_ID_KEY = "profile_id"
         private const val ONBOARDING_DONE_KEY = "@carenest_onboarding_done"
     }
 
@@ -44,6 +45,8 @@ class SecureSessionManager(context: Context) {
 
     fun isOnboardingDone(): Boolean = encryptedPrefs.getString(ONBOARDING_DONE_KEY, null) != null
 
+    fun getProfileId(): Long? = encryptedPrefs.getLong(PROFILE_ID_KEY, -1L).takeIf { it > 0 }
+
     suspend fun saveToken(token: String) {
         saveAccessToken(token)
     }
@@ -61,6 +64,10 @@ class SecureSessionManager(context: Context) {
     suspend fun saveFamilyId(familyId: String) {
         encryptedPrefs.edit().putString(FAMILY_ID_KEY, familyId).apply()
         _familyIdFlow.value = familyId
+    }
+
+    fun saveProfileIdSync(profileId: Long) {
+        encryptedPrefs.edit().putLong(PROFILE_ID_KEY, profileId).apply()
     }
 
     suspend fun saveSession(accessToken: String, refreshToken: String, familyId: String? = null) {
