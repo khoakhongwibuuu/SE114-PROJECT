@@ -53,3 +53,19 @@ docker-volumes/
 local.properties
 
 backend/pgdata/
+
+# ─────────────────────────────────────────
+# Git patch leftovers (never commit these)
+# ─────────────────────────────────────────
+*.rej
+*.orig
+stash_diff*.txt
+
+# ─────────────────────────────────────────
+# Python bytecode / debug scripts
+# ─────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+fix*.py
+restore_files.py
