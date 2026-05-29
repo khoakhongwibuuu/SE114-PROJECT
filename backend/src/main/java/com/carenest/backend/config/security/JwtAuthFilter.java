@@ -44,7 +44,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             userEmail = jwtService.extractUsername(jwt);
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-                
+
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -59,7 +59,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             // Log error or ignore to let SecurityFilterChain handle unauthorized request
             logger.warn("JWT validation failed: " + e.getMessage());
         }
-        
+
         filterChain.doFilter(request, response);
     }
 }

@@ -1,0 +1,13 @@
+package com.carenest.backend.features.aichat.repository;
+
+import com.carenest.backend.features.aichat.entity.AiChatSession;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface AiChatSessionRepository extends JpaRepository<AiChatSession, Long> {
+    Optional<AiChatSession> findByUserIdAndStatus(Long userId, String status);
+    Optional<AiChatSession> findByIdAndUserId(Long id, Long userId);
+}
