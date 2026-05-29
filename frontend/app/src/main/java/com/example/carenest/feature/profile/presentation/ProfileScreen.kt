@@ -1,5 +1,10 @@
 package com.example.carenest.feature.profile.presentation
 
+import android.app.DatePickerDialog
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +13,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,29 +30,64 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    onNavigateBack: () -> Unit = {},
+    onNavigateToMedicalRecord: () -> Unit = {},
+    onNavigateToDoctorVerification: () -> Unit = {},
+    onNavigateToAdminVerification: () -> Unit = {},
+    onNavigateToPolicy: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
-    var isEditing by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
+    val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
 
-    var fullName by remember { mutableStateOf("Nguyễn Văn A") }
-    var email by remember { mutableStateOf("nguyenvana@gmail.com") }
-    var phone by remember { mutableStateOf("0901234567") }
-    var emergencyPhone by remember { mutableStateOf("") }
-    var birthday by remember { mutableStateOf("01/01/1990") }
-    var gender by remember { mutableStateOf("Nam") }
-    var bloodType by remember { mutableStateOf("O+") }
-    
-    var medReminder by remember { mutableStateOf(true) }
-    var apptReminder by remember { mutableStateOf(true) }
+    // Observe messages
+    LaunchedEffect(state.successMessage, state.error) {
+        if (state.successMessage != null) {
+            Toast.makeText(context, state.successMessage, Toast.LENGTH_SHORT).show()
+            viewModel.onEvent(ProfileEvent.ClearMessage)
+        }
+        if (state.error != null) {
+            Toast.makeText(context, state.error, Toast.LENGTH_LONG).show()
+            viewModel.onEvent(ProfileEvent.ClearMessage)
+        }
+    }
+
+    // Image Picker
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri: Uri? ->
+            if (uri != null) {
+                viewModel.onEvent(ProfileEvent.AvatarSelected(uri))
+            }
+        }
+    )
+
+    // Date Picker
+    val calendar = Calendar.getInstance()
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val formattedDate = String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year)
+            viewModel.onEvent(ProfileEvent.BirthdayChanged(formattedDate))
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
 
     Column(
         modifier = Modifier
@@ -61,7 +103,7 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = { /* Handle back if needed */ }) {
+            IconButton(onClick = onNavigateBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF1E293B))
             }
             Text(
@@ -70,16 +112,18 @@ fun ProfileScreen(
                 fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFF1E3A8A)
             )
-            TextButton(onClick = {
-                if (!isEditing) isEditing = true else {
-                    isSaving = true
-                    // Simulate save
-                    isSaving = false
-                    isEditing = false
-                }
-            }) {
+            TextButton(
+                onClick = {
+                    if (!state.isEditing) {
+                        viewModel.onEvent(ProfileEvent.EditClicked)
+                    } else {
+                        viewModel.onEvent(ProfileEvent.SaveClicked)
+                    }
+                },
+                enabled = !state.isSaving
+            ) {
                 Text(
-                    text = if (isSaving) "Đang lưu" else if (isEditing) "Lưu" else "Sửa",
+                    text = if (state.isSaving) "Đang lưu" else if (state.isEditing) "Lưu" else "Sửa",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryBlue
@@ -108,29 +152,64 @@ fun ProfileScreen(
                         .background(Color.White, CircleShape)
                         .padding(4.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .background(Color.LightGray)
-                    ) // Placeholder for Image
-                    
+                    if (state.avatarUri != null) {
+                        AsyncImage(
+                            model = state.avatarUri,
+                            contentDescription = "Avatar",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(Color(0xFFE2E8F0)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(60.dp))
+                        }
+                    }
+
+                    if (state.isUploadingAvatar) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(Color(0x66000000)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(30.dp), strokeWidth = 3.dp)
+                        }
+                    }
+
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .offset(x = (-2).dp, y = (-2).dp)
                             .size(36.dp)
                             .background(PrimaryBlue, CircleShape)
-                            .border(3.dp, Color.White, CircleShape),
+                            .border(3.dp, Color.White, CircleShape)
+                            .clickable {
+                                if (!state.isUploadingAvatar) {
+                                    imagePickerLauncher.launch(
+                                        androidx.activity.result.PickVisualMediaRequest(
+                                            androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+                                        )
+                                    )
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.PhotoCamera, contentDescription = "Camera", tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(fullName, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E293B))
+                Text(state.fullName, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E293B))
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Chủ gia đình", fontSize = 14.sp, color = Color(0xFF64748B))
+                Text(state.memberRole, fontSize = 14.sp, color = Color(0xFF64748B))
             }
 
             // Medical Record Button
@@ -140,6 +219,7 @@ fun ProfileScreen(
                         .fillMaxWidth()
                         .shadow(2.dp, RoundedCornerShape(24.dp))
                         .background(Color.White, RoundedCornerShape(24.dp))
+                        .clickable { onNavigateToMedicalRecord() }
                         .padding(20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -172,21 +252,74 @@ fun ProfileScreen(
                     .padding(bottom = 24.dp)
             ) {
                 Column {
-                    InputField(icon = Icons.Default.Person, label = "Họ và tên", value = fullName, onValueChange = { fullName = it }, editable = isEditing)
+                    InputField(icon = Icons.Default.Person, label = "Họ và tên", value = state.fullName, onValueChange = { viewModel.onEvent(ProfileEvent.FullNameChanged(it)) }, editable = state.isEditing)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    InputField(icon = Icons.Default.Mail, label = "Email", value = email, onValueChange = { email = it }, editable = isEditing, keyboardType = KeyboardType.Email)
+                    InputField(icon = Icons.Default.Mail, label = "Email", value = state.email, onValueChange = { viewModel.onEvent(ProfileEvent.EmailChanged(it)) }, editable = state.isEditing, keyboardType = KeyboardType.Email)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    InputField(icon = Icons.Default.Phone, label = "Số điện thoại", value = phone, onValueChange = { phone = it }, editable = isEditing, keyboardType = KeyboardType.Phone)
+                    InputField(icon = Icons.Default.Phone, label = "Số điện thoại", value = state.phone, onValueChange = { viewModel.onEvent(ProfileEvent.PhoneChanged(it)) }, editable = state.isEditing, keyboardType = KeyboardType.Phone)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    InputField(icon = Icons.Default.Phone, label = "Số điện thoại khẩn cấp", value = emergencyPhone, onValueChange = { emergencyPhone = it }, editable = isEditing, placeholder = "Để trống nếu chưa có")
+                    InputField(icon = Icons.Default.Phone, label = "Số điện thoại khẩn cấp", value = state.emergencyPhone, onValueChange = { viewModel.onEvent(ProfileEvent.EmergencyPhoneChanged(it)) }, editable = state.isEditing, placeholder = "Để trống nếu chưa có")
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    InputField(icon = Icons.Default.CalendarToday, label = "Ngày sinh", value = birthday, onValueChange = { birthday = it }, editable = isEditing)
+                    
+                    // Birthday Picker
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = state.isEditing) { datePickerDialog.show() }
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color(0xFFEFF6FF), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Ngày sinh", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF94A3B8))
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = state.birthday.ifEmpty { "dd/mm/yyyy" },
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (state.birthday.isEmpty()) Color(0xFF94A3B8) else Color(0xFF1E293B)
+                            )
+                        }
+                    }
+                    
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    InputField(icon = Icons.Default.Cake, label = "Tuổi", value = "36", onValueChange = {}, editable = false)
+                    InputField(icon = Icons.Default.Cake, label = "Tuổi", value = state.age, onValueChange = {}, editable = false)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    InputField(icon = Icons.Default.Wc, label = "Giới tính", value = gender, onValueChange = { gender = it }, editable = isEditing)
+                    
+                    // Gender Dropdown
+                    SelectField(
+                        icon = Icons.Default.Wc,
+                        label = "Giới tính",
+                        value = state.gender,
+                        options = listOf("MALE" to "Nam", "FEMALE" to "Nữ", "OTHER" to "Khác"),
+                        editable = state.isEditing,
+                        onSelect = { viewModel.onEvent(ProfileEvent.GenderChanged(it)) }
+                    )
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    InputField(icon = Icons.Default.Bloodtype, label = "Nhóm máu", value = bloodType, onValueChange = { bloodType = it }, editable = isEditing)
+                    
+                    // BloodType Dropdown
+                    SelectField(
+                        icon = Icons.Default.Bloodtype,
+                        label = "Nhóm máu",
+                        value = state.bloodType,
+                        options = listOf(
+                            "A_POSITIVE" to "A+", "A_NEGATIVE" to "A-",
+                            "B_POSITIVE" to "B+", "B_NEGATIVE" to "B-",
+                            "AB_POSITIVE" to "AB+", "AB_NEGATIVE" to "AB-",
+                            "O_POSITIVE" to "O+", "O_NEGATIVE" to "O-",
+                            "UNKNOWN" to "Chưa rõ"
+                        ),
+                        editable = state.isEditing,
+                        onSelect = { viewModel.onEvent(ProfileEvent.BloodTypeChanged(it)) }
+                    )
                 }
             }
 
@@ -201,9 +334,9 @@ fun ProfileScreen(
                     .padding(bottom = 24.dp)
             ) {
                 Column {
-                    SettingsRowSwitch(icon = Icons.Default.Medication, iconBg = Color(0xFFF0F9FF), iconTint = Color(0xFF0EA5E9), label = "Nhắc uống thuốc", checked = medReminder, onCheckedChange = { medReminder = it })
+                    SettingsRowSwitch(icon = Icons.Default.Medication, iconBg = Color(0xFFF0F9FF), iconTint = Color(0xFF0EA5E9), label = "Nhắc uống thuốc", checked = state.medReminder, onCheckedChange = { viewModel.onEvent(ProfileEvent.MedReminderChanged(it)) })
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    SettingsRowSwitch(icon = Icons.Default.CalendarMonth, iconBg = Color(0xFFFDF2F8), iconTint = Color(0xFFDB2777), label = "Nhắc lịch tái khám", checked = apptReminder, onCheckedChange = { apptReminder = it })
+                    SettingsRowSwitch(icon = Icons.Default.CalendarMonth, iconBg = Color(0xFFFDF2F8), iconTint = Color(0xFFDB2777), label = "Nhắc lịch tái khám", checked = state.apptReminder, onCheckedChange = { viewModel.onEvent(ProfileEvent.ApptReminderChanged(it)) })
                 }
             }
 
@@ -218,13 +351,17 @@ fun ProfileScreen(
                     .padding(bottom = 24.dp)
             ) {
                 Column {
-                    SettingsRow(icon = Icons.Default.Verified, iconBg = Color(0xFFECFDF5), iconTint = Color(0xFF16A34A), label = "Xác thực Bác sĩ")
+                    if (state.role == "USER") {
+                        SettingsRow(icon = Icons.Default.Verified, iconBg = Color(0xFFECFDF5), iconTint = Color(0xFF16A34A), label = "Xác thực Bác sĩ", onClick = onNavigateToDoctorVerification)
+                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                    }
+                    if (state.role == "ADMIN") {
+                        SettingsRow(icon = Icons.Default.MedicalServices, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Duyệt hồ sơ Bác sĩ", onClick = onNavigateToAdminVerification)
+                        HorizontalDivider(color = Color(0xFFF1F5F9))
+                    }
+                    SettingsRow(icon = Icons.Default.Language, iconBg = Color(0xFFF5F3FF), iconTint = Color(0xFF7C3AED), label = "Ngôn ngữ", value = "Tiếng Việt", onClick = { Toast.makeText(context, "Sắp ra mắt", Toast.LENGTH_SHORT).show() })
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    SettingsRow(icon = Icons.Default.MedicalServices, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Duyệt hồ sơ Bác sĩ")
-                    HorizontalDivider(color = Color(0xFFF1F5F9))
-                    SettingsRow(icon = Icons.Default.Language, iconBg = Color(0xFFF5F3FF), iconTint = Color(0xFF7C3AED), label = "Ngôn ngữ", value = "Tiếng Việt")
-                    HorizontalDivider(color = Color(0xFFF1F5F9))
-                    SettingsRow(icon = Icons.Default.Security, iconBg = Color(0xFFF0FDFA), iconTint = Color(0xFF0D9488), label = "Chính sách bảo mật")
+                    SettingsRow(icon = Icons.Default.Security, iconBg = Color(0xFFF0FDFA), iconTint = Color(0xFF0D9488), label = "Chính sách bảo mật", onClick = onNavigateToPolicy)
                 }
             }
 
@@ -239,9 +376,9 @@ fun ProfileScreen(
                     .padding(bottom = 24.dp)
             ) {
                 Column {
-                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung tâm hỗ trợ")
+                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung tâm hỗ trợ", onClick = { Toast.makeText(context, "Sắp ra mắt", Toast.LENGTH_SHORT).show() })
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    SettingsRow(icon = Icons.Default.BugReport, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Báo cáo sự cố")
+                    SettingsRow(icon = Icons.Default.BugReport, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Báo cáo sự cố", onClick = { Toast.makeText(context, "Sắp ra mắt", Toast.LENGTH_SHORT).show() })
                 }
             }
 
@@ -306,17 +443,15 @@ fun InputField(
             Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF94A3B8))
             Spacer(modifier = Modifier.height(2.dp))
             if (editable) {
-                // In a real app we'd use a BasicTextField here for perfectly clean UI.
-                // Using Text directly for non-editable is easier.
-                androidx.compose.foundation.text.BasicTextField(
+                BasicTextField(
                     value = value,
                     onValueChange = onValueChange,
-                    textStyle = androidx.compose.ui.text.TextStyle(
+                    textStyle = TextStyle(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E293B)
                     ),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = keyboardType),
+                    keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
                     decorationBox = { innerTextField ->
                         if (value.isEmpty() && placeholder.isNotEmpty()) {
                             Text(placeholder, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color(0xFF94A3B8))
@@ -336,12 +471,79 @@ fun InputField(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsRow(icon: ImageVector, iconBg: Color, iconTint: Color, label: String, value: String? = null) {
+fun SelectField(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    options: List<Pair<String, String>>, // Pair<Key, DisplayValue>
+    editable: Boolean,
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val displayValue = options.find { it.first == value }?.second ?: value
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* noop */ }
+            .clickable(enabled = editable) { expanded = true }
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(Color(0xFFEFF6FF), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF94A3B8))
+            Spacer(modifier = Modifier.height(2.dp))
+            
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { if (editable) expanded = !expanded }
+            ) {
+                Text(
+                    text = displayValue,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E293B),
+                    modifier = Modifier.menuAnchor()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    options.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option.second) },
+                            onClick = {
+                                onSelect(option.first)
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        if (editable) {
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color(0xFFCBD5E1))
+        }
+    }
+}
+
+
+@Composable
+fun SettingsRow(icon: ImageVector, iconBg: Color, iconTint: Color, label: String, value: String? = null, onClick: () -> Unit = {}) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

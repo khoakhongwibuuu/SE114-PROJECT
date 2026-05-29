@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.medical.presentation
+package com.example.carenest.feature.medical.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,7 +14,7 @@ class MedicineViewModel : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _selectedFilter = MutableStateFlow("Táº¥t cáº£")
+    private val _selectedFilter = MutableStateFlow("Tất cả")
     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
 
     private val _medicines = MutableStateFlow<List<Medicine>>(emptyList())
@@ -25,7 +25,7 @@ class MedicineViewModel : ViewModel() {
             id = "1",
             name = "Panadol Extra",
             quantity = 12,
-            unit = "viÃªn",
+            unit = "viên",
             expiryDate = "15/01/2024",
             status = MedicineStatus.EXPIRED
         ),
@@ -33,15 +33,15 @@ class MedicineViewModel : ViewModel() {
             id = "2",
             name = "Amoxicillin",
             quantity = 8,
-            unit = "gÃ³i",
-            expiryDate = "CÃ²n 12 ngÃ y",
+            unit = "gói",
+            expiryDate = "Còn 12 ngày",
             status = MedicineStatus.EXPIRING_SOON
         ),
         Medicine(
             id = "3",
             name = "Berberin",
             quantity = 50,
-            unit = "viÃªn",
+            unit = "viên",
             expiryDate = "HSD: 12/2026",
             status = MedicineStatus.NORMAL
         ),
@@ -49,8 +49,8 @@ class MedicineViewModel : ViewModel() {
             id = "4",
             name = "Efferalgan 500mg",
             quantity = 0,
-            unit = "viÃªn",
-            expiryDate = "DÃ¹ng láº§n cuá»‘i: 2 ngÃ y trÆ°á»›c",
+            unit = "viên",
+            expiryDate = "Dùng lần cuối: 2 ngày trước",
             status = MedicineStatus.OUT_OF_STOCK
         ),
         Medicine(
@@ -90,9 +90,9 @@ class MedicineViewModel : ViewModel() {
 
         // Apply Category Filter
         filteredList = when (_selectedFilter.value) {
-            "Sáº¯p háº¿t háº¡n" -> filteredList.filter { it.status == MedicineStatus.EXPIRING_SOON }
-            "Háº¿t hÃ ng" -> filteredList.filter { it.status == MedicineStatus.OUT_OF_STOCK }
-            else -> filteredList // "Táº¥t cáº£"
+            "Sắp hết hạn" -> filteredList.filter { it.status == MedicineStatus.EXPIRING_SOON }
+            "Hết hàng" -> filteredList.filter { it.status == MedicineStatus.OUT_OF_STOCK }
+            else -> filteredList // "Tất cả"
         }
 
         _medicines.value = filteredList

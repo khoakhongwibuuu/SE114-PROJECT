@@ -1,0 +1,927 @@
+﻿diff --git a/backend/src/main/java/com/carenest/backend/config/security/SecurityConfig.java b/backend/src/main/java/com/carenest/backend/config/security/SecurityConfig.java
+index 1573810..df6bbcb 100644
+--- a/backend/src/main/java/com/carenest/backend/config/security/SecurityConfig.java
++++ b/backend/src/main/java/com/carenest/backend/config/security/SecurityConfig.java
+@@ -53,7 +53,8 @@ public class SecurityConfig {
+                     "/swagger-ui/**",
+                     "/webjars/**",
+                     "/swagger-ui.html",
+-                    "/actuator/**"
++                    "/actuator/**",
++                    "/error"
+                 ).permitAll()
+                 .requestMatchers(HttpMethod.GET, "/articles").permitAll()
+                 .requestMatchers(HttpMethod.GET, "/media/files/**").permitAll()
+diff --git a/backend/src/main/java/com/carenest/backend/config/security/WebMvcConfig.java b/backend/src/main/java/com/carenest/backend/config/security/WebMvcConfig.java
+index e03e363..bd38c0c 100644
+--- a/backend/src/main/java/com/carenest/backend/config/security/WebMvcConfig.java
++++ b/backend/src/main/java/com/carenest/backend/config/security/WebMvcConfig.java
+@@ -39,8 +39,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
+                         "/cabinets/**",
+                         "/appointments/**",
+                         "/vaccination-records/**",
+-                        "/growth-records/**",
+-                        "/chat/**"
++                        "/growth-records/**"
+                 )
+                 // Exclude the list endpoints that don't require an active family context
+                 .excludePathPatterns(
+diff --git a/backend/src/main/java/com/carenest/backend/features/aichat/service/impl/MockAiChatServiceImpl.java b/backend/src/main/java/com/carenest/backend/features/aichat/service/impl/MockAiChatServiceImpl.java
+index e672804..bb2b16f 100644
+--- a/backend/src/main/java/com/carenest/backend/features/aichat/service/impl/MockAiChatServiceImpl.java
++++ b/backend/src/main/java/com/carenest/backend/features/aichat/service/impl/MockAiChatServiceImpl.java
+@@ -16,8 +16,9 @@ import org.springframework.context.annotation.Profile;
+ import org.springframework.data.domain.Page;
+ import org.springframework.data.domain.Pageable;
+ import org.springframework.stereotype.Service;
++import org.springframework.context.annotation.Profile;
+ 
+-@Service
++//@Service
+ @RequiredArgsConstructor
+ public class MockAiChatServiceImpl implements AiChatService {
+ 
+diff --git a/backend/src/main/java/com/carenest/backend/features/auth/controller/AuthController.java b/backend/src/main/java/com/carenest/backend/features/auth/controller/AuthController.java
+index dc036d2..a9b139c 100644
+--- a/backend/src/main/java/com/carenest/backend/features/auth/controller/AuthController.java
++++ b/backend/src/main/java/com/carenest/backend/features/auth/controller/AuthController.java
+@@ -78,8 +78,8 @@ public class AuthController {
+     private Bucket resolveBucket(HttpServletRequest request) {
+         String key = resolveClientIp(request);
+         return buckets.computeIfAbsent(key, ignored -> {
+-            Refill refill = Refill.greedy(5, Duration.ofMinutes(1));
+-            Bandwidth limit = Bandwidth.classic(5, refill);
++            Refill refill = Refill.greedy(50, Duration.ofMinutes(1));
++            Bandwidth limit = Bandwidth.classic(50, refill);
+             return Bucket.builder().addLimit(limit).build();
+         });
+     }
+diff --git a/backend/src/main/resources/application.yml b/backend/src/main/resources/application.yml
+index f622b89..538d79a 100644
+--- a/backend/src/main/resources/application.yml
++++ b/backend/src/main/resources/application.yml
+@@ -75,3 +75,8 @@ server:
+   port: 8080
+   servlet:
+     context-path: /api/v1
++
++carenest:
++  ai:
++    url: ${CARENEST_AI_URL:http://localhost:8000}
++    internal-token: ${CARENEST_AI_TOKEN:carenest-internal-token-123}
+diff --git a/frontend/app/src/main/java/com/example/carenest/CareNestApplication.kt b/frontend/app/src/main/java/com/example/carenest/CareNestApplication.kt
+index 5915a09..82a2091 100644
+--- a/frontend/app/src/main/java/com/example/carenest/CareNestApplication.kt
++++ b/frontend/app/src/main/java/com/example/carenest/CareNestApplication.kt
+@@ -1,8 +1,9 @@
+-∩╗┐package com.example.carenest
++package com.example.carenest
+ 
+ import android.app.Application
+ import com.example.carenest.core.data.storage.SecureSessionManager
+ import com.example.carenest.feature.chat.data.remote.ChatWebSocketClient
++import com.example.carenest.feature.chat.data.remote.AiChatApi
+ import com.example.carenest.feature.chat.data.repository.ChatRepository
+ import com.example.carenest.feature.community.data.repository.CommunityRepository
+ import com.example.carenest.feature.auth.data.remote.AuthApi
+@@ -12,14 +13,21 @@ import com.example.carenest.feature.dashboard.data.remote.DashboardApi
+ import com.example.carenest.core.data.network.RetrofitClient
+ import com.example.carenest.feature.ekyc.data.remote.EkycApi
+ import com.example.carenest.feature.ekyc.data.repository.EkycRepository
++import com.example.carenest.feature.medical.data.remote.AppointmentApi
++import com.example.carenest.feature.medical.data.repository.AppointmentRepository
++import com.example.carenest.feature.medical.data.remote.VaccineApi
++import com.example.carenest.feature.medical.data.repository.VaccineRepository
+ 
+ class CareNestApplication : Application() {
+     lateinit var secureSessionManager: SecureSessionManager
+     lateinit var authApi: AuthApi
+     lateinit var dashboardApi: DashboardApi
++    lateinit var aiChatApi: AiChatApi
+     lateinit var communityRepository: CommunityRepository
+     lateinit var chatRepository: ChatRepository
+     lateinit var ekycRepository: EkycRepository
++    lateinit var appointmentRepository: AppointmentRepository
++    lateinit var vaccineRepository: VaccineRepository
+ 
+     override fun onCreate() {
+         super.onCreate()
+@@ -28,10 +36,15 @@ class CareNestApplication : Application() {
+         val communityApi = retrofit.create(CommunityApi::class.java)
+         val ekycApi = retrofit.create(EkycApi::class.java)
+         val mediaApi = retrofit.create(MediaApi::class.java)
++        val appointmentApi = retrofit.create(AppointmentApi::class.java)
++        val vaccineApi = retrofit.create(VaccineApi::class.java)
++        aiChatApi = retrofit.create(AiChatApi::class.java)
+         authApi = retrofit.create(AuthApi::class.java)
+         dashboardApi = retrofit.create(DashboardApi::class.java)
+         communityRepository = CommunityRepository(communityApi)
+         chatRepository = ChatRepository(communityApi, ChatWebSocketClient(secureSessionManager))
+         ekycRepository = EkycRepository(ekycApi, mediaApi)
++        appointmentRepository = AppointmentRepository(appointmentApi)
++        vaccineRepository = VaccineRepository(vaccineApi)
+     }
+ }
+diff --git a/frontend/app/src/main/java/com/example/carenest/core/data/network/RetrofitClient.kt b/frontend/app/src/main/java/com/example/carenest/core/data/network/RetrofitClient.kt
+index 7f20e9b..2bf645d 100644
+--- a/frontend/app/src/main/java/com/example/carenest/core/data/network/RetrofitClient.kt
++++ b/frontend/app/src/main/java/com/example/carenest/core/data/network/RetrofitClient.kt
+@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory
+ import java.util.concurrent.TimeUnit
+ 
+ object RetrofitClient {
+-    const val BASE_URL = "http://localhost:8080"
++    const val BASE_URL = "http://10.0.2.2:8080"
+ 
+     fun create(secureSessionManager: SecureSessionManager): Retrofit {
+         val loggingInterceptor = HttpLoggingInterceptor().apply {
+diff --git a/frontend/app/src/main/java/com/example/carenest/core/presentation/navigation/Navigation.kt b/frontend/app/src/main/java/com/example/carenest/core/presentation/navigation/Navigation.kt
+index 6da5c56..0be9803 100644
+--- a/frontend/app/src/main/java/com/example/carenest/core/presentation/navigation/Navigation.kt
++++ b/frontend/app/src/main/java/com/example/carenest/core/presentation/navigation/Navigation.kt
+@@ -15,8 +15,20 @@ import com.example.carenest.feature.auth.presentation.RegisterScreen
+ import com.example.carenest.feature.main.presentation.MainScreen
+ import com.example.carenest.feature.medical.presentation.AddMedicineScreen
+ import com.example.carenest.feature.medical.presentation.AddMedicineScheduleScreen
++import com.example.carenest.feature.medical.presentation.AppointmentScheduleScreen
++import com.example.carenest.feature.medical.presentation.AppointmentScheduleViewModel
++import com.example.carenest.feature.medical.presentation.AppointmentScheduleViewModelFactory
++import com.example.carenest.feature.medical.presentation.AddAppointmentScreen
++import com.example.carenest.feature.medical.presentation.AddAppointmentViewModel
++import com.example.carenest.feature.medical.presentation.AddAppointmentViewModelFactory
++import com.example.carenest.feature.medical.presentation.AddVaccineScreen
++import com.example.carenest.feature.medical.presentation.AddVaccineViewModel
++import com.example.carenest.feature.medical.presentation.AddVaccineViewModelFactory
+ import com.example.carenest.feature.medical.presentation.MedicineScheduleScreen
+ import com.example.carenest.feature.medical.presentation.OcrScannerScreen
++import com.example.carenest.feature.medical.presentation.VaccineScheduleScreen
++import com.example.carenest.feature.medical.presentation.VaccineScheduleViewModel
++import com.example.carenest.feature.medical.presentation.VaccineScheduleViewModelFactory
+ import com.example.carenest.feature.auth.presentation.AuthViewModel
+ import com.example.carenest.feature.auth.presentation.AuthViewModelFactory
+ import com.example.carenest.feature.onboarding.presentation.OnboardingScreen
+@@ -83,6 +95,8 @@ fun MainNavigation() {
+               onNavigateToAddMedicine = { backStack.add(AddMedicine) },
+               onNavigateToMedicineSchedule = { backStack.add(MedicineSchedule) },
+               onNavigateToAddMedicineSchedule = { backStack.add(AddMedicineSchedule) },
++              onNavigateToAppointment = { backStack.add(AppointmentSchedule) },
++              onNavigateToVaccine = { memberId -> backStack.add(VaccineSchedule(memberId = memberId)) },
+               onNavigateToOcrScanner = { backStack.add(OcrScanner) },
+               onLogout = {
+                   scope.launch {
+@@ -116,6 +130,62 @@ fun MainNavigation() {
+             onBack = { backStack.removeLastOrNull() }
+           )
+         }
++        entry<AppointmentSchedule> {
++          val vm: AppointmentScheduleViewModel = viewModel(
++            factory = AppointmentScheduleViewModelFactory(
++              application.appointmentRepository,
++              application.dashboardApi
++            )
++          )
++          AppointmentScheduleScreen(
++            viewModel = vm,
++            memberId = null,
++            onBack = { backStack.removeLastOrNull() },
++            onAddAppointment = { memberId -> 
++                backStack.add(AddAppointment(memberId = memberId)) 
++            }
++          )
++        }
++        entry<AddAppointment> {
++          val vm: AddAppointmentViewModel = viewModel(
++            factory = AddAppointmentViewModelFactory(
++              application.dashboardApi,
++              application.appointmentRepository
++            )
++          )
++          AddAppointmentScreen(
++            viewModel = vm,
++            memberId = it.memberId,
++            onBack = { backStack.removeLastOrNull() }
++          )
++        }
++        entry<VaccineSchedule> {
++          val vm: VaccineScheduleViewModel = viewModel(
++            factory = VaccineScheduleViewModelFactory(
++              application.vaccineRepository,
++              application.dashboardApi
++            )
++          )
++          VaccineScheduleScreen(
++            viewModel = vm,
++            memberId = it.memberId,
++            onBack = { backStack.removeLastOrNull() },
++            onAddVaccine = { profileId, editId -> 
++                backStack.add(AddVaccine(profileId = profileId, editVaccinationId = editId))
++            }
++          )
++        }
++        entry<AddVaccine> {
++          val vm: AddVaccineViewModel = viewModel(
++            factory = AddVaccineViewModelFactory(application.vaccineRepository)
++          )
++          AddVaccineScreen(
++            viewModel = vm,
++            profileId = it.profileId,
++            editVaccinationId = it.editVaccinationId,
++            onBack = { backStack.removeLastOrNull() }
++          )
++        }
+       },
+   )
+ }
+diff --git a/frontend/app/src/main/java/com/example/carenest/core/presentation/navigation/NavigationKeys.kt b/frontend/app/src/main/java/com/example/carenest/core/presentation/navigation/NavigationKeys.kt
+index 7b1ce7d..f2f1a02 100644
+--- a/frontend/app/src/main/java/com/example/carenest/core/presentation/navigation/NavigationKeys.kt
++++ b/frontend/app/src/main/java/com/example/carenest/core/presentation/navigation/NavigationKeys.kt
+@@ -1,4 +1,4 @@
+-∩╗┐package com.example.carenest.core.presentation.navigation
++package com.example.carenest.core.presentation.navigation
+ 
+ import androidx.navigation3.runtime.NavKey
+ import kotlinx.serialization.Serializable
+@@ -10,4 +10,8 @@ import kotlinx.serialization.Serializable
+ @Serializable data object AddMedicine : NavKey
+ @Serializable data object MedicineSchedule : NavKey
+ @Serializable data object AddMedicineSchedule : NavKey
++@Serializable data object AppointmentSchedule : NavKey
++@Serializable data class VaccineSchedule(val memberId: Long? = null) : NavKey
+ @Serializable data object OcrScanner : NavKey
++@Serializable data class AddAppointment(val memberId: Long? = null) : NavKey
++@Serializable data class AddVaccine(val profileId: Long, val editVaccinationId: Long? = null) : NavKey
+diff --git a/frontend/app/src/main/java/com/example/carenest/feature/auth/presentation/AuthViewModel.kt b/frontend/app/src/main/java/com/example/carenest/feature/auth/presentation/AuthViewModel.kt
+index 712a5ee..ad133e6 100644
+--- a/frontend/app/src/main/java/com/example/carenest/feature/auth/presentation/AuthViewModel.kt
++++ b/frontend/app/src/main/java/com/example/carenest/feature/auth/presentation/AuthViewModel.kt
+@@ -36,15 +36,27 @@ class AuthViewModel(
+                 val response = withContext(Dispatchers.IO) {
+                     authApi.login(LoginRequest(email, password))
+                 }
+-                val envelope = response.body()
+-                val auth = envelope?.data
+-                if (response.isSuccessful && auth != null) {
+-                    withContext(Dispatchers.IO) {
+-                        secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
++                if (response.isSuccessful) {
++                    val envelope = response.body()
++                    val auth = envelope?.data
++                    if (auth != null) {
++                        withContext(Dispatchers.IO) {
++                            secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
++                        }
+                     }
+-                    _authState.value = AuthState.Success(envelope.message ?: "─É─âng nhß║¡p th├ánh c├┤ng")
++                    _authState.value = AuthState.Success(envelope?.message ?: "─É─âng nhß║¡p th├ánh c├┤ng")
+                 } else {
+-                    _authState.value = AuthState.Error(envelope?.message ?: "─É─âng nhß║¡p thß║Ñt bß║íi: ${response.code()}")
++                    var errorMessage = "─É─âng nhß║¡p thß║Ñt bß║íi: ${response.code()}"
++                    try {
++                        val errorString = response.errorBody()?.string()
++                        if (errorString != null) {
++                            val jsonObject = org.json.JSONObject(errorString)
++                            if (jsonObject.has("message")) {
++                                errorMessage = jsonObject.getString("message")
++                            }
++                        }
++                    } catch (e: Exception) {}
++                    _authState.value = AuthState.Error(errorMessage)
+                 }
+             } catch (e: Exception) {
+                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lß╗ùi kß║┐t nß╗æi")
+@@ -59,9 +71,9 @@ class AuthViewModel(
+                 val response = withContext(Dispatchers.IO) {
+                     authApi.register(RegisterRequest(email, password, fullName, phoneNumber))
+                 }
+-                val envelope = response.body()
+-                val auth = envelope?.data
+                 if (response.isSuccessful) {
++                    val envelope = response.body()
++                    val auth = envelope?.data
+                     if (auth != null) {
+                         withContext(Dispatchers.IO) {
+                             secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
+@@ -69,7 +81,17 @@ class AuthViewModel(
+                     }
+                     _authState.value = AuthState.Success(envelope?.message ?: "─É─âng k├╜ th├ánh c├┤ng")
+                 } else {
+-                    _authState.value = AuthState.Error(envelope?.message ?: "─É─âng k├╜ thß║Ñt bß║íi: ${response.code()}")
++                    var errorMessage = "─É─âng k├╜ thß║Ñt bß║íi: ${response.code()}"
++                    try {
++                        val errorString = response.errorBody()?.string()
++                        if (errorString != null) {
++                            val jsonObject = org.json.JSONObject(errorString)
++                            if (jsonObject.has("message")) {
++                                errorMessage = jsonObject.getString("message")
++                            }
++                        }
++                    } catch (e: Exception) {}
++                    _authState.value = AuthState.Error(errorMessage)
+                 }
+             } catch (e: Exception) {
+                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lß╗ùi kß║┐t nß╗æi")
+diff --git a/frontend/app/src/main/java/com/example/carenest/feature/chat/data/remote/ChatWebSocketClient.kt b/frontend/app/src/main/java/com/example/carenest/feature/chat/data/remote/ChatWebSocketClient.kt
+index e824f47..89d65ac 100644
+--- a/frontend/app/src/main/java/com/example/carenest/feature/chat/data/remote/ChatWebSocketClient.kt
++++ b/frontend/app/src/main/java/com/example/carenest/feature/chat/data/remote/ChatWebSocketClient.kt
+@@ -16,7 +16,7 @@ sealed interface ChatSocketEvent {
+ 
+ class ChatWebSocketClient(
+     private val secureSessionManager: SecureSessionManager,
+-    private val webSocketUrl: String = "ws://localhost:8080/ws"
++    private val webSocketUrl: String = "ws://10.0.2.2:8080/ws"
+ ) {
+     private val disposables = CompositeDisposable()
+     private var stompClient: StompClient? = null
+diff --git a/frontend/app/src/main/java/com/example/carenest/feature/dashboard/presentation/DashboardScreen.kt b/frontend/app/src/main/java/com/example/carenest/feature/dashboard/presentation/DashboardScreen.kt
+index 2f37081..6863c14 100644
+--- a/frontend/app/src/main/java/com/example/carenest/feature/dashboard/presentation/DashboardScreen.kt
++++ b/frontend/app/src/main/java/com/example/carenest/feature/dashboard/presentation/DashboardScreen.kt
+@@ -84,6 +84,9 @@ private val HeroEnd = Color(0xFF0047AB)
+ @Composable
+ fun DashboardScreen(
+     viewModel: DashboardViewModel,
++    onNavigateToMedicineSchedule: () -> Unit = {},
++    onNavigateToAppointment: () -> Unit = {},
++    onNavigateToVaccine: (Long?) -> Unit = {},
+     modifier: Modifier = Modifier,
+ ) {
+     val dashboardState by viewModel.dashboardState.collectAsState()
+@@ -159,7 +162,14 @@ fun DashboardScreen(
+ 
+                     Spacer(modifier = Modifier.height(24.dp))
+ 
+-                    ShortcutRow()
++                    ShortcutRow(
++                        onMedicineScheduleClick = onNavigateToMedicineSchedule,
++                        onAppointmentClick = onNavigateToAppointment,
++                        onVaccineClick = { 
++                            val targetId = selectedMemberId?.toLongOrNull() ?: data.members.firstOrNull()?.id?.toLongOrNull()
++                            onNavigateToVaccine(targetId) 
++                        }
++                    )
+ 
+                     Spacer(modifier = Modifier.height(24.dp))
+ 
+@@ -392,7 +402,11 @@ private fun MemberPill(name: String, active: Boolean, onClick: () -> Unit) {
+ }
+ 
+ @Composable
+-private fun ShortcutRow() {
++private fun ShortcutRow(
++    onMedicineScheduleClick: () -> Unit = {},
++    onAppointmentClick: () -> Unit = {},
++    onVaccineClick: () -> Unit = {},
++) {
+     Row(
+         modifier = Modifier.fillMaxWidth(),
+         horizontalArrangement = Arrangement.spacedBy(12.dp),
+@@ -402,6 +416,7 @@ private fun ShortcutRow() {
+             label = "Lß╗ïch thuß╗æc",
+             iconBg = Color(0xFFE0F2FE),
+             iconTint = Color(0xFF0EA5E9),
++            onClick = onMedicineScheduleClick,
+             modifier = Modifier.weight(1f),
+         )
+         ShortcutCard(
+@@ -409,6 +424,7 @@ private fun ShortcutRow() {
+             label = "Lß╗ïch hß║╣n",
+             iconBg = Color(0xFFF3E8FF),
+             iconTint = Color(0xFFA855F7),
++            onClick = onAppointmentClick,
+             modifier = Modifier.weight(1f),
+         )
+         ShortcutCard(
+@@ -416,6 +432,7 @@ private fun ShortcutRow() {
+             label = "Ti├¬m chß╗ºng",
+             iconBg = Color(0xFFE0F7FA),
+             iconTint = Color(0xFF0097A7),
++            onClick = onVaccineClick,
+             modifier = Modifier.weight(1f),
+         )
+     }
+@@ -427,9 +444,11 @@ private fun ShortcutCard(
+     label: String,
+     iconBg: Color,
+     iconTint: Color,
++    onClick: () -> Unit,
+     modifier: Modifier = Modifier,
+ ) {
+     Card(
++        onClick = onClick,
+         modifier = modifier,
+         shape = RoundedCornerShape(24.dp),
+         colors = CardDefaults.cardColors(containerColor = Color.White),
+diff --git a/frontend/app/src/main/java/com/example/carenest/feature/main/presentation/ChatHubScreen.kt b/frontend/app/src/main/java/com/example/carenest/feature/main/presentation/ChatHubScreen.kt
+index b34b0b5..6d9c403 100644
+--- a/frontend/app/src/main/java/com/example/carenest/feature/main/presentation/ChatHubScreen.kt
++++ b/frontend/app/src/main/java/com/example/carenest/feature/main/presentation/ChatHubScreen.kt
+@@ -26,6 +26,26 @@ import androidx.compose.material3.Card
+ import androidx.compose.material3.CardDefaults
+ import androidx.compose.material3.Icon
+ import androidx.compose.material3.Text
++import androidx.compose.material3.TextField
++import androidx.compose.material3.TextFieldDefaults
++import androidx.compose.material3.IconButton
++import androidx.compose.material3.CircularProgressIndicator
++import androidx.compose.foundation.text.KeyboardOptions
++import androidx.compose.ui.text.input.ImeAction
++import androidx.compose.material.icons.automirrored.filled.Send
++import androidx.compose.foundation.layout.WindowInsets
++import androidx.compose.foundation.layout.ime
++import androidx.compose.foundation.layout.windowInsetsPadding
++import androidx.compose.foundation.layout.heightIn
++import androidx.compose.foundation.layout.width
++import androidx.compose.material3.Surface
++import androidx.compose.ui.draw.clip
++import androidx.lifecycle.viewmodel.compose.viewModel
++import androidx.compose.ui.platform.LocalContext
++import com.example.carenest.CareNestApplication
++import com.example.carenest.feature.chat.presentation.AiChatViewModel
++import com.example.carenest.feature.chat.presentation.AiChatViewModelFactory
++import com.example.carenest.feature.chat.presentation.components.MessageBubble
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.collectAsState
+ import androidx.compose.runtime.getValue
+@@ -52,6 +72,10 @@ private enum class ChatHubTab(val label: String) {
+ fun ChatHubScreen(
+     dashboardViewModel: DashboardViewModel,
+ ) {
++    val application = LocalContext.current.applicationContext as CareNestApplication
++    val aiChatViewModel: AiChatViewModel = viewModel(
++        factory = AiChatViewModelFactory(api = application.aiChatApi)
++    )
+     var activeTab by remember { mutableStateOf(ChatHubTab.FAMILY) }
+     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+ 
+@@ -93,7 +117,7 @@ fun ChatHubScreen(
+ 
+         when (activeTab) {
+             ChatHubTab.FAMILY -> FamilyHubPane(dashboardState)
+-            ChatHubTab.AI -> AiCarePane()
++            ChatHubTab.AI -> AiCarePane(aiChatViewModel)
+         }
+     }
+ }
+@@ -169,63 +193,165 @@ private fun FamilyHubPane(
+ }
+ 
+ @Composable
+-private fun AiCarePane() {
++private fun AiCarePane(viewModel: AiChatViewModel) {
+     val prompts = listOf(
+         "H├┤m nay cß║ºn uß╗æng thuß╗æc g├¼?",
+         "Thuß╗æc n├áo sß║»p hß║┐t hß║ín?",
+         "T├│m tß║»t sß╗⌐c khß╗Åe cß╗ºa gia ─æ├¼nh",
+     )
++    
++    val state by viewModel.uiState.collectAsState()
++    val canSend = state.inputText.isNotBlank() && !state.isLoading
++
+     Column(
+-        modifier = Modifier
+-            .fillMaxSize()
+-            .padding(16.dp),
++        modifier = Modifier.fillMaxSize(),
+     ) {
+-        Card(
+-            shape = RoundedCornerShape(18.dp),
+-            colors = CardDefaults.cardColors(containerColor = Color.White),
+-            modifier = Modifier.fillMaxWidth(),
+-        ) {
+-            Column(modifier = Modifier.padding(18.dp)) {
+-                Row(verticalAlignment = Alignment.CenterVertically) {
+-                    Box(
++        if (state.messages.isEmpty()) {
++            // Show welcome and suggestions
++            Column(
++                modifier = Modifier
++                    .weight(1f)
++                    .padding(16.dp),
++            ) {
++                Card(
++                    shape = RoundedCornerShape(18.dp),
++                    colors = CardDefaults.cardColors(containerColor = Color.White),
++                    modifier = Modifier.fillMaxWidth(),
++                ) {
++                    Column(modifier = Modifier.padding(18.dp)) {
++                        Row(verticalAlignment = Alignment.CenterVertically) {
++                            Box(
++                                modifier = Modifier
++                                    .size(42.dp)
++                                    .background(Color(0xFFE0F2FE), CircleShape),
++                                contentAlignment = Alignment.Center,
++                            ) {
++                                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PrimaryBlue)
++                            }
++                            Column(modifier = Modifier.padding(start = 12.dp)) {
++                                Text("CareNest AI", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
++                                Text("Trß╗ú l├╜ sß╗⌐c khß╗Åe cho gia ─æ├¼nh bß║ín", fontSize = 13.sp, color = Color(0xFF64748B))
++                            }
++                        }
++                        Spacer(modifier = Modifier.height(16.dp))
++                        Text(
++                            "Bß║ín c├│ thß╗â hß╗Åi nhanh vß╗ü lß╗ïch thuß╗æc, tß╗º thuß╗æc, hoß║╖c t├│m tß║»t t├¼nh h├¼nh sß╗⌐c khß╗Åe hiß╗çn tß║íi.",
++                            fontSize = 14.sp,
++                            lineHeight = 21.sp,
++                            color = Color(0xFF334155),
++                        )
++                    }
++                }
++
++                Spacer(modifier = Modifier.height(16.dp))
++                prompts.forEach { prompt ->
++                    Card(
++                        shape = RoundedCornerShape(14.dp),
++                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                         modifier = Modifier
+-                            .size(42.dp)
+-                            .background(Color(0xFFE0F2FE), CircleShape),
+-                        contentAlignment = Alignment.Center,
++                            .fillMaxWidth()
++                            .padding(bottom = 10.dp)
++                            .clickable { viewModel.sendMessage(prompt) },
+                     ) {
+-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PrimaryBlue)
+-                    }
+-                    Column(modifier = Modifier.padding(start = 12.dp)) {
+-                        Text("CareNest AI", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+-                        Text("Trß╗ú l├╜ sß╗⌐c khß╗Åe cho gia ─æ├¼nh bß║ín", fontSize = 13.sp, color = Color(0xFF64748B))
++                        Text(
++                            text = prompt,
++                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
++                            fontSize = 14.sp,
++                            fontWeight = FontWeight.SemiBold,
++                            color = Color(0xFF0F172A),
++                        )
+                     }
+                 }
+-                Spacer(modifier = Modifier.height(16.dp))
++            }
++        } else {
++            // Show error message if exists
++            if (state.error != null) {
+                 Text(
+-                    "Bß║ín c├│ thß╗â hß╗Åi nhanh vß╗ü lß╗ïch thuß╗æc, tß╗º thuß╗æc, hoß║╖c t├│m tß║»t t├¼nh h├¼nh sß╗⌐c khß╗Åe hiß╗çn tß║íi.",
+-                    fontSize = 14.sp,
+-                    lineHeight = 21.sp,
+-                    color = Color(0xFF334155),
++                    text = state.error!!,
++                    color = Color.Red,
++                    fontSize = 13.sp,
++                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
++                    textAlign = TextAlign.Center
+                 )
+             }
++            // Show Chat Messages
++            LazyColumn(
++                modifier = Modifier
++                    .weight(1f)
++                    .fillMaxWidth(),
++                reverseLayout = true,
++                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 18.dp),
++                verticalArrangement = Arrangement.spacedBy(8.dp),
++            ) {
++                if (state.isLoading) {
++                    item {
++                        Box(
++                            modifier = Modifier.fillMaxWidth().padding(8.dp),
++                            contentAlignment = Alignment.Center
++                        ) {
++                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = PrimaryBlue)
++                        }
++                    }
++                }
++                items(state.messages, key = { it.id }) { message ->
++                    MessageBubble(msg = message)
++                }
++            }
+         }
+ 
+-        Spacer(modifier = Modifier.height(16.dp))
+-        prompts.forEach { prompt ->
+-            Card(
+-                shape = RoundedCornerShape(14.dp),
+-                colors = CardDefaults.cardColors(containerColor = Color.White),
++        // Chat Input Box
++        Surface(
++            color = Color.White,
++            modifier = Modifier
++                .fillMaxWidth()
++                .windowInsetsPadding(WindowInsets.ime),
++            shadowElevation = 8.dp,
++        ) {
++            Row(
+                 modifier = Modifier
+                     .fillMaxWidth()
+-                    .padding(bottom = 10.dp),
++                    .padding(horizontal = 12.dp, vertical = 10.dp),
++                verticalAlignment = Alignment.Bottom,
+             ) {
+-                Text(
+-                    text = prompt,
+-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+-                    fontSize = 14.sp,
+-                    fontWeight = FontWeight.SemiBold,
+-                    color = Color(0xFF0F172A),
++                TextField(
++                    value = state.inputText,
++                    onValueChange = viewModel::onInputChange,
++                    modifier = Modifier
++                        .weight(1f)
++                        .heightIn(min = 44.dp, max = 112.dp),
++                    placeholder = {
++                        Text(
++                            text = "Nhß║¡p tin nhß║»n...",
++                            color = Color(0xFF94A3B8),
++                            fontSize = 15.sp,
++                        )
++                    },
++                    colors = TextFieldDefaults.colors(
++                        focusedContainerColor = Color(0xFFF1F5F9),
++                        unfocusedContainerColor = Color(0xFFF1F5F9),
++                        focusedIndicatorColor = Color.Transparent,
++                        unfocusedIndicatorColor = Color.Transparent,
++                    ),
++                    shape = RoundedCornerShape(22.dp),
++                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Send),
+                 )
++                Spacer(modifier = Modifier.width(10.dp))
++                Box(
++                    modifier = Modifier
++                        .size(44.dp)
++                        .clip(CircleShape)
++                        .background(if (canSend) PrimaryBlue else Color(0xFFCBD5E1)),
++                    contentAlignment = Alignment.Center,
++                ) {
++                    IconButton(onClick = { viewModel.sendMessage() }, enabled = canSend) {
++                        Icon(
++                            Icons.AutoMirrored.Filled.Send,
++                            contentDescription = "Gß╗¡i",
++                            tint = Color.White,
++                            modifier = Modifier.size(22.dp),
++                        )
++                    }
++                }
+             }
+         }
+     }
+diff --git a/frontend/app/src/main/java/com/example/carenest/feature/main/presentation/MainScreen.kt b/frontend/app/src/main/java/com/example/carenest/feature/main/presentation/MainScreen.kt
+index eab8d83..ff378e0 100644
+--- a/frontend/app/src/main/java/com/example/carenest/feature/main/presentation/MainScreen.kt
++++ b/frontend/app/src/main/java/com/example/carenest/feature/main/presentation/MainScreen.kt
+@@ -52,6 +52,8 @@ fun MainScreen(
+     onNavigateToAddMedicine: () -> Unit = {},
+     onNavigateToMedicineSchedule: () -> Unit = {},
+     onNavigateToAddMedicineSchedule: () -> Unit = {},
++    onNavigateToAppointment: () -> Unit = {},
++    onNavigateToVaccine: (Long?) -> Unit = {},
+     onNavigateToOcrScanner: () -> Unit = {},
+     onLogout: () -> Unit = {},
+     modifier: Modifier = Modifier,
+@@ -136,6 +138,9 @@ fun MainScreen(
+             when (selectedTab) {
+                 0 -> DashboardScreen(
+                     viewModel = dashboardViewModel,
++                    onNavigateToMedicineSchedule = onNavigateToMedicineSchedule,
++                    onNavigateToAppointment = onNavigateToAppointment,
++                    onNavigateToVaccine = onNavigateToVaccine,
+                     modifier = Modifier.fillMaxSize(),
+                 )
+ 
+diff --git a/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicalScreen.kt b/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicalScreen.kt
+index 7ef9606..45ef0fb 100644
+--- a/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicalScreen.kt
++++ b/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicalScreen.kt
+@@ -33,12 +33,12 @@ import java.text.SimpleDateFormat
+ import java.util.Date
+ import java.util.Locale
+ 
+-// Gi├í┬║┬ú l├í┬║┬¡p model members nh├å┬░ b├â┬¬n Dashboard
++// Giß║ú lß║¡p model members nh╞░ b├¬n Dashboard
+ data class SimpleMember(val id: String, val name: String)
+ val dummyMembers = listOf(
+-    SimpleMember("1", "B├í┬╗ΓÇÿ"),
+-    SimpleMember("2", "M├í┬║┬╣"),
+-    SimpleMember("3", "Con G├â┬íi")
++    SimpleMember("1", "Bß╗æ"),
++    SimpleMember("2", "Mß║╣"),
++    SimpleMember("3", "Con G├íi")
+ )
+ 
+ @OptIn(ExperimentalMaterial3Api::class)
+@@ -62,7 +62,7 @@ fun MedicalScreen() {
+         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+         topBar = {
+             TopAppBar(
+-                title = { Text("L├í┬╗ΓÇ╣ch h├í┬║┬╣n m├í┬╗ΓÇ║i", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
++                title = { Text("Lß╗ïch hß║╣n mß╗¢i", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                 navigationIcon = {
+                     IconButton(onClick = { /* TODO: Go Back */ }) {
+                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+@@ -89,22 +89,22 @@ fun MedicalScreen() {
+                 letterSpacing = 1.sp
+             )
+             Text(
+-                "T├í┬║┬ío l├í┬╗ΓÇ╣ch h├í┬║┬╣n m├í┬╗ΓÇ║i",
++                "Tß║ío lß╗ïch hß║╣n mß╗¢i",
+                 fontSize = 28.sp,
+                 fontWeight = FontWeight.ExtraBold,
+                 color = Color(0xFF0F172A),
+                 modifier = Modifier.padding(top = 8.dp)
+             )
+             Text(
+-                "S├í┬║┬»p x├í┬║┬┐p c├â┬íc bu├í┬╗ΓÇói kh├â┬ím b├í┬╗ΓÇính c├í┬╗┬ºa gia ├äΓÇÿ├â┬¼nh b├í┬║┬ín v├í┬╗ΓÇ║i d├í┬╗┬» li├í┬╗ΓÇíu th├í┬║┬¡t t├í┬╗┬½ h├í┬╗ΓÇí th├í┬╗ΓÇÿng CareNest.",
++                "Sß║»p xß║┐p c├íc buß╗òi kh├ím bß╗çnh cß╗ºa gia ─æ├¼nh bß║ín vß╗¢i dß╗» liß╗çu thß║¡t tß╗½ hß╗ç thß╗æng CareNest.",
+                 fontSize = 13.sp,
+                 color = Color(0xFF64748B),
+                 lineHeight = 20.sp,
+                 modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
+             )
+ 
+-            // Th├â┬ánh vi├â┬¬n
+-            SectionLabel("TH├âΓé¼NH VI├â┼áN GIA ├ä┬É├â┼ÆNH")
++            // Th├ánh vi├¬n
++            SectionLabel("TH├ÇNH VI├èN GIA ─É├îNH")
+             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 24.dp)) {
+                 items(dummyMembers) { member ->
+                     MemberSelectCard(
+@@ -115,28 +115,28 @@ fun MedicalScreen() {
+                 }
+             }
+ 
+-            // Ph├â┬▓ng kh├â┬ím & B├â┬íc s├ä┬⌐
+-            SectionLabel("PH├âΓÇÖNG KH├â┬üM / B├í┬╗ΓÇáNH VI├í┬╗ΓÇáN")
++            // Ph├▓ng kh├ím & B├íc s─⌐
++            SectionLabel("PH├ÆNG KH├üM / Bß╗åNH VIß╗åN")
+             InputCard(
+                 value = facility,
+                 onValueChange = { facility = it },
+-                placeholder = "T├â┬¬n ph├â┬▓ng kh├â┬ím...",
++                placeholder = "T├¬n ph├▓ng kh├ím...",
+                 icon = Icons.Default.LocalHospital
+             )
+             Spacer(modifier = Modifier.height(20.dp))
+-            SectionLabel("B├â┬üC S├ä┬¿ CHUY├â┼áN KHOA")
++            SectionLabel("B├üC S─¿ CHUY├èN KHOA")
+             InputCard(
+                 value = doctor,
+                 onValueChange = { doctor = it },
+-                placeholder = "T├â┬¬n b├â┬íc s├ä┬⌐...",
++                placeholder = "T├¬n b├íc s─⌐...",
+                 icon = Icons.Default.MedicalServices
+             )
+             Spacer(modifier = Modifier.height(24.dp))
+ 
+-            // Ng├â┬áy gi├í┬╗┬¥
++            // Ng├áy giß╗¥
+             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                 Column(modifier = Modifier.weight(1f)) {
+-                    SectionLabel("NG├âΓé¼Y KH├â┬üM")
++                    SectionLabel("NG├ÇY KH├üM")
+                     ReadOnlyInputCard(
+                         value = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")).format(Date()),
+                         icon = Icons.Default.CalendarToday,
+@@ -144,7 +144,7 @@ fun MedicalScreen() {
+                     )
+                 }
+                 Column(modifier = Modifier.weight(1f)) {
+-                    SectionLabel("GI├í┬╗┼ô KH├â┬üM")
++                    SectionLabel("GIß╗£ KH├üM")
+                     ReadOnlyInputCard(
+                         value = SimpleDateFormat("HH:mm", Locale.forLanguageTag("vi-VN")).format(Date()),
+                         icon = Icons.Default.AccessTime,
+@@ -154,22 +154,22 @@ fun MedicalScreen() {
+             }
+             Spacer(modifier = Modifier.height(24.dp))
+ 
+-            // ├ä┬É├í┬╗ΓÇ╣a ch├í┬╗ΓÇ░
+-            SectionLabel("├ä┬É├í┬╗┼áA CH├í┬╗╦å")
++            // ─Éß╗ïa chß╗ë
++            SectionLabel("─Éß╗èA CHß╗ê")
+             InputCard(
+                 value = address,
+                 onValueChange = { address = it },
+-                placeholder = "├ä┬É├í┬╗ΓÇ╣a ch├í┬╗ΓÇ░ ph├â┬▓ng kh├â┬ím...",
++                placeholder = "─Éß╗ïa chß╗ë ph├▓ng kh├ím...",
+                 icon = Icons.Default.LocationOn
+             )
+             Spacer(modifier = Modifier.height(24.dp))
+ 
+-            // Ghi ch├â┬║
+-            SectionLabel("GHI CH├â┼í TH├äΓÇÜM KH├â┬üM")
++            // Ghi ch├║
++            SectionLabel("GHI CH├Ü TH─éM KH├üM")
+             OutlinedTextField(
+                 value = notes,
+                 onValueChange = { notes = it },
+-                placeholder = { Text("Ghi ch├â┬║ c├â┬íc tri├í┬╗ΓÇíu ch├í┬╗┬⌐ng ho├í┬║┬╖c ├äΓÇÿi├í┬╗┬üu c├í┬║┬ºn h├í┬╗┬Åi b├â┬íc s├ä┬⌐...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
++                placeholder = { Text("Ghi ch├║ c├íc triß╗çu chß╗⌐ng hoß║╖c ─æiß╗üu cß║ºn hß╗Åi b├íc s─⌐...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
+                 modifier = Modifier
+                     .fillMaxWidth()
+                     .height(120.dp),
+@@ -186,14 +186,14 @@ fun MedicalScreen() {
+             )
+             Spacer(modifier = Modifier.height(24.dp))
+ 
+-            // N├â┬║t L├å┬░u (Ch├í┬╗ΓÇÿng double-submit)
++            // N├║t L╞░u (Chß╗æng double-submit)
+             Button(
+                 onClick = {
+                     if (isSaving) return@Button
+                     isSaving = true
+                     coroutineScope.launch {
+-                        delay(2000) // Gi├í┬║┬ú l├í┬║┬¡p call API
+-                        snackbarHostState.showSnackbar("├ä┬É├â┬ú l├å┬░u th├â┬ánh c├â┬┤ng!")
++                        delay(2000) // Giß║ú lß║¡p call API
++                        snackbarHostState.showSnackbar("─É├ú l╞░u th├ánh c├┤ng!")
+                         facility = ""
+                         doctor = ""
+                         address = ""
+@@ -214,12 +214,12 @@ fun MedicalScreen() {
+                 if (isSaving) {
+                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                 } else {
+-                    Text("L├å┬░u l├í┬╗ΓÇ╣ch h├í┬║┬╣n", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
++                    Text("L╞░u lß╗ïch hß║╣n", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                 }
+             }
+ 
+             Text(
+-                "L├í┬╗ΓÇ╣ch h├í┬║┬╣n n├â┬áy s├í┬║┬╜ ├äΓÇÿ├å┬░├í┬╗┬úc ├äΓÇÿ├í┬╗ΓÇ£ng b├í┬╗Γäó v├í┬╗ΓÇ║i h├í┬╗ΓÇ£ s├å┬í s├í┬╗┬⌐c kh├í┬╗┬Åe ├äΓÇÿ├â┬ú ch├í┬╗┬ìn.",
++                "Lß╗ïch hß║╣n n├áy sß║╜ ─æ╞░ß╗úc ─æß╗ông bß╗Ö vß╗¢i hß╗ô s╞í sß╗⌐c khß╗Åe ─æ├ú chß╗ìn.",
+                 fontSize = 11.sp,
+                 color = Color(0xFF94A3B8),
+                 modifier = Modifier
+diff --git a/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicineViewModel.kt b/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicineViewModel.kt
+index 4f173a3..3613090 100644
+--- a/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicineViewModel.kt
++++ b/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicineViewModel.kt
+@@ -1,4 +1,4 @@
+-∩╗┐package com.example.carenest.feature.medical.presentation
++package com.example.carenest.feature.medical.presentation
+ 
+ import androidx.lifecycle.ViewModel
+ import androidx.lifecycle.viewModelScope
+@@ -14,7 +14,7 @@ class MedicineViewModel : ViewModel() {
+     private val _searchQuery = MutableStateFlow("")
+     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+ 
+-    private val _selectedFilter = MutableStateFlow("T├í┬║┬Ñt c├í┬║┬ú")
++    private val _selectedFilter = MutableStateFlow("Tß║Ñt cß║ú")
+     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
+ 
+     private val _medicines = MutableStateFlow<List<Medicine>>(emptyList())
+@@ -25,7 +25,7 @@ class MedicineViewModel : ViewModel() {
+             id = "1",
+             name = "Panadol Extra",
+             quantity = 12,
+-            unit = "vi├â┬¬n",
++            unit = "vi├¬n",
+             expiryDate = "15/01/2024",
+             status = MedicineStatus.EXPIRED
+         ),
+@@ -33,15 +33,15 @@ class MedicineViewModel : ViewModel() {
+             id = "2",
+             name = "Amoxicillin",
+             quantity = 8,
+-            unit = "g├â┬│i",
+-            expiryDate = "C├â┬▓n 12 ng├â┬áy",
++            unit = "g├│i",
++            expiryDate = "C├▓n 12 ng├áy",
+             status = MedicineStatus.EXPIRING_SOON
+         ),
+         Medicine(
+             id = "3",
+             name = "Berberin",
+             quantity = 50,
+-            unit = "vi├â┬¬n",
++            unit = "vi├¬n",
+             expiryDate = "HSD: 12/2026",
+             status = MedicineStatus.NORMAL
+         ),
+@@ -49,8 +49,8 @@ class MedicineViewModel : ViewModel() {
+             id = "4",
+             name = "Efferalgan 500mg",
+             quantity = 0,
+-            unit = "vi├â┬¬n",
+-            expiryDate = "D├â┬╣ng l├í┬║┬ºn cu├í┬╗ΓÇÿi: 2 ng├â┬áy tr├å┬░├í┬╗ΓÇ║c",
++            unit = "vi├¬n",
++            expiryDate = "D├╣ng lß║ºn cuß╗æi: 2 ng├áy tr╞░ß╗¢c",
+             status = MedicineStatus.OUT_OF_STOCK
+         ),
+         Medicine(
+@@ -90,9 +90,9 @@ class MedicineViewModel : ViewModel() {
+ 
+         // Apply Category Filter
+         filteredList = when (_selectedFilter.value) {
+-            "S├í┬║┬»p h├í┬║┬┐t h├í┬║┬ín" -> filteredList.filter { it.status == MedicineStatus.EXPIRING_SOON }
+-            "H├í┬║┬┐t h├â┬áng" -> filteredList.filter { it.status == MedicineStatus.OUT_OF_STOCK }
+-            else -> filteredList // "T├í┬║┬Ñt c├í┬║┬ú"
++            "Sß║»p hß║┐t hß║ín" -> filteredList.filter { it.status == MedicineStatus.EXPIRING_SOON }
++            "Hß║┐t h├áng" -> filteredList.filter { it.status == MedicineStatus.OUT_OF_STOCK }
++            else -> filteredList // "Tß║Ñt cß║ú"
+         }
+ 
+         _medicines.value = filteredList

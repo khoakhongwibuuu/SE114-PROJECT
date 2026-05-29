@@ -1,4 +1,4 @@
-﻿package com.example.carenest
+package com.example.carenest
 
 import android.app.Application
 import com.example.carenest.core.data.storage.SecureSessionManager
@@ -12,14 +12,21 @@ import com.example.carenest.feature.dashboard.data.remote.DashboardApi
 import com.example.carenest.core.data.network.RetrofitClient
 import com.example.carenest.feature.ekyc.data.remote.EkycApi
 import com.example.carenest.feature.ekyc.data.repository.EkycRepository
+import com.example.carenest.feature.chat.data.remote.AiChatApi
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class CareNestApplication : Application() {
     lateinit var secureSessionManager: SecureSessionManager
     lateinit var authApi: AuthApi
     lateinit var dashboardApi: DashboardApi
     lateinit var communityRepository: CommunityRepository
+    lateinit var familyApi: com.example.carenest.network.FamilyApi
     lateinit var chatRepository: ChatRepository
     lateinit var ekycRepository: EkycRepository
+    lateinit var aiChatApi: AiChatApi
 
     override fun onCreate() {
         super.onCreate()
@@ -31,7 +38,18 @@ class CareNestApplication : Application() {
         authApi = retrofit.create(AuthApi::class.java)
         dashboardApi = retrofit.create(DashboardApi::class.java)
         communityRepository = CommunityRepository(communityApi)
+        familyApi = retrofit.create(com.example.carenest.network.FamilyApi::class.java)
         chatRepository = ChatRepository(communityApi, ChatWebSocketClient(secureSessionManager))
         ekycRepository = EkycRepository(ekycApi, mediaApi)
+
+        val aiOkHttpClient = OkHttpClient.Builder()
+            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+            .build()
+        val aiRetrofit = Retrofit.Builder()
+            .baseUrl("http://10.0.2.2:8000/")
+            .client(aiOkHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        aiChatApi = aiRetrofit.create(AiChatApi::class.java)
     }
 }

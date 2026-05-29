@@ -20,6 +20,9 @@ import com.example.carenest.feature.medical.presentation.OcrScannerScreen
 import com.example.carenest.feature.auth.presentation.AuthViewModel
 import com.example.carenest.feature.auth.presentation.AuthViewModelFactory
 import com.example.carenest.feature.onboarding.presentation.OnboardingScreen
+import com.example.carenest.feature.medical.presentation.AppointmentScheduleScreen
+import com.example.carenest.feature.medical.presentation.VaccineScheduleScreen
+import com.example.carenest.feature.medical.presentation.AddVaccineScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -83,7 +86,8 @@ fun MainNavigation() {
               onNavigateToAddMedicine = { backStack.add(AddMedicine) },
               onNavigateToMedicineSchedule = { backStack.add(MedicineSchedule) },
               onNavigateToAddMedicineSchedule = { backStack.add(AddMedicineSchedule) },
-              onNavigateToOcrScanner = { backStack.add(OcrScanner) },
+              onNavigateToAppointment = { backStack.add(AppointmentSchedule) },
+              onNavigateToVaccine = { backStack.add(VaccineSchedule) },
               onLogout = {
                   scope.launch {
                       application.secureSessionManager.clearAll()
@@ -115,6 +119,24 @@ fun MainNavigation() {
           OcrScannerScreen(
             onBack = { backStack.removeLastOrNull() }
           )
+        }
+        entry<AppointmentSchedule> {
+            AppointmentScheduleScreen(onBack = { backStack.removeLastOrNull() })
+        }
+        entry<VaccineSchedule> {
+            VaccineScheduleScreen(
+                onBack = { backStack.removeLastOrNull() },
+                onAddVaccine = { profileId, editId -> 
+                    backStack.add(AddVaccine(profileId, editId)) 
+                }
+            )
+        }
+        entry<AddVaccine> { args ->
+            AddVaccineScreen(
+                profileId = args.profileId,
+                editVaccineId = args.editVaccineId,
+                onBack = { backStack.removeLastOrNull() }
+            )
         }
       },
   )
