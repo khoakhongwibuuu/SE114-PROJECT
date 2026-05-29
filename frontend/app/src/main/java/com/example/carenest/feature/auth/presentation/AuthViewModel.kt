@@ -7,6 +7,8 @@ import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.feature.auth.domain.model.LoginRequest
 import com.example.carenest.feature.auth.domain.model.RegisterRequest
+import com.example.carenest.feature.auth.domain.model.ForgotPasswordRequest
+import com.example.carenest.feature.auth.domain.model.ResetPasswordRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +21,14 @@ sealed class AuthState {
     object Loading : AuthState()
     data class Success(val message: String? = null) : AuthState()
     data class Error(val error: String) : AuthState()
+}
+
+sealed class ForgotPasswordState {
+    object Idle : ForgotPasswordState()
+    object Loading : ForgotPasswordState()
+    data class OtpSent(val error: String? = null, val isLoading: Boolean = false) : ForgotPasswordState()
+    object ResetSuccess : ForgotPasswordState()
+    data class EmailError(val error: String) : ForgotPasswordState()
 }
 
 class AuthViewModel(
@@ -75,6 +85,51 @@ class AuthViewModel(
                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
             }
         }
+    }
+
+    private val _forgotPasswordState = MutableStateFlow<ForgotPasswordState>(ForgotPasswordState.Idle)
+    val forgotPasswordState: StateFlow<ForgotPasswordState> = _forgotPasswordState.asStateFlow()
+
+    fun forgotPassword(email: String) {
+        viewModelScope.launch {
+            _forgotPasswordState.value = ForgotPasswordState.Loading
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    authApi.forgotPassword(ForgotPasswordRequest(email))
+                }
+                val envelope = response.body()
+                if (response.isSuccessful) {
+                    _forgotPasswordState.value = ForgotPasswordState.OtpSent()
+                } else {
+                    _forgotPasswordState.value = ForgotPasswordState.EmailError(envelope?.message ?: "Gửi mã thất bại: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _forgotPasswordState.value = ForgotPasswordState.EmailError(e.localizedMessage ?: "Lỗi kết nối")
+            }
+        }
+    }
+
+    fun resetPassword(email: String, otp: String, newPassword: String, confirmPassword: String) {
+        viewModelScope.launch {
+            _forgotPasswordState.value = ForgotPasswordState.OtpSent(isLoading = true)
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    authApi.resetPassword(ResetPasswordRequest(email, otp, newPassword, confirmPassword))
+                }
+                val envelope = response.body()
+                if (response.isSuccessful) {
+                    _forgotPasswordState.value = ForgotPasswordState.ResetSuccess
+                } else {
+                    _forgotPasswordState.value = ForgotPasswordState.OtpSent(error = envelope?.message ?: "Đặt lại mật khẩu thất bại: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _forgotPasswordState.value = ForgotPasswordState.OtpSent(error = e.localizedMessage ?: "Lỗi kết nối")
+            }
+        }
+    }
+
+    fun resetForgotPasswordState() {
+        _forgotPasswordState.value = ForgotPasswordState.Idle
     }
 
     fun resetState() {

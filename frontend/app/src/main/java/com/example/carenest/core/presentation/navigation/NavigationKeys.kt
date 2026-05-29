@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object Login : NavKey
 @Serializable data object Onboarding : NavKey
 @Serializable data object Register : NavKey
+@Serializable data object ForgotPassword : NavKey
 @Serializable data object MainDashboard : NavKey
 @Serializable data object AddMedicine : NavKey
 @Serializable data object FamilyPicker : NavKey
@@ -16,6 +17,11 @@ import kotlinx.serialization.Serializable
 @Serializable data object MedicineSchedule : NavKey
 @Serializable data object AddMedicineSchedule : NavKey
 @Serializable data object OcrScanner : NavKey
+// Appointment & Vaccine (remote team keys)
 @Serializable data object AppointmentSchedule : NavKey
 @Serializable data object VaccineSchedule : NavKey
 @Serializable data class AddVaccine(val profileId: Long, val editVaccineId: Long? = null) : NavKey
+// Our completed vaccination module keys
+@Serializable data object MedicalAppointment : NavKey
+@Serializable data class VaccinationTracker(val profileId: Long) : NavKey
+@Serializable data class AddVaccinationSchedule(val profileId: Long, val vaccineId: Long? = null, val doseId: Long? = null) : NavKey

@@ -15,14 +15,17 @@ import com.example.carenest.feature.auth.presentation.RegisterScreen
 import com.example.carenest.feature.main.presentation.MainScreen
 import com.example.carenest.feature.medical.presentation.AddMedicineScreen
 import com.example.carenest.feature.medical.presentation.AddMedicineScheduleScreen
+import com.example.carenest.feature.medical.presentation.MedicalScreen
 import com.example.carenest.feature.medical.presentation.MedicineScheduleScreen
 import com.example.carenest.feature.medical.presentation.OcrScannerScreen
 import com.example.carenest.feature.auth.presentation.AuthViewModel
 import com.example.carenest.feature.auth.presentation.AuthViewModelFactory
+import com.example.carenest.feature.auth.presentation.ForgotPasswordScreen
 import com.example.carenest.feature.onboarding.presentation.OnboardingScreen
 import com.example.carenest.feature.medical.presentation.AppointmentScheduleScreen
 import com.example.carenest.feature.medical.presentation.VaccineScheduleScreen
 import com.example.carenest.feature.medical.presentation.AddVaccineScreen
+
 import kotlinx.coroutines.launch
 
 @Composable
@@ -43,9 +46,12 @@ fun MainNavigation() {
   val backStack = rememberNavBackStack(startDestination)
   val scope = rememberCoroutineScope()
 
-  // Setup ViewModel using Context
+  // Setup ViewModels using Context
   val authViewModel: AuthViewModel = viewModel(
     factory = AuthViewModelFactory(application.authApi, application.secureSessionManager)
+  )
+  val vaccinationViewModel: com.example.carenest.feature.health.presentation.VaccinationViewModel = viewModel(
+    factory = com.example.carenest.feature.health.presentation.VaccinationViewModelFactory(application.vaccinationApi)
   )
 
   NavDisplay(
@@ -71,7 +77,8 @@ fun MainNavigation() {
             onLoginSuccess = { 
                 backStack.clear()
                 backStack.add(MainDashboard) 
-            }
+            },
+            onNavigateToForgotPassword = { backStack.add(ForgotPassword) }
           )
         }
         entry<Register> {
@@ -80,14 +87,50 @@ fun MainNavigation() {
                 onNavigateToLogin = { backStack.removeLastOrNull() }
             )
         }
+        entry<ForgotPassword> {
+            ForgotPasswordScreen(
+                viewModel = authViewModel,
+                onNavigateToLogin = { backStack.removeLastOrNull() }
+            )
+        }
+        entry<MedicalAppointment> {
+            MedicalScreen(
+                onBack = { backStack.removeLastOrNull() }
+            )
+        }
+        entry<VaccinationTracker> {
+            val key = it as VaccinationTracker
+            com.example.carenest.feature.health.presentation.VaccinationTrackerScreen(
+                profileId = key.profileId,
+                viewModel = vaccinationViewModel,
+                onNavigateBack = { backStack.removeLastOrNull() },
+                onAddVaccination = { profileId -> backStack.add(AddVaccinationSchedule(profileId = profileId)) },
+                onEditDose = { profileId, recordId, doseId -> 
+                    backStack.add(AddVaccinationSchedule(profileId = profileId, vaccineId = recordId, doseId = doseId)) 
+                }
+            )
+        }
+        entry<AddVaccinationSchedule> {
+            val key = it as AddVaccinationSchedule
+            com.example.carenest.feature.health.presentation.AddVaccinationScheduleScreen(
+                profileId = key.profileId,
+                vaccineId = key.vaccineId,
+                doseId = key.doseId,
+                viewModel = vaccinationViewModel,
+                onNavigateBack = { backStack.removeLastOrNull() }
+            )
+        }
         entry<MainDashboard> {
           MainScreen(
               onItemClick = { /* noop for now */ },
               onNavigateToAddMedicine = { backStack.add(AddMedicine) },
               onNavigateToMedicineSchedule = { backStack.add(MedicineSchedule) },
               onNavigateToAddMedicineSchedule = { backStack.add(AddMedicineSchedule) },
+              onNavigateToOcrScanner = { backStack.add(OcrScanner) },
               onNavigateToAppointment = { backStack.add(AppointmentSchedule) },
               onNavigateToVaccine = { backStack.add(VaccineSchedule) },
+              onNavigateToAppointments = { backStack.add(MedicalAppointment) },
+              onNavigateToVaccinations = { profileId -> backStack.add(VaccinationTracker(profileId)) },
               onLogout = {
                   scope.launch {
                       application.secureSessionManager.clearAll()

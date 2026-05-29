@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.auth.domain.model
+package com.example.carenest.feature.auth.domain.model
 
 data class LoginRequest(
     val email: String,
@@ -30,3 +30,15 @@ data class UserInfo(
     val avatarUrl: String? = null,
     val role: String = "USER"
 )
+
+data class ForgotPasswordRequest(
+    val email: String
+)
+
+data class ResetPasswordRequest(
+    val email: String,
+    val otp: String,
+    val newPassword: String,
+    val confirmPassword: String
+)
+
