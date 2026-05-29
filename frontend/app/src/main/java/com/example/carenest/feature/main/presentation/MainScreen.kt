@@ -37,9 +37,11 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.chat.presentation.ChatScreen
 import com.example.carenest.feature.community.domain.model.CommunityGroup
 import com.example.carenest.feature.community.presentation.CommunityScreen
-import com.example.carenest.feature.dashboard.presentation.DashboardScreen
+
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModelFactory
+import com.example.carenest.feature.chat.presentation.AiChatViewModel
+import com.example.carenest.feature.chat.presentation.AiChatViewModelFactory
 import com.example.carenest.feature.ekyc.presentation.DoctorVerificationScreen
 import com.example.carenest.feature.family.presentation.FamilyFlowScreen
 import com.example.carenest.feature.profile.presentation.ProfileScreen
@@ -52,6 +54,8 @@ fun MainScreen(
     onNavigateToAddMedicine: () -> Unit = {},
     onNavigateToMedicineSchedule: () -> Unit = {},
     onNavigateToAddMedicineSchedule: () -> Unit = {},
+    onNavigateToAppointment: () -> Unit = {},
+    onNavigateToVaccine: () -> Unit = {},
     onNavigateToOcrScanner: () -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -63,6 +67,9 @@ fun MainScreen(
     val application = context.applicationContext as CareNestApplication
     val dashboardViewModel: DashboardViewModel = viewModel(
         factory = DashboardViewModelFactory(application.dashboardApi, application.secureSessionManager),
+    )
+    val aiChatViewModel: AiChatViewModel = viewModel(
+        factory = AiChatViewModelFactory(application.aiChatApi)
     )
     val medicineViewModel: MedicineViewModel = viewModel()
 
@@ -134,9 +141,12 @@ fun MainScreen(
                 .padding(paddingValues),
         ) {
             when (selectedTab) {
-                0 -> DashboardScreen(
+                0 -> HomeDashboardScreen(
                     viewModel = dashboardViewModel,
-                    modifier = Modifier.fillMaxSize(),
+                    onNavigateToMedicine = onNavigateToMedicineSchedule,
+                    onNavigateToAppointment = onNavigateToAppointment,
+                    onNavigateToVaccine = onNavigateToVaccine,
+                    onNavigateToTask = {}
                 )
 
                 1 -> FamilyFlowScreen(
@@ -154,6 +164,7 @@ fun MainScreen(
 
                 3 -> ChatHubScreen(
                     dashboardViewModel = dashboardViewModel,
+                    aiChatViewModel = aiChatViewModel,
                 )
 
                 4 -> {

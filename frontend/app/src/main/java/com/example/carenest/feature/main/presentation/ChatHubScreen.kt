@@ -39,9 +39,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.Send
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.dashboard.presentation.DashboardState
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
+import com.example.carenest.feature.chat.presentation.AiChatViewModel
 
 private enum class ChatHubTab(val label: String) {
     FAMILY("Tổ ấm"),
@@ -51,6 +57,7 @@ private enum class ChatHubTab(val label: String) {
 @Composable
 fun ChatHubScreen(
     dashboardViewModel: DashboardViewModel,
+    aiChatViewModel: AiChatViewModel
 ) {
     var activeTab by remember { mutableStateOf(ChatHubTab.FAMILY) }
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
@@ -93,7 +100,7 @@ fun ChatHubScreen(
 
         when (activeTab) {
             ChatHubTab.FAMILY -> FamilyHubPane(dashboardState)
-            ChatHubTab.AI -> AiCarePane()
+            ChatHubTab.AI -> AiCarePane(aiChatViewModel)
         }
     }
 }
@@ -169,63 +176,141 @@ private fun FamilyHubPane(
 }
 
 @Composable
-private fun AiCarePane() {
-    val prompts = listOf(
-        "Hôm nay cần uống thuốc gì?",
-        "Thuốc nào sắp hết hạn?",
-        "Tóm tắt sức khỏe của gia đình",
-    )
+private fun AiCarePane(viewModel: AiChatViewModel) {
+    val messages by viewModel.messages.collectAsState()
+    val isTyping by viewModel.isTyping.collectAsState()
+    var inputText by remember { mutableStateOf("") }
+    
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    androidx.compose.runtime.LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .background(Color.White)
     ) {
-        Card(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            modifier = Modifier.fillMaxWidth(),
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            items(messages) { msg ->
+                val align = if (msg.isUser) Alignment.End else Alignment.Start
+                val bg = if (msg.isUser) PrimaryBlue else Color(0xFFF1F5F9)
+                val textColor = if (msg.isUser) Color.White else Color(0xFF1E293B)
+                
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = align
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
-                            .background(Color(0xFFE0F2FE), CircleShape),
-                        contentAlignment = Alignment.Center,
+                            .background(bg, RoundedCornerShape(16.dp))
+                            .padding(horizontal = 16.dp, vertical = 10.dp)
                     ) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PrimaryBlue)
-                    }
-                    Column(modifier = Modifier.padding(start = 12.dp)) {
-                        Text("CareNest AI", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
-                        Text("Trợ lý sức khỏe cho gia đình bạn", fontSize = 13.sp, color = Color(0xFF64748B))
+                        Text(text = msg.text, color = textColor, fontSize = 15.sp, lineHeight = 22.sp)
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    "Bạn có thể hỏi nhanh về lịch thuốc, tủ thuốc, hoặc tóm tắt tình hình sức khỏe hiện tại.",
-                    fontSize = 14.sp,
-                    lineHeight = 21.sp,
-                    color = Color(0xFF334155),
-                )
+            }
+            if (isTyping) {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(Color(0xFFF1F5F9), RoundedCornerShape(16.dp))
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                        ) {
+                            Text("Đang trả lời...", color = Color(0xFF94A3B8), fontSize = 14.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                        }
+                    }
+                }
+            }
+            
+            if (messages.size == 1) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Gợi ý cho bạn:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val prompts = listOf(
+                        "Hôm nay cần uống thuốc gì?",
+                        "Thuốc nào sắp hết hạn?",
+                        "Tóm tắt sức khỏe của gia đình"
+                    )
+                    prompts.forEach { prompt ->
+                        Card(
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp)
+                                .clickable {
+                                    viewModel.sendMessage(prompt)
+                                }
+                        ) {
+                            Text(
+                                text = prompt,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                fontSize = 14.sp,
+                                color = PrimaryBlue,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        prompts.forEach { prompt ->
-            Card(
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+        
+        // Input area
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = inputText,
+                onValueChange = { inputText = it },
+                placeholder = { Text("Hỏi CareNest AI...", color = Color(0xFF94A3B8)) },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(24.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFF1F5F9),
+                    unfocusedContainerColor = Color(0xFFF1F5F9),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                maxLines = 3
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp),
+                    .size(48.dp)
+                    .background(if (inputText.isNotBlank() && !isTyping) PrimaryBlue else Color(0xFFE2E8F0), CircleShape)
+                    .clickable(enabled = inputText.isNotBlank() && !isTyping) {
+                        viewModel.sendMessage(inputText)
+                        inputText = ""
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = prompt,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF0F172A),
-                )
+                if (isTyping) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = PrimaryBlue, strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Default.Send, contentDescription = "Gửi", tint = if (inputText.isNotBlank()) Color.White else Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
+                }
             }
         }
     }
