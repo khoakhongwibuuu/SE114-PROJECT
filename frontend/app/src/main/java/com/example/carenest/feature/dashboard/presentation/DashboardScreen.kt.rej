@@ -1,0 +1,25 @@
+diff a/frontend/app/src/main/java/com/example/carenest/feature/dashboard/presentation/DashboardScreen.kt b/frontend/app/src/main/java/com/example/carenest/feature/dashboard/presentation/DashboardScreen.kt	(rejected hunks)
+@@ -402,6 +416,7 @@ private fun ShortcutRow() {
+             label = "Lß╗ïch thuß╗æc",
+             iconBg = Color(0xFFE0F2FE),
+             iconTint = Color(0xFF0EA5E9),
++            onClick = onMedicineScheduleClick,
+             modifier = Modifier.weight(1f),
+         )
+         ShortcutCard(
+@@ -409,6 +424,7 @@ private fun ShortcutRow() {
+             label = "Lß╗ïch hß║╣n",
+             iconBg = Color(0xFFF3E8FF),
+             iconTint = Color(0xFFA855F7),
++            onClick = onAppointmentClick,
+             modifier = Modifier.weight(1f),
+         )
+         ShortcutCard(
+@@ -416,6 +432,7 @@ private fun ShortcutRow() {
+             label = "Ti├¬m chß╗ºng",
+             iconBg = Color(0xFFE0F7FA),
+             iconTint = Color(0xFF0097A7),
++            onClick = onVaccineClick,
+             modifier = Modifier.weight(1f),
+         )
+     }
