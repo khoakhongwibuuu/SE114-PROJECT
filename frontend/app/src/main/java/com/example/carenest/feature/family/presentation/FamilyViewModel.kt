@@ -1,13 +1,15 @@
-package com.example.carenest.viewmodel
+package com.example.carenest.feature.family.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 
-import com.example.carenest.data.FamilyRepository
-import com.example.carenest.model.FamilyInvitationItem
-import com.example.carenest.model.FamilyJoinCodeResponse
-import com.example.carenest.model.FamilySummary
+import com.example.carenest.feature.family.data.repository.FamilyRepository
+import com.example.carenest.feature.family.domain.model.FamilyDetailResponse
+import com.example.carenest.feature.family.domain.model.FamilyInvitationItem
+import com.example.carenest.feature.family.domain.model.FamilyJoinCodeResponse
+import com.example.carenest.feature.family.domain.model.FamilySummary
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +21,7 @@ data class FamilyUiState(
     val isBusy: Boolean = false,
     val myFamilies: List<FamilySummary> = emptyList(),
     val activeFamilyId: Int? = null,
+    val activeFamily: FamilyDetailResponse? = null,
     val receivedInvitations: List<FamilyInvitationItem> = emptyList(),
     val sentInvitations: List<FamilyInvitationItem> = emptyList(),
     val joinCodeInfo: FamilyJoinCodeResponse? = null,
@@ -34,7 +37,9 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
     init {
         viewModelScope.launch {
             val activeIdStr = repository.getActiveFamilyId()
-            _uiState.update { it.copy(activeFamilyId = activeIdStr?.toIntOrNull()) }
+            val id = activeIdStr?.toIntOrNull()
+            _uiState.update { it.copy(activeFamilyId = id) }
+            id?.let { loadActiveFamilyDetail(it) }
         }
         loadFamilies()
     }
@@ -63,6 +68,19 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
         viewModelScope.launch {
             repository.saveActiveFamilyId(familyId.toString())
             _uiState.update { it.copy(activeFamilyId = familyId) }
+            loadActiveFamilyDetail(familyId)
+        }
+    }
+
+    private fun loadActiveFamilyDetail(familyId: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            val result = repository.getFamilyById(familyId)
+            result.onSuccess { detail ->
+                _uiState.update { it.copy(isLoading = false, activeFamily = detail) }
+            }.onFailure { e ->
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
         }
     }
 
@@ -71,7 +89,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.createFamily(name)
             result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "Tạo gia đình thành công") }
+                _uiState.update { it.copy(isBusy = false, message = "Táº¡o gia Ä‘Ã¬nh thÃ nh cÃ´ng") }
                 loadFamilies()
             }.onFailure { e ->
                 _uiState.update { it.copy(isBusy = false, error = e.message) }
@@ -100,7 +118,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.inviteMember(activeFamilyId, email, role)
             result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "Đã gửi lời mời") }
+                _uiState.update { it.copy(isBusy = false, message = "ÄÃ£ gá»­i lá»i má»i") }
                 // Reload sent invitations
                 val sentRes = repository.getSentInvitations()
                 sentRes.onSuccess { list ->
@@ -138,7 +156,20 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.joinFamilyByCode(code, role)
             result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "Tham gia thành công") }
+                _uiState.update { it.copy(isBusy = false, message = "Tham gia thÃ nh cÃ´ng") }
+                loadFamilies()
+            }.onFailure { e ->
+                _uiState.update { it.copy(isBusy = false, error = e.message) }
+            }
+        }
+    }
+
+    fun joinFamilyByQr(file: File, role: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true, error = null) }
+            val result = repository.joinFamilyByQr(file, role)
+            result.onSuccess {
+                _uiState.update { it.copy(isBusy = false, message = "Tham gia bÃ¢Ì£ng QR thÃ nh cÃ´ng") }
                 loadFamilies()
             }.onFailure { e ->
                 _uiState.update { it.copy(isBusy = false, error = e.message) }

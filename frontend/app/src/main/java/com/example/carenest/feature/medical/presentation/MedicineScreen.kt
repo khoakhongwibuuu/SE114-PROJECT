@@ -185,7 +185,13 @@ fun MedicineScreen(
 
             // Filter chips
             item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = (-16).dp)
+                ) {
                     items(CabinetFilter.entries, key = { it.name }) { filter ->
                         val selected = selectedFilter == filter
                         Box(

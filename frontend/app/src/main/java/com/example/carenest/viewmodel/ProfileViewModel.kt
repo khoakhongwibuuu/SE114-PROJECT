@@ -3,7 +3,7 @@ package com.example.carenest.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.data.FamilyRepository
+import com.example.carenest.feature.family.data.repository.FamilyRepository
 import com.example.carenest.model.HealthProfile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -1,8 +1,11 @@
-package com.example.carenest.data
+package com.example.carenest.feature.family.data.repository
 
-import com.example.carenest.model.*
-import com.example.carenest.network.FamilyApi
+import com.example.carenest.feature.family.domain.model.*
+import com.example.carenest.feature.family.data.remote.FamilyApi
 import com.example.carenest.core.data.storage.SecureSessionManager
+import com.example.carenest.model.HealthProfile
+import com.example.carenest.model.MedicalCondition
+import com.example.carenest.model.EmergencyContact
 import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -54,7 +57,7 @@ class FamilyRepository(
                 val conditionsList = mutableListOf<MedicalCondition>()
                 if (!raw.chronicDiseases.isNullOrEmpty()) {
                     raw.chronicDiseases.split(";").forEach {
-                        if (it.isNotBlank()) conditionsList.add(MedicalCondition(it.trim(), "Theo dõi định kỳ"))
+                        if (it.isNotBlank()) conditionsList.add(MedicalCondition(it.trim(), "Theo doi dinh ky"))
                     }
                 }
 
@@ -75,7 +78,7 @@ class FamilyRepository(
                 
                 // Emergency Contact Mock based on phone
                 val emContact = if (!raw.emergencyContactPhone.isNullOrEmpty()) {
-                    EmergencyContact("Người thân", "Người nhà", raw.emergencyContactPhone)
+                    EmergencyContact("Nguoi than", "Nguoi nha", raw.emergencyContactPhone)
                 } else null
 
                 val profile = HealthProfile(
@@ -83,7 +86,7 @@ class FamilyRepository(
                     name = raw.fullName,
                     role = raw.relationship,
                     age = calcAge,
-                    location = "Hồ Chí Minh", // Mocked as requested
+                    location = "Ho Chi Minh", // Mocked as requested
                     avatarUrl = raw.avatarUrl,
                     isVerified = true,
                     bloodType = raw.bloodType,
