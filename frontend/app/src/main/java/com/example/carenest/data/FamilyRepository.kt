@@ -2,6 +2,7 @@ package com.example.carenest.data
 
 import com.example.carenest.model.*
 import com.example.carenest.network.FamilyApi
+import com.example.carenest.core.data.storage.SecureSessionManager
 import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -11,7 +12,7 @@ import java.io.File
 
 class FamilyRepository(
     private val familyApi: FamilyApi,
-    private val dataStoreManager: DataStoreManager
+    private val dataStoreManager: SecureSessionManager
 ) {
     suspend fun getMyFamilyList(): Result<List<FamilySummary>> {
         return try {

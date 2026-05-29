@@ -1,0 +1,161 @@
+diff a/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicalScreen.kt b/frontend/app/src/main/java/com/example/carenest/feature/medical/presentation/MedicalScreen.kt	(rejected hunks)
+@@ -33,12 +33,12 @@ import java.text.SimpleDateFormat
+ import java.util.Date
+ import java.util.Locale
+ 
+-// Gi├í┬║┬ú l├í┬║┬¡p model members nh├å┬░ b├â┬¬n Dashboard
++// Giß║ú lß║¡p model members nh╞░ b├¬n Dashboard
+ data class SimpleMember(val id: String, val name: String)
+ val dummyMembers = listOf(
+-    SimpleMember("1", "B├í┬╗ΓÇÿ"),
+-    SimpleMember("2", "M├í┬║┬╣"),
+-    SimpleMember("3", "Con G├â┬íi")
++    SimpleMember("1", "Bß╗æ"),
++    SimpleMember("2", "Mß║╣"),
++    SimpleMember("3", "Con G├íi")
+ )
+ 
+ @OptIn(ExperimentalMaterial3Api::class)
+@@ -62,7 +62,7 @@ fun MedicalScreen() {
+         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+         topBar = {
+             TopAppBar(
+-                title = { Text("L├í┬╗ΓÇ╣ch h├í┬║┬╣n m├í┬╗ΓÇ║i", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
++                title = { Text("Lß╗ïch hß║╣n mß╗¢i", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                 navigationIcon = {
+                     IconButton(onClick = { /* TODO: Go Back */ }) {
+                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+@@ -89,22 +89,22 @@ fun MedicalScreen() {
+                 letterSpacing = 1.sp
+             )
+             Text(
+-                "T├í┬║┬ío l├í┬╗ΓÇ╣ch h├í┬║┬╣n m├í┬╗ΓÇ║i",
++                "Tß║ío lß╗ïch hß║╣n mß╗¢i",
+                 fontSize = 28.sp,
+                 fontWeight = FontWeight.ExtraBold,
+                 color = Color(0xFF0F172A),
+                 modifier = Modifier.padding(top = 8.dp)
+             )
+             Text(
+-                "S├í┬║┬»p x├í┬║┬┐p c├â┬íc bu├í┬╗ΓÇói kh├â┬ím b├í┬╗ΓÇính c├í┬╗┬ºa gia ├äΓÇÿ├â┬¼nh b├í┬║┬ín v├í┬╗ΓÇ║i d├í┬╗┬» li├í┬╗ΓÇíu th├í┬║┬¡t t├í┬╗┬½ h├í┬╗ΓÇí th├í┬╗ΓÇÿng CareNest.",
++                "Sß║»p xß║┐p c├íc buß╗òi kh├ím bß╗çnh cß╗ºa gia ─æ├¼nh bß║ín vß╗¢i dß╗» liß╗çu thß║¡t tß╗½ hß╗ç thß╗æng CareNest.",
+                 fontSize = 13.sp,
+                 color = Color(0xFF64748B),
+                 lineHeight = 20.sp,
+                 modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
+             )
+ 
+-            // Th├â┬ánh vi├â┬¬n
+-            SectionLabel("TH├âΓé¼NH VI├â┼áN GIA ├ä┬É├â┼ÆNH")
++            // Th├ánh vi├¬n
++            SectionLabel("TH├ÇNH VI├èN GIA ─É├îNH")
+             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 24.dp)) {
+                 items(dummyMembers) { member ->
+                     MemberSelectCard(
+@@ -115,28 +115,28 @@ fun MedicalScreen() {
+                 }
+             }
+ 
+-            // Ph├â┬▓ng kh├â┬ím & B├â┬íc s├ä┬⌐
+-            SectionLabel("PH├âΓÇÖNG KH├â┬üM / B├í┬╗ΓÇáNH VI├í┬╗ΓÇáN")
++            // Ph├▓ng kh├ím & B├íc s─⌐
++            SectionLabel("PH├ÆNG KH├üM / Bß╗åNH VIß╗åN")
+             InputCard(
+                 value = facility,
+                 onValueChange = { facility = it },
+-                placeholder = "T├â┬¬n ph├â┬▓ng kh├â┬ím...",
++                placeholder = "T├¬n ph├▓ng kh├ím...",
+                 icon = Icons.Default.LocalHospital
+             )
+             Spacer(modifier = Modifier.height(20.dp))
+-            SectionLabel("B├â┬üC S├ä┬¿ CHUY├â┼áN KHOA")
++            SectionLabel("B├üC S─¿ CHUY├èN KHOA")
+             InputCard(
+                 value = doctor,
+                 onValueChange = { doctor = it },
+-                placeholder = "T├â┬¬n b├â┬íc s├ä┬⌐...",
++                placeholder = "T├¬n b├íc s─⌐...",
+                 icon = Icons.Default.MedicalServices
+             )
+             Spacer(modifier = Modifier.height(24.dp))
+ 
+-            // Ng├â┬áy gi├í┬╗┬¥
++            // Ng├áy giß╗¥
+             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                 Column(modifier = Modifier.weight(1f)) {
+-                    SectionLabel("NG├âΓé¼Y KH├â┬üM")
++                    SectionLabel("NG├ÇY KH├üM")
+                     ReadOnlyInputCard(
+                         value = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("vi-VN")).format(Date()),
+                         icon = Icons.Default.CalendarToday,
+@@ -144,7 +144,7 @@ fun MedicalScreen() {
+                     )
+                 }
+                 Column(modifier = Modifier.weight(1f)) {
+-                    SectionLabel("GI├í┬╗┼ô KH├â┬üM")
++                    SectionLabel("GIß╗£ KH├üM")
+                     ReadOnlyInputCard(
+                         value = SimpleDateFormat("HH:mm", Locale.forLanguageTag("vi-VN")).format(Date()),
+                         icon = Icons.Default.AccessTime,
+@@ -154,22 +154,22 @@ fun MedicalScreen() {
+             }
+             Spacer(modifier = Modifier.height(24.dp))
+ 
+-            // ├ä┬É├í┬╗ΓÇ╣a ch├í┬╗ΓÇ░
+-            SectionLabel("├ä┬É├í┬╗┼áA CH├í┬╗╦å")
++            // ─Éß╗ïa chß╗ë
++            SectionLabel("─Éß╗èA CHß╗ê")
+             InputCard(
+                 value = address,
+                 onValueChange = { address = it },
+-                placeholder = "├ä┬É├í┬╗ΓÇ╣a ch├í┬╗ΓÇ░ ph├â┬▓ng kh├â┬ím...",
++                placeholder = "─Éß╗ïa chß╗ë ph├▓ng kh├ím...",
+                 icon = Icons.Default.LocationOn
+             )
+             Spacer(modifier = Modifier.height(24.dp))
+ 
+-            // Ghi ch├â┬║
+-            SectionLabel("GHI CH├â┼í TH├äΓÇÜM KH├â┬üM")
++            // Ghi ch├║
++            SectionLabel("GHI CH├Ü TH─éM KH├üM")
+             OutlinedTextField(
+                 value = notes,
+                 onValueChange = { notes = it },
+-                placeholder = { Text("Ghi ch├â┬║ c├â┬íc tri├í┬╗ΓÇíu ch├í┬╗┬⌐ng ho├í┬║┬╖c ├äΓÇÿi├í┬╗┬üu c├í┬║┬ºn h├í┬╗┬Åi b├â┬íc s├ä┬⌐...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
++                placeholder = { Text("Ghi ch├║ c├íc triß╗çu chß╗⌐ng hoß║╖c ─æiß╗üu cß║ºn hß╗Åi b├íc s─⌐...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
+                 modifier = Modifier
+                     .fillMaxWidth()
+                     .height(120.dp),
+@@ -186,14 +186,14 @@ fun MedicalScreen() {
+             )
+             Spacer(modifier = Modifier.height(24.dp))
+ 
+-            // N├â┬║t L├å┬░u (Ch├í┬╗ΓÇÿng double-submit)
++            // N├║t L╞░u (Chß╗æng double-submit)
+             Button(
+                 onClick = {
+                     if (isSaving) return@Button
+                     isSaving = true
+                     coroutineScope.launch {
+-                        delay(2000) // Gi├í┬║┬ú l├í┬║┬¡p call API
+-                        snackbarHostState.showSnackbar("├ä┬É├â┬ú l├å┬░u th├â┬ánh c├â┬┤ng!")
++                        delay(2000) // Giß║ú lß║¡p call API
++                        snackbarHostState.showSnackbar("─É├ú l╞░u th├ánh c├┤ng!")
+                         facility = ""
+                         doctor = ""
+                         address = ""
+@@ -214,12 +214,12 @@ fun MedicalScreen() {
+                 if (isSaving) {
+                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                 } else {
+-                    Text("L├å┬░u l├í┬╗ΓÇ╣ch h├í┬║┬╣n", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
++                    Text("L╞░u lß╗ïch hß║╣n", fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                 }
+             }
+ 
+             Text(
+-                "L├í┬╗ΓÇ╣ch h├í┬║┬╣n n├â┬áy s├í┬║┬╜ ├äΓÇÿ├å┬░├í┬╗┬úc ├äΓÇÿ├í┬╗ΓÇ£ng b├í┬╗Γäó v├í┬╗ΓÇ║i h├í┬╗ΓÇ£ s├å┬í s├í┬╗┬⌐c kh├í┬╗┬Åe ├äΓÇÿ├â┬ú ch├í┬╗┬ìn.",
++                "Lß╗ïch hß║╣n n├áy sß║╜ ─æ╞░ß╗úc ─æß╗ông bß╗Ö vß╗¢i hß╗ô s╞í sß╗⌐c khß╗Åe ─æ├ú chß╗ìn.",
+                 fontSize = 11.sp,
+                 color = Color(0xFF94A3B8),
+                 modifier = Modifier

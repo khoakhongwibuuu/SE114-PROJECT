@@ -12,8 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-import com.example.carenest.model.DashboardTask
-import com.example.carenest.model.TaskType
+import com.example.carenest.feature.dashboard.domain.model.DashboardTask
 
 sealed class DashboardState {
     object Loading : DashboardState()
@@ -73,7 +72,7 @@ class DashboardViewModel(
             tasks.add(
                 DashboardTask(
                     id = "med_${med.id}",
-                    type = TaskType.MEDICATION,
+                    type = "MEDICATION",
                     title = med.name,
                     subtitle = med.time,
                     icon = "pill",
@@ -88,7 +87,7 @@ class DashboardViewModel(
             tasks.add(
                 DashboardTask(
                     id = "appt_${appt.id}",
-                    type = TaskType.APPOINTMENT,
+                    type = "APPOINTMENT",
                     title = appt.doctorName,
                     subtitle = "${appt.date} - ${appt.note ?: "Khám bệnh"}",
                     icon = "calendar_month",
@@ -103,7 +102,7 @@ class DashboardViewModel(
             tasks.add(
                 DashboardTask(
                     id = "vac_${vac.id}",
-                    type = TaskType.VACCINATION,
+                    type = "VACCINATION",
                     title = vac.name,
                     subtitle = vac.date,
                     icon = "syringe",
