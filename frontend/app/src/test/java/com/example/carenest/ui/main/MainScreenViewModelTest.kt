@@ -1,6 +1,6 @@
-package com.example.carenest.ui.main
+package com.example.carenest.feature.main.presentation
 
-import com.example.carenest.data.DataRepository
+import com.example.carenest.feature.main.data.DataRepository
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first

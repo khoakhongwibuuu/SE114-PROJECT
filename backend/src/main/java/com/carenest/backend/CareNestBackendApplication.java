@@ -8,9 +8,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * CareNest Backend - Entry Point
  *
- * Ứng dụng quản lý sức khỏe gia đình.
- * - @SpringBootApplication: Bật auto-config, component scan, configuration
- * - @EnableScheduling: Cho phép chạy Cronjob (@Scheduled) nhắc thuốc, lịch khám
+ * á»¨ng dá»¥ng quáº£n lÃ½ sá»©c khá»e gia Ä‘Ã¬nh.
+ * - @SpringBootApplication: Báº­t auto-config, component scan, configuration
+ * - @EnableScheduling: Cho phÃ©p cháº¡y Cronjob (@Scheduled) nháº¯c thuá»‘c, lá»‹ch khÃ¡m
  */
 @SpringBootApplication(excludeName = {"org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration"})
 @EnableScheduling
