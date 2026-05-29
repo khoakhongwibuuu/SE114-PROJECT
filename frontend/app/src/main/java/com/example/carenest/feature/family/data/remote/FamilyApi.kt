@@ -1,6 +1,6 @@
-package com.example.carenest.network
+package com.example.carenest.feature.family.data.remote
 
-import com.example.carenest.model.*
+import com.example.carenest.feature.family.domain.model.*
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -13,7 +13,7 @@ interface FamilyApi {
     suspend fun getFamilyById(@Path("id") familyId: Int): Response<FamilyDetailResponse>
 
     @GET("/health-profiles/{id}")
-    suspend fun getFamilyProfile(@Path("id") profileId: Int): Response<RawHealthProfileResponse>
+    suspend fun getFamilyProfile(@Path("id") profileId: Int): Response<com.example.carenest.model.RawHealthProfileResponse>
 
     @POST("/families")
     suspend fun createFamily(@Body request: CreateFamilyRequest): Response<Unit>

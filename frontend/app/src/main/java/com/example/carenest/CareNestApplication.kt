@@ -26,7 +26,8 @@ class CareNestApplication : Application() {
     lateinit var dashboardApi: DashboardApi
     lateinit var vaccinationApi: com.example.carenest.feature.health.data.remote.VaccinationApi
     lateinit var communityRepository: CommunityRepository
-    lateinit var familyApi: com.example.carenest.network.FamilyApi
+    lateinit var familyApi: com.example.carenest.feature.family.data.remote.FamilyApi
+    lateinit var familyRepository: com.example.carenest.feature.family.data.repository.FamilyRepository
     lateinit var chatRepository: ChatRepository
     lateinit var ekycRepository: EkycRepository
     lateinit var aiChatApi: AiChatApi
@@ -44,7 +45,8 @@ class CareNestApplication : Application() {
         dashboardApi = retrofit.create(DashboardApi::class.java)
         vaccinationApi = retrofit.create(com.example.carenest.feature.health.data.remote.VaccinationApi::class.java)
         communityRepository = CommunityRepository(communityApi)
-        familyApi = retrofit.create(com.example.carenest.network.FamilyApi::class.java)
+        familyApi = retrofit.create(com.example.carenest.feature.family.data.remote.FamilyApi::class.java)
+        familyRepository = com.example.carenest.feature.family.data.repository.FamilyRepository(familyApi, secureSessionManager)
         chatRepository = ChatRepository(communityApi, ChatWebSocketClient(secureSessionManager))
         ekycRepository = EkycRepository(ekycApi, mediaApi)
         medicineApi = retrofit.create(MedicineApi::class.java)
@@ -54,7 +56,7 @@ class CareNestApplication : Application() {
             .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
             .build()
         val aiRetrofit = Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8000/")
+            .baseUrl(com.example.carenest.AppConfig.AI_BACKEND_URL)
             .client(aiOkHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

@@ -1,4 +1,4 @@
-package com.example.carenest.ui.family
+package com.example.carenest.feature.family.presentation
 
 import android.graphics.BitmapFactory
 import android.util.Base64
@@ -7,13 +7,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Key
@@ -29,10 +30,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.carenest.viewmodel.FamilyViewModel
+import com.example.carenest.feature.family.domain.model.FamilyMemberSummary
+
+val JOIN_ROLE_OPTIONS = listOf(
+    Pair("Bố", "FATHER"),
+    Pair("Mẹ", "MOTHER"),
+    Pair("Anh", "OLDER_BROTHER"),
+    Pair("Chị", "OLDER_SISTER"),
+    Pair("Em", "YOUNGER"),
+    Pair("Khác", "OTHER")
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,13 +57,22 @@ fun FamilyManagementScreen(
     
     LaunchedEffect(Unit) {
         viewModel.loadInvitations()
-        viewModel.loadJoinCode() // Load join code if owner
+        viewModel.loadJoinCode()
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = if (currentMode == "create") "Tạo gia đình" else if (currentMode == "join") "Tham gia gia đình" else "Quản lý thành viên", fontWeight = FontWeight.Bold) },
+                title = { 
+                    Text(
+                        text = when (currentMode) {
+                            "create" -> "Tạo gia đình"
+                            "join" -> "Tham gia gia đình"
+                            else -> "Quản lý thành viên"
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { 
                         if (currentMode != null) currentMode = null else onBack() 
@@ -109,7 +127,7 @@ fun CreateFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0369A1)),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Tạo gia đình", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Tạo gia đình", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }
@@ -117,6 +135,7 @@ fun CreateFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
 @Composable
 fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
     var joinCode by remember { mutableStateOf("") }
+    var selectedRole by remember { mutableStateOf("MEMBER") }
     
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFF0369A1))
@@ -132,17 +151,41 @@ fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
             leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
             shape = RoundedCornerShape(12.dp)
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Role Selector
+        Text("Vai trò của bạn", fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Start))
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(JOIN_ROLE_OPTIONS) { role ->
+                val isSelected = selectedRole == role.second
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (isSelected) Color(0xFF0369A1) else Color(0xFFF1F5F9))
+                        .clickable { selectedRole = role.second }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = role.first,
+                        color = if (isSelected) Color.White else Color(0xFF64748B),
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = { 
-                viewModel.joinFamilyByCode(joinCode, "MEMBER")
+                viewModel.joinFamilyByCode(joinCode, selectedRole)
                 onDone()
             },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0369A1)),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Tham gia", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Tham gia", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -150,7 +193,7 @@ fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         
         OutlinedButton(
-            onClick = { /* TODO QR Scanner Intent */ },
+            onClick = { /* TODO: Launch QR Scanner intent */ },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -165,6 +208,16 @@ fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
 fun ManagementContent(viewModel: FamilyViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var inviteEmail by remember { mutableStateOf("") }
+    var selectedRole by remember { mutableStateOf("MEMBER") }
+
+    // Family Members
+    uiState.activeFamily?.let { familyDetail ->
+        Text("Thành viên gia đình", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(bottom = 8.dp))
+        familyDetail.members.forEach { member ->
+            FamilyMemberRow(member)
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+    }
 
     // Received Invitations
     if (uiState.receivedInvitations.isNotEmpty()) {
@@ -185,7 +238,7 @@ fun ManagementContent(viewModel: FamilyViewModel) {
                             onClick = { viewModel.handleInvitation(invite.inviteId, true) },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E)),
                             modifier = Modifier.padding(end = 8.dp)
-                        ) { Text("Nhận") }
+                        ) { Text("Nhận", color = Color.White) }
                         OutlinedButton(
                             onClick = { viewModel.handleInvitation(invite.inviteId, false) }
                         ) { Text("Từ chối") }
@@ -216,25 +269,47 @@ fun ManagementContent(viewModel: FamilyViewModel) {
                 shape = RoundedCornerShape(12.dp)
             )
             
+            Spacer(modifier = Modifier.height(12.dp))
+            // Role Selector for Invite
+            LazyRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(JOIN_ROLE_OPTIONS) { role ->
+                    val isSelected = selectedRole == role.second
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isSelected) Color(0xFFDBEAFE) else Color(0xFFF1F5F9))
+                            .clickable { selectedRole = role.second }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = role.first,
+                            color = if (isSelected) Color(0xFF0369A1) else Color(0xFF64748B),
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+            
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = { 
-                    viewModel.inviteMember(inviteEmail, "MEMBER")
+                    viewModel.inviteMember(inviteEmail, selectedRole)
                     inviteEmail = ""
                 },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0369A1)),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Gửi lời mời", fontWeight = FontWeight.Bold)
+                Text("Gửi lời mời", fontWeight = FontWeight.Bold, color = Color.White)
                 Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
             }
             
             // QR Code generation for owner
             uiState.joinCodeInfo?.let { codeInfo ->
                 Spacer(modifier = Modifier.height(24.dp))
-                Divider()
+                HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("QR Tham gia", fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
                 Spacer(modifier = Modifier.height(8.dp))
@@ -284,6 +359,32 @@ fun ManagementContent(viewModel: FamilyViewModel) {
                     Text(invite.receiverEmail ?: "Người thân", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Text(if (invite.status == "PENDING") "Đang chờ xác nhận" else "Đã xử lý", fontSize = 12.sp, color = Color.Gray)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun FamilyMemberRow(member: FamilyMemberSummary) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        shadowElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFE2E8F0)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(member.fullName.take(1).uppercase(), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF64748B))
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(member.fullName, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1E293B))
+                Text(member.role, fontSize = 13.sp, color = Color(0xFF64748B))
             }
         }
     }

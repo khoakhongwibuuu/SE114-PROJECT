@@ -1,4 +1,4 @@
-package com.example.carenest.model
+package com.example.carenest.feature.family.domain.model
 
 data class FamilySummary(
     val id: Int,

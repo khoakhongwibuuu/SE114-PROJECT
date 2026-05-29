@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
@@ -95,28 +96,28 @@ fun MainScreen(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Trang chủ") },
-                    label = { Text("Trang chủ", fontSize = 9.sp) },
+                    label = { Text("Trang chủ", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     icon = { Icon(Icons.Default.Group, contentDescription = "Gia đình") },
-                    label = { Text("Gia đình", fontSize = 9.sp) },
+                    label = { Text("Gia đình", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
                     icon = { Icon(Icons.Default.MedicalServices, contentDescription = "Thuốc") },
-                    label = { Text("Thuốc", fontSize = 9.sp) },
+                    label = { Text("Thuốc", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == 3,
                     onClick = { selectedTab = 3 },
                     icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Tin nhắn") },
-                    label = { Text("Tin nhắn", fontSize = 9.sp) },
+                    label = { Text("Tin nhắn", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = navColors(),
                 )
                 NavigationBarItem(
@@ -126,14 +127,14 @@ fun MainScreen(
                         openedCommunityGroup = null
                     },
                     icon = { Icon(Icons.Default.Public, contentDescription = "Cộng đồng") },
-                    label = { Text("Cộng đồng", fontSize = 9.sp) },
+                    label = { Text("Cộng đồng", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == 5,
                     onClick = { selectedTab = 5 },
                     icon = { Icon(Icons.Default.Person, contentDescription = "Tôi") },
-                    label = { Text("Tôi", fontSize = 9.sp) },
+                    label = { Text("Tôi", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = navColors(),
                 )
             }
