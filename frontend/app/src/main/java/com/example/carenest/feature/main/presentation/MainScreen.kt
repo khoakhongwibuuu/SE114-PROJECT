@@ -40,6 +40,8 @@ import com.example.carenest.feature.community.presentation.CommunityScreen
 
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModelFactory
+import com.example.carenest.feature.chat.presentation.AiChatViewModel
+import com.example.carenest.feature.chat.presentation.AiChatViewModelFactory
 import com.example.carenest.feature.ekyc.presentation.DoctorVerificationScreen
 import com.example.carenest.feature.family.presentation.FamilyFlowScreen
 import com.example.carenest.feature.profile.presentation.ProfileScreen
@@ -65,6 +67,9 @@ fun MainScreen(
     val application = context.applicationContext as CareNestApplication
     val dashboardViewModel: DashboardViewModel = viewModel(
         factory = DashboardViewModelFactory(application.dashboardApi, application.secureSessionManager),
+    )
+    val aiChatViewModel: AiChatViewModel = viewModel(
+        factory = AiChatViewModelFactory(application.aiChatApi)
     )
     val medicineViewModel: MedicineViewModel = viewModel()
 
@@ -159,6 +164,7 @@ fun MainScreen(
 
                 3 -> ChatHubScreen(
                     dashboardViewModel = dashboardViewModel,
+                    aiChatViewModel = aiChatViewModel,
                 )
 
                 4 -> {
