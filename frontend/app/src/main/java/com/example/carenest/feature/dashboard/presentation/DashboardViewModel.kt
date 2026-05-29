@@ -57,7 +57,7 @@ class DashboardViewModel(
                 if (response.isSuccessful && dashboard != null) {
                     processDashboardResponse(dashboard)
                 } else {
-                    DashboardState.Error(response.body()?.message ?: "Không thể tải dữ liệu trang chủ")
+                    _dashboardState.value = DashboardState.Error(response.body()?.message ?: "Phiên đăng nhập hết hạn hoặc lỗi mạng, vui lòng đăng nhập lại.")
                 }
             } catch (e: Exception) {
                 _dashboardState.value = DashboardState.Error(e.localizedMessage ?: "Lỗi kết nối")
