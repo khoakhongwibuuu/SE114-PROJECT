@@ -1,7 +1,5 @@
 package com.example.carenest.feature.main.presentation
 
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -152,12 +150,11 @@ private fun FamilyHubPane(
             verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
         ) {
             items(families, key = { it.id }) { family ->
-                val context = LocalContext.current
                 Card(
                     shape = RoundedCornerShape(AppRadius.xl),
                     colors = CardDefaults.cardColors(containerColor = CardBackground),
                     modifier = Modifier.clickable {
-                        Toast.makeText(context, "Tính năng trò chuyện nhóm gia đình sẽ khả dụng trong phiên bản tiếp theo.", Toast.LENGTH_SHORT).show()
+                        onNavigateToChatRoom(family.id.toLongOrNull() ?: 0L, family.name)
                     }
                 ) {
                     Row(

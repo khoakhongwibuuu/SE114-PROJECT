@@ -23,6 +23,7 @@ data class ChatUiState(
     val isConnected: Boolean = false,
     val error: String? = null,
     val slowCountdown: Int = 0,
+    val isSending: Boolean = false,
 )
 
 class ChatViewModel(
@@ -43,45 +44,81 @@ class ChatViewModel(
 
     fun sendMessage() {
         val content = _uiState.value.inputText.trim()
-        if (content.isBlank() || _uiState.value.slowCountdown > 0) return
+        if (content.isBlank() || _uiState.value.slowCountdown > 0 || _uiState.value.isSending) return
 
+        val socketReady = _uiState.value.isConnected
+        _uiState.update { it.copy(inputText = "", isSending = true, error = null) }
+
+        viewModelScope.launch {
+            if (socketReady) {
+                sendWithSocket(content)
+            } else {
+                sendWithRestFallback(content, "Đã lưu tin nhắn. Realtime đang kết nối lại.")
+            }
+        }
+    }
+
+    private suspend fun sendWithSocket(content: String) {
         val optimistic = ChatMessage(
             id = "local-${java.util.UUID.randomUUID()}",
             text = content,
             isMe = true,
-            senderName = "Tôi",
+            senderName = "Toi",
             timestamp = System.currentTimeMillis(),
         )
-        _uiState.update {
-            it.copy(
-                inputText = "",
-                messages = listOf(optimistic) + it.messages,
-                error = null,
-            )
-        }
-        startSlowMode()
 
-        viewModelScope.launch {
-            val sent = _uiState.value.isConnected && withContext(Dispatchers.IO) {
-                repository.send(groupId, content) { error ->
-                    val message = error.localizedMessage.orEmpty()
-                    _uiState.update { current ->
-                        current.copy(
-                            error = if (message.contains("slow", ignoreCase = true)) {
-                                "Bạn đang gửi quá nhanh. Vui lòng chờ vài giây."
-                            } else {
-                                "Không thể gửi tin nhắn. Vui lòng thử lại."
-                            },
-                        )
-                    }
+        val sent = withContext(Dispatchers.IO) {
+            repository.sendOverSocket(groupId, content) {
+                _uiState.update { current ->
+                    current.copy(
+                        isSending = false,
+                            error = "Không thể gửi realtime. Đang thử kết nối dự phòng.",
+                    )
                 }
             }
+        }
 
-            if (!sent) {
-                _uiState.update {
-                    it.copy(error = "Đang mất kết nối. Tin nhắn sẽ được gửi lại khi kết nối ổn định.")
+        if (sent) {
+            _uiState.update {
+                it.copy(
+                    isSending = false,
+                    messages = listOf(optimistic) + it.messages,
+                    error = null,
+                )
+            }
+            startSlowMode()
+        } else {
+            sendWithRestFallback(content, "Đã lưu qua kết nối dự phòng.")
+        }
+    }
+
+    private suspend fun sendWithRestFallback(content: String, successMessage: String) {
+        runCatching {
+            withContext(Dispatchers.IO) {
+                repository.sendViaRest(groupId, content)
+            }
+        }.onSuccess { saved ->
+            _uiState.update { current ->
+                val updatedMessages = if (current.messages.any { it.id == saved.id }) {
+                    current.messages
+                } else {
+                    listOf(saved) + current.messages
                 }
-                reconnect()
+                current.copy(
+                    isSending = false,
+                    messages = updatedMessages,
+                    error = successMessage,
+                )
+            }
+            startSlowMode()
+            reconnect()
+        }.onFailure { error ->
+            _uiState.update {
+                it.copy(
+                    isSending = false,
+                    inputText = content,
+                    error = error.localizedMessage ?: "Không thể gửi tin nhắn. Vui lòng thử lại.",
+                )
             }
         }
     }
@@ -89,16 +126,17 @@ class ChatViewModel(
     private fun loadHistory() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            try {
-                val messages = withContext(Dispatchers.IO) {
+            runCatching {
+                withContext(Dispatchers.IO) {
                     repository.loadHistory(groupId)
                 }
+            }.onSuccess { messages ->
                 _uiState.update { it.copy(isLoading = false, messages = messages) }
-            } catch (e: Exception) {
+            }.onFailure { error ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.localizedMessage ?: "Không thể tải lịch sử tin nhắn",
+                        error = error.localizedMessage ?: "Không thể tải lịch sử tin nhắn",
                     )
                 }
             }
@@ -120,8 +158,11 @@ class ChatViewModel(
 
                     is ChatRepositoryEvent.MessageReceived -> {
                         _uiState.update { current ->
-                            if (current.messages.any { it.id == event.message.id }) current
-                            else current.copy(messages = listOf(event.message) + current.messages)
+                            if (current.messages.any { it.id == event.message.id }) {
+                                current
+                            } else {
+                                current.copy(messages = listOf(event.message) + current.messages)
+                            }
                         }
                     }
                 }
@@ -150,39 +191,42 @@ class ChatViewModel(
 
     fun leaveGroup(onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            try {
+            runCatching {
                 withContext(Dispatchers.IO) {
                     repository.leaveGroup(groupId)
                 }
+            }.onSuccess {
                 onSuccess()
-            } catch (e: Exception) {
-                onError(e.localizedMessage ?: "Không thể rời nhóm")
+            }.onFailure {
+                onError(it.localizedMessage ?: "Không thể rời nhóm")
             }
         }
     }
 
     fun kickMember(userId: Long, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            try {
+            runCatching {
                 withContext(Dispatchers.IO) {
                     repository.kickMember(groupId, userId)
                 }
+            }.onSuccess {
                 onSuccess()
-            } catch (e: Exception) {
-                onError(e.localizedMessage ?: "Không thể mời thành viên rời nhóm")
+            }.onFailure {
+                onError(it.localizedMessage ?: "Không thể mời thành viên rời nhóm")
             }
         }
     }
 
     fun reportPost(postId: Long, reason: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            try {
+            runCatching {
                 withContext(Dispatchers.IO) {
                     repository.reportPost(postId, reason)
                 }
+            }.onSuccess {
                 onSuccess()
-            } catch (e: Exception) {
-                onError(e.localizedMessage ?: "Không thể báo cáo tin nhắn")
+            }.onFailure {
+                onError(it.localizedMessage ?: "Không thể báo cáo tin nhắn")
             }
         }
     }

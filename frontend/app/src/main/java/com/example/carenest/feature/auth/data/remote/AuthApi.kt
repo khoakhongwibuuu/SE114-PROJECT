@@ -7,15 +7,20 @@ import com.example.carenest.feature.auth.domain.model.ForgotPasswordRequest
 import com.example.carenest.feature.auth.domain.model.RefreshTokenRequest
 import com.example.carenest.feature.auth.domain.model.RegisterRequest
 import com.example.carenest.feature.auth.domain.model.ResetPasswordRequest
+import com.example.carenest.feature.auth.domain.model.UpdateCurrentUserRequest
 import com.example.carenest.feature.auth.domain.model.UserInfo
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 
 interface AuthApi {
     @GET("/api/v1/auth/me")
     suspend fun getMe(): Response<ApiResponse<UserInfo>>
+
+    @PUT("/api/v1/auth/me")
+    suspend fun updateCurrentUser(@Body request: UpdateCurrentUserRequest): Response<ApiResponse<UserInfo>>
 
     @POST("/api/v1/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<ApiResponse<AuthResponse>>

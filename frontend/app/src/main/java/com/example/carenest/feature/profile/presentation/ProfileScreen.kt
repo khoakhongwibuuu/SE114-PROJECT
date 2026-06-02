@@ -43,7 +43,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    viewModel: ProfileViewModel,
     onNavigateBack: () -> Unit = {},
     onNavigateToMedicalRecord: () -> Unit = {},
     onNavigateToDoctorVerification: () -> Unit = {},
@@ -53,6 +53,10 @@ fun ProfileScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCurrentUser()
+    }
 
     // Observe messages
     LaunchedEffect(state.successMessage, state.error) {

@@ -20,45 +20,86 @@ class ChatWebSocketClient(
 ) {
     private val disposables = CompositeDisposable()
     private var stompClient: StompClient? = null
+    private var subscribedGroupId: Long? = null
 
     fun connect(groupId: Long, onEvent: (ChatSocketEvent) -> Unit) {
         disconnect()
         val client = Stomp.over(Stomp.ConnectionProvider.OKHTTP, webSocketUrl)
         stompClient = client
+        subscribedGroupId = null
 
-        disposables.add(client.lifecycle().subscribe { event ->
-            when (event.type) {
-                LifecycleEvent.Type.OPENED -> onEvent(ChatSocketEvent.Connected)
-                LifecycleEvent.Type.ERROR -> {
-                    Log.e("GroupChat", "Lỗi WebSocket", event.exception)
-                    onEvent(ChatSocketEvent.Disconnected(event.exception?.localizedMessage ?: "Mất kết nối phòng chat"))
+        disposables.add(
+            client.lifecycle().subscribe({ event ->
+                when (event.type) {
+                    LifecycleEvent.Type.OPENED -> {
+                        Log.d("GroupChat", "WebSocket connected for group=$groupId")
+                        subscribeToTopic(client, groupId, onEvent)
+                        onEvent(ChatSocketEvent.Connected)
+                    }
+
+                    LifecycleEvent.Type.ERROR -> {
+                        Log.e("GroupChat", "WebSocket error", event.exception)
+                        onEvent(
+                            ChatSocketEvent.Disconnected(
+                                event.exception?.localizedMessage ?: "Mất kết nối phòng chat"
+                            )
+                        )
+                    }
+
+                    LifecycleEvent.Type.CLOSED -> {
+                        Log.w("GroupChat", "WebSocket closed for group=$groupId")
+                        onEvent(ChatSocketEvent.Disconnected("Đang kết nối lại..."))
+                    }
+
+                    else -> Unit
                 }
-                LifecycleEvent.Type.CLOSED -> onEvent(ChatSocketEvent.Disconnected("Đang kết nối lại..."))
-                else -> Unit
-            }
-        })
-
-        disposables.add(client.topic("/topic/group/$groupId").subscribe { message ->
-            onEvent(ChatSocketEvent.MessageReceived(message.payload))
-        })
+            }, { error ->
+                Log.e("GroupChat", "Lifecycle subscription error", error)
+                onEvent(ChatSocketEvent.Disconnected(error.localizedMessage ?: "Mất kết nối phòng chat"))
+            })
+        )
 
         client.connect(headers())
     }
 
     fun send(groupId: Long, payload: String, onError: (Throwable) -> Unit): Boolean {
         val client = stompClient ?: return false
-        disposables.add(client.send("/app/group/$groupId", payload).subscribe({}, onError))
+        disposables.add(
+            client.send("/app/group/$groupId", payload).subscribe({}, onError)
+        )
         return true
     }
 
     fun disconnect() {
         disposables.clear()
+        subscribedGroupId = null
         stompClient?.disconnect()
         stompClient = null
     }
 
+    private fun subscribeToTopic(
+        client: StompClient,
+        groupId: Long,
+        onEvent: (ChatSocketEvent) -> Unit,
+    ) {
+        if (subscribedGroupId == groupId) return
+        subscribedGroupId = groupId
+        disposables.add(
+            client.topic("/topic/group/$groupId").subscribe({ message ->
+                onEvent(ChatSocketEvent.MessageReceived(message.payload))
+            }, { error ->
+                Log.e("GroupChat", "Topic subscription error", error)
+                onEvent(ChatSocketEvent.Disconnected(error.localizedMessage ?: "Không thể kết nối phòng chat"))
+            })
+        )
+    }
+
     private fun headers(): List<StompHeader> {
         val token = secureSessionManager.getAccessToken()
-        return if (!token.isNullOrBlank()) listOf(StompHeader("Authorization", "Bearer $token")) else emptyList()
+        return if (!token.isNullOrBlank()) {
+            listOf(StompHeader("Authorization", "Bearer $token"))
+        } else {
+            emptyList()
+        }
     }
 }

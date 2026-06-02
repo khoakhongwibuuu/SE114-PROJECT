@@ -49,25 +49,25 @@ interface CommunityApi {
         @Body request: CreateGroupPostRequest
     ): Response<ApiResponse<GroupPost>>
 
-    @GET("/articles")
+    @GET("/api/v1/articles")
     suspend fun getArticles(): Response<ApiResponse<List<Article>>>
 
-    @POST("/articles")
+    @POST("/api/v1/articles")
     suspend fun createArticle(
         @Body request: CreateArticleRequest
     ): Response<ApiResponse<Article>>
 
-    @POST("/articles/{id}/likes")
+    @POST("/api/v1/articles/{id}/like")
     suspend fun toggleArticleLike(
         @Path("id") id: Long
     ): Response<ApiResponse<ArticleLikeResponse>>
 
-    @GET("/articles/{id}/comments")
+    @GET("/api/v1/articles/{id}/comments")
     suspend fun getArticleComments(
         @Path("id") id: Long
     ): Response<ApiResponse<List<ArticleComment>>>
 
-    @POST("/articles/{id}/comments")
+    @POST("/api/v1/articles/{id}/comments")
     suspend fun createArticleComment(
         @Path("id") id: Long,
         @Body request: CreateArticleCommentRequest

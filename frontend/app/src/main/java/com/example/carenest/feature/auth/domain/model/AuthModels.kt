@@ -27,8 +27,20 @@ data class UserInfo(
     val id: Long,
     val email: String,
     val fullName: String? = null,
+    val phone: String? = null,
     val avatarUrl: String? = null,
-    val role: String = "USER"
+    val dateOfBirth: String? = null,
+    val gender: String? = null,
+    val role: String = "USER",
+    val isVerified: Boolean? = null
+)
+
+data class UpdateCurrentUserRequest(
+    val fullName: String,
+    val phone: String? = null,
+    val dateOfBirth: String? = null,
+    val gender: String? = null,
+    val avatarUrl: String? = null
 )
 
 data class ForgotPasswordRequest(

@@ -23,9 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
-import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Home
@@ -58,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.carenest.core.presentation.components.CareNestIcon
 import com.example.carenest.core.presentation.theme.AppElevation
 import com.example.carenest.core.presentation.theme.AppRadius
 import com.example.carenest.core.presentation.theme.AppSpacing
@@ -339,18 +339,17 @@ fun MemberPill(name: String, isActive: Boolean, onClick: () -> Unit) {
         )
     }
 }
-
 @Composable
 fun ShortcutGrid(onMed: () -> Unit, onAppt: () -> Unit, onVac: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.md), modifier = Modifier.fillMaxWidth()) {
-        ShortcutCard("Lịch thuốc", 0xFF0EA5E9, 0xFFE0F2FE, Modifier.weight(1f), onMed)
-        ShortcutCard("Lịch hẹn", 0xFFA855F7, 0xFFF3E8FF, Modifier.weight(1f), onAppt)
-        ShortcutCard("Tiêm chủng", 0xFF0097A7, 0xFFE0F7FA, Modifier.weight(1f), onVac)
+        ShortcutCard("L\u1ECBch thu\u1ED1c", "pill", 0xFF0EA5E9, 0xFFE0F2FE, Modifier.weight(1f), onMed)
+        ShortcutCard("L\u1ECBch h\u1EB9n", "calendar_month", 0xFFA855F7, 0xFFF3E8FF, Modifier.weight(1f), onAppt)
+        ShortcutCard("Ti\u00EAm ch\u1EE7ng", "syringe", 0xFF0097A7, 0xFFE0F7FA, Modifier.weight(1f), onVac)
     }
 }
 
 @Composable
-fun ShortcutCard(label: String, iconColor: Long, bgColor: Long, modifier: Modifier, onClick: () -> Unit) {
+fun ShortcutCard(label: String, iconName: String, iconColor: Long, bgColor: Long, modifier: Modifier, onClick: () -> Unit) {
     Surface(
         modifier = modifier.height(100.dp).clickable { onClick() },
         shape = RoundedCornerShape(AppRadius.x2),
@@ -366,7 +365,7 @@ fun ShortcutCard(label: String, iconColor: Long, bgColor: Long, modifier: Modifi
                 modifier = Modifier.size(54.dp).clip(CircleShape).background(Color(bgColor)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(iconColor), modifier = Modifier.size(26.dp))
+                CareNestIcon(name = iconName, contentDescription = null, tint = Color(iconColor), modifier = Modifier.size(26.dp))
             }
             Spacer(modifier = Modifier.height(AppSpacing.sm + 2.dp))
             Text(label, style = CareNestTextStyles.labelSm, color = TextPrimary)

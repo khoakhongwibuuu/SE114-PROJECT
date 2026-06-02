@@ -19,7 +19,7 @@ data class FamilyUiState(
     val isLoading: Boolean = false,
     val isBusy: Boolean = false,
     val myFamilies: List<FamilySummary> = emptyList(),
-    val activeFamilyId: Int? = null,
+    val activeFamilyId: Long? = null,
     val activeFamily: FamilyDetailResponse? = null,
     val receivedInvitations: List<FamilyInvitationItem> = emptyList(),
     val sentInvitations: List<FamilyInvitationItem> = emptyList(),
@@ -36,7 +36,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
     init {
         viewModelScope.launch {
             val activeIdStr = repository.getActiveFamilyId()
-            val id = activeIdStr?.toIntOrNull()
+            val id = activeIdStr?.toLongOrNull()
             _uiState.update { it.copy(activeFamilyId = id) }
             id?.let { loadActiveFamilyDetail(it) }
         }
@@ -63,7 +63,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
         }
     }
 
-    fun selectFamily(familyId: Int) {
+    fun selectFamily(familyId: Long) {
         viewModelScope.launch {
             repository.saveActiveFamilyId(familyId.toString())
             _uiState.update { it.copy(activeFamilyId = familyId) }
@@ -71,7 +71,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
         }
     }
 
-    private fun loadActiveFamilyDetail(familyId: Int) {
+    private fun loadActiveFamilyDetail(familyId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             val result = repository.getFamilyById(familyId)

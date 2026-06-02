@@ -37,8 +37,9 @@ class AiChatViewModel(
         viewModelScope.launch {
             try {
                 val response = aiChatApi.chatWithAi(AiChatRequest(message = text))
-                if (response.isSuccessful && response.body() != null) {
-                    _messages.value = _messages.value + AiMessage(response.body()!!.reply, isUser = false)
+                if (response.isSuccessful) {
+                    val reply = response.body()?.reply ?: "Có lỗi xảy ra từ máy chủ."
+                    _messages.value = _messages.value + AiMessage(reply, isUser = false)
                 } else {
                     _messages.value = _messages.value + AiMessage("Xin lỗi, hệ thống AI đang gặp trục trặc.", isUser = false)
                 }

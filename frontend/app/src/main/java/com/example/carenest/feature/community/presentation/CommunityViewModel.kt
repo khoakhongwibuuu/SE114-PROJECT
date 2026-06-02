@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.feature.community.data.repository.CommunityRepository
 import com.example.carenest.feature.community.domain.model.CommunityGroup
+import com.example.carenest.feature.community.domain.model.CommunityGroupPreview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
-import com.example.carenest.feature.community.domain.model.CommunityGroupPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

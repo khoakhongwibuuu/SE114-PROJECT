@@ -1,5 +1,6 @@
 package com.example.carenest.feature.main.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,10 +13,11 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -23,9 +25,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.components.CareNestIcon
+import com.example.carenest.core.presentation.navigation.ChatRoom
 import com.example.carenest.core.presentation.theme.AppRadius
 import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
@@ -33,19 +39,17 @@ import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.PrimaryFixed
 import com.example.carenest.core.presentation.theme.SurfaceLowest
+import com.example.carenest.feature.auth.presentation.AuthViewModel
 import com.example.carenest.feature.chat.presentation.AiChatViewModel
 import com.example.carenest.feature.chat.presentation.AiChatViewModelFactory
-import com.example.carenest.feature.chat.presentation.ChatScreen
-import com.example.carenest.feature.community.domain.model.CommunityGroup
 import com.example.carenest.feature.community.presentation.CommunityScreen
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
-import com.example.carenest.feature.dashboard.presentation.DashboardViewModelFactory
 import com.example.carenest.feature.family.presentation.FamilyFlowScreen
 import com.example.carenest.feature.medical.presentation.MedicineScreen
 import com.example.carenest.feature.medical.presentation.MedicineViewModel
-import com.example.carenest.feature.medical.presentation.MedicineViewModelFactory
 import com.example.carenest.feature.profile.presentation.ProfileScreen
-import com.example.carenest.core.presentation.navigation.ChatRoom
+import com.example.carenest.feature.profile.presentation.ProfileViewModel
+import com.example.carenest.feature.profile.presentation.ProfileViewModelFactory
 
 @Composable
 fun MainScreen(
@@ -62,22 +66,50 @@ fun MainScreen(
     onNavigateToDoctorVerification: () -> Unit = {},
     onNavigateToAdminVerification: () -> Unit = {},
     onNavigateToPolicy: () -> Unit = {},
-    onNavigateToMedicalRecord: (Int) -> Unit = {},
+    onNavigateToMedicalRecord: (Long) -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
+    authViewModel: AuthViewModel,
     dashboardViewModel: DashboardViewModel,
     medicineViewModel: MedicineViewModel,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    var openedCommunityGroup by remember { mutableStateOf<CommunityGroup?>(null) }
 
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
     val aiChatViewModel: AiChatViewModel = viewModel(
         factory = AiChatViewModelFactory(application.aiChatApi)
     )
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModelFactory(
+            application.authApi,
+            application.secureSessionManager,
+            application.familyRepository
+        )
+    )
+    val lifecycleOwner = LocalLifecycleOwner.current
     val currentProfileId by dashboardViewModel.currentProfileId.collectAsState()
     val currentUser by dashboardViewModel.currentUser.collectAsState()
+    val authCurrentUser by authViewModel.currentUser.collectAsState()
+    val currentRole by application.secureSessionManager.userRoleFlow.collectAsState()
+    val canAccessDoctorUi = (authCurrentUser?.role ?: currentUser?.role ?: currentRole)
+        ?.let { it == "DOCTOR" || it == "ADMIN" }
+        ?: false
+
+    LaunchedEffect(Unit) {
+        authViewModel.refreshCurrentUser()
+    }
+
+    DisposableEffect(lifecycleOwner, authViewModel, dashboardViewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                authViewModel.refreshCurrentUser()
+                dashboardViewModel.fetchCurrentUser()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         modifier = modifier
@@ -122,10 +154,7 @@ fun MainScreen(
                 )
                 NavigationBarItem(
                     selected = selectedTab == 4,
-                    onClick = {
-                        selectedTab = 4
-                        openedCommunityGroup = null
-                    },
+                    onClick = { selectedTab = 4 },
                     icon = { CareNestIcon(name = "globe", contentDescription = "Cộng đồng") },
                     label = { NavLabel("Cộng đồng") },
                     colors = navColors(),
@@ -178,29 +207,25 @@ fun MainScreen(
                 3 -> ChatHubScreen(
                     dashboardViewModel = dashboardViewModel,
                     aiChatViewModel = aiChatViewModel,
-                    onNavigateToChatRoom = { id, name -> onItemClick(ChatRoom(id, name)) }
+                    onNavigateToChatRoom = { _, _ ->
+                        Toast.makeText(
+                            context,
+                            "Tính năng trò chuyện nhóm gia đình đang được ổn định lại.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 )
 
-                4 -> {
-                    val group = openedCommunityGroup
-                    if (group == null) {
-                        CommunityScreen(
-                            canCreateArticle = currentUser?.role == "DOCTOR" || currentUser?.role == "ADMIN",
-                            onOpenGroup = { openedCommunityGroup = it }
-                        )
-                    } else {
-                        ChatScreen(
-                            groupId = group.id,
-                            groupName = group.name,
-                            onBack = { openedCommunityGroup = null },
-                        )
-                    }
-                }
+                4 -> CommunityScreen(
+                    canCreateArticle = canAccessDoctorUi,
+                    onOpenGroup = { onItemClick(ChatRoom(it.id, it.name)) }
+                )
 
                 5 -> ProfileScreen(
+                    viewModel = profileViewModel,
                     onLogout = onLogout,
                     onNavigateToMedicalRecord = {
-                        val profileId = (currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L).toInt()
+                        val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
                         onNavigateToMedicalRecord(profileId)
                     },
                     onNavigateToDoctorVerification = onNavigateToDoctorVerification,

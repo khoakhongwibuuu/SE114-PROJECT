@@ -26,9 +26,10 @@ import kotlinx.serialization.Serializable
 @Serializable data object NotificationsCenter : NavKey
 @Serializable data object AdminVerification : NavKey
 @Serializable data object DoctorVerification : NavKey
-@Serializable data class UserMedical(val profileId: Int) : NavKey
+@Serializable data class UserMedical(val profileId: Long) : NavKey
 @Serializable data object Policy : NavKey
 
 @Serializable data class ChatRoom(val id: Long, val name: String) : NavKey
+@Serializable data class FamilyChatRoom(val familyId: Long, val familyName: String) : NavKey
 
 

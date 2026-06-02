@@ -37,7 +37,7 @@ class UserMedicalViewModel(
     private val _uiState = MutableStateFlow(UserMedicalUiState())
     val uiState: StateFlow<UserMedicalUiState> = _uiState.asStateFlow()
 
-    fun loadProfile(profileId: Int) {
+    fun loadProfile(profileId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
             val result = repository.getFamilyProfile(profileId)
@@ -98,7 +98,7 @@ class UserMedicalViewModel(
         _uiState.update { it.copy(emergencyPhone = value) }
     }
 
-    fun saveMedicalProfile(profileId: Int) {
+    fun saveMedicalProfile(profileId: Long) {
         val state = _uiState.value
         val heightD = state.height.toDoubleOrNull()
         val weightD = state.weight.toDoubleOrNull()
