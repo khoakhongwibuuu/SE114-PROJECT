@@ -1,5 +1,11 @@
 package com.example.carenest.feature.auth.domain.model
 
+enum class AppRole {
+    USER,
+    DOCTOR,
+    ADMIN,
+}
+
 data class LoginRequest(
     val email: String,
     val password: String

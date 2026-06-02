@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.storage.SecureSessionManager
+import com.example.carenest.feature.auth.domain.model.AppRole
 import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.feature.auth.domain.model.ForgotPasswordRequest
 import com.example.carenest.feature.auth.domain.model.LoginRequest
@@ -45,6 +46,17 @@ class AuthViewModel(
 
     private val _currentUser = MutableStateFlow<UserInfo?>(null)
     val currentUser: StateFlow<UserInfo?> = _currentUser.asStateFlow()
+
+    private val _currentUserRole = MutableStateFlow(secureSessionManager.getUserRole().toAppRole())
+    val currentUserRole: StateFlow<AppRole?> = _currentUserRole.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            secureSessionManager.userRoleFlow.collect { role ->
+                _currentUserRole.value = role.toAppRole()
+            }
+        }
+    }
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
@@ -170,6 +182,11 @@ class AuthViewModel(
         secureSessionManager.saveUserEmailSync(user.email)
         secureSessionManager.saveUserNameSync(user.fullName)
         _currentUser.value = user
+    }
+
+    private fun String?.toAppRole(): AppRole? {
+        val normalized = this?.trim()?.uppercase() ?: return null
+        return AppRole.entries.firstOrNull { it.name == normalized }
     }
 }
 
