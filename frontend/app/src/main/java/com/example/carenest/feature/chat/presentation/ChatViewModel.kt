@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 
 data class ChatUiState(
     val isLoading: Boolean = true,
+    val memberCount: Long? = null,
     val messages: List<ChatMessage> = emptyList(),
     val inputText: String = "",
     val isConnected: Boolean = false,
@@ -36,6 +37,7 @@ class ChatViewModel(
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     init {
+        loadGroupPreview()
         loadHistory()
         connect()
     }
@@ -63,7 +65,7 @@ class ChatViewModel(
             id = "local-${java.util.UUID.randomUUID()}",
             text = content,
             isMe = true,
-            senderName = "Toi",
+            senderName = "Tôi",
             timestamp = System.currentTimeMillis(),
         )
 
@@ -72,7 +74,7 @@ class ChatViewModel(
                 _uiState.update { current ->
                     current.copy(
                         isSending = false,
-                            error = "Không thể gửi realtime. Đang thử kết nối dự phòng.",
+                        error = "Không thể gửi realtime. Đang thử kết nối dự phòng.",
                     )
                 }
             }
@@ -139,6 +141,18 @@ class ChatViewModel(
                         error = error.localizedMessage ?: "Không thể tải lịch sử tin nhắn",
                     )
                 }
+            }
+        }
+    }
+
+    private fun loadGroupPreview() {
+        viewModelScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    repository.loadGroupPreview(groupId)
+                }
+            }.onSuccess { preview ->
+                _uiState.update { it.copy(memberCount = preview.memberCount) }
             }
         }
     }
