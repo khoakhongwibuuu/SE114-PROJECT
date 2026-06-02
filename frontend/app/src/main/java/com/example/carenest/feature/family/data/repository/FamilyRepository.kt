@@ -30,7 +30,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun getFamilyById(familyId: Int): Result<FamilyDetailResponse> {
+    suspend fun getFamilyById(familyId: Long): Result<FamilyDetailResponse> {
         return try {
             val response = familyApi.getFamilyById(familyId)
             val family = response.body()?.data
@@ -44,7 +44,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun getFamilyProfile(profileId: Int): Result<HealthProfile> {
+    suspend fun getFamilyProfile(profileId: Long): Result<HealthProfile> {
         return try {
             val response = familyApi.getFamilyProfile(profileId)
             val raw = response.body()?.data
@@ -150,7 +150,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun inviteMember(familyId: Int, email: String, role: String): Result<Unit> {
+    suspend fun inviteMember(familyId: Long, email: String, role: String): Result<Unit> {
         return try {
             val response = familyApi.inviteMember(familyId, InviteMemberRequest(email, role))
             if (response.isSuccessful) {
@@ -252,7 +252,7 @@ class FamilyRepository(
     }
 
     suspend fun updateProfile(
-        profileId: Int,
+        profileId: Long,
         fullName: String,
         birthday: String?,
         gender: String?,

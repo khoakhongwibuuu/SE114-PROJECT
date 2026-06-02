@@ -23,7 +23,7 @@ class ProfileViewModel(private val repository: FamilyRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    fun loadProfile(profileId: Int) {
+    fun loadProfile(profileId: Long) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             val result = repository.getFamilyProfile(profileId)

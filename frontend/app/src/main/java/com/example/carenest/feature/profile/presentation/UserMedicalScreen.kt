@@ -32,7 +32,7 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserMedicalScreen(
-    profileId: Int,
+    profileId: Long,
     viewModel: UserMedicalViewModel,
     onBack: () -> Unit,
     onNavigateToMedicineSchedule: () -> Unit,
@@ -167,7 +167,7 @@ fun UserMedicalScreen(
 private fun InfoTabContent(
     state: UserMedicalUiState,
     viewModel: UserMedicalViewModel,
-    profileId: Int
+    profileId: Long
 ) {
     val scrollState = rememberScrollState()
     Column(

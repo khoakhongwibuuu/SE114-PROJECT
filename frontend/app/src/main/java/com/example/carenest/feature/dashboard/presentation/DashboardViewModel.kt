@@ -87,6 +87,7 @@ class DashboardViewModel(
                 ?.data
                 ?.let { user ->
                     secureSessionManager.saveUserIdSync(user.id)
+                    secureSessionManager.saveUserRoleSync(user.role)
                     _currentUser.value = user
                     fetchDashboard()
                 }
@@ -146,7 +147,7 @@ class DashboardViewModel(
                 )
             }
             memberProfileMap = familyDetail.members.associate { member ->
-                (member.profileId ?: member.id).toString() to member.profileId?.toLong()
+                (member.profileId ?: member.id).toString() to member.profileId
             }
 
             val ownProfileId = resolveOwnProfileId(familyDetail)
@@ -206,13 +207,13 @@ class DashboardViewModel(
     }
 
     private fun resolveActiveFamily(families: List<FamilySummary>): FamilySummary {
-        val currentId = _currentFamilyId.value?.toIntOrNull()
+        val currentId = _currentFamilyId.value?.toLongOrNull()
         return families.firstOrNull { it.id == currentId } ?: families.first()
     }
 
     private fun resolveOwnProfileId(familyDetail: FamilyDetailResponse): Long? {
         val currentUserId = _currentUser.value?.id ?: return null
-        return familyDetail.members.firstOrNull { it.userId?.toLong() == currentUserId }?.profileId?.toLong()
+        return familyDetail.members.firstOrNull { it.userId == currentUserId }?.profileId
     }
 
     private fun resolveActiveProfileId(
@@ -220,7 +221,7 @@ class DashboardViewModel(
         ownProfileId: Long?
     ): Long? {
         val savedProfileId = secureSessionManager.getActiveProfileId()
-        val validProfileIds = familyDetail.members.mapNotNull { it.profileId?.toLong() }
+        val validProfileIds = familyDetail.members.mapNotNull { it.profileId }
         return when {
             savedProfileId != null && validProfileIds.contains(savedProfileId) -> savedProfileId
             ownProfileId != null -> ownProfileId
@@ -233,7 +234,7 @@ class DashboardViewModel(
         activeProfileId: Long?
     ): List<DashboardTask> {
         val targetMember = familyDetail.members.firstOrNull {
-            it.profileId?.toLong() == activeProfileId
+            it.profileId == activeProfileId
         }
         val targetName = targetMember?.fullName
 

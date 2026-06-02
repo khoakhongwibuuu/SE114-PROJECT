@@ -29,7 +29,7 @@ import com.example.carenest.viewmodel.ProfileViewModel
 @Composable
 fun HealthProfileDetailScreen(
     viewModel: ProfileViewModel,
-    memberId: Int,
+    memberId: Long,
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()

@@ -30,6 +30,7 @@ class CareNestApplication : Application() {
     lateinit var familyApi: com.example.carenest.feature.family.data.remote.FamilyApi
     lateinit var familyRepository: com.example.carenest.feature.family.data.repository.FamilyRepository
     lateinit var chatRepository: ChatRepository
+    lateinit var familyChatRepository: com.example.carenest.feature.chat.data.repository.FamilyChatRepository
     lateinit var ekycRepository: EkycRepository
     lateinit var aiChatApi: AiChatApi
     lateinit var medicineApi: MedicineApi
@@ -50,6 +51,11 @@ class CareNestApplication : Application() {
         familyApi = retrofit.create(com.example.carenest.feature.family.data.remote.FamilyApi::class.java)
         familyRepository = com.example.carenest.feature.family.data.repository.FamilyRepository(familyApi, secureSessionManager)
         chatRepository = ChatRepository(communityApi, ChatWebSocketClient(secureSessionManager), secureSessionManager)
+        familyChatRepository = com.example.carenest.feature.chat.data.repository.FamilyChatRepository(
+            familyApi,
+            com.example.carenest.feature.chat.data.remote.FamilyChatWebSocketClient(secureSessionManager),
+            secureSessionManager
+        )
         ekycRepository = EkycRepository(ekycApi, mediaApi)
         medicineApi = retrofit.create(MedicineApi::class.java)
         appointmentApi = retrofit.create(AppointmentApi::class.java)

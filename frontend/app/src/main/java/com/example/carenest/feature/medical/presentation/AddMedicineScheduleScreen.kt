@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -109,7 +110,7 @@ fun AddMedicineScheduleScreen(
                 .padding(horizontal = 24.dp, vertical = 10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack, modifier = Modifier.padding(start = (-8).dp)) {
+                IconButton(onClick = onBack, modifier = Modifier.offset(x = (-8).dp)) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = PrimaryBlue)
                 }
                 Text(
@@ -147,13 +148,14 @@ fun AddMedicineScheduleScreen(
                     Text("Đang tải danh sách thành viên...", color = Color(0xFF64748B), fontSize = 13.sp)
                 } else {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(members, key = { it.id }) { member ->
-                            val selected = member.id == selectedMemberId
+                        items(members) { member ->
+                            val safeId = (member.id as String?) ?: ""
+                            val selected = safeId == selectedMemberId
                             Column(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(20.dp))
                                     .background(if (selected) Color.White else Color(0xFFEDF2F7))
-                                    .clickable { selectedMemberId = member.id }
+                                    .clickable { selectedMemberId = safeId }
                                     .padding(horizontal = 14.dp, vertical = 12.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
@@ -164,10 +166,12 @@ fun AddMedicineScheduleScreen(
                                         .background(Color(0xFFDBEAFE)),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Text(member.name.take(1), color = PrimaryBlue, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                                    val safeName = (member.name as String?) ?: "User"
+                                    Text(safeName.take(1), color = PrimaryBlue, fontSize = 24.sp, fontWeight = FontWeight.Black)
                                 }
+                                val displayName = (member.name as String?) ?: "User"
                                 Text(
-                                    text = member.name,
+                                    text = displayName,
                                     color = if (selected) PrimaryBlue else Color(0xFF64748B),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -190,13 +194,14 @@ fun AddMedicineScheduleScreen(
                             Text("Chưa có thuốc trong tủ. Hãy thêm thuốc trước khi tạo lịch.", color = Color(0xFF64748B), fontSize = 13.sp, modifier = Modifier.padding(vertical = 10.dp))
                         } else {
                             medicines.forEach { medicine ->
-                                val selected = medicine.id == selectedMedicineId
+                                val safeMedId = (medicine.id as Long?) ?: -1L
+                                val selected = safeMedId == selectedMedicineId
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(16.dp))
                                         .background(if (selected) Color(0xFFEFF6FF) else Color.Transparent)
-                                        .clickable { selectedMedicineId = medicine.id }
+                                        .clickable { selectedMedicineId = safeMedId }
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
@@ -210,7 +215,8 @@ fun AddMedicineScheduleScreen(
                                         Icon(Icons.Default.Medication, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                                     }
                                     Column(modifier = Modifier.padding(start = 12.dp)) {
-                                        Text(medicine.medicineName, color = Color(0xFF0F172A), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        val safeMedName = (medicine.medicineName as String?) ?: "Thuốc"
+                                        Text(safeMedName, color = Color(0xFF0F172A), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                         Text("${medicine.quantity} ${medicine.unit}", color = Color(0xFF64748B), fontSize = 12.sp)
                                     }
                                 }

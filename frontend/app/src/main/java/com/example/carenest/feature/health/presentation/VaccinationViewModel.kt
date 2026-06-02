@@ -49,7 +49,7 @@ class VaccinationViewModel(
             try {
                 val response = vaccinationApi.getVaccinations(profileId)
                 if (response.isSuccessful && response.body()?.data != null) {
-                    val records = response.body()!!.data!!
+                    val records = response.body()?.data ?: emptyList()
                     
                     val groups = records.map { record ->
                         VaccinationTrackerGroup(

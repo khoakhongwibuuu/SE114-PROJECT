@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +42,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +63,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.community.domain.model.CommunityGroup
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 private enum class GroupTab(val label: String) {
     MINE("Nhóm của bạn"),
@@ -83,7 +90,7 @@ fun CommunityGroupsPane(
     val previewSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
 
-    androidx.compose.runtime.LaunchedEffect(state.error) {
+    LaunchedEffect(state.error) {
         state.error?.let { err ->
             android.widget.Toast.makeText(context, err, android.widget.Toast.LENGTH_SHORT).show()
             viewModel.clearError()
@@ -170,7 +177,19 @@ fun CommunityGroupsPane(
                     emptyIcon = Icons.Default.Groups,
                     emptyTitle = "Bạn chưa tham gia nhóm nào",
                     emptyText = "Bạn chưa tham gia nhóm nào. Hãy chuyển sang tab \"Tất cả\" để khám phá nhé!",
-                    itemContent = { group -> MyGroupItem(group, onClick = { onOpenGroup(group) }) },
+                    itemContent = { group ->
+                        MyGroupItem(
+                            group = group,
+                            onClick = {
+                                onOpenGroup(
+                                    group.copy(
+                                        name = group.name.ifBlank { "Phòng chat cộng đồng" },
+                                        latestMessage = group.latestMessage.sanitizeGroupSubtitle()
+                                    )
+                                )
+                            }
+                        )
+                    },
                 )
             }
 
@@ -190,9 +209,14 @@ fun CommunityGroupsPane(
                                 viewModel.loadGroupPreview(group.id)
                             },
                             onJoin = {
-                                viewModel.join(group, onSuccess = { joined ->
-                                    onOpenGroup(joined)
-                                })
+                                viewModel.join(group) { joined ->
+                                    onOpenGroup(
+                                        joined.copy(
+                                            name = joined.name.ifBlank { "Phòng chat cộng đồng" },
+                                            latestMessage = joined.latestMessage.sanitizeGroupSubtitle()
+                                        )
+                                    )
+                                }
                             },
                         )
                     },
@@ -202,7 +226,7 @@ fun CommunityGroupsPane(
     }
 
     if (showPreview && selectedGroupForPreview != null) {
-        val basicGroup = selectedGroupForPreview!!
+        val basicGroup = selectedGroupForPreview ?: return
         val preview = state.previewGroup
         ModalBottomSheet(
             onDismissRequest = {
@@ -239,7 +263,7 @@ fun CommunityGroupsPane(
                         Icon(Icons.Default.Close, contentDescription = "Đóng", tint = Color(0xFF64748B))
                     }
                 }
-                
+
                 if (state.isPreviewLoading) {
                     Box(
                         modifier = Modifier
@@ -253,8 +277,11 @@ fun CommunityGroupsPane(
                     val groupName = preview?.name ?: basicGroup.name
                     val memberCount = preview?.memberCount ?: basicGroup.memberCount
                     val leadDoctorName = preview?.leadDoctorName ?: basicGroup.leadDoctorName
-                    val description = preview?.description ?: basicGroup.description ?: "Không gian trao đổi kinh nghiệm chăm sóc sức khỏe trong cộng đồng CareNest."
-                    val rules = preview?.rules ?: "Tôn trọng thành viên khác, không đăng nội dung sai lệch y khoa và luôn giữ hội nhóm là nơi trao đổi an toàn."
+                    val description = preview?.description
+                        ?: basicGroup.description
+                        ?: "Không gian trao đổi kinh nghiệm chăm sóc sức khỏe trong cộng đồng CareNest."
+                    val rules = preview?.rules
+                        ?: "Tôn trọng thành viên khác, không đăng nội dung sai lệch y khoa và luôn giữ hội nhóm là nơi trao đổi an toàn."
                     val joined = preview?.joined ?: basicGroup.joined
 
                     Text(groupName, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
@@ -300,20 +327,35 @@ fun CommunityGroupsPane(
                             if (joined) {
                                 showPreview = false
                                 viewModel.clearPreview()
-                                onOpenGroup(basicGroup)
+                                onOpenGroup(
+                                    basicGroup.copy(
+                                        name = basicGroup.name.ifBlank { "Phòng chat cộng đồng" },
+                                        latestMessage = basicGroup.latestMessage.sanitizeGroupSubtitle()
+                                    )
+                                )
                             } else {
                                 if (preview != null) {
-                                    viewModel.joinFromPreview(preview, onSuccess = { joinedGroup ->
+                                    viewModel.joinFromPreview(preview) { joinedGroup ->
                                         showPreview = false
                                         viewModel.clearPreview()
-                                        onOpenGroup(joinedGroup)
-                                    })
+                                        onOpenGroup(
+                                            joinedGroup.copy(
+                                                name = joinedGroup.name.ifBlank { "Phòng chat cộng đồng" },
+                                                latestMessage = joinedGroup.latestMessage.sanitizeGroupSubtitle()
+                                            )
+                                        )
+                                    }
                                 } else {
-                                    viewModel.join(basicGroup, onSuccess = { joinedGroup ->
+                                    viewModel.join(basicGroup) { joinedGroup ->
                                         showPreview = false
                                         viewModel.clearPreview()
-                                        onOpenGroup(joinedGroup)
-                                    })
+                                        onOpenGroup(
+                                            joinedGroup.copy(
+                                                name = joinedGroup.name.ifBlank { "Phòng chat cộng đồng" },
+                                                latestMessage = joinedGroup.latestMessage.sanitizeGroupSubtitle()
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         },
@@ -362,7 +404,7 @@ private fun CommunityGroupList(
             }
         }
     } else {
-        androidx.compose.foundation.lazy.LazyColumn(
+        LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -379,17 +421,38 @@ private fun MyGroupItem(group: CommunityGroup, onClick: () -> Unit) {
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             GroupAvatar(group = group)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(group.name, fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        group.name,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(formatGroupTime(group.latestActivityAt), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(group.latestMessage ?: "Nhóm vừa được tạo", fontSize = 13.sp, color = Color(0xFF64748B), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    (group.latestMessage ?: "Nhóm vừa được tạo").sanitizeGroupSubtitle(),
+                    fontSize = 13.sp,
+                    color = Color(0xFF64748B),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -474,30 +537,30 @@ private fun formatGroupTime(value: String?): String {
     return try {
         val cleanValue = value.trim()
         val instant = if (cleanValue.endsWith("Z")) {
-            java.time.Instant.parse(cleanValue)
+            Instant.parse(cleanValue)
         } else {
             val hasZone = cleanValue.contains("+") || (cleanValue.lastIndexOf("-") > 10)
             if (hasZone) {
-                java.time.Instant.parse(cleanValue)
+                Instant.parse(cleanValue)
             } else {
-                java.time.LocalDateTime.parse(cleanValue).atZone(java.time.ZoneId.of("UTC")).toInstant()
+                LocalDateTime.parse(cleanValue).atZone(ZoneId.of("UTC")).toInstant()
             }
         }
-        val systemZone = java.time.ZoneId.systemDefault()
-        val localDateTime = java.time.LocalDateTime.ofInstant(instant, systemZone)
-        val today = java.time.LocalDate.now(systemZone)
+        val systemZone = ZoneId.systemDefault()
+        val localDateTime = LocalDateTime.ofInstant(instant, systemZone)
+        val today = LocalDate.now(systemZone)
         if (localDateTime.toLocalDate().isEqual(today)) {
-            localDateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+            localDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
         } else {
-            localDateTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))
+            localDateTime.format(DateTimeFormatter.ofPattern("dd/MM"))
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         try {
             if (value.contains("T")) {
                 val parts = value.split("T")
                 val datePart = parts[0]
                 val timePart = parts[1].take(5)
-                val todayStr = java.time.LocalDate.now().toString()
+                val todayStr = LocalDate.now().toString()
                 if (datePart == todayStr) {
                     timePart
                 } else {
@@ -511,8 +574,17 @@ private fun formatGroupTime(value: String?): String {
             } else {
                 value.take(10)
             }
-        } catch (ex: Exception) {
+        } catch (_: Exception) {
             value.take(16)
         }
     }
+}
+
+private fun String?.sanitizeGroupSubtitle(): String {
+    val raw = this?.trim().orEmpty()
+    if (raw.isBlank()) return "Nhóm vừa được tạo"
+    return raw
+        .replace("NhÃ³m vá»«a Ä‘Æ°á»£c táº¡o", "Nhóm vừa được tạo")
+        .replace("NhÃ³m vÃ«a Ä‘Æ°á»£c táº¡o", "Nhóm vừa được tạo")
+        .replace("Ã¢â‚¬Â¢", "•")
 }

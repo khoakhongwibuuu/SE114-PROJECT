@@ -224,9 +224,7 @@ fun AppointmentListScreen(
                                     // Content
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(text = item.title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                                        if (!item.doctorName.isNullOrBlank()) {
-                                            Text(text = item.doctorName!!, fontSize = 13.sp, color = Color(0xFF64748B))
-                                        }
+                                        Text(text = item.doctorName ?: "Chưa rõ", fontSize = 13.sp, color = Color(0xFF64748B))
                                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                                             Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color(0xFF64748B))
                                             Spacer(modifier = Modifier.width(4.dp))

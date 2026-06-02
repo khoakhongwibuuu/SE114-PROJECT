@@ -534,7 +534,7 @@ fun CommunityWikiScreen(
     }
 
     if (selectedDoctorArticle != null) {
-        val doctorArticle = selectedDoctorArticle!!
+        val doctorArticle = selectedDoctorArticle ?: return
         val doctorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = { selectedDoctorArticle = null },

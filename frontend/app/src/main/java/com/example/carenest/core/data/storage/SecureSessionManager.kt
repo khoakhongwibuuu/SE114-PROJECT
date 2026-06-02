@@ -15,6 +15,9 @@ class SecureSessionManager(context: Context) {
         private const val PROFILE_ID_KEY = "profile_id"
         private const val ACTIVE_PROFILE_ID_KEY = "active_profile_id"
         private const val USER_ID_KEY = "user_id"
+        private const val USER_ROLE_KEY = "user_role"
+        private const val USER_EMAIL_KEY = "user_email"
+        private const val USER_NAME_KEY = "user_name"
         private const val ONBOARDING_DONE_KEY = "@carenest_onboarding_done"
     }
 
@@ -44,6 +47,15 @@ class SecureSessionManager(context: Context) {
     )
     val activeProfileIdFlow: StateFlow<Long?> = _activeProfileIdFlow
 
+    private val _userRoleFlow = MutableStateFlow(encryptedPrefs.getString(USER_ROLE_KEY, null))
+    val userRoleFlow: StateFlow<String?> = _userRoleFlow
+
+    private val _userEmailFlow = MutableStateFlow(encryptedPrefs.getString(USER_EMAIL_KEY, null))
+    val userEmailFlow: StateFlow<String?> = _userEmailFlow
+
+    private val _userNameFlow = MutableStateFlow(encryptedPrefs.getString(USER_NAME_KEY, null))
+    val userNameFlow: StateFlow<String?> = _userNameFlow
+
     fun getAccessToken(): String? = encryptedPrefs.getString(ACCESS_TOKEN_KEY, null)
 
     fun getRefreshToken(): String? = encryptedPrefs.getString(REFRESH_TOKEN_KEY, null)
@@ -57,6 +69,12 @@ class SecureSessionManager(context: Context) {
     fun getActiveProfileId(): Long? = encryptedPrefs.getLong(ACTIVE_PROFILE_ID_KEY, -1L).takeIf { it > 0 }
 
     fun getUserId(): Long? = encryptedPrefs.getLong(USER_ID_KEY, -1L).takeIf { it > 0 }
+
+    fun getUserRole(): String? = encryptedPrefs.getString(USER_ROLE_KEY, null)
+
+    fun getUserEmail(): String? = encryptedPrefs.getString(USER_EMAIL_KEY, null)
+
+    fun getUserName(): String? = encryptedPrefs.getString(USER_NAME_KEY, null)
 
     suspend fun saveToken(token: String) {
         saveAccessToken(token)
@@ -83,6 +101,36 @@ class SecureSessionManager(context: Context) {
 
     fun saveUserIdSync(userId: Long) {
         encryptedPrefs.edit().putLong(USER_ID_KEY, userId).apply()
+    }
+
+    fun saveUserRoleSync(role: String?) {
+        if (role.isNullOrBlank()) {
+            encryptedPrefs.edit().remove(USER_ROLE_KEY).apply()
+            _userRoleFlow.value = null
+        } else {
+            encryptedPrefs.edit().putString(USER_ROLE_KEY, role).apply()
+            _userRoleFlow.value = role
+        }
+    }
+
+    fun saveUserEmailSync(email: String?) {
+        if (email.isNullOrBlank()) {
+            encryptedPrefs.edit().remove(USER_EMAIL_KEY).apply()
+            _userEmailFlow.value = null
+        } else {
+            encryptedPrefs.edit().putString(USER_EMAIL_KEY, email).apply()
+            _userEmailFlow.value = email
+        }
+    }
+
+    fun saveUserNameSync(name: String?) {
+        if (name.isNullOrBlank()) {
+            encryptedPrefs.edit().remove(USER_NAME_KEY).apply()
+            _userNameFlow.value = null
+        } else {
+            encryptedPrefs.edit().putString(USER_NAME_KEY, name).apply()
+            _userNameFlow.value = name
+        }
     }
 
     suspend fun saveActiveProfileId(profileId: Long?) {
@@ -121,5 +169,8 @@ class SecureSessionManager(context: Context) {
         _refreshTokenFlow.value = null
         _familyIdFlow.value = null
         _activeProfileIdFlow.value = null
+        _userRoleFlow.value = null
+        _userEmailFlow.value = null
+        _userNameFlow.value = null
     }
 }

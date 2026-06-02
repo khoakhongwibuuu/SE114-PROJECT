@@ -26,7 +26,7 @@ import com.example.carenest.feature.family.presentation.FamilyViewModel
 @Composable
 fun FamilyListScreen(
     viewModel: FamilyViewModel,
-    onNavigateToChat: (familyId: Int, familyName: String) -> Unit
+    onNavigateToChat: (familyId: Long, familyName: String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

@@ -116,8 +116,10 @@ class MedicineViewModel(
                     } else {
                         _cabinetState.value = CabinetState.Success(cabinetId = 0, medicines = emptyList())
                     }
+                } else if (response.code() == 404) {
+                    _cabinetState.value = CabinetState.Success(cabinetId = 0, medicines = emptyList())
                 } else {
-                    _cabinetState.value = CabinetState.Error("Không thể tải tủ thuốc")
+                    _cabinetState.value = CabinetState.Error("Khong the tai tu thuoc")
                 }
             } catch (e: Exception) {
                 _cabinetState.value = CabinetState.Error(e.localizedMessage ?: "Lỗi kết nối")
@@ -412,8 +414,8 @@ class MedicineViewModel(
                     status = if (!currentTaken) "TAKEN" else "PENDING"
                 ))
             } catch (e: Exception) {
-                // Revert on failure — re-fetch
-                val profileId = secureSessionManager.familyIdFlow.value?.toLongOrNull() ?: return@launch
+                // Revert on failure — re-fetch with the correct active profile id
+                val profileId = secureSessionManager.getActiveProfileId() ?: return@launch
                 fetchTodaySchedule(profileId)
             }
         }

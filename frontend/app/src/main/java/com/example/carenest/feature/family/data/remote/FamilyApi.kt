@@ -9,6 +9,7 @@ import com.example.carenest.feature.family.domain.model.FamilySummary
 import com.example.carenest.feature.family.domain.model.InviteMemberRequest
 import com.example.carenest.feature.family.domain.model.JoinFamilyByCodeRequest
 import com.example.carenest.feature.family.domain.model.UpdateInvitationRequest
+import com.example.carenest.feature.family.domain.model.FamilyChatPageResponse
 import com.example.carenest.feature.family.domain.model.UpdateMedicalInfoRequest
 import com.example.carenest.feature.family.domain.model.UpdateProfileDetailsRequest
 import com.example.carenest.model.RawHealthProfileResponse
@@ -24,14 +25,20 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface FamilyApi {
+    @GET("/api/v1/families/{id}/messages")
+    suspend fun getChatHistory(
+        @Path("id") familyId: Long,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<ApiResponse<FamilyChatPageResponse>>
     @GET("/api/v1/families/my-list")
     suspend fun getMyFamilyList(): Response<ApiResponse<List<FamilySummary>>>
 
     @GET("/api/v1/families/{id}")
-    suspend fun getFamilyById(@Path("id") familyId: Int): Response<ApiResponse<FamilyDetailResponse>>
+    suspend fun getFamilyById(@Path("id") familyId: Long): Response<ApiResponse<FamilyDetailResponse>>
 
     @GET("/api/v1/health-profiles/{id}")
-    suspend fun getFamilyProfile(@Path("id") profileId: Int): Response<ApiResponse<RawHealthProfileResponse>>
+    suspend fun getFamilyProfile(@Path("id") profileId: Long): Response<ApiResponse<RawHealthProfileResponse>>
 
     @POST("/api/v1/families")
     suspend fun createFamily(@Body request: CreateFamilyRequest): Response<ApiResponse<Unit>>
@@ -48,7 +55,7 @@ interface FamilyApi {
 
     @POST("/api/v1/families/{id}/invitations")
     suspend fun inviteMember(
-        @Path("id") familyId: Int,
+        @Path("id") familyId: Long,
         @Body request: InviteMemberRequest
     ): Response<ApiResponse<Unit>>
 
@@ -72,13 +79,13 @@ interface FamilyApi {
 
     @PUT("/api/v1/health-profiles/{id}")
     suspend fun updateProfileDetails(
-        @Path("id") profileId: Int,
+        @Path("id") profileId: Long,
         @Body request: UpdateProfileDetailsRequest
     ): Response<ApiResponse<Unit>>
 
     @PUT("/api/v1/health-profiles/{id}/medical-info")
     suspend fun updateProfileMedicalInfo(
-        @Path("id") profileId: Int,
+        @Path("id") profileId: Long,
         @Body request: UpdateMedicalInfoRequest
     ): Response<ApiResponse<Unit>>
 }

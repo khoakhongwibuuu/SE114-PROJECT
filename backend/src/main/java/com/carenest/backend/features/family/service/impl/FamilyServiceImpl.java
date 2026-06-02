@@ -152,8 +152,19 @@ public class FamilyServiceImpl implements FamilyService {
         FamilyDetailResponse response = familyMapper.toFamilyDetailResponse(family);
         List<FamilyMemberResponse> memberResponses = members.stream()
                 .map(member -> {
+                    HealthProfile profile = ensureFamilyHealthProfile(family, member.getUser());
                     FamilyMemberResponse memberResponse = familyMapper.toFamilyMemberResponse(member);
-                    memberResponse.setProfileId(ensureFamilyHealthProfile(family, member.getUser()).getId());
+                    memberResponse.setProfileId(profile.getId());
+                    memberResponse.setFullName(
+                            profile.getFullName() != null && !profile.getFullName().isBlank()
+                                    ? profile.getFullName()
+                                    : (member.getUser().getFullName() != null && !member.getUser().getFullName().isBlank()
+                                    ? member.getUser().getFullName()
+                                    : member.getUser().getEmail())
+                    );
+                    if (profile.getAvatarUrl() != null && !profile.getAvatarUrl().isBlank()) {
+                        memberResponse.setAvatarUrl(profile.getAvatarUrl());
+                    }
                     return memberResponse;
                 })
                 .collect(Collectors.toList());

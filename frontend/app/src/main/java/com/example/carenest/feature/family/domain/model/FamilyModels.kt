@@ -1,7 +1,7 @@
 package com.example.carenest.feature.family.domain.model
 
 data class FamilySummary(
-    val id: Int,
+    val id: Long,
     val name: String,
     val memberCount: Int,
     val myRole: String,
@@ -9,10 +9,10 @@ data class FamilySummary(
 )
 
 data class FamilyMemberSummary(
-    val id: Int,
-    val familyMemberId: Int?,
-    val profileId: Int?,
-    val userId: Int?,
+    val id: Long,
+    val familyMemberId: Long?,
+    val profileId: Long?,
+    val userId: Long?,
     val fullName: String,
     val role: String,
     val avatarUrl: String?,
@@ -21,10 +21,10 @@ data class FamilyMemberSummary(
 )
 
 data class FamilyDetailResponse(
-    val id: Int,
+    val id: Long,
     val name: String,
-    val ownerId: Int?,
-    val ownerUserId: Int?,
+    val ownerId: Long?,
+    val ownerUserId: Long?,
     val memberCount: Int,
     val members: List<FamilyMemberSummary>
 )

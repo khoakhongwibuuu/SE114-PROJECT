@@ -79,14 +79,21 @@ class AdminVerificationViewModel(
 
     fun approveVerification(id: Long) {
         viewModelScope.launch {
+            val target = _uiState.value.pendingList.firstOrNull { it.id == id }
             _uiState.update { it.copy(error = null, message = "Đang phê duyệt...") }
             try {
                 withContext(Dispatchers.IO) {
                     repository.approveVerification(id)
                 }
-                _uiState.update { it.copy(message = "Đã phê duyệt hồ sơ bác sĩ thành công") }
-                loadPending()
-                loadDoctors()
+                _uiState.update { current ->
+                    current.copy(
+                        pendingList = current.pendingList.filterNot { it.id == id },
+                        doctorList = target?.toDoctorSummary()?.let { summary ->
+                            listOf(summary) + current.doctorList.filterNot { it.id == summary.id }
+                        } ?: current.doctorList,
+                        message = "Đã phê duyệt hồ sơ bác sĩ thành công"
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -96,6 +103,15 @@ class AdminVerificationViewModel(
                 }
             }
         }
+    }
+
+    fun approveDoctor(id: String) {
+        val verificationId = id.toLongOrNull()
+        if (verificationId == null) {
+            _uiState.update { it.copy(error = "Không xác định được hồ sơ cần phê duyệt") }
+            return
+        }
+        approveVerification(verificationId)
     }
 
     fun rejectVerification(id: Long, reason: String) {
@@ -109,8 +125,12 @@ class AdminVerificationViewModel(
                 withContext(Dispatchers.IO) {
                     repository.rejectVerification(id, reason.trim())
                 }
-                _uiState.update { it.copy(message = "Đã từ chối hồ sơ bác sĩ") }
-                loadPending()
+                _uiState.update {
+                    it.copy(
+                        pendingList = it.pendingList.filterNot { pending -> pending.id == id },
+                        message = "Đã từ chối hồ sơ bác sĩ"
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -129,8 +149,12 @@ class AdminVerificationViewModel(
                 withContext(Dispatchers.IO) {
                     repository.revokeDoctor(userId)
                 }
-                _uiState.update { it.copy(message = "Đã thu hồi quyền bác sĩ thành công") }
-                loadDoctors()
+                _uiState.update {
+                    it.copy(
+                        doctorList = it.doctorList.filterNot { doctor -> doctor.id == userId },
+                        message = "Đã thu hồi quyền bác sĩ thành công"
+                    )
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -144,6 +168,20 @@ class AdminVerificationViewModel(
 
     fun clearMessages() {
         _uiState.update { it.copy(error = null, message = null) }
+    }
+
+    private fun DoctorVerificationResponse.toDoctorSummary(): DoctorSummary {
+        return DoctorSummary(
+            id = userId ?: id,
+            email = userEmail.orEmpty(),
+            fullName = userFullName?.takeIf { it.isNotBlank() } ?: "Bác sĩ CareNest",
+            avatarUrl = null,
+            certificationNumber = certificationNumber,
+            specialty = specialty,
+            hospitalName = hospitalName,
+            documentUrl = documentUrl,
+            approvedAt = updatedAt
+        )
     }
 }
 
