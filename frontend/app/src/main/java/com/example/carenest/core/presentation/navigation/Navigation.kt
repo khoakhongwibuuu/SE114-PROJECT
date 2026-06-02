@@ -1,16 +1,21 @@
 package com.example.carenest.core.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.ui.NavDisplay
 import com.example.carenest.CareNestApplication
+import com.example.carenest.feature.admin.presentation.AdminMainScreen
+import com.example.carenest.feature.auth.domain.model.AppRole
 import com.example.carenest.feature.auth.presentation.LoginScreen
 import com.example.carenest.feature.auth.presentation.RegisterScreen
 import com.example.carenest.feature.main.presentation.MainScreen
@@ -52,10 +57,11 @@ import kotlinx.coroutines.launch
 fun MainNavigation() {
   val context = LocalContext.current
   val application = context.applicationContext as CareNestApplication
+  val storedRole = application.secureSessionManager.getUserRole().toAppRole()
   val startDestination = remember {
     if (application.secureSessionManager.isOnboardingDone()) {
       if (application.secureSessionManager.getAccessToken()?.isNotBlank() == true) {
-        MainDashboard
+        authenticatedRootFor(storedRole)
       } else {
         Login
       }
@@ -70,6 +76,7 @@ fun MainNavigation() {
   val authViewModel: AuthViewModel = viewModel(
     factory = AuthViewModelFactory(application.authApi, application.secureSessionManager)
   )
+  val currentUserRole by authViewModel.currentUserRole.collectAsState()
   val vaccinationViewModel: com.example.carenest.feature.health.presentation.VaccinationViewModel = viewModel(
     factory = com.example.carenest.feature.health.presentation.VaccinationViewModelFactory(application.vaccinationApi)
   )
@@ -87,6 +94,21 @@ fun MainNavigation() {
       application.secureSessionManager
     )
   )
+
+  LaunchedEffect(currentUserRole, application.secureSessionManager.getAccessToken()) {
+    val token = application.secureSessionManager.getAccessToken()
+    val currentTop = backStack.lastOrNull()
+    if (token.isNullOrBlank()) return@LaunchedEffect
+
+    val expectedRoot = authenticatedRootFor(currentUserRole)
+    if (currentTop == MainDashboard && expectedRoot == AdminMain) {
+      backStack.clear()
+      backStack.add(AdminMain)
+    } else if (currentTop == AdminMain && expectedRoot == MainDashboard) {
+      backStack.clear()
+      backStack.add(MainDashboard)
+    }
+  }
 
   NavDisplay(
     backStack = backStack,
@@ -110,7 +132,7 @@ fun MainNavigation() {
             onNavigateToRegister = { backStack.add(Register) },
             onLoginSuccess = { 
                 backStack.clear()
-                backStack.add(MainDashboard) 
+                backStack.add(authenticatedRootFor(authViewModel.currentUserRole.value)) 
             },
             onNavigateToForgotPassword = { backStack.add(ForgotPassword) }
           )
@@ -191,6 +213,17 @@ fun MainNavigation() {
               dashboardViewModel = dashboardViewModel,
               medicineViewModel = medicineViewModel,
               modifier = Modifier
+          )
+        }
+        entry<AdminMain> {
+          AdminMainScreen(
+            onLogout = {
+              scope.launch {
+                application.secureSessionManager.clearAll()
+                backStack.clear()
+                backStack.add(Login)
+              }
+            }
           )
         }
         entry<AddMedicine> {
@@ -304,4 +337,13 @@ fun MainNavigation() {
         }
       },
   )
+}
+
+private fun authenticatedRootFor(role: AppRole?): NavKey {
+  return if (role == AppRole.ADMIN) AdminMain else MainDashboard
+}
+
+private fun String?.toAppRole(): AppRole? {
+  val normalized = this?.trim()?.uppercase() ?: return null
+  return AppRole.entries.firstOrNull { it.name == normalized }
 }
