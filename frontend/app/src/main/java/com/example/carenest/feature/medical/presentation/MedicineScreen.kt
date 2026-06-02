@@ -78,6 +78,7 @@ private enum class CabinetFilter(val label: String) {
 @Composable
 fun MedicineScreen(
     viewModel: MedicineViewModel,
+    refreshTrigger: Int = 0,
     onAddMedicineClick: () -> Unit = {},
     onScheduleClick: () -> Unit = {},
     onAddScheduleClick: () -> Unit = {},
@@ -91,6 +92,10 @@ fun MedicineScreen(
     var isEditingQuantity by remember { mutableStateOf(false) }
     var quantityDraft by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(refreshTrigger) {
+        viewModel.fetchCabinet()
+    }
 
     // Apply filter on top of cabinet state
     val filteredMedicines = remember(cabinetState, selectedFilter) {

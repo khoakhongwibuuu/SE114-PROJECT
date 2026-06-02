@@ -36,6 +36,7 @@ private enum class CommunityTopTab(val label: String) {
 @Composable
 fun CommunityScreen(
     canCreateArticle: Boolean = false,
+    refreshTrigger: Int = 0,
     onOpenGroup: (CommunityGroup) -> Unit = {},
 ) {
     var activeTab by remember { mutableStateOf(CommunityTopTab.WIKI) }
@@ -78,8 +79,15 @@ fun CommunityScreen(
         }
 
         when (activeTab) {
-            CommunityTopTab.WIKI -> CommunityWikiScreen(canCreateArticle = canCreateArticle, onOpenGroup = onOpenGroup)
-            CommunityTopTab.GROUPS -> CommunityGroupsPane(onOpenGroup = onOpenGroup)
+            CommunityTopTab.WIKI -> CommunityWikiScreen(
+                canCreateArticle = canCreateArticle,
+                refreshTrigger = refreshTrigger,
+                onOpenGroup = onOpenGroup
+            )
+            CommunityTopTab.GROUPS -> CommunityGroupsPane(
+                refreshTrigger = refreshTrigger,
+                onOpenGroup = onOpenGroup
+            )
         }
     }
 }

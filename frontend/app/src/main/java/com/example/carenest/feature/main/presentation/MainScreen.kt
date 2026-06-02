@@ -51,6 +51,13 @@ import com.example.carenest.feature.profile.presentation.ProfileScreen
 import com.example.carenest.feature.profile.presentation.ProfileViewModel
 import com.example.carenest.feature.profile.presentation.ProfileViewModelFactory
 
+private const val TAB_HOME = 0
+private const val TAB_FAMILY = 1
+private const val TAB_MEDICINE = 2
+private const val TAB_CHAT = 3
+private const val TAB_COMMUNITY = 4
+private const val TAB_PROFILE = 5
+
 @Composable
 fun MainScreen(
     onItemClick: (Any) -> Unit,
@@ -73,7 +80,13 @@ fun MainScreen(
     dashboardViewModel: DashboardViewModel,
     medicineViewModel: MedicineViewModel,
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(TAB_HOME) }
+    var homeRefreshTrigger by remember { mutableIntStateOf(0) }
+    var familyRefreshTrigger by remember { mutableIntStateOf(0) }
+    var medicineRefreshTrigger by remember { mutableIntStateOf(0) }
+    var chatRefreshTrigger by remember { mutableIntStateOf(0) }
+    var communityRefreshTrigger by remember { mutableIntStateOf(0) }
+    var profileRefreshTrigger by remember { mutableIntStateOf(0) }
 
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
@@ -111,6 +124,21 @@ fun MainScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    fun handleTabSelection(tabIndex: Int) {
+        if (selectedTab == tabIndex) {
+            when (tabIndex) {
+                TAB_HOME -> homeRefreshTrigger++
+                TAB_FAMILY -> familyRefreshTrigger++
+                TAB_MEDICINE -> medicineRefreshTrigger++
+                TAB_CHAT -> chatRefreshTrigger++
+                TAB_COMMUNITY -> communityRefreshTrigger++
+                TAB_PROFILE -> profileRefreshTrigger++
+            }
+        } else {
+            selectedTab = tabIndex
+        }
+    }
+
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -125,43 +153,43 @@ fun MainScreen(
                     .clip(RoundedCornerShape(topStart = AppRadius.x2, topEnd = AppRadius.x2)),
             ) {
                 NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
+                    selected = selectedTab == TAB_HOME,
+                    onClick = { handleTabSelection(TAB_HOME) },
                     icon = { CareNestIcon(name = "home", contentDescription = "Trang chủ") },
                     label = { NavLabel("Trang chủ") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
+                    selected = selectedTab == TAB_FAMILY,
+                    onClick = { handleTabSelection(TAB_FAMILY) },
                     icon = { CareNestIcon(name = "group", contentDescription = "Gia đình") },
                     label = { NavLabel("Gia đình") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
+                    selected = selectedTab == TAB_MEDICINE,
+                    onClick = { handleTabSelection(TAB_MEDICINE) },
                     icon = { CareNestIcon(name = "medication", contentDescription = "Thuốc") },
                     label = { NavLabel("Thuốc") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
-                    selected = selectedTab == 3,
-                    onClick = { selectedTab = 3 },
+                    selected = selectedTab == TAB_CHAT,
+                    onClick = { handleTabSelection(TAB_CHAT) },
                     icon = { CareNestIcon(name = "chat-processing", contentDescription = "Tin nhắn") },
                     label = { NavLabel("Tin nhắn") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
-                    selected = selectedTab == 4,
-                    onClick = { selectedTab = 4 },
+                    selected = selectedTab == TAB_COMMUNITY,
+                    onClick = { handleTabSelection(TAB_COMMUNITY) },
                     icon = { CareNestIcon(name = "globe", contentDescription = "Cộng đồng") },
                     label = { NavLabel("Cộng đồng") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
-                    selected = selectedTab == 5,
-                    onClick = { selectedTab = 5 },
+                    selected = selectedTab == TAB_PROFILE,
+                    onClick = { handleTabSelection(TAB_PROFILE) },
                     icon = { CareNestIcon(name = "person", contentDescription = "Tôi") },
                     label = { NavLabel("Tôi") },
                     colors = navColors(),
@@ -176,8 +204,9 @@ fun MainScreen(
                 .padding(paddingValues),
         ) {
             when (selectedTab) {
-                0 -> HomeDashboardScreen(
+                TAB_HOME -> HomeDashboardScreen(
                     viewModel = dashboardViewModel,
+                    refreshTrigger = homeRefreshTrigger,
                     onNavigateToMedicine = onNavigateToMedicineSchedule,
                     onNavigateToAppointment = {
                         val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
@@ -191,22 +220,25 @@ fun MainScreen(
                     onNavigateToTask = {}
                 )
 
-                1 -> FamilyFlowScreen(
+                TAB_FAMILY -> FamilyFlowScreen(
                     viewModel = dashboardViewModel,
+                    refreshTrigger = familyRefreshTrigger,
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                2 -> MedicineScreen(
+                TAB_MEDICINE -> MedicineScreen(
                     viewModel = medicineViewModel,
+                    refreshTrigger = medicineRefreshTrigger,
                     onAddMedicineClick = onNavigateToAddMedicine,
                     onScheduleClick = onNavigateToMedicineSchedule,
                     onAddScheduleClick = onNavigateToAddMedicineSchedule,
                     onOcrClick = onNavigateToOcrScanner,
                 )
 
-                3 -> ChatHubScreen(
+                TAB_CHAT -> ChatHubScreen(
                     dashboardViewModel = dashboardViewModel,
                     aiChatViewModel = aiChatViewModel,
+                    refreshTrigger = chatRefreshTrigger,
                     onNavigateToChatRoom = { _, _ ->
                         Toast.makeText(
                             context,
@@ -216,13 +248,15 @@ fun MainScreen(
                     }
                 )
 
-                4 -> CommunityScreen(
+                TAB_COMMUNITY -> CommunityScreen(
                     canCreateArticle = canAccessDoctorUi,
+                    refreshTrigger = communityRefreshTrigger,
                     onOpenGroup = { onItemClick(ChatRoom(it.id, it.name)) }
                 )
 
-                5 -> ProfileScreen(
+                TAB_PROFILE -> ProfileScreen(
                     viewModel = profileViewModel,
+                    refreshTrigger = profileRefreshTrigger,
                     onLogout = onLogout,
                     onNavigateToMedicalRecord = {
                         val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L

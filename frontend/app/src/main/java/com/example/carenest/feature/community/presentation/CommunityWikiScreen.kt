@@ -85,6 +85,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun CommunityWikiScreen(
     canCreateArticle: Boolean = false,
+    refreshTrigger: Int = 0,
     onOpenGroup: (CommunityGroup) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -147,7 +148,7 @@ fun CommunityWikiScreen(
         savingArticle = false
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshTrigger) {
         loadArticles()
     }
 

@@ -80,6 +80,7 @@ import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 @Composable
 fun HomeDashboardScreen(
     viewModel: DashboardViewModel,
+    refreshTrigger: Int = 0,
     onNavigateToMedicine: () -> Unit,
     onNavigateToAppointment: () -> Unit,
     onNavigateToVaccine: () -> Unit,
@@ -93,7 +94,7 @@ fun HomeDashboardScreen(
     val scrollState = rememberScrollState()
     var showFamilySwitcher by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshTrigger) {
         viewModel.fetchDashboard()
     }
 

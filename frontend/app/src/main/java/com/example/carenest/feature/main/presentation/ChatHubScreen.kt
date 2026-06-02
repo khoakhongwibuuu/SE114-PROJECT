@@ -64,10 +64,17 @@ private enum class ChatHubTab(val label: String) {
 fun ChatHubScreen(
     dashboardViewModel: DashboardViewModel,
     aiChatViewModel: AiChatViewModel,
+    refreshTrigger: Int = 0,
     onNavigateToChatRoom: (Long, String) -> Unit,
 ) {
     var activeTab by remember { mutableStateOf(ChatHubTab.FAMILY) }
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+
+    LaunchedEffect(refreshTrigger, activeTab) {
+        if (activeTab == ChatHubTab.FAMILY) {
+            dashboardViewModel.fetchDashboard()
+        }
+    }
 
     Column(
         modifier = Modifier

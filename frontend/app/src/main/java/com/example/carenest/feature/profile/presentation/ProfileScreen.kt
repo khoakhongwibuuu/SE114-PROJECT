@@ -44,6 +44,7 @@ import java.util.*
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
+    refreshTrigger: Int = 0,
     onNavigateBack: () -> Unit = {},
     onNavigateToMedicalRecord: () -> Unit = {},
     onNavigateToDoctorVerification: () -> Unit = {},
@@ -54,7 +55,7 @@ fun ProfileScreen(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshTrigger) {
         viewModel.loadCurrentUser()
     }
 
