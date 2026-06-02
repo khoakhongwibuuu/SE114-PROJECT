@@ -273,7 +273,7 @@ fun VitalsSection(profile: HealthProfile) {
                     Text("${profile.height ?: "--"} cm", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("C�n n?ng", fontSize = 12.sp, color = Color.Gray)
+                    Text("Cân nặng", fontSize = 12.sp, color = Color.Gray)
                     Text("${profile.weight ?: "--"} kg", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
                 }
             }
@@ -283,9 +283,9 @@ fun VitalsSection(profile: HealthProfile) {
             val bmi = profile.bmi ?: 0f
             val bmiStatus = when {
                 bmi == 0f -> "Chưa rõ"
-                bmi < 18.5 -> "Thi?u c�n"
+                bmi < 18.5 -> "Thiếu cân"
                 bmi < 25 -> "Bình thường"
-                bmi < 30 -> "Th?a c�n"
+                bmi < 30 -> "Thừa cân"
                 else -> "Béo phì"
             }
             val progress = (bmi / 40f).coerceIn(0f, 1f)

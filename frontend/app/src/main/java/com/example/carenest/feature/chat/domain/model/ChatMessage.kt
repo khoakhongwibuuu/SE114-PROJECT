@@ -5,6 +5,7 @@ data class ChatMessage(
     val text: String,
     val isMe: Boolean,
     val senderName: String,
+    val senderId: Long? = null,
     val senderRole: String? = null,
     val replyPreview: String? = null,
     val timestamp: Long

@@ -86,6 +86,7 @@ class DashboardViewModel(
                 ?.body()
                 ?.data
                 ?.let { user ->
+                    secureSessionManager.saveUserIdSync(user.id)
                     _currentUser.value = user
                     fetchDashboard()
                 }

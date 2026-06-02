@@ -22,12 +22,12 @@ data class ChatUiState(
     val inputText: String = "",
     val isConnected: Boolean = false,
     val error: String? = null,
-    val slowCountdown: Int = 0
+    val slowCountdown: Int = 0,
 )
 
 class ChatViewModel(
     private val groupId: Long,
-    private val repository: ChatRepository
+    private val repository: ChatRepository,
 ) : ViewModel() {
     private var reconnectJob: Job? = null
     private var countdownJob: Job? = null
@@ -50,9 +50,15 @@ class ChatViewModel(
             text = content,
             isMe = true,
             senderName = "Tôi",
-            timestamp = System.currentTimeMillis()
+            timestamp = System.currentTimeMillis(),
         )
-        _uiState.update { it.copy(inputText = "", messages = listOf(optimistic) + it.messages, error = null) }
+        _uiState.update {
+            it.copy(
+                inputText = "",
+                messages = listOf(optimistic) + it.messages,
+                error = null,
+            )
+        }
         startSlowMode()
 
         viewModelScope.launch {
@@ -62,10 +68,10 @@ class ChatViewModel(
                     _uiState.update { current ->
                         current.copy(
                             error = if (message.contains("slow", ignoreCase = true)) {
-                                "B?n dang g?i qu� nhanh. Vui l�ng ch? v�i gi�y."
+                                "Bạn đang gửi quá nhanh. Vui lòng chờ vài giây."
                             } else {
                                 "Không thể gửi tin nhắn. Vui lòng thử lại."
-                            }
+                            },
                         )
                     }
                 }
@@ -89,7 +95,12 @@ class ChatViewModel(
                 }
                 _uiState.update { it.copy(isLoading = false, messages = messages) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.localizedMessage ?: "Không thể tải lịch sử tin nhắn") }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.localizedMessage ?: "Không thể tải lịch sử tin nhắn",
+                    )
+                }
             }
         }
     }
@@ -98,14 +109,20 @@ class ChatViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             repository.connect(groupId) { event ->
                 when (event) {
-                    ChatRepositoryEvent.Connected -> _uiState.update { it.copy(isConnected = true, error = null) }
+                    ChatRepositoryEvent.Connected -> {
+                        _uiState.update { it.copy(isConnected = true, error = null) }
+                    }
+
                     is ChatRepositoryEvent.Disconnected -> {
                         _uiState.update { it.copy(isConnected = false, error = event.message) }
                         reconnect()
                     }
-                    is ChatRepositoryEvent.MessageReceived -> _uiState.update { current ->
-                        if (current.messages.any { it.id == event.message.id }) current
-                        else current.copy(messages = listOf(event.message) + current.messages)
+
+                    is ChatRepositoryEvent.MessageReceived -> {
+                        _uiState.update { current ->
+                            if (current.messages.any { it.id == event.message.id }) current
+                            else current.copy(messages = listOf(event.message) + current.messages)
+                        }
                     }
                 }
             }
@@ -131,6 +148,45 @@ class ChatViewModel(
         }
     }
 
+    fun leaveGroup(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    repository.leaveGroup(groupId)
+                }
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e.localizedMessage ?: "Không thể rời nhóm")
+            }
+        }
+    }
+
+    fun kickMember(userId: Long, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    repository.kickMember(groupId, userId)
+                }
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e.localizedMessage ?: "Không thể mời thành viên rời nhóm")
+            }
+        }
+    }
+
+    fun reportPost(postId: Long, reason: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    repository.reportPost(postId, reason)
+                }
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e.localizedMessage ?: "Không thể báo cáo tin nhắn")
+            }
+        }
+    }
+
     override fun onCleared() {
         countdownJob?.cancel()
         reconnectJob?.cancel()
@@ -141,7 +197,7 @@ class ChatViewModel(
 
 class ChatViewModelFactory(
     private val groupId: Long,
-    private val repository: ChatRepository
+    private val repository: ChatRepository,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {

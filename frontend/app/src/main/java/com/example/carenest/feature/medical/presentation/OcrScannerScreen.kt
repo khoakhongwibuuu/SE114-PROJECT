@@ -50,6 +50,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
+import com.example.carenest.feature.dashboard.presentation.DashboardState
+import com.example.carenest.feature.medical.presentation.ParsedMedicine
+import com.example.carenest.feature.medical.presentation.MedicineViewModel
+import androidx.compose.runtime.collectAsState
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 private data class EditableMedicine(
     val name: String,
@@ -59,8 +66,16 @@ private data class EditableMedicine(
 
 @Composable
 fun OcrScannerScreen(
+    dashboardViewModel: DashboardViewModel,
+    medicineViewModel: MedicineViewModel,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+    val isActionLoading by medicineViewModel.isActionLoading.collectAsState()
+    val currentProfileId by dashboardViewModel.currentProfileId.collectAsState()
+    val activeProfileId = currentProfileId ?: 0L
+
     var state by remember { mutableStateOf("idle") }
     var clinicName by remember { mutableStateOf("Phòng khám Đa khoa CareNest") }
     var doctorName by remember { mutableStateOf("BS. Nguyễn Văn A") }
@@ -200,6 +215,27 @@ fun OcrScannerScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Truthful Banner
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFFFF3E0))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFFE65100))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Tính năng AI OCR đang thử nghiệm. Hệ thống tự động điền dữ liệu mẫu để trải nghiệm.",
+                        color = Color(0xFFE65100),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Card(
@@ -260,16 +296,43 @@ fun OcrScannerScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
-                    onClick = onBack,
+                    onClick = {
+                        if (activeProfileId <= 0L) {
+                            Toast.makeText(context, "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước.", Toast.LENGTH_LONG).show()
+                            return@Button
+                        }
+                        medicineViewModel.confirmOcrPrescription(
+                            profileId = activeProfileId,
+                            clinicName = clinicName,
+                            doctorName = doctorName,
+                            prescriptionDate = prescriptionDate,
+                            medicines = medicines.map { ParsedMedicine(name = it.name, dosage = it.dosage, frequency = it.frequency) },
+                            onSuccess = {
+                                Toast.makeText(context, "Đã lưu đơn thuốc và lịch uống thành công!", Toast.LENGTH_SHORT).show()
+                                onBack()
+                            },
+                            onError = { error ->
+                                Toast.makeText(context, "Không thể lưu đơn thuốc: $error", Toast.LENGTH_LONG).show()
+                            }
+                        )
+                    },
+                    enabled = !isActionLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryBlue,
+                        disabledContainerColor = PrimaryBlue.copy(alpha = 0.5f)
+                    ),
                     shape = RoundedCornerShape(999.dp),
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Xác nhận và lưu vào hệ thống", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    if (isActionLoading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Xác nhận và lưu vào hệ thống", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
                 }
             }
 

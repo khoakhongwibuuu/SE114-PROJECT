@@ -6,14 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MedicalServices
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -28,28 +20,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
+import com.example.carenest.core.presentation.components.CareNestIcon
+import com.example.carenest.core.presentation.theme.AppRadius
+import com.example.carenest.core.presentation.theme.CareNestTextStyles
+import com.example.carenest.core.presentation.theme.Outline
+import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import com.example.carenest.core.presentation.theme.PrimaryFixed
+import com.example.carenest.core.presentation.theme.SurfaceLowest
+import com.example.carenest.feature.chat.presentation.AiChatViewModel
+import com.example.carenest.feature.chat.presentation.AiChatViewModelFactory
 import com.example.carenest.feature.chat.presentation.ChatScreen
 import com.example.carenest.feature.community.domain.model.CommunityGroup
 import com.example.carenest.feature.community.presentation.CommunityScreen
-
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModelFactory
-import com.example.carenest.feature.chat.presentation.AiChatViewModel
-import com.example.carenest.feature.chat.presentation.AiChatViewModelFactory
-import com.example.carenest.feature.ekyc.presentation.DoctorVerificationScreen
 import com.example.carenest.feature.family.presentation.FamilyFlowScreen
-import com.example.carenest.feature.profile.presentation.ProfileScreen
 import com.example.carenest.feature.medical.presentation.MedicineScreen
 import com.example.carenest.feature.medical.presentation.MedicineViewModel
 import com.example.carenest.feature.medical.presentation.MedicineViewModelFactory
+import com.example.carenest.feature.profile.presentation.ProfileScreen
+import com.example.carenest.core.presentation.navigation.ChatRoom
 
 @Composable
 fun MainScreen(
@@ -69,67 +65,59 @@ fun MainScreen(
     onNavigateToMedicalRecord: (Int) -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
+    dashboardViewModel: DashboardViewModel,
+    medicineViewModel: MedicineViewModel,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var openedCommunityGroup by remember { mutableStateOf<CommunityGroup?>(null) }
 
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
-    val dashboardViewModel: DashboardViewModel = viewModel(
-        factory = DashboardViewModelFactory(
-            application.dashboardApi,
-            application.authApi,
-            application.familyRepository,
-            application.secureSessionManager
-        ),
-    )
     val aiChatViewModel: AiChatViewModel = viewModel(
         factory = AiChatViewModelFactory(application.aiChatApi)
     )
-    val medicineViewModel: MedicineViewModel = viewModel(
-        factory = MedicineViewModelFactory(application.medicineApi, application.secureSessionManager)
-    )
     val currentProfileId by dashboardViewModel.currentProfileId.collectAsState()
+    val currentUser by dashboardViewModel.currentUser.collectAsState()
 
     Scaffold(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White),
-        containerColor = Color.White,
+            .background(PageBackground),
+        containerColor = PageBackground,
         bottomBar = {
             NavigationBar(
-                containerColor = Color.White,
+                containerColor = SurfaceLowest,
                 tonalElevation = 0.dp,
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
+                    .clip(RoundedCornerShape(topStart = AppRadius.x2, topEnd = AppRadius.x2)),
             ) {
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Trang chủ") },
-                    label = { Text("Trang chủ", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    icon = { CareNestIcon(name = "home", contentDescription = "Trang chủ") },
+                    label = { NavLabel("Trang chủ") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.Group, contentDescription = "Gia đình") },
-                    label = { Text("Gia đình", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    icon = { CareNestIcon(name = "group", contentDescription = "Gia đình") },
+                    label = { NavLabel("Gia đình") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.MedicalServices, contentDescription = "Thuốc") },
-                    label = { Text("Thuốc", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    icon = { CareNestIcon(name = "medication", contentDescription = "Thuốc") },
+                    label = { NavLabel("Thuốc") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == 3,
                     onClick = { selectedTab = 3 },
-                    icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Tin nhắn") },
-                    label = { Text("Tin nhắn", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    icon = { CareNestIcon(name = "chat-processing", contentDescription = "Tin nhắn") },
+                    label = { NavLabel("Tin nhắn") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
@@ -138,15 +126,15 @@ fun MainScreen(
                         selectedTab = 4
                         openedCommunityGroup = null
                     },
-                    icon = { Icon(Icons.Default.Public, contentDescription = "Cộng đồng") },
-                    label = { Text("Cộng đồng", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    icon = { CareNestIcon(name = "globe", contentDescription = "Cộng đồng") },
+                    label = { NavLabel("Cộng đồng") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == 5,
                     onClick = { selectedTab = 5 },
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Tôi") },
-                    label = { Text("Tôi", fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    icon = { CareNestIcon(name = "person", contentDescription = "Tôi") },
+                    label = { NavLabel("Tôi") },
                     colors = navColors(),
                 )
             }
@@ -155,7 +143,7 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(PageBackground)
                 .padding(paddingValues),
         ) {
             when (selectedTab) {
@@ -190,12 +178,16 @@ fun MainScreen(
                 3 -> ChatHubScreen(
                     dashboardViewModel = dashboardViewModel,
                     aiChatViewModel = aiChatViewModel,
+                    onNavigateToChatRoom = { id, name -> onItemClick(ChatRoom(id, name)) }
                 )
 
                 4 -> {
                     val group = openedCommunityGroup
                     if (group == null) {
-                        CommunityScreen(onOpenGroup = { openedCommunityGroup = it })
+                        CommunityScreen(
+                            canCreateArticle = currentUser?.role == "DOCTOR" || currentUser?.role == "ADMIN",
+                            onOpenGroup = { openedCommunityGroup = it }
+                        )
                     } else {
                         ChatScreen(
                             groupId = group.id,
@@ -221,10 +213,20 @@ fun MainScreen(
 }
 
 @Composable
+private fun NavLabel(text: String) {
+    Text(
+        text = text,
+        style = CareNestTextStyles.navLabel,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
 private fun navColors() = NavigationBarItemDefaults.colors(
     selectedIconColor = PrimaryBlue,
     selectedTextColor = PrimaryBlue,
-    unselectedIconColor = Color(0xFF707882),
-    unselectedTextColor = Color(0xFF707882),
-    indicatorColor = Color(0xFFEFF6FF),
+    unselectedIconColor = Outline,
+    unselectedTextColor = Outline,
+    indicatorColor = PrimaryFixed,
 )

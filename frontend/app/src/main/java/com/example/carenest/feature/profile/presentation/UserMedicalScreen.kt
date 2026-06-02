@@ -200,7 +200,7 @@ private fun InfoTabContent(
                     OutlinedTextField(
                         value = state.weight,
                         onValueChange = { viewModel.onWeightChange(it) },
-                        label = { Text("C�n n?ng (kg)") },
+                        label = { Text("Cân nặng (kg)") },
                         placeholder = { Text("Ví dụ: 65") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         shape = RoundedCornerShape(12.dp),

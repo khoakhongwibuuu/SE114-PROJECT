@@ -78,8 +78,17 @@ fun CommunityGroupsPane(
     )
     val state by viewModel.uiState.collectAsState()
     var activeTab by remember { mutableStateOf(GroupTab.MINE) }
-    var previewGroup by remember { mutableStateOf<CommunityGroup?>(null) }
+    var showPreview by remember { mutableStateOf(false) }
+    var selectedGroupForPreview by remember { mutableStateOf<CommunityGroup?>(null) }
     val previewSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
+
+    androidx.compose.runtime.LaunchedEffect(state.error) {
+        state.error?.let { err ->
+            android.widget.Toast.makeText(context, err, android.widget.Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -175,8 +184,16 @@ fun CommunityGroupsPane(
                         DiscoverGroupItem(
                             group = group,
                             joining = state.joiningGroupId == group.id,
-                            onPreview = { previewGroup = group },
-                            onJoin = { viewModel.join(group) },
+                            onPreview = {
+                                selectedGroupForPreview = group
+                                showPreview = true
+                                viewModel.loadGroupPreview(group.id)
+                            },
+                            onJoin = {
+                                viewModel.join(group, onSuccess = { joined ->
+                                    onOpenGroup(joined)
+                                })
+                            },
                         )
                     },
                 )
@@ -184,10 +201,14 @@ fun CommunityGroupsPane(
         }
     }
 
-    if (previewGroup != null) {
-        val group = previewGroup ?: return
+    if (showPreview && selectedGroupForPreview != null) {
+        val basicGroup = selectedGroupForPreview!!
+        val preview = state.previewGroup
         ModalBottomSheet(
-            onDismissRequest = { previewGroup = null },
+            onDismissRequest = {
+                showPreview = false
+                viewModel.clearPreview()
+            },
             containerColor = Color.White,
             sheetState = previewSheetState,
         ) {
@@ -210,65 +231,104 @@ fun CommunityGroupsPane(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top,
                 ) {
-                    GroupAvatar(group = group, large = true)
-                    IconButton(onClick = { previewGroup = null }) {
+                    GroupAvatar(group = basicGroup, large = true)
+                    IconButton(onClick = {
+                        showPreview = false
+                        viewModel.clearPreview()
+                    }) {
                         Icon(Icons.Default.Close, contentDescription = "Đóng", tint = Color(0xFF64748B))
                     }
                 }
-                Text(group.name, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = buildString {
-                        append("${group.memberCount} thành viên")
-                        if (!group.leadDoctorName.isNullOrBlank()) append(" · Host: ${group.leadDoctorName}")
-                    },
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF64748B),
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    group.description ?: "Không gian trao đổi kinh nghiệm chăm sóc sức khỏe trong cộng đồng CareNest.",
-                    fontSize = 14.sp,
-                    lineHeight = 21.sp,
-                    color = Color(0xFF334155),
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFFFFBEB))
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.Top,
-                ) {
-                    Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFFB45309), modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Tôn trọng thành viên khác, không đăng nội dung sai lệch y khoa và luôn giữ hội nhóm là nơi trao đổi an toàn.",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF92400E),
-                        lineHeight = 18.sp,
-                    )
-                }
-                Spacer(modifier = Modifier.height(18.dp))
-                Button(
-                    onClick = {
-                        previewGroup = null
-                        if (group.joined) onOpenGroup(group) else viewModel.join(group)
-                    },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                ) {
-                    if (state.joiningGroupId == group.id) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                        Text(if (group.joined) "Vào phòng chat" else "Tham gia nhóm", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color.White)
+                
+                if (state.isPreviewLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = PrimaryBlue)
                     }
+                } else {
+                    val groupName = preview?.name ?: basicGroup.name
+                    val memberCount = preview?.memberCount ?: basicGroup.memberCount
+                    val leadDoctorName = preview?.leadDoctorName ?: basicGroup.leadDoctorName
+                    val description = preview?.description ?: basicGroup.description ?: "Không gian trao đổi kinh nghiệm chăm sóc sức khỏe trong cộng đồng CareNest."
+                    val rules = preview?.rules ?: "Tôn trọng thành viên khác, không đăng nội dung sai lệch y khoa và luôn giữ hội nhóm là nơi trao đổi an toàn."
+                    val joined = preview?.joined ?: basicGroup.joined
+
+                    Text(groupName, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = buildString {
+                            append("$memberCount thành viên")
+                            if (!leadDoctorName.isNullOrBlank()) append(" · Host: $leadDoctorName")
+                        },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF64748B),
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        description,
+                        fontSize = 14.sp,
+                        lineHeight = 21.sp,
+                        color = Color(0xFF334155),
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFFFFBEB))
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFFB45309), modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = rules,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF92400E),
+                            lineHeight = 18.sp,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Button(
+                        onClick = {
+                            if (joined) {
+                                showPreview = false
+                                viewModel.clearPreview()
+                                onOpenGroup(basicGroup)
+                            } else {
+                                if (preview != null) {
+                                    viewModel.joinFromPreview(preview, onSuccess = { joinedGroup ->
+                                        showPreview = false
+                                        viewModel.clearPreview()
+                                        onOpenGroup(joinedGroup)
+                                    })
+                                } else {
+                                    viewModel.join(basicGroup, onSuccess = { joinedGroup ->
+                                        showPreview = false
+                                        viewModel.clearPreview()
+                                        onOpenGroup(joinedGroup)
+                                    })
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    ) {
+                        if (state.joiningGroupId == basicGroup.id) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Text(if (joined) "Vào phòng chat" else "Tham gia nhóm", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color.White)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
-                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
@@ -411,5 +471,48 @@ private fun GroupAvatar(group: CommunityGroup, large: Boolean = false) {
 
 private fun formatGroupTime(value: String?): String {
     if (value.isNullOrBlank()) return ""
-    return value.take(16).replace("T", " ").takeLast(5)
+    return try {
+        val cleanValue = value.trim()
+        val instant = if (cleanValue.endsWith("Z")) {
+            java.time.Instant.parse(cleanValue)
+        } else {
+            val hasZone = cleanValue.contains("+") || (cleanValue.lastIndexOf("-") > 10)
+            if (hasZone) {
+                java.time.Instant.parse(cleanValue)
+            } else {
+                java.time.LocalDateTime.parse(cleanValue).atZone(java.time.ZoneId.of("UTC")).toInstant()
+            }
+        }
+        val systemZone = java.time.ZoneId.systemDefault()
+        val localDateTime = java.time.LocalDateTime.ofInstant(instant, systemZone)
+        val today = java.time.LocalDate.now(systemZone)
+        if (localDateTime.toLocalDate().isEqual(today)) {
+            localDateTime.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+        } else {
+            localDateTime.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))
+        }
+    } catch (e: Exception) {
+        try {
+            if (value.contains("T")) {
+                val parts = value.split("T")
+                val datePart = parts[0]
+                val timePart = parts[1].take(5)
+                val todayStr = java.time.LocalDate.now().toString()
+                if (datePart == todayStr) {
+                    timePart
+                } else {
+                    val dateParts = datePart.split("-")
+                    if (dateParts.size == 3) {
+                        "${dateParts[2]}/${dateParts[1]}"
+                    } else {
+                        datePart
+                    }
+                }
+            } else {
+                value.take(10)
+            }
+        } catch (ex: Exception) {
+            value.take(16)
+        }
+    }
 }

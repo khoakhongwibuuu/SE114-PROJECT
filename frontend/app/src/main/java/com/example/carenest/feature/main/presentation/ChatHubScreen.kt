@@ -1,10 +1,14 @@
 package com.example.carenest.feature.main.presentation
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,18 +20,17 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,19 +39,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material.icons.filled.Send
+import com.example.carenest.core.presentation.components.CareNestIcon
+import com.example.carenest.core.presentation.theme.AppRadius
+import com.example.carenest.core.presentation.theme.AppSpacing
+import com.example.carenest.core.presentation.theme.CareNestTextStyles
+import com.example.carenest.core.presentation.theme.CardBackground
+import com.example.carenest.core.presentation.theme.Outline
+import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import com.example.carenest.core.presentation.theme.TextPrimary
+import com.example.carenest.core.presentation.theme.TextSecondary
+import com.example.carenest.feature.chat.presentation.AiChatViewModel
 import com.example.carenest.feature.dashboard.presentation.DashboardState
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
-import com.example.carenest.feature.chat.presentation.AiChatViewModel
 
 private enum class ChatHubTab(val label: String) {
     FAMILY("Tổ ấm"),
@@ -58,7 +65,8 @@ private enum class ChatHubTab(val label: String) {
 @Composable
 fun ChatHubScreen(
     dashboardViewModel: DashboardViewModel,
-    aiChatViewModel: AiChatViewModel
+    aiChatViewModel: AiChatViewModel,
+    onNavigateToChatRoom: (Long, String) -> Unit,
 ) {
     var activeTab by remember { mutableStateOf(ChatHubTab.FAMILY) }
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
@@ -66,13 +74,13 @@ fun ChatHubScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC))
+            .background(PageBackground)
             .statusBarsPadding(),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White),
+                .background(CardBackground),
         ) {
             ChatHubTab.entries.forEach { tab ->
                 Column(
@@ -84,9 +92,8 @@ fun ChatHubScreen(
                 ) {
                     Text(
                         text = tab.label,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = if (activeTab == tab) PrimaryBlue else Color(0xFF707882),
+                        style = CareNestTextStyles.labelMd,
+                        color = if (activeTab == tab) PrimaryBlue else Outline,
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Box(
@@ -100,7 +107,7 @@ fun ChatHubScreen(
         }
 
         when (activeTab) {
-            ChatHubTab.FAMILY -> FamilyHubPane(dashboardState)
+            ChatHubTab.FAMILY -> FamilyHubPane(dashboardState, onNavigateToChatRoom)
             ChatHubTab.AI -> AiCarePane(aiChatViewModel)
         }
     }
@@ -109,13 +116,14 @@ fun ChatHubScreen(
 @Composable
 private fun FamilyHubPane(
     dashboardState: DashboardState,
+    onNavigateToChatRoom: (Long, String) -> Unit,
 ) {
     val families = (dashboardState as? DashboardState.Success)?.data?.families.orEmpty()
     if (families.isEmpty()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp),
+                .padding(AppSpacing.x3),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -125,34 +133,37 @@ private fun FamilyHubPane(
                     .background(Color(0xFFF1F5F9), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.Group, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(48.dp))
+                CareNestIcon(name = "group", contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(48.dp))
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Bạn chưa thuộc gia đình nào.", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B), textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(AppSpacing.lg))
+            Text("Bạn chưa thuộc gia đình nào.", style = CareNestTextStyles.titleMd, color = TextPrimary, textAlign = TextAlign.Center)
+            Spacer(modifier = Modifier.height(AppSpacing.sm))
             Text(
                 "Vào tab Gia đình để tạo hoặc tham gia một tổ ấm nhé!",
-                fontSize = 14.sp,
-                lineHeight = 22.sp,
-                color = Color(0xFF64748B),
+                style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp),
+                color = TextSecondary,
                 textAlign = TextAlign.Center,
             )
         }
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(AppSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
         ) {
             items(families, key = { it.id }) { family ->
+                val context = LocalContext.current
                 Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(AppRadius.xl),
+                    colors = CardDefaults.cardColors(containerColor = CardBackground),
+                    modifier = Modifier.clickable {
+                        Toast.makeText(context, "Tính năng trò chuyện nhóm gia đình sẽ khả dụng trong phiên bản tiếp theo.", Toast.LENGTH_SHORT).show()
+                    }
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(AppSpacing.lg),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
@@ -161,14 +172,14 @@ private fun FamilyHubPane(
                                 .background(Color(0xFFE0F2FE), CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(Icons.Default.Home, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(28.dp))
+                            CareNestIcon(name = "home", contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(28.dp))
                         }
-                        Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
-                            Text(family.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("Bấm để bắt đầu trò chuyện", fontSize = 14.sp, color = Color(0xFF64748B))
+                        Column(modifier = Modifier.weight(1f).padding(start = AppSpacing.lg)) {
+                            Text(family.name, style = CareNestTextStyles.labelLg, color = TextPrimary)
+                            Spacer(modifier = Modifier.height(AppSpacing.xs))
+                            Text("Bấm để bắt đầu trò chuyện", style = CareNestTextStyles.bodyMd, color = TextSecondary)
                         }
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFCBD5E1))
+                        CareNestIcon(name = "chevron_right", contentDescription = null, tint = Color(0xFFCBD5E1))
                     }
                 }
             }
@@ -181,10 +192,10 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
     val messages by viewModel.messages.collectAsState()
     val isTyping by viewModel.isTyping.collectAsState()
     var inputText by remember { mutableStateOf("") }
-    
-    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
-    androidx.compose.runtime.LaunchedEffect(messages.size) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
         }
@@ -193,32 +204,32 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(CardBackground)
     ) {
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = AppSpacing.lg),
+            contentPadding = PaddingValues(vertical = AppSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
         ) {
-            items(messages) { msg ->
+            items(messages, key = { "${it.isUser}-${it.text.hashCode()}" }) { msg ->
                 val align = if (msg.isUser) Alignment.End else Alignment.Start
                 val bg = if (msg.isUser) PrimaryBlue else Color(0xFFF1F5F9)
-                val textColor = if (msg.isUser) Color.White else Color(0xFF1E293B)
-                
+                val textColor = if (msg.isUser) Color.White else TextPrimary
+
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = align
                 ) {
                     Box(
                         modifier = Modifier
-                            .background(bg, RoundedCornerShape(16.dp))
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                            .background(bg, RoundedCornerShape(AppRadius.xl))
+                            .padding(horizontal = AppSpacing.lg, vertical = 10.dp)
                     ) {
-                        Text(text = msg.text, color = textColor, fontSize = 15.sp, lineHeight = 22.sp)
+                        Text(text = msg.text, color = textColor, style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp))
                     }
                 }
             }
@@ -230,20 +241,20 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                     ) {
                         Box(
                             modifier = Modifier
-                                .background(Color(0xFFF1F5F9), RoundedCornerShape(16.dp))
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                                .background(Color(0xFFF1F5F9), RoundedCornerShape(AppRadius.xl))
+                                .padding(horizontal = AppSpacing.lg, vertical = 10.dp)
                         ) {
-                            Text("Đang trả lời...", color = Color(0xFF94A3B8), fontSize = 14.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                            Text("Đang trả lời...", color = Color(0xFF94A3B8), style = CareNestTextStyles.bodyMd.copy(fontStyle = FontStyle.Italic))
                         }
                     }
                 }
             }
-            
+
             if (messages.size == 1) {
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Gợi ý cho bạn:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(AppSpacing.lg))
+                    Text("Gợi ý cho bạn:", style = CareNestTextStyles.labelSm.copy(fontSize = 13.sp), color = TextSecondary)
+                    Spacer(modifier = Modifier.height(AppSpacing.sm))
                     val prompts = listOf(
                         "Hôm nay cần uống thuốc gì?",
                         "Thuốc nào sắp hết hạn?",
@@ -252,42 +263,40 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                     prompts.forEach { prompt ->
                         Card(
                             shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = CardDefaults.cardColors(containerColor = PageBackground),
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 8.dp)
+                                .padding(bottom = AppSpacing.sm)
                                 .clickable {
                                     viewModel.sendMessage(prompt)
                                 }
                         ) {
                             Text(
                                 text = prompt,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                fontSize = 14.sp,
-                                color = PrimaryBlue,
-                                fontWeight = FontWeight.SemiBold
+                                modifier = Modifier.padding(horizontal = AppSpacing.lg, vertical = 12.dp),
+                                style = CareNestTextStyles.labelMd,
+                                color = PrimaryBlue
                             )
                         }
                     }
                 }
             }
         }
-        
-        // Input area
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .background(CardBackground)
+                .padding(horizontal = AppSpacing.lg, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
-                placeholder = { Text("Hỏi CareNest AI...", color = Color(0xFF94A3B8)) },
+                placeholder = { Text("Hỏi CareNest AI...", color = Color(0xFF94A3B8), style = CareNestTextStyles.bodyMd) },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(AppRadius.full),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color(0xFFF1F5F9),
                     unfocusedContainerColor = Color(0xFFF1F5F9),
@@ -296,7 +305,7 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                 ),
                 maxLines = 3
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(AppSpacing.sm))
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -310,7 +319,12 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                 if (isTyping) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = PrimaryBlue, strokeWidth = 2.dp)
                 } else {
-                    Icon(Icons.Default.Send, contentDescription = "Gửi", tint = if (inputText.isNotBlank()) Color.White else Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
+                    CareNestIcon(
+                        name = "send",
+                        contentDescription = "Gửi",
+                        tint = if (inputText.isNotBlank()) Color.White else Color(0xFF94A3B8),
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }

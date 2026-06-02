@@ -94,10 +94,10 @@ fun PolicyScreen(
 
             // Section 1: Thu thập thông tin
             PolicySectionCard(
-                title = "1. Thu th?p th�ng tin c� nh�n",
-                content = "CareNest ch? thu th?p c�c th�ng tin c� nh�n c?n thi?t d? cung c?p v� c?i thi?n d?ch v? c?a ch�ng t�i:\n" +
+                title = "1. Thu thập thông tin cá nhân",
+                content = "CareNest chỉ thu thập các thông tin cá nhân cần thiết để cung cấp và cải thiện dịch vụ của chúng tôi:\n" +
                         "• Thông tin đăng ký tài khoản (họ tên, email, số điện thoại, ngày sinh, giới tính).\n" +
-                        "� Th�ng tin s?c kh?e c� nh�n v� gia d�nh (nh�m m�u, chi?u cao, c�n n?ng, ti?n s? d? ?ng, h? so kh�m b?nh, l?ch tr�nh thu?c u?ng) do b?n t? nguy?n chia s?.\n" +
+                        "• Thông tin sức khỏe cá nhân và gia đình (nhóm máu, chiều cao, cân nặng, tiền sử dị ứng, hồ sơ khám bệnh, lịch trình thuốc uống) do bạn tự nguyện chia sẻ.\n" +
                         "• Thông tin ảnh đính kèm (ảnh đại diện, ảnh chụp giấy tờ xác minh chứng chỉ bác sĩ)."
             )
 
@@ -115,8 +115,8 @@ fun PolicyScreen(
             PolicySectionCard(
                 title = "3. Bảo mật và Lưu trữ dữ liệu",
                 content = "CareNest áp dụng các biện pháp bảo vệ dữ liệu tiên tiến để giảm thiểu rủi ro bị mất mát, lạm dụng hoặc truy cập trái phép:\n" +
-                        "� M� h�a d? li?u truy?n t?i s? d?ng giao th?c HTTPS b?o m?t.\n" +
-                        "� Luu tr? m� x�c th?c (Token) v� th�ng tin phi�n l�m vi?c m?t c�ch an to�n tr�n thi?t b? th�ng qua h? th?ng luu tr? b?o m?t (Encrypted Shared Preferences/DataStore).\n" +
+                        "• Mã hóa dữ liệu truyền tải sử dụng giao thức HTTPS bảo mật.\n" +
+                        "• Lưu trữ mã xác thực (Token) và thông tin phiên làm việc một cách an toàn trên thiết bị thông qua hệ thống lưu trữ bảo mật (Encrypted Shared Preferences/DataStore).\n" +
                         "• Dữ liệu y tế của bạn được coi là thông tin mật tuyệt đối và không chia sẻ cho bên thứ ba khi chưa có sự đồng ý rõ ràng."
             )
 
@@ -126,7 +126,7 @@ fun PolicyScreen(
                 content = "Bạn có toàn quyền kiểm soát thông tin của mình trên CareNest:\n" +
                         "• Xem, chỉnh sửa hoặc cập nhật hồ sơ y tế của bạn bất cứ lúc nào.\n" +
                         "• Rút lại sự đồng ý hoặc gửi yêu cầu xóa tài khoản cùng toàn bộ thông tin đi kèm ra khỏi hệ thống.\n" +
-                        "� B�o c�o s? c? ho?c khi?u n?i th�ng qua Trung t�m h? tr? c?a CareNest."
+                        "• Báo cáo sự cố hoặc khiếu nại thông qua Trung tâm hỗ trợ của CareNest."
             )
 
             // Section 5: Điều khoản sử dụng

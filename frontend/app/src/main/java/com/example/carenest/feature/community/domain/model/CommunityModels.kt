@@ -97,3 +97,10 @@ data class ArticleComment(
 data class CreateArticleCommentRequest(
     val content: String
 )
+
+data class CreateArticleRequest(
+    val title: String,
+    val content: String,
+    val tags: String? = null,
+    val imageUrl: String? = null
+)

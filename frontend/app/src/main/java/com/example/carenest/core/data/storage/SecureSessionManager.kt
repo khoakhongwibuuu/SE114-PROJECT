@@ -14,6 +14,7 @@ class SecureSessionManager(context: Context) {
         private const val FAMILY_ID_KEY = "x_family_id"
         private const val PROFILE_ID_KEY = "profile_id"
         private const val ACTIVE_PROFILE_ID_KEY = "active_profile_id"
+        private const val USER_ID_KEY = "user_id"
         private const val ONBOARDING_DONE_KEY = "@carenest_onboarding_done"
     }
 
@@ -55,6 +56,8 @@ class SecureSessionManager(context: Context) {
 
     fun getActiveProfileId(): Long? = encryptedPrefs.getLong(ACTIVE_PROFILE_ID_KEY, -1L).takeIf { it > 0 }
 
+    fun getUserId(): Long? = encryptedPrefs.getLong(USER_ID_KEY, -1L).takeIf { it > 0 }
+
     suspend fun saveToken(token: String) {
         saveAccessToken(token)
     }
@@ -76,6 +79,10 @@ class SecureSessionManager(context: Context) {
 
     fun saveProfileIdSync(profileId: Long) {
         encryptedPrefs.edit().putLong(PROFILE_ID_KEY, profileId).apply()
+    }
+
+    fun saveUserIdSync(userId: Long) {
+        encryptedPrefs.edit().putLong(USER_ID_KEY, userId).apply()
     }
 
     suspend fun saveActiveProfileId(profileId: Long?) {
