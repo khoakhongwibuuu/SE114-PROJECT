@@ -1,5 +1,6 @@
 package com.example.carenest.feature.family.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -10,6 +11,7 @@ import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 @Composable
 fun FamilyFlowScreen(
     viewModel: DashboardViewModel, // If we need it for something else, otherwise unused
+    refreshTrigger: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -21,6 +23,14 @@ fun FamilyFlowScreen(
 
     var currentScreen by remember { mutableStateOf("picker") }
     var managementMode by remember { mutableStateOf<String?>(null) } // "create", "join", null
+
+    BackHandler(enabled = currentScreen != "picker") {
+        currentScreen = "picker"
+    }
+
+    LaunchedEffect(refreshTrigger) {
+        familyViewModel.loadFamilies()
+    }
 
     when (currentScreen) {
         "picker" -> {

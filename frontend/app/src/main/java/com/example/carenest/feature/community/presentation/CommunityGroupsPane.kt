@@ -77,6 +77,7 @@ private enum class GroupTab(val label: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommunityGroupsPane(
+    refreshTrigger: Int = 0,
     onOpenGroup: (CommunityGroup) -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as CareNestApplication
@@ -95,6 +96,10 @@ fun CommunityGroupsPane(
             android.widget.Toast.makeText(context, err, android.widget.Toast.LENGTH_SHORT).show()
             viewModel.clearError()
         }
+    }
+
+    LaunchedEffect(refreshTrigger) {
+        viewModel.refresh()
     }
 
     Column(
