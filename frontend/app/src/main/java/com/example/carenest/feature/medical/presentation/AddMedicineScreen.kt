@@ -38,11 +38,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,9 +58,11 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 
 @Composable
 fun AddMedicineScreen(
+    viewModel: MedicineViewModel,
     onBack: () -> Unit,
     onOpenOcrScanner: () -> Unit = {},
 ) {
+    val isActionLoading by viewModel.isActionLoading.collectAsState()
     var name by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("viên") }
@@ -210,9 +216,24 @@ fun AddMedicineScreen(
                 .navigationBarsPadding()
                 .padding(16.dp),
         ) {
+            val context = LocalContext.current
             Button(
-                onClick = onBack,
-                enabled = canSubmit,
+                onClick = {
+                    viewModel.addMedicine(
+                        name = name,
+                        quantity = quantity.toIntOrNull() ?: 0,
+                        unit = unit,
+                        expiryDate = expiryDate,
+                        onSuccess = {
+                            Toast.makeText(context, "Đã thêm thuốc thành công", Toast.LENGTH_SHORT).show()
+                            onBack()
+                        },
+                        onError = { error ->
+                            Toast.makeText(context, "Lỗi: $error", Toast.LENGTH_LONG).show()
+                        }
+                    )
+                },
+                enabled = canSubmit && !isActionLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -222,9 +243,13 @@ fun AddMedicineScreen(
                     disabledContainerColor = PrimaryBlue.copy(alpha = 0.5f),
                 ),
             ) {
-                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Thêm vào tủ thuốc", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                if (isActionLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Thêm vào tủ thuốc", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

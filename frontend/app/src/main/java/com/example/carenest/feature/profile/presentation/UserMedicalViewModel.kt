@@ -110,7 +110,7 @@ class UserMedicalViewModel(
                 fullName = state.fullName.ifEmpty { "Nguyễn Văn A" },
                 birthday = state.birthday ?: "1990-01-01",
                 gender = state.gender ?: "MALE",
-                relationship = state.relationship.ifEmpty { "B?n th�n" },
+                relationship = state.relationship.ifEmpty { "Bản thân" },
                 height = heightD,
                 weight = weightD,
                 bloodType = state.bloodType,

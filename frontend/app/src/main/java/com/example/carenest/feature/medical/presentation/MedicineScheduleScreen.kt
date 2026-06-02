@@ -77,25 +77,20 @@ fun MedicineScheduleScreen(
     onBack: () -> Unit,
     onAddSchedule: () -> Unit = {},
     profileId: Long = 0L,
-    viewModel: MedicineViewModel? = null,
+    viewModel: MedicineViewModel,
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
 
-    // Accept injected ViewModel or create our own
-    val vm: MedicineViewModel = viewModel ?: viewModel(
-        factory = MedicineViewModelFactory(application.medicineApi, application.secureSessionManager)
-    )
-
-    val scheduleState by vm.scheduleState.collectAsState()
+    val scheduleState by viewModel.scheduleState.collectAsState()
 
     LaunchedEffect(profileId) {
         if (profileId > 0L) {
-            vm.fetchTodaySchedule(profileId)
+            viewModel.fetchTodaySchedule(profileId)
         } else {
             // Use current user's profileId from session if available
             val pid = application.secureSessionManager.getProfileId()
-            if (pid != null) vm.fetchTodaySchedule(pid)
+            if (pid != null) viewModel.fetchTodaySchedule(pid)
         }
     }
 
@@ -210,10 +205,10 @@ fun MedicineScheduleScreen(
                                         ScheduleRow(
                                             log = log,
                                             showDivider = index < section.items.lastIndex,
-                                            onToggle = { vm.toggleDose(log.id, log.status == "TAKEN") },
+                                            onToggle = { viewModel.toggleDose(log.id, log.status == "TAKEN") },
                                             onDelete = {
                                                 log.medicationId?.let { medId ->
-                                                    vm.deleteSchedule(medId, profileId.coerceAtLeast(1L))
+                                                    viewModel.deleteSchedule(medId, profileId.coerceAtLeast(1L))
                                                 }
                                             },
                                         )

@@ -7,6 +7,7 @@ import com.example.carenest.feature.community.data.repository.CommunityRepositor
 import com.example.carenest.feature.community.domain.model.CommunityGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import com.example.carenest.feature.community.domain.model.CommunityGroupPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +21,9 @@ data class CommunityUiState(
     val myGroups: List<CommunityGroup> = emptyList(),
     val discoverGroups: List<CommunityGroup> = emptyList(),
     val error: String? = null,
-    val joiningGroupId: Long? = null
+    val joiningGroupId: Long? = null,
+    val previewGroup: CommunityGroupPreview? = null,
+    val isPreviewLoading: Boolean = false
 )
 
 @OptIn(FlowPreview::class)
@@ -48,7 +51,35 @@ class CommunityViewModel(
         }
     }
 
-    fun join(group: CommunityGroup) {
+    fun loadGroupPreview(groupId: Long) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isPreviewLoading = true, error = null, previewGroup = null)
+            try {
+                val preview = withContext(Dispatchers.IO) {
+                    repository.preview(groupId)
+                }
+                _uiState.value = _uiState.value.copy(
+                    isPreviewLoading = false,
+                    previewGroup = preview
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isPreviewLoading = false,
+                    error = e.localizedMessage ?: "Không thể tải chi tiết nhóm"
+                )
+            }
+        }
+    }
+
+    fun clearPreview() {
+        _uiState.value = _uiState.value.copy(previewGroup = null, error = null)
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun join(group: CommunityGroup, onSuccess: (CommunityGroup) -> Unit = {}) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(joiningGroupId = group.id, error = null)
             try {
@@ -65,9 +96,46 @@ class CommunityViewModel(
                     myGroups = listOf(joinedGroup) + _uiState.value.myGroups.filterNot { it.id == group.id },
                     discoverGroups = _uiState.value.discoverGroups.filterNot { it.id == group.id }
                 )
+                onSuccess(joinedGroup)
                 if (!preview.joined) {
                     refresh()
                 }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    joiningGroupId = null,
+                    error = e.localizedMessage ?: "Không thể tham gia nhóm"
+                )
+            }
+        }
+    }
+
+    fun joinFromPreview(preview: CommunityGroupPreview, onSuccess: (CommunityGroup) -> Unit = {}) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(joiningGroupId = preview.id, error = null)
+            try {
+                val updatedPreview = withContext(Dispatchers.IO) {
+                    repository.join(preview.id)
+                }
+                val discoverList = _uiState.value.discoverGroups.filterNot { it.id == preview.id }
+                val joinedGroup = CommunityGroup(
+                    id = preview.id,
+                    name = preview.name,
+                    description = preview.description,
+                    private = preview.private,
+                    category = preview.category,
+                    memberCount = updatedPreview.memberCount,
+                    leadDoctorName = preview.leadDoctorName,
+                    joined = true,
+                    latestMessage = "Nhóm vừa được tạo",
+                    latestActivityAt = null
+                )
+                _uiState.value = _uiState.value.copy(
+                    joiningGroupId = null,
+                    previewGroup = updatedPreview,
+                    myGroups = listOf(joinedGroup) + _uiState.value.myGroups.filterNot { it.id == preview.id },
+                    discoverGroups = discoverList
+                )
+                onSuccess(joinedGroup)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     joiningGroupId = null,

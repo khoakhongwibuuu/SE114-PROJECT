@@ -52,35 +52,48 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-
-private data class ScheduleMember(val id: Int, val name: String)
-private data class ScheduleMedicine(val id: Int, val name: String, val quantity: String)
+import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
+import com.example.carenest.feature.dashboard.presentation.DashboardState
+import com.example.carenest.feature.medical.presentation.MedicineViewModel
+import com.example.carenest.feature.medical.presentation.CabinetState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import androidx.compose.material3.CircularProgressIndicator
 
 @Composable
 fun AddMedicineScheduleScreen(
+    dashboardViewModel: DashboardViewModel,
+    medicineViewModel: MedicineViewModel,
     onBack: () -> Unit,
 ) {
-    val members = remember {
-        listOf(
-            ScheduleMember(1, "Bố"),
-            ScheduleMember(2, "Mẹ"),
-            ScheduleMember(3, "Con gái"),
-        )
-    }
-    val medicines = remember {
-        listOf(
-            ScheduleMedicine(1, "Panadol Extra", "12 viên"),
-            ScheduleMedicine(2, "Vitamin C", "24 viên"),
-            ScheduleMedicine(3, "Siro ho Prospan", "1 chai"),
-        )
+    val context = LocalContext.current
+    val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+    val cabinetState by medicineViewModel.cabinetState.collectAsState()
+    val isActionLoading by medicineViewModel.isActionLoading.collectAsState()
+
+    // 1. Get family members safely
+    val members = remember(dashboardState) {
+        val successState = dashboardState as? DashboardState.Success
+        successState?.data?.members.orEmpty()
     }
 
-    var selectedMemberId by remember { mutableIntStateOf(1) }
-    var selectedMedicineId by remember { mutableIntStateOf(1) }
+    // 2. Get cabinet medicines safely
+    val medicines = remember(cabinetState) {
+        val successState = cabinetState as? CabinetState.Success
+        successState?.medicines.orEmpty()
+    }
+
+    var selectedMemberId by remember(members) {
+        mutableStateOf(members.firstOrNull()?.id ?: "")
+    }
+    var selectedMedicineId by remember(medicines) {
+        mutableStateOf(medicines.firstOrNull()?.id ?: -1L)
+    }
     var dosage by remember { mutableStateOf("") }
     var frequency by remember { mutableStateOf("2") }
-    var startDate by remember { mutableStateOf("2026-05-28") }
-    var endDate by remember { mutableStateOf("2026-06-03") }
+    var startDate by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
+    var endDate by remember { mutableStateOf(java.time.LocalDate.now().plusDays(6).toString()) }
     var notes by remember { mutableStateOf("") }
 
     Column(
@@ -130,33 +143,37 @@ fun AddMedicineScheduleScreen(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Thành viên gia đình", color = Color(0xFF475569), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(members, key = { it.id }) { member ->
-                        val selected = member.id == selectedMemberId
-                        Column(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(if (selected) Color.White else Color(0xFFEDF2F7))
-                                .clickable { selectedMemberId = member.id }
-                                .padding(horizontal = 14.dp, vertical = 12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Box(
+                if (members.isEmpty()) {
+                    Text("Đang tải danh sách thành viên...", color = Color(0xFF64748B), fontSize = 13.sp)
+                } else {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(members, key = { it.id }) { member ->
+                            val selected = member.id == selectedMemberId
+                            Column(
                                 modifier = Modifier
-                                    .size(60.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFDBEAFE)),
-                                contentAlignment = Alignment.Center,
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(if (selected) Color.White else Color(0xFFEDF2F7))
+                                    .clickable { selectedMemberId = member.id }
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                Text(member.name.take(1), color = PrimaryBlue, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                                Box(
+                                    modifier = Modifier
+                                        .size(60.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFDBEAFE)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(member.name.take(1), color = PrimaryBlue, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                                }
+                                Text(
+                                    text = member.name,
+                                    color = if (selected) PrimaryBlue else Color(0xFF64748B),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(top = 10.dp),
+                                )
                             }
-                            Text(
-                                text = member.name,
-                                color = if (selected) PrimaryBlue else Color(0xFF64748B),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(top = 10.dp),
-                            )
                         }
                     }
                 }
@@ -169,34 +186,54 @@ fun AddMedicineScheduleScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                 ) {
                     Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        medicines.forEach { medicine ->
-                            val selected = medicine.id == selectedMedicineId
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (selected) Color(0xFFEFF6FF) else Color.Transparent)
-                                    .clickable { selectedMedicineId = medicine.id }
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Box(
+                        if (medicines.isEmpty()) {
+                            Text("Chưa có thuốc trong tủ. Hãy thêm thuốc trước khi tạo lịch.", color = Color(0xFF64748B), fontSize = 13.sp, modifier = Modifier.padding(vertical = 10.dp))
+                        } else {
+                            medicines.forEach { medicine ->
+                                val selected = medicine.id == selectedMedicineId
+                                Row(
                                     modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(Color(0xFFE8F1FF)),
-                                    contentAlignment = Alignment.Center,
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(if (selected) Color(0xFFEFF6FF) else Color.Transparent)
+                                        .clickable { selectedMedicineId = medicine.id }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Icon(Icons.Default.Medication, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                                }
-                                Column(modifier = Modifier.padding(start = 12.dp)) {
-                                    Text(medicine.name, color = Color(0xFF0F172A), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                    Text(medicine.quantity, color = Color(0xFF64748B), fontSize = 12.sp)
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(Color(0xFFE8F1FF)),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(Icons.Default.Medication, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                    }
+                                    Column(modifier = Modifier.padding(start = 12.dp)) {
+                                        Text(medicine.medicineName, color = Color(0xFF0F172A), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                        Text("${medicine.quantity} ${medicine.unit}", color = Color(0xFF64748B), fontSize = 12.sp)
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            }
+
+            val showDatePicker: (String, (String) -> Unit) -> Unit = { initialDateStr, onDateSelected ->
+                val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                val initialDate = runCatching { java.time.LocalDate.parse(initialDateStr, formatter) }
+                    .getOrElse { java.time.LocalDate.now() }
+                android.app.DatePickerDialog(
+                    context,
+                    { _, year, month, dayOfMonth ->
+                        val selected = java.time.LocalDate.of(year, month + 1, dayOfMonth)
+                        onDateSelected(selected.format(formatter))
+                    },
+                    initialDate.year,
+                    initialDate.monthValue - 1,
+                    initialDate.dayOfMonth
+                ).show()
             }
 
             Card(
@@ -206,15 +243,51 @@ fun AddMedicineScheduleScreen(
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     ScheduleInput(label = "LIỀU DÙNG", value = dosage, onValueChange = { dosage = it }, placeholder = "VD: 1 viên sau ăn")
                     ScheduleInput(label = "SỐ LẦN / NGÀY", value = frequency, onValueChange = { frequency = it.filter(Char::isDigit) }, leadingIcon = Icons.Default.Person)
-                    ScheduleInput(label = "NGÀY BẮT ĐẦU", value = startDate, onValueChange = { startDate = it }, leadingIcon = Icons.Default.CalendarToday)
-                    ScheduleInput(label = "NGÀY KẾT THÚC", value = endDate, onValueChange = { endDate = it }, leadingIcon = Icons.Default.AccessTime)
+                    ScheduleInput(
+                        label = "NGÀY BẮT ĐẦU",
+                        value = startDate,
+                        onValueChange = { startDate = it },
+                        leadingIcon = Icons.Default.CalendarToday,
+                        onClick = { showDatePicker(startDate) { startDate = it } }
+                    )
+                    ScheduleInput(
+                        label = "NGÀY KẾT THÚC",
+                        value = endDate,
+                        onValueChange = { endDate = it },
+                        leadingIcon = Icons.Default.AccessTime,
+                        onClick = { showDatePicker(endDate) { endDate = it } }
+                    )
                     ScheduleInput(label = "GHI CHÚ", value = notes, onValueChange = { notes = it }, placeholder = "VD: Uống sau ăn", leadingIcon = Icons.Default.LocalHospital)
                 }
             }
         }
 
         Button(
-            onClick = onBack,
+            onClick = {
+                val chosenMemberId = selectedMemberId.toLongOrNull()
+                val chosenMedicine = medicines.find { it.id == selectedMedicineId }
+                if (chosenMemberId == null || chosenMedicine == null) {
+                    Toast.makeText(context, "Vui lòng chọn thành viên và thuốc", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+                medicineViewModel.createSchedule(
+                    profileId = chosenMemberId,
+                    medicineName = chosenMedicine.medicineName,
+                    dosage = dosage.ifBlank { "1 viên" },
+                    timesPerDay = frequency.toIntOrNull() ?: 1,
+                    startDate = startDate,
+                    endDate = endDate,
+                    notes = notes,
+                    onSuccess = {
+                        Toast.makeText(context, "Lưu lịch nhắc uống thuốc thành công!", Toast.LENGTH_SHORT).show()
+                        onBack()
+                    },
+                    onError = { error ->
+                        Toast.makeText(context, "Lỗi: $error", Toast.LENGTH_LONG).show()
+                    }
+                )
+            },
+            enabled = !isActionLoading && selectedMemberId.isNotEmpty() && selectedMedicineId != -1L,
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
@@ -223,7 +296,11 @@ fun AddMedicineScheduleScreen(
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
         ) {
-            Text("Lưu lịch", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
+            if (isActionLoading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            } else {
+                Text("Lưu lịch", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
+            }
         }
     }
 }
@@ -235,19 +312,37 @@ private fun ScheduleInput(
     onValueChange: (String) -> Unit,
     placeholder: String = "",
     leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    onClick: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(label, color = PrimaryBlue, fontSize = 10.sp, fontWeight = FontWeight.Black)
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { if (placeholder.isNotBlank()) Text(placeholder) },
-            leadingIcon = if (leadingIcon != null) {
-                { Icon(leadingIcon, contentDescription = null, tint = Color(0xFFCBD5E1), modifier = Modifier.size(18.dp)) }
-            } else null,
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-        )
+        Box(
+            modifier = if (onClick != null) {
+                Modifier.clickable { onClick() }
+            } else {
+                Modifier
+            }
+        ) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { if (placeholder.isNotBlank()) Text(placeholder) },
+                leadingIcon = if (leadingIcon != null) {
+                    { Icon(leadingIcon, contentDescription = null, tint = Color(0xFFCBD5E1), modifier = Modifier.size(18.dp)) }
+                } else null,
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                enabled = onClick == null,
+                readOnly = onClick != null,
+                colors = if (onClick != null) {
+                    androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = Color(0xFF0F172A),
+                        disabledBorderColor = Color(0xFFCBD5E1),
+                        disabledLeadingIconColor = Color(0xFFCBD5E1),
+                    )
+                } else androidx.compose.material3.OutlinedTextFieldDefaults.colors()
+            )
+        }
     }
 }

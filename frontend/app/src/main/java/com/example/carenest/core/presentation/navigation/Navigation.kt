@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.ui.NavDisplay
 import com.example.carenest.CareNestApplication
 import com.example.carenest.feature.auth.presentation.LoginScreen
@@ -37,6 +38,11 @@ import com.example.carenest.feature.profile.presentation.UserMedicalViewModelFac
 import com.example.carenest.feature.profile.presentation.PolicyScreen
 import com.example.carenest.feature.ekyc.presentation.EkycViewModel
 import com.example.carenest.feature.ekyc.presentation.EkycViewModelFactory
+import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
+import com.example.carenest.feature.dashboard.presentation.DashboardViewModelFactory
+import com.example.carenest.feature.medical.presentation.MedicineViewModel
+import com.example.carenest.feature.medical.presentation.MedicineViewModelFactory
+import com.example.carenest.feature.chat.presentation.ChatScreen
 
 import kotlinx.coroutines.launch
 
@@ -64,6 +70,20 @@ fun MainNavigation() {
   )
   val vaccinationViewModel: com.example.carenest.feature.health.presentation.VaccinationViewModel = viewModel(
     factory = com.example.carenest.feature.health.presentation.VaccinationViewModelFactory(application.vaccinationApi)
+  )
+  val dashboardViewModel: DashboardViewModel = viewModel(
+    factory = DashboardViewModelFactory(
+      application.dashboardApi,
+      application.authApi,
+      application.familyRepository,
+      application.secureSessionManager
+    )
+  )
+  val medicineViewModel: MedicineViewModel = viewModel(
+    factory = MedicineViewModelFactory(
+      application.medicineApi,
+      application.secureSessionManager
+    )
   )
 
   NavDisplay(
@@ -144,7 +164,7 @@ fun MainNavigation() {
         }
         entry<MainDashboard> {
           MainScreen(
-              onItemClick = { /* noop for now */ },
+              onItemClick = { backStack.add(it as NavKey) },
               onNavigateToAddMedicine = { backStack.add(AddMedicine) },
               onNavigateToMedicineSchedule = { backStack.add(MedicineSchedule) },
               onNavigateToAddMedicineSchedule = { backStack.add(AddMedicineSchedule) },
@@ -165,11 +185,14 @@ fun MainNavigation() {
                       backStack.add(Login)
                   }
               },
+              dashboardViewModel = dashboardViewModel,
+              medicineViewModel = medicineViewModel,
               modifier = Modifier
           )
         }
         entry<AddMedicine> {
           AddMedicineScreen(
+            viewModel = medicineViewModel,
             onBack = { backStack.removeLastOrNull() },
             onOpenOcrScanner = { backStack.add(OcrScanner) }
           )
@@ -177,16 +200,29 @@ fun MainNavigation() {
         entry<MedicineSchedule> {
           MedicineScheduleScreen(
             onBack = { backStack.removeLastOrNull() },
-            onAddSchedule = { backStack.add(AddMedicineSchedule) }
+            onAddSchedule = { backStack.add(AddMedicineSchedule) },
+            viewModel = medicineViewModel
           )
         }
         entry<AddMedicineSchedule> {
           AddMedicineScheduleScreen(
+            dashboardViewModel = dashboardViewModel,
+            medicineViewModel = medicineViewModel,
+            onBack = { backStack.removeLastOrNull() }
+          )
+        }
+        entry<ChatRoom> {
+          val key = it as ChatRoom
+          ChatScreen(
+            groupId = key.id,
+            groupName = key.name,
             onBack = { backStack.removeLastOrNull() }
           )
         }
         entry<OcrScanner> {
           OcrScannerScreen(
+            dashboardViewModel = dashboardViewModel,
+            medicineViewModel = medicineViewModel,
             onBack = { backStack.removeLastOrNull() }
           )
         }

@@ -132,7 +132,7 @@ fun AddVaccineScreen(
                 .padding(horizontal = 24.dp)
         ) {
             Text(
-                text = if (isEdit) "C?p nh?t l?i th�ng tin mui ti�m d� ghi nh?n trong h? so s?c kh?e." else "Ghi nh?n t?ng mui ti�m c? th? d? theo d�i d?y d? v� ch�nh x�c l?ch tr�nh ph�ng b?nh c?a b�.",
+                text = if (isEdit) "Cập nhật lại thông tin mũi tiêm đã ghi nhận trong hồ sơ sức khỏe." else "Ghi nhận từng mũi tiêm cụ thể để theo dõi đầy đủ và chính xác lịch trình phòng bệnh của bé.",
                 fontSize = 13.sp,
                 color = Color(0xFF64748B),
                 textAlign = TextAlign.Center,
@@ -157,7 +157,7 @@ fun AddVaccineScreen(
                     Text("TÊN VẮC XIN", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF64748B), letterSpacing = 0.5.sp, modifier = Modifier.padding(bottom = 10.dp, start = 4.dp))
                     CustomTextField(value = vaccineName, onValueChange = { vaccineName = it }, placeholder = "Ví dụ: Vắc xin 6 trong 1 Hexaxim", icon = Icons.Default.Vaccines)
 
-                    Text("��Y L� MUI TH? M?Y?", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF64748B), letterSpacing = 0.5.sp, modifier = Modifier.padding(top = 24.dp, bottom = 10.dp, start = 4.dp))
+                    Text("ĐÂY LÀ MŨI THỨ MẤY?", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF64748B), letterSpacing = 0.5.sp, modifier = Modifier.padding(top = 24.dp, bottom = 10.dp, start = 4.dp))
                     // Grid for doses
                     val doseOptions = listOf(1 to "Mũi 1", 2 to "Mũi 2", 3 to "Mũi 3", 4 to "Mũi 4", 99 to "Nhắc lại")
                     @OptIn(ExperimentalLayoutApi::class)
@@ -186,7 +186,7 @@ fun AddVaccineScreen(
                     Text("TRẠNG THÁI", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF64748B), letterSpacing = 0.5.sp, modifier = Modifier.padding(top = 24.dp, bottom = 10.dp, start = 4.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatusChip(
-                            label = "�� ti�m",
+                            label = "Đã tiêm",
                             icon = Icons.Default.CheckCircle,
                             isSelected = isCompleted,
                             onClick = { isCompleted = true },
@@ -231,7 +231,7 @@ fun AddVaccineScreen(
                     }
 
                     Text("ĐỊA ĐIỂM TIÊM (TÙY CHỌN)", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF64748B), letterSpacing = 0.5.sp, modifier = Modifier.padding(top = 24.dp, bottom = 10.dp, start = 4.dp))
-                    CustomTextField(value = clinicName, onValueChange = { clinicName = it }, placeholder = "V� d?: Trung t�m Ti�m ch?ng VNVC", icon = Icons.Default.LocalHospital)
+                    CustomTextField(value = clinicName, onValueChange = { clinicName = it }, placeholder = "Ví dụ: Trung tâm Tiêm chủng VNVC", icon = Icons.Default.LocalHospital)
 
                     Text("GHI CHÚ (TÙY CHỌN)", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF64748B), letterSpacing = 0.5.sp, modifier = Modifier.padding(top = 24.dp, bottom = 10.dp, start = 4.dp))
                     Row(

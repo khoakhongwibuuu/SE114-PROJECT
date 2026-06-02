@@ -2,21 +2,53 @@ package com.example.carenest.feature.notifications.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,7 +74,7 @@ fun NotificationsCenterScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Trung t�m th�ng b�o",
+                        "Trung tâm thông báo",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1E3A8A)
@@ -104,12 +136,11 @@ fun NotificationsCenterScreen(
                         "Chúng tôi sẽ cập nhật khi có tin tức mới cho bạn.",
                         fontSize = 14.sp,
                         color = Color(0xFF94A3B8),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     )
                 }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Unread Count Banner
                     if (state.unreadCount > 0) {
                         Row(
                             modifier = Modifier
@@ -254,38 +285,14 @@ fun NotificationRow(
     }
 }
 
-private fun getNotificationStyle(type: String): Triple<androidx.compose.ui.graphics.vector.ImageVector, Color, Color> {
+private fun getNotificationStyle(type: String): Triple<ImageVector, Color, Color> {
     return when (type) {
-        "medicine" -> Triple(
-            Icons.Default.Medication,
-            Color(0xFFE0F2FE), // Sky 100
-            Color(0xFF0EA5E9)  // Sky 500
-        )
-        "appointment" -> Triple(
-            Icons.Default.CalendarMonth,
-            Color(0xFFD1FAE5), // Emerald 100
-            Color(0xFF10B981)  // Emerald 500
-        )
-        "vaccine" -> Triple(
-            Icons.Default.MedicalServices,
-            Color(0xFFF3E8FF), // Purple 100
-            Color(0xFF8B5CF6)  // Purple 500
-        )
-        "warning" -> Triple(
-            Icons.Default.Warning,
-            Color(0xFFFEE2E2), // Red 100
-            Color(0xFFEF4444)  // Red 500
-        )
-        "ai_insight" -> Triple(
-            Icons.Default.AutoAwesome,
-            Color(0xFFFCE7F3), // Pink 100
-            Color(0xFFEC4899)  // Pink 500
-        )
-        else -> Triple(
-            Icons.Default.Notifications,
-            Color(0xFFF1F5F9), // Slate 100
-            Color(0xFF64748B)  // Slate 500
-        )
+        "medicine" -> Triple(Icons.Default.Medication, Color(0xFFE0F2FE), Color(0xFF0EA5E9))
+        "appointment" -> Triple(Icons.Default.CalendarMonth, Color(0xFFD1FAE5), Color(0xFF10B981))
+        "vaccine" -> Triple(Icons.Default.MedicalServices, Color(0xFFF3E8FF), Color(0xFF8B5CF6))
+        "warning" -> Triple(Icons.Default.Warning, Color(0xFFFEE2E2), Color(0xFFEF4444))
+        "ai_insight" -> Triple(Icons.Default.AutoAwesome, Color(0xFFFCE7F3), Color(0xFFEC4899))
+        else -> Triple(Icons.Default.Notifications, Color(0xFFF1F5F9), Color(0xFF64748B))
     }
 }
 

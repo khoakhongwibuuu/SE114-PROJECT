@@ -1,10 +1,11 @@
-﻿package com.example.carenest.feature.community.data.remote
+package com.example.carenest.feature.community.data.remote
 
 import com.example.carenest.core.data.network.ApiResponse
 import com.example.carenest.feature.community.domain.model.CommunityGroup
 import com.example.carenest.feature.community.domain.model.CommunityGroupPreview
 import com.example.carenest.feature.community.domain.model.CreateGroupPostRequest
 import com.example.carenest.feature.community.domain.model.CreateArticleCommentRequest
+import com.example.carenest.feature.community.domain.model.CreateArticleRequest
 import com.example.carenest.feature.community.domain.model.GroupPost
 import com.example.carenest.feature.community.domain.model.PageResponse
 import com.example.carenest.feature.community.domain.model.Article
@@ -12,10 +13,15 @@ import com.example.carenest.feature.community.domain.model.ArticleComment
 import com.example.carenest.feature.community.domain.model.ArticleLikeResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+
+data class ReportPostRequest(
+    val reason: String
+)
 
 interface CommunityApi {
     @GET("/api/v1/communities/my")
@@ -46,6 +52,11 @@ interface CommunityApi {
     @GET("/articles")
     suspend fun getArticles(): Response<ApiResponse<List<Article>>>
 
+    @POST("/articles")
+    suspend fun createArticle(
+        @Body request: CreateArticleRequest
+    ): Response<ApiResponse<Article>>
+
     @POST("/articles/{id}/likes")
     suspend fun toggleArticleLike(
         @Path("id") id: Long
@@ -61,4 +72,19 @@ interface CommunityApi {
         @Path("id") id: Long,
         @Body request: CreateArticleCommentRequest
     ): Response<ApiResponse<ArticleComment>>
+
+    @POST("/api/v1/communities/{id}/leave")
+    suspend fun leave(@Path("id") id: Long): Response<ApiResponse<Unit>>
+
+    @DELETE("/api/v1/communities/{id}/members/{userId}")
+    suspend fun kickMember(
+        @Path("id") id: Long,
+        @Path("userId") userId: Long
+    ): Response<ApiResponse<Unit>>
+
+    @POST("/api/v1/posts/{id}/report")
+    suspend fun reportPost(
+        @Path("id") id: Long,
+        @Body request: ReportPostRequest
+    ): Response<ApiResponse<Unit>>
 }
