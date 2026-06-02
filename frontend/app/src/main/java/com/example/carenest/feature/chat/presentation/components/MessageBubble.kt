@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -65,17 +66,19 @@ fun MessageBubble(
                     color = PrimaryBlue,
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
         }
 
         Column(
             horizontalAlignment = if (msg.isMe) Alignment.End else Alignment.Start,
-            modifier = Modifier.fillMaxWidth(0.82f),
+            modifier = Modifier
+                .fillMaxWidth(0.82f)
+                .padding(top = if (msg.isMe) 0.dp else 2.dp),
         ) {
             if (!msg.isMe) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 4.dp, start = 4.dp),
+                    modifier = Modifier.padding(start = 2.dp, bottom = 6.dp),
                 ) {
                     Text(
                         msg.senderName,
@@ -105,7 +108,7 @@ fun MessageBubble(
                         } else if (isDoctor) {
                             Color(0xFFECFEFF)
                         } else {
-                            Color(0xFFF1F5F9)
+                            MaterialTheme.colorScheme.surfaceVariant
                         },
                     )
                     .combinedClickable(

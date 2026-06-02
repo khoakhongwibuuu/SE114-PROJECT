@@ -6,6 +6,7 @@ import com.example.carenest.feature.chat.data.remote.ChatWebSocketClient
 import com.example.carenest.feature.chat.domain.model.ChatMessage
 import com.example.carenest.feature.community.data.remote.CommunityApi
 import com.example.carenest.feature.community.data.remote.ReportPostRequest
+import com.example.carenest.feature.community.domain.model.CommunityGroupPreview
 import com.example.carenest.feature.community.domain.model.CreateGroupPostRequest
 import com.example.carenest.feature.community.domain.model.GroupPost
 import com.google.gson.Gson
@@ -32,6 +33,14 @@ class ChatRepository(
 
         val currentUserId = secureSessionManager.getUserId()
         return response.body()?.data?.content.orEmpty().map { it.toChatMessage(currentUserId) }
+    }
+
+    suspend fun loadGroupPreview(groupId: Long): CommunityGroupPreview {
+        val response = api.preview(groupId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải thông tin nhóm")
+        }
+        return response.body()?.data ?: throw IllegalStateException("Không nhận được thông tin nhóm")
     }
 
     suspend fun sendViaRest(groupId: Long, content: String): ChatMessage {
