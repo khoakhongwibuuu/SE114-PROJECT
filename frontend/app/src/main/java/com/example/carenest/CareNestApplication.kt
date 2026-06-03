@@ -4,6 +4,8 @@ import android.app.Application
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.chat.data.remote.ChatWebSocketClient
 import com.example.carenest.feature.chat.data.repository.ChatRepository
+import com.example.carenest.feature.admin.data.AdminApi
+import com.example.carenest.feature.admin.data.repository.AdminRepository
 import com.example.carenest.feature.community.data.repository.CommunityRepository
 import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.core.data.network.MediaApi
@@ -36,6 +38,7 @@ class CareNestApplication : Application() {
     lateinit var medicineApi: MedicineApi
     lateinit var appointmentApi: AppointmentApi
     lateinit var notificationApi: NotificationApi
+    lateinit var adminRepository: AdminRepository
 
     override fun onCreate() {
         super.onCreate()
@@ -60,6 +63,8 @@ class CareNestApplication : Application() {
         medicineApi = retrofit.create(MedicineApi::class.java)
         appointmentApi = retrofit.create(AppointmentApi::class.java)
         notificationApi = retrofit.create(NotificationApi::class.java)
+        val adminApi = retrofit.create(AdminApi::class.java)
+        adminRepository = AdminRepository(adminApi)
 
         val aiOkHttpClient = OkHttpClient.Builder()
             .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })

@@ -13,6 +13,7 @@ data class AdminDashboardStatsResponse(
     val totalDoctors: Long = 0,
     val pendingEkycCount: Long = 0,
     val moderationQueueCount: Long = 0,
+    val trend: List<Long> = emptyList(),
 )
 
 data class AdminUserSummaryResponse(
@@ -40,6 +41,7 @@ interface AdminApi {
     suspend fun getUsers(
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 20,
+        @Query("search") search: String? = null,
     ): Response<ApiResponse<List<AdminUserSummaryResponse>>>
 
     @PATCH("/api/v1/admin/users/{userId}/status")
