@@ -59,6 +59,8 @@ dependencies {
   // Arch Components
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
+  implementation("androidx.paging:paging-runtime-ktx:3.3.2")
+  implementation("androidx.paging:paging-compose:3.3.2")
 
   // Compose
   implementation(libs.androidx.compose.ui)
