@@ -48,7 +48,6 @@ fun ProfileScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToMedicalRecord: () -> Unit = {},
     onNavigateToDoctorVerification: () -> Unit = {},
-    onNavigateToAdminVerification: () -> Unit = {},
     onNavigateToPolicy: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
@@ -358,10 +357,6 @@ fun ProfileScreen(
                 Column {
                     if (state.role == "USER") {
                         SettingsRow(icon = Icons.Default.Verified, iconBg = Color(0xFFECFDF5), iconTint = Color(0xFF16A34A), label = "Xác thực Bác sĩ", onClick = onNavigateToDoctorVerification)
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
-                    }
-                    if (state.role == "ADMIN") {
-                        SettingsRow(icon = Icons.Default.MedicalServices, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Duyệt hồ sơ Bác sĩ", onClick = onNavigateToAdminVerification)
                         HorizontalDivider(color = Color(0xFFF1F5F9))
                     }
                     SettingsRow(icon = Icons.Default.Language, iconBg = Color(0xFFF5F3FF), iconTint = Color(0xFF7C3AED), label = "Ngôn ngữ", value = "Tiếng Việt", onClick = { Toast.makeText(context, "Sắp ra mắt", Toast.LENGTH_SHORT).show() })

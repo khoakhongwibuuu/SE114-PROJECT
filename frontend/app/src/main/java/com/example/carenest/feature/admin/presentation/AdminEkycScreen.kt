@@ -19,9 +19,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,9 +39,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
-import com.example.carenest.feature.ekyc.presentation.DoctorSummaryCard
-import com.example.carenest.feature.ekyc.presentation.EmptyListPlaceholder
-import com.example.carenest.feature.ekyc.presentation.PendingVerificationCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,7 +83,7 @@ fun AdminEkycScreen() {
                     selectedTab = 0
                     viewModel.loadPending()
                 },
-                text = { Text("Pending", fontWeight = FontWeight.Bold) },
+                text = { Text("Chờ duyệt", fontWeight = FontWeight.Bold) },
             )
             Tab(
                 selected = selectedTab == 1,
@@ -94,7 +91,7 @@ fun AdminEkycScreen() {
                     selectedTab = 1
                     viewModel.loadDoctors()
                 },
-                text = { Text("Verified Doctors", fontWeight = FontWeight.Bold) },
+                text = { Text("Bác sĩ đã xác thực", fontWeight = FontWeight.Bold) },
             )
         }
 
@@ -166,7 +163,7 @@ fun AdminEkycScreen() {
     if (showRejectDialog) {
         AlertDialog(
             onDismissRequest = { showRejectDialog = false },
-            title = { Text("Rejection Reason", fontWeight = FontWeight.Bold) },
+            title = { Text("Lý do từ chối", fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     Text(
@@ -178,7 +175,7 @@ fun AdminEkycScreen() {
                         value = rejectionReason,
                         onValueChange = { rejectionReason = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Ví dụ: Ảnh chứng chỉ mờ hoặc thiếu thông tin.") },
+                        placeholder = { Text("Ví dụ: ảnh chứng chỉ mờ hoặc thiếu thông tin.") },
                     )
                 }
             },
@@ -191,12 +188,12 @@ fun AdminEkycScreen() {
                         showRejectDialog = false
                     },
                 ) {
-                    Text("Submit")
+                    Text("Gửi")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRejectDialog = false }) {
-                    Text("Cancel")
+                    Text("Hủy")
                 }
             },
         )
