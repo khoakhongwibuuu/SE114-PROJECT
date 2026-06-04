@@ -19,10 +19,8 @@ class SocialFeedViewModel(
         .getGroupPosts(groupId = groupId)
         .cachedIn(viewModelScope)
 
-    fun reactToPost(postId: Long) {
-        viewModelScope.launch {
-            repository.reactToPost(postId, ReactionType.LIKE)
-        }
+    suspend fun reactToPost(postId: Long): Result<com.example.carenest.feature.social.domain.model.Reaction> {
+        return repository.reactToPost(postId, ReactionType.LIKE)
     }
 }
 

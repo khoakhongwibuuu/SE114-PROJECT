@@ -171,8 +171,10 @@ fun SocialFeedScreen(
                                         post = post,
                                         onLikeClick = { clickedPost ->
                                             scope.launch {
-                                                viewModel.reactToPost(clickedPost.id)
-                                                posts.refresh()
+                                                val result = viewModel.reactToPost(clickedPost.id)
+                                                if (result.isSuccess) {
+                                                    posts.refresh()
+                                                }
                                             }
                                         },
                                         onCommentClick = onCommentClick

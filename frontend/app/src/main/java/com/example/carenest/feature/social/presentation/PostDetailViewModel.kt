@@ -42,7 +42,7 @@ class PostDetailViewModel(
                     _mutationState.value = CommentMutationState.Success(comment)
                 }
                 .onFailure { error ->
-                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Khong the gui binh luan")
+                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Không thể gửi bình luận")
                 }
         }
     }
@@ -55,7 +55,7 @@ class PostDetailViewModel(
                     _mutationState.value = CommentMutationState.Success(comment)
                 }
                 .onFailure { error ->
-                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Khong the gui cau tra loi")
+                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Không thể gửi câu trả lời")
                 }
         }
     }
@@ -64,10 +64,8 @@ class PostDetailViewModel(
         _mutationState.value = CommentMutationState.Idle
     }
 
-    fun reactToPost() {
-        viewModelScope.launch {
-            repository.reactToPost(postId, ReactionType.LIKE)
-        }
+    suspend fun reactToPost(): Result<com.example.carenest.feature.social.domain.model.Reaction> {
+        return repository.reactToPost(postId, ReactionType.LIKE)
     }
 }
 

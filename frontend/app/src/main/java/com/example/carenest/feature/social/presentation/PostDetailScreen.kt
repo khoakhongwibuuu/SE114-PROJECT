@@ -74,6 +74,7 @@ fun PostDetailScreen(
 
     var localLikeCount by remember(post.id) { mutableStateOf(post.likeCount) }
     var localIsLiked by remember(post.id) { mutableStateOf(false) }
+    var localCommentCount by remember(post.id) { mutableStateOf(post.commentCount) }
 
     val mutationState by viewModel.mutationState.collectAsState()
 
@@ -83,6 +84,7 @@ fun PostDetailScreen(
                 Toast.makeText(context, "Gửi thành công!", Toast.LENGTH_SHORT).show()
                 inputText = ""
                 replyingToComment = null
+                localCommentCount += 1
                 comments.refresh()
                 viewModel.clearMutationState()
             }
@@ -155,17 +157,29 @@ fun PostDetailScreen(
             ) {
                 item {
                     PostCard(
-                        post = post.copy(likeCount = localLikeCount),
+                        post = post.copy(likeCount = localLikeCount, commentCount = localCommentCount),
                         isLiked = localIsLiked,
                         onLikeClick = {
                             scope.launch {
-                                viewModel.reactToPost()
+                                val wasLiked = localIsLiked
+                                val originalLikeCount = localLikeCount
+                                
+                                // 1. Apply optimistic UI updates immediately
                                 if (localIsLiked) {
                                     localLikeCount = (localLikeCount - 1).coerceAtLeast(0)
                                     localIsLiked = false
                                 } else {
                                     localLikeCount += 1
                                     localIsLiked = true
+                                }
+                                
+                                // 2. Perform network request
+                                val result = viewModel.reactToPost()
+                                if (result.isFailure) {
+                                    // 3. Rollback on failure
+                                    localIsLiked = wasLiked
+                                    localLikeCount = originalLikeCount
+                                    Toast.makeText(context, "Không thể cập nhật lượt thích", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -185,7 +199,7 @@ fun PostDetailScreen(
 
                 item {
                     Text(
-                        text = "Bình luận (${post.commentCount})",
+                        text = "Bình luận ($localCommentCount)",
                         style = CareNestTextStyles.labelMd,
                         color = TextSecondary,
                         modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
