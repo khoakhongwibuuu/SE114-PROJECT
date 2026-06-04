@@ -42,7 +42,7 @@ class PostDetailViewModel(
                     _mutationState.value = CommentMutationState.Success(comment)
                 }
                 .onFailure { error ->
-                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Không thể gửi bình luận")
+                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Kh\u00f4ng th\u1ec3 g\u1eedi b\u00ecnh lu\u1eadn")
                 }
         }
     }
@@ -55,7 +55,7 @@ class PostDetailViewModel(
                     _mutationState.value = CommentMutationState.Success(comment)
                 }
                 .onFailure { error ->
-                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Không thể gửi câu trả lời")
+                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Kh\u00f4ng th\u1ec3 g\u1eedi c\u00e2u tr\u1ea3 l\u1eddi")
                 }
         }
     }
