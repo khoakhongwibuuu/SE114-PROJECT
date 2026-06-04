@@ -13,10 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
@@ -221,7 +221,7 @@ private fun AdminUserRow(
                     )
                     AssistChip(
                         onClick = {},
-                        label = { Text(if (isBanned) "BANNED" else "ACTIVE") },
+                        label = { Text(if (isBanned) "Đã khóa" else "Hoạt động") },
                         colors = AssistChipDefaults.assistChipColors(
                             containerColor = if (isBanned) Color(0xFFFEF2F2) else Color(0xFFECFDF5),
                             labelColor = if (isBanned) Color(0xFFB91C1C) else Color(0xFF047857),
@@ -232,7 +232,7 @@ private fun AdminUserRow(
             IconButton(onClick = onToggleStatus) {
                 Icon(
                     imageVector = if (isBanned) Icons.Default.CheckCircle else Icons.Default.Block,
-                    contentDescription = if (isBanned) "Unban user" else "Ban user",
+                    contentDescription = if (isBanned) "Mở khóa người dùng" else "Khóa người dùng",
                     tint = if (isBanned) Color(0xFF047857) else Color(0xFFB91C1C),
                 )
             }

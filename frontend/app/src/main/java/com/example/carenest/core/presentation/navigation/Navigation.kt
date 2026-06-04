@@ -212,15 +212,24 @@ fun MainNavigation() {
           )
         }
         entry<AdminMain> {
-          AdminMainScreen(
-            onLogout = {
-              scope.launch {
-                application.secureSessionManager.clearAll()
-                backStack.clear()
-                backStack.add(Login)
-              }
+          val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
+          val token = application.secureSessionManager.getAccessToken()
+          if (resolvedRole != AppRole.ADMIN) {
+            LaunchedEffect(resolvedRole, token) {
+              backStack.clear()
+              backStack.add(if (token.isNullOrBlank()) Login else MainDashboard)
             }
-          )
+          } else {
+            AdminMainScreen(
+              onLogout = {
+                scope.launch {
+                  application.secureSessionManager.clearAll()
+                  backStack.clear()
+                  backStack.add(Login)
+                }
+              }
+            )
+          }
         }
         entry<AddMedicine> {
           AddMedicineScreen(

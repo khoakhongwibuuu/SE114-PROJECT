@@ -98,7 +98,7 @@ fun AdminDashboardScreen() {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Đường xu hướng nhanh cho các chỉ số quản trị hiện tại.",
+                            text = "Theo dõi nhanh các chỉ số quan trọng của khu vực quản trị.",
                             fontSize = 13.sp,
                             color = Color(0xFF64748B),
                         )
@@ -116,13 +116,13 @@ private fun SummaryGrid(stats: AdminDashboardStatsResponse) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SummaryCard(
-                title = "Total Users",
+                title = "Tổng người dùng",
                 value = stats.totalUsers.toString(),
                 accent = Color(0xFF2563EB),
                 modifier = Modifier.weight(1f),
             )
             SummaryCard(
-                title = "Active Doctors",
+                title = "Bác sĩ đang hoạt động",
                 value = stats.totalDoctors.toString(),
                 accent = Color(0xFF059669),
                 modifier = Modifier.weight(1f),
@@ -130,13 +130,13 @@ private fun SummaryGrid(stats: AdminDashboardStatsResponse) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SummaryCard(
-                title = "Pending eKYC",
+                title = "Hồ sơ eKYC chờ duyệt",
                 value = stats.pendingEkycCount.toString(),
                 accent = Color(0xFFD97706),
                 modifier = Modifier.weight(1f),
             )
             SummaryCard(
-                title = "Reported Posts",
+                title = "Báo cáo chờ xử lý",
                 value = stats.moderationQueueCount.toString(),
                 accent = Color(0xFFDC2626),
                 modifier = Modifier.weight(1f),
