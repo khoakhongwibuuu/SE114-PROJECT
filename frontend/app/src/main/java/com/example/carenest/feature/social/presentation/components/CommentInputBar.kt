@@ -1,21 +1,36 @@
 package com.example.carenest.feature.social.presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.carenest.core.presentation.theme.CareNestTextStyles
+import com.example.carenest.core.presentation.theme.OutlineVariant
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.TextSecondary
-import com.example.carenest.core.presentation.theme.OutlineVariant
 
 @Composable
 fun CommentInputBar(
@@ -38,7 +53,6 @@ fun CommentInputBar(
                 .navigationBarsPadding()
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            // Replying info header
             if (!replyingToName.isNullOrBlank()) {
                 Row(
                     modifier = Modifier
@@ -52,7 +66,7 @@ fun CommentInputBar(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Đang phản hồi ${replyingToName}",
+                        text = "Đang phản hồi $replyingToName",
                         style = CareNestTextStyles.bodySm,
                         color = TextSecondary
                     )
@@ -71,7 +85,6 @@ fun CommentInputBar(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Input Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
