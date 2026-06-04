@@ -56,11 +56,7 @@ class AdminUserManagementViewModel(
 
     fun toggleUserStatus(user: AdminUserSummaryResponse) {
         val currentStatus = _uiState.value.optimisticStatuses[user.id] ?: user.status
-        val targetStatus = if (currentStatus.equals("BANNED", ignoreCase = true)) {
-            "ACTIVE"
-        } else {
-            "BANNED"
-        }
+        val targetStatus = if (currentStatus.equals("BANNED", ignoreCase = true)) "ACTIVE" else "BANNED"
 
         _uiState.update {
             it.copy(

@@ -35,24 +35,24 @@ private enum class AdminTab(
     val icon: @Composable () -> Unit,
 ) {
     DASHBOARD(
-        title = "Admin Dashboard",
-        label = "Dashboard",
-        icon = { Icon(Icons.Default.Analytics, contentDescription = "Dashboard") },
+        title = "Bảng điều khiển quản trị",
+        label = "Tổng quan",
+        icon = { Icon(Icons.Default.Analytics, contentDescription = "Tổng quan") },
     ),
     USERS(
-        title = "User Management",
-        label = "Users",
-        icon = { Icon(Icons.Default.Group, contentDescription = "Users") },
+        title = "Quản lý người dùng",
+        label = "Người dùng",
+        icon = { Icon(Icons.Default.Group, contentDescription = "Người dùng") },
     ),
     EKYC(
-        title = "Admin eKYC",
+        title = "Duyệt hồ sơ bác sĩ",
         label = "eKYC",
         icon = { Icon(Icons.Default.VerifiedUser, contentDescription = "eKYC") },
     ),
     MODERATION(
-        title = "Content Moderation",
-        label = "Moderation",
-        icon = { Icon(Icons.Default.Report, contentDescription = "Moderation") },
+        title = "Kiểm duyệt nội dung",
+        label = "Kiểm duyệt",
+        icon = { Icon(Icons.Default.Report, contentDescription = "Kiểm duyệt") },
     ),
 }
 
@@ -72,7 +72,7 @@ fun AdminMainScreen(
                 },
                 actions = {
                     IconButton(onClick = onLogout) {
-                        Text(text = "Logout", color = Color.White)
+                        Text(text = "Đăng xuất", color = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
