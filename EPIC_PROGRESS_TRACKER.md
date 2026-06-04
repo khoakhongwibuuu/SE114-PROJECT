@@ -159,8 +159,8 @@ This Epic is intentionally being built in layers:
 ## Current Status
 
 **Status:** In Progress  
-**Current Phase:** Phase 3 completed  
-**Next Phase:** Phase 4 - Post Detail & Nested Comments UI
+**Current Phase:** Phase 4 completed  
+**Next Phase:** Phase 5 - Social Interaction Logic
 
 ## Phase Breakdown
 
@@ -228,15 +228,20 @@ Key commits:
 
 ### Phase 4 - Post Detail & Nested Comments UI
 
-**Status:** Not Started
+**Status:** Completed
 
-Planned scope:
+Completed:
 
-- post detail screen
-- nested comments list
-- reply thread support via `parentCommentId`
-- comment pagination
-- reaction/comment count updates
+- post detail screen with a unified `LazyColumn` for seamless 60fps scrolling (`PostDetailScreen.kt`)
+- stateless comment items with Doctor badge rendering support (`CommentItem.kt`)
+- reply thread support with a `32.dp` start indentation visual offset for comment replies
+- comment pagination collected as `LazyPagingItems`
+- comment input bar with sticky bottom anchoring and reply-to user state badge (`CommentInputBar.kt`)
+
+Key commits:
+
+- `03b93ca` - `feat(social): create CommentItem with reply indentation and InputBar`
+- `bc34196` - `feat(social): implement PostDetailScreen with unified LazyColumn for post and comments`
 
 ### Phase 5 - Social Interaction Logic
 
