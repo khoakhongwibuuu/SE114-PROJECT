@@ -7,7 +7,9 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.example.carenest.feature.social.domain.model.Post
 import com.example.carenest.feature.social.domain.repository.SocialRepository
+import com.example.carenest.feature.social.domain.model.ReactionType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
 class SocialFeedViewModel(
     private val repository: SocialRepository,
@@ -16,6 +18,12 @@ class SocialFeedViewModel(
     val postsFlow: Flow<PagingData<Post>> = repository
         .getGroupPosts(groupId = groupId)
         .cachedIn(viewModelScope)
+
+    fun reactToPost(postId: Long) {
+        viewModelScope.launch {
+            repository.reactToPost(postId, ReactionType.LIKE)
+        }
+    }
 }
 
 class SocialFeedViewModelFactory(
