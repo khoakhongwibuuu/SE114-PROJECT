@@ -25,7 +25,6 @@ import kotlinx.serialization.Serializable
 
 // Module 8 Route Keys
 @Serializable data object NotificationsCenter : NavKey
-@Serializable data object AdminVerification : NavKey
 @Serializable data object DoctorVerification : NavKey
 @Serializable data class UserMedical(val profileId: Long) : NavKey
 @Serializable data object Policy : NavKey

@@ -33,9 +33,6 @@ import com.example.carenest.feature.medical.presentation.AddVaccineScreen
 import com.example.carenest.feature.notifications.presentation.NotificationsCenterScreen
 import com.example.carenest.feature.notifications.presentation.NotificationsCenterViewModel
 import com.example.carenest.feature.notifications.presentation.NotificationsCenterViewModelFactory
-import com.example.carenest.feature.ekyc.presentation.AdminVerificationScreen
-import com.example.carenest.feature.ekyc.presentation.AdminVerificationViewModel
-import com.example.carenest.feature.ekyc.presentation.AdminVerificationViewModelFactory
 import com.example.carenest.feature.ekyc.presentation.DoctorVerificationScreen
 import com.example.carenest.feature.profile.presentation.UserMedicalScreen
 import com.example.carenest.feature.profile.presentation.UserMedicalViewModel
@@ -199,7 +196,6 @@ fun MainNavigation() {
               onNavigateToVaccinations = { profileId -> backStack.add(VaccinationTracker(profileId)) },
               onNavigateToNotifications = { backStack.add(NotificationsCenter) },
               onNavigateToDoctorVerification = { backStack.add(DoctorVerification) },
-              onNavigateToAdminVerification = { backStack.add(AdminVerification) },
               onNavigateToPolicy = { backStack.add(Policy) },
               onNavigateToMedicalRecord = { profileId -> backStack.add(UserMedical(profileId)) },
               onLogout = {
@@ -294,15 +290,6 @@ fun MainNavigation() {
             )
             NotificationsCenterScreen(
                 profileId = null,
-                viewModel = viewModel,
-                onBack = { backStack.removeLastOrNull() }
-            )
-        }
-        entry<AdminVerification> {
-            val viewModel: AdminVerificationViewModel = viewModel(
-                factory = AdminVerificationViewModelFactory(application.ekycRepository)
-            )
-            AdminVerificationScreen(
                 viewModel = viewModel,
                 onBack = { backStack.removeLastOrNull() }
             )

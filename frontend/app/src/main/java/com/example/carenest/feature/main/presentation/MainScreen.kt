@@ -71,7 +71,6 @@ fun MainScreen(
     onNavigateToVaccinations: (Long) -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToDoctorVerification: () -> Unit = {},
-    onNavigateToAdminVerification: () -> Unit = {},
     onNavigateToPolicy: () -> Unit = {},
     onNavigateToMedicalRecord: (Long) -> Unit = {},
     onLogout: () -> Unit = {},
@@ -263,7 +262,6 @@ fun MainScreen(
                         onNavigateToMedicalRecord(profileId)
                     },
                     onNavigateToDoctorVerification = onNavigateToDoctorVerification,
-                    onNavigateToAdminVerification = onNavigateToAdminVerification,
                     onNavigateToPolicy = onNavigateToPolicy
                 )
             }
