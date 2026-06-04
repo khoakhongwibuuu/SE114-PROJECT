@@ -3,6 +3,7 @@ package com.example.carenest.feature.admin.data
 import com.example.carenest.core.data.network.ApiResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.Path
@@ -33,6 +34,20 @@ data class AdminUserStatusUpdateResponse(
     val status: String,
 )
 
+data class AdminReportSummaryResponse(
+    val id: Long,
+    val postId: Long,
+    val reporterId: Long? = null,
+    val reporterName: String? = null,
+    val reporterEmail: String? = null,
+    val reason: String,
+    val previewText: String? = null,
+    val previewImageUrl: String? = null,
+    val contentAuthorName: String? = null,
+    val status: String = "PENDING",
+    val createdAt: String? = null,
+)
+
 interface AdminApi {
     @GET("/api/v1/admin/dashboard-stats")
     suspend fun getDashboardStats(): Response<ApiResponse<AdminDashboardStatsResponse>>
@@ -49,4 +64,21 @@ interface AdminApi {
         @Path("userId") userId: Long,
         @Body request: AdminUserStatusUpdateRequest,
     ): Response<ApiResponse<AdminUserStatusUpdateResponse>>
+
+    @GET("/api/v1/admin/reports")
+    suspend fun getReports(
+        @Query("status") status: String = "PENDING",
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20,
+    ): Response<ApiResponse<List<AdminReportSummaryResponse>>>
+
+    @DELETE("/api/v1/admin/posts/{postId}")
+    suspend fun deletePost(
+        @Path("postId") postId: Long,
+    ): Response<ApiResponse<Unit>>
+
+    @PATCH("/api/v1/admin/reports/{reportId}/dismiss")
+    suspend fun dismissReport(
+        @Path("reportId") reportId: Long,
+    ): Response<ApiResponse<Unit>>
 }

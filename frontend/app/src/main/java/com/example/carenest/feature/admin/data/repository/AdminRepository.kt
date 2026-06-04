@@ -2,6 +2,7 @@ package com.example.carenest.feature.admin.data.repository
 
 import com.example.carenest.feature.admin.data.AdminApi
 import com.example.carenest.feature.admin.data.AdminDashboardStatsResponse
+import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
 import com.example.carenest.feature.admin.data.AdminUserSummaryResponse
 import com.example.carenest.feature.admin.data.AdminUserStatusUpdateResponse
 import com.example.carenest.feature.admin.data.AdminUserStatusUpdateRequest
@@ -34,5 +35,27 @@ class AdminRepository(
             throw IllegalStateException(response.body()?.message ?: "Không thể cập nhật trạng thái người dùng")
         }
         return response.body()?.data ?: throw IllegalStateException("Không nhận được trạng thái mới")
+    }
+
+    suspend fun getPendingReports(page: Int, size: Int): List<AdminReportSummaryResponse> {
+        val response = api.getReports(status = "PENDING", page = page, size = size)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách báo cáo")
+        }
+        return response.body()?.data.orEmpty()
+    }
+
+    suspend fun deletePost(postId: Long) {
+        val response = api.deletePost(postId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể xóa nội dung vi phạm")
+        }
+    }
+
+    suspend fun dismissReport(reportId: Long) {
+        val response = api.dismissReport(reportId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể bỏ qua báo cáo")
+        }
     }
 }
