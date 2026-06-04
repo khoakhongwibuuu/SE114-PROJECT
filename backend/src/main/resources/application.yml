@@ -26,9 +26,9 @@ spring:
 
   # ── PostgreSQL ──────────────────────────────────────
   datasource:
-    url: jdbc:postgresql://localhost:5433/carenest_db
-    username: carenest_user
-    password: ${DB_PASSWORD:carenest_pass}
+    url: jdbc:postgresql://db.przewpjbkomkwgzyfadc.supabase.co:5432/postgres
+    username: postgres
+    password: ${DB_PASSWORD:doletuankiet06}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
