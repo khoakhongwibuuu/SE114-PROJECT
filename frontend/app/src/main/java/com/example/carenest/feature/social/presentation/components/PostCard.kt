@@ -2,7 +2,16 @@ package com.example.carenest.feature.social.presentation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -12,7 +21,11 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Verified
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,10 +35,10 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.CardBackground
+import com.example.carenest.core.presentation.theme.OutlineVariant
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
-import com.example.carenest.core.presentation.theme.OutlineVariant
 import com.example.carenest.core.presentation.theme.Error as ThemeError
 import com.example.carenest.feature.social.domain.model.AuthorRole
 import com.example.carenest.feature.social.domain.model.Post
@@ -36,7 +49,7 @@ fun PostCard(
     onLikeClick: (Post) -> Unit,
     onCommentClick: (Post) -> Unit,
     modifier: Modifier = Modifier,
-    isLiked: Boolean = false // Can be driven by custom reaction state in later phases
+    isLiked: Boolean = false
 ) {
     Card(
         modifier = modifier
@@ -51,12 +64,10 @@ fun PostCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar
                 if (!post.authorAvatar.isNullOrBlank()) {
                     AsyncImage(
                         model = post.authorAvatar,
@@ -86,10 +97,7 @@ fun PostCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Name and Time
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
@@ -121,14 +129,12 @@ fun PostCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Body
             Text(
                 text = post.content,
                 style = CareNestTextStyles.bodyMd,
                 color = TextPrimary
             )
 
-            // Images Section
             if (post.imageUrls.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 if (post.imageUrls.size == 1) {
@@ -165,13 +171,11 @@ fun PostCard(
             HorizontalDivider(color = OutlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Footer (Action Bar)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Like Button
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
@@ -194,7 +198,6 @@ fun PostCard(
                     )
                 }
 
-                // Comment Button
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
@@ -227,12 +230,11 @@ private fun formatCreatedAt(createdAt: String?): String {
         if (createdAt.contains("T")) {
             val datePart = createdAt.substringBefore("T")
             val timePart = createdAt.substringAfter("T").substringBefore(".")
-            val timeAndDate = "${timePart.substring(0, 5)} $datePart"
-            timeAndDate
+            "${timePart.substring(0, 5)} $datePart"
         } else {
             createdAt
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         createdAt
     }
 }
