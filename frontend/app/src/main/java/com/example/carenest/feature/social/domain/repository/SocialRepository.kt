@@ -31,4 +31,10 @@ interface SocialRepository {
         postId: Long,
         reactionType: ReactionType
     ): Result<Reaction>
+
+    suspend fun createComment(
+        postId: Long,
+        content: String,
+        parentCommentId: Long? = null
+    ): Result<Comment>
 }

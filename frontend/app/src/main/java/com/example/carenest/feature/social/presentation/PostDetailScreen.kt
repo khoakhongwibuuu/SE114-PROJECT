@@ -29,10 +29,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,9 +67,33 @@ fun PostDetailScreen(
 ) {
     val comments = viewModel.commentsFlow.collectAsLazyPagingItems()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var inputText by remember { mutableStateOf("") }
     var replyingToComment by remember { mutableStateOf<Comment?>(null) }
+
+    var localLikeCount by remember(post.id) { mutableStateOf(post.likeCount) }
+    var localIsLiked by remember(post.id) { mutableStateOf(false) }
+
+    val mutationState by viewModel.mutationState.collectAsState()
+
+    LaunchedEffect(mutationState) {
+        when (mutationState) {
+            is CommentMutationState.Success -> {
+                Toast.makeText(context, "Gửi thành công!", Toast.LENGTH_SHORT).show()
+                inputText = ""
+                replyingToComment = null
+                comments.refresh()
+                viewModel.clearMutationState()
+            }
+            is CommentMutationState.Error -> {
+                val errMsg = (mutationState as CommentMutationState.Error).message
+                Toast.makeText(context, errMsg, Toast.LENGTH_LONG).show()
+                viewModel.clearMutationState()
+            }
+            else -> Unit
+        }
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -99,14 +127,14 @@ fun PostDetailScreen(
                 replyingToName = replyingToComment?.authorName,
                 onDismissReply = { replyingToComment = null },
                 onSendClick = {
-                    val parentId = replyingToComment?.id
-                    if (parentId != null) {
-                        Toast.makeText(context, "Đã gửi câu trả lời (Mock): $inputText", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, "Đã gửi bình luận (Mock): $inputText", Toast.LENGTH_SHORT).show()
+                    if (inputText.isNotBlank()) {
+                        val parent = replyingToComment
+                        if (parent != null) {
+                            viewModel.createReply(parentCommentId = parent.id, content = inputText)
+                        } else {
+                            viewModel.createComment(content = inputText)
+                        }
                     }
-                    inputText = ""
-                    replyingToComment = null
                 }
             )
         },
@@ -127,9 +155,19 @@ fun PostDetailScreen(
             ) {
                 item {
                     PostCard(
-                        post = post,
+                        post = post.copy(likeCount = localLikeCount),
+                        isLiked = localIsLiked,
                         onLikeClick = {
-                            Toast.makeText(context, "Thích bài viết", Toast.LENGTH_SHORT).show()
+                            scope.launch {
+                                viewModel.reactToPost()
+                                if (localIsLiked) {
+                                    localLikeCount = (localLikeCount - 1).coerceAtLeast(0)
+                                    localIsLiked = false
+                                } else {
+                                    localLikeCount += 1
+                                    localIsLiked = true
+                                }
+                            }
                         },
                         onCommentClick = {
                             // Intentionally reserved for future focus behavior.

@@ -6,6 +6,7 @@ import androidx.paging.PagingData
 import com.example.carenest.feature.social.data.paging.CommentPagingSource
 import com.example.carenest.feature.social.data.paging.PostPagingSource
 import com.example.carenest.feature.social.data.remote.ReactToPostRequest
+import com.example.carenest.feature.social.data.remote.CreateCommentRequest
 import com.example.carenest.feature.social.data.remote.SocialApi
 import com.example.carenest.feature.social.domain.model.Comment
 import com.example.carenest.feature.social.domain.model.Group
@@ -67,6 +68,23 @@ class SocialRepositoryImpl(
                 throw IllegalStateException(response.body()?.message ?: "Khong the cap nhat cam xuc bai viet")
             }
             response.body()?.data ?: throw IllegalStateException("Khong nhan duoc du lieu cam xuc bai viet")
+        }
+    }
+
+    override suspend fun createComment(
+        postId: Long,
+        content: String,
+        parentCommentId: Long?
+    ): Result<Comment> {
+        return runCatching {
+            val response = api.createComment(
+                postId = postId,
+                request = CreateCommentRequest(content = content, parentCommentId = parentCommentId)
+            )
+            if (!response.isSuccessful) {
+                throw IllegalStateException(response.body()?.message ?: "Khong the gui binh luan")
+            }
+            response.body()?.data ?: throw IllegalStateException("Khong nhan duoc du lieu binh luan")
         }
     }
 }
