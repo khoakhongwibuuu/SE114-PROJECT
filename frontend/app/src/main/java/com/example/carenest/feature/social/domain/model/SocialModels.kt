@@ -51,6 +51,8 @@ data class Comment(
     val postId: Long,
     val authorId: Long,
     val authorName: String,
+    val authorAvatar: String? = null,
+    val authorRole: AuthorRole = AuthorRole.UNKNOWN,
     val content: String,
     val parentCommentId: Long? = null,
     val createdAt: String? = null
