@@ -26,7 +26,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -51,6 +53,7 @@ fun SocialFeedScreen(
     modifier: Modifier = Modifier
 ) {
     val posts = viewModel.postsFlow.collectAsLazyPagingItems()
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -167,7 +170,10 @@ fun SocialFeedScreen(
                                     PostCard(
                                         post = post,
                                         onLikeClick = { clickedPost ->
-                                            viewModel.reactToPost(clickedPost.id)
+                                            scope.launch {
+                                                viewModel.reactToPost(clickedPost.id)
+                                                posts.refresh()
+                                            }
                                         },
                                         onCommentClick = onCommentClick
                                     )

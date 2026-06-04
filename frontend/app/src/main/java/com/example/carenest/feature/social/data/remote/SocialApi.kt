@@ -18,6 +18,11 @@ data class ReactToPostRequest(
     val reactionType: ReactionType,
 )
 
+data class CreateCommentRequest(
+    val content: String,
+    val parentCommentId: Long? = null,
+)
+
 interface SocialApi {
     @GET("/api/v1/groups")
     suspend fun getGroups(
@@ -48,4 +53,10 @@ interface SocialApi {
         @Path("postId") postId: Long,
         @Body request: ReactToPostRequest,
     ): Response<ApiResponse<Reaction>>
+
+    @POST("/api/v1/posts/{postId}/comments")
+    suspend fun createComment(
+        @Path("postId") postId: Long,
+        @Body request: CreateCommentRequest,
+    ): Response<ApiResponse<Comment>>
 }
