@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -52,6 +52,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.example.carenest.CareNestApplication
+import com.example.carenest.feature.admin.data.AdminContentType
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
 
 @Composable
@@ -138,10 +139,13 @@ fun AdminModerationScreen() {
     }
 
     deleteTarget?.let { report ->
+        val contentLabel = report.normalizedContentType().label()
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("Xóa nội dung", fontWeight = FontWeight.Bold) },
-            text = { Text("Bạn có chắc chắn muốn xóa nội dung bị báo cáo này không? Hành động này không thể hoàn tác.") },
+            title = { Text("Xóa $contentLabel", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("Bạn có chắc chắn muốn xóa $contentLabel bị báo cáo này không? Hành động này không thể hoàn tác.")
+            },
             confirmButton = {
                 Button(
                     onClick = {
@@ -150,7 +154,7 @@ fun AdminModerationScreen() {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                 ) {
-                    Text("Xóa nội dung", color = Color.White)
+                    Text("Xóa $contentLabel", color = Color.White)
                 }
             },
             dismissButton = {
@@ -168,6 +172,14 @@ private fun ReportCard(
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val contentType = report.normalizedContentType()
+    val contentTypeLabel = contentType.label()
+    val contentBadgeColor = if (contentType == AdminContentType.COMMENT) {
+        Color(0xFFF5F3FF) to Color(0xFF7C3AED)
+    } else {
+        Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
+    }
+
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -198,6 +210,18 @@ private fun ReportCard(
                         color = Color(0xFF64748B),
                     )
                 }
+                Box(
+                    modifier = Modifier
+                        .background(contentBadgeColor.first, RoundedCornerShape(999.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        text = if (contentType == AdminContentType.COMMENT) "Bình luận" else "Bài viết",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = contentBadgeColor.second,
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -206,7 +230,7 @@ private fun ReportCard(
             Text(report.reason, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB91C1C))
 
             Spacer(modifier = Modifier.height(14.dp))
-            Text("Nội dung bị báo cáo", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
+            Text("$contentTypeLabel bị báo cáo", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
             Spacer(modifier = Modifier.height(6.dp))
             report.previewText?.takeIf { it.isNotBlank() }?.let {
                 Text(
@@ -219,16 +243,18 @@ private fun ReportCard(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            report.previewImageUrl?.takeIf { it.isNotBlank() }?.let { imageUrl ->
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = "Preview image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp),
-                    contentScale = ContentScale.Crop,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
+            if (contentType == AdminContentType.POST) {
+                report.previewImageUrl?.takeIf { it.isNotBlank() }?.let { imageUrl ->
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Ảnh xem trước",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        contentScale = ContentScale.Crop,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
             }
             Text(
                 text = "Tác giả: ${report.contentAuthorName?.takeIf { it.isNotBlank() } ?: "Không rõ"}",
@@ -249,7 +275,7 @@ private fun ReportCard(
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text("Xóa nội dung", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Xóa $contentTypeLabel", color = Color.White, fontWeight = FontWeight.Bold)
                 }
                 OutlinedButton(
                     onClick = onDismiss,
@@ -277,4 +303,8 @@ private fun EmptyModerationState() {
             style = MaterialTheme.typography.bodyLarge,
         )
     }
+}
+
+private fun AdminContentType.label(): String {
+    return if (this == AdminContentType.COMMENT) "bình luận" else "bài viết"
 }

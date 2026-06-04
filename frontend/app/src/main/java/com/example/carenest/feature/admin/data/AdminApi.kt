@@ -36,7 +36,9 @@ data class AdminUserStatusUpdateResponse(
 
 data class AdminReportSummaryResponse(
     val id: Long,
-    val postId: Long,
+    val postId: Long? = null,
+    val commentId: Long? = null,
+    val contentType: String = "POST",
     val reporterId: Long? = null,
     val reporterName: String? = null,
     val reporterEmail: String? = null,
@@ -46,7 +48,19 @@ data class AdminReportSummaryResponse(
     val contentAuthorName: String? = null,
     val status: String = "PENDING",
     val createdAt: String? = null,
-)
+) {
+    fun normalizedContentType(): AdminContentType {
+        return when (contentType.trim().uppercase()) {
+            "COMMENT" -> AdminContentType.COMMENT
+            else -> AdminContentType.POST
+        }
+    }
+}
+
+enum class AdminContentType {
+    POST,
+    COMMENT,
+}
 
 interface AdminApi {
     @GET("/api/v1/admin/dashboard-stats")
@@ -75,6 +89,11 @@ interface AdminApi {
     @DELETE("/api/v1/admin/posts/{postId}")
     suspend fun deletePost(
         @Path("postId") postId: Long,
+    ): Response<ApiResponse<Unit>>
+
+    @DELETE("/api/v1/admin/comments/{commentId}")
+    suspend fun deleteComment(
+        @Path("commentId") commentId: Long,
     ): Response<ApiResponse<Unit>>
 
     @PATCH("/api/v1/admin/reports/{reportId}/dismiss")

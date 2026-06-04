@@ -7,6 +7,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.example.carenest.feature.admin.data.AdminContentType
 import com.example.carenest.feature.admin.data.AdminReportPagingSource
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
 import com.example.carenest.feature.admin.data.repository.AdminRepository
@@ -43,12 +44,13 @@ class AdminModerationViewModel(
     }.flow.cachedIn(viewModelScope)
 
     fun resolveReport(report: AdminReportSummaryResponse, action: ModerationAction) {
+        val contentLabel = report.normalizedContentType().label()
         _uiState.update {
             it.copy(
                 hiddenReportIds = it.hiddenReportIds + report.id,
                 error = null,
                 message = if (action == ModerationAction.DELETE_CONTENT) {
-                    "Đang xóa nội dung vi phạm..."
+                    "Đang xóa $contentLabel vi phạm..."
                 } else {
                     "Đang bỏ qua báo cáo..."
                 },
@@ -59,7 +61,7 @@ class AdminModerationViewModel(
             runCatching {
                 withContext(Dispatchers.IO) {
                     when (action) {
-                        ModerationAction.DELETE_CONTENT -> repository.deletePost(report.postId)
+                        ModerationAction.DELETE_CONTENT -> deleteReportedContent(report)
                         ModerationAction.DISMISS -> repository.dismissReport(report.id)
                     }
                 }
@@ -67,7 +69,7 @@ class AdminModerationViewModel(
                 _uiState.update {
                     it.copy(
                         message = if (action == ModerationAction.DELETE_CONTENT) {
-                            "Đã xóa nội dung vi phạm"
+                            "Đã xóa $contentLabel vi phạm"
                         } else {
                             "Đã bỏ qua báo cáo"
                         },
@@ -85,8 +87,28 @@ class AdminModerationViewModel(
         }
     }
 
+    private suspend fun deleteReportedContent(report: AdminReportSummaryResponse) {
+        when (report.normalizedContentType()) {
+            AdminContentType.COMMENT -> {
+                val commentId = report.commentId
+                    ?: throw IllegalStateException("Báo cáo bình luận đang thiếu commentId")
+                repository.deleteComment(commentId)
+            }
+
+            AdminContentType.POST -> {
+                val postId = report.postId
+                    ?: throw IllegalStateException("Báo cáo bài viết đang thiếu postId")
+                repository.deletePost(postId)
+            }
+        }
+    }
+
     fun clearTransientMessage() {
         _uiState.update { it.copy(error = null, message = null) }
+    }
+
+    private fun AdminContentType.label(): String {
+        return if (this == AdminContentType.COMMENT) "bình luận" else "bài viết"
     }
 }
 

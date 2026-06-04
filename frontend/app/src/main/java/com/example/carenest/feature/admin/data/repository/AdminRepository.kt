@@ -3,9 +3,9 @@ package com.example.carenest.feature.admin.data.repository
 import com.example.carenest.feature.admin.data.AdminApi
 import com.example.carenest.feature.admin.data.AdminDashboardStatsResponse
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
-import com.example.carenest.feature.admin.data.AdminUserSummaryResponse
-import com.example.carenest.feature.admin.data.AdminUserStatusUpdateResponse
 import com.example.carenest.feature.admin.data.AdminUserStatusUpdateRequest
+import com.example.carenest.feature.admin.data.AdminUserStatusUpdateResponse
+import com.example.carenest.feature.admin.data.AdminUserSummaryResponse
 
 class AdminRepository(
     private val api: AdminApi,
@@ -48,7 +48,14 @@ class AdminRepository(
     suspend fun deletePost(postId: Long) {
         val response = api.deletePost(postId)
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể xóa nội dung vi phạm")
+            throw IllegalStateException(response.body()?.message ?: "Không thể xóa bài viết vi phạm")
+        }
+    }
+
+    suspend fun deleteComment(commentId: Long) {
+        val response = api.deleteComment(commentId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể xóa bình luận vi phạm")
         }
     }
 
