@@ -1,12 +1,30 @@
 package com.example.carenest.feature.social.presentation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,11 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.carenest.core.presentation.theme.CareNestTextStyles
+import com.example.carenest.core.presentation.theme.Error
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
-import com.example.carenest.core.presentation.theme.Error
 import com.example.carenest.feature.social.domain.model.Post
 import com.example.carenest.feature.social.presentation.components.PostCard
 
@@ -69,7 +87,6 @@ fun SocialFeedScreen(
             val refreshState = posts.loadState.refresh
 
             when {
-                // Initial Load State: Loading
                 refreshState is LoadState.Loading -> {
                     Box(
                         modifier = Modifier
@@ -84,7 +101,6 @@ fun SocialFeedScreen(
                     }
                 }
 
-                // Initial Load State: Error
                 refreshState is LoadState.Error -> {
                     val errorMessage = refreshState.error.localizedMessage ?: "Đã xảy ra lỗi khi tải bảng tin."
                     Column(
@@ -101,14 +117,14 @@ fun SocialFeedScreen(
                             tint = Error,
                             modifier = Modifier.size(48.dp)
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(16.dp))
                         Text(
                             text = errorMessage,
                             style = CareNestTextStyles.bodyLg,
                             color = TextPrimary,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(24.dp))
+                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(24.dp))
                         Button(
                             onClick = { posts.retry() },
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
@@ -122,7 +138,6 @@ fun SocialFeedScreen(
                     }
                 }
 
-                // Initial Load State: Success
                 else -> {
                     if (posts.itemCount == 0) {
                         Box(
@@ -159,9 +174,7 @@ fun SocialFeedScreen(
                                 }
                             }
 
-                            // Append load state handling
-                            val appendState = posts.loadState.append
-                            when (appendState) {
+                            when (val appendState = posts.loadState.append) {
                                 is LoadState.Loading -> {
                                     item {
                                         Box(
@@ -194,9 +207,7 @@ fun SocialFeedScreen(
                                                 color = Error,
                                                 modifier = Modifier.weight(1f)
                                             )
-                                            TextButton(
-                                                onClick = { posts.retry() }
-                                            ) {
+                                            TextButton(onClick = { posts.retry() }) {
                                                 Text(
                                                     text = "Thử lại",
                                                     style = CareNestTextStyles.labelSm,
@@ -207,9 +218,7 @@ fun SocialFeedScreen(
                                     }
                                 }
 
-                                else -> {
-                                    // Do nothing for NotLoading / end of pagination
-                                }
+                                else -> Unit
                             }
                         }
                     }
