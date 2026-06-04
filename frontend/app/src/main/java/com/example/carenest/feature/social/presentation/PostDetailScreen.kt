@@ -81,7 +81,7 @@ fun PostDetailScreen(
     LaunchedEffect(mutationState) {
         when (mutationState) {
             is CommentMutationState.Success -> {
-                Toast.makeText(context, "Gửi thành công!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "G\u1eedi th\u00e0nh c\u00f4ng!", Toast.LENGTH_SHORT).show()
                 inputText = ""
                 replyingToComment = null
                 localCommentCount += 1
@@ -103,7 +103,7 @@ fun PostDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Chi tiết bài viết",
+                        text = "Chi ti\u1ebft b\u00e0i vi\u1ebft",
                         style = CareNestTextStyles.titleLg,
                         color = PrimaryBlue
                     )
@@ -112,7 +112,7 @@ fun PostDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại",
+                            contentDescription = "Quay l\u1ea1i",
                             tint = PrimaryBlue
                         )
                     }
@@ -179,7 +179,7 @@ fun PostDetailScreen(
                                     // 3. Rollback on failure
                                     localIsLiked = wasLiked
                                     localLikeCount = originalLikeCount
-                                    Toast.makeText(context, "Không thể cập nhật lượt thích", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt l\u01b0\u1ee3t th\u00edch", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -199,7 +199,7 @@ fun PostDetailScreen(
 
                 item {
                     Text(
-                        text = "Bình luận ($localCommentCount)",
+                        text = "B\u00ecnh lu\u1eadn ($localCommentCount)",
                         style = CareNestTextStyles.labelMd,
                         color = TextSecondary,
                         modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
@@ -234,13 +234,13 @@ fun PostDetailScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Warning,
-                                    contentDescription = "Lỗi",
+                                    contentDescription = "L\u1ed7i",
                                     tint = ThemeError,
                                     modifier = Modifier.size(32.dp)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = refreshState.error.localizedMessage ?: "Lỗi tải bình luận.",
+                                    text = refreshState.error.localizedMessage ?: "L\u1ed7i t\u1ea3i b\u00ecnh lu\u1eadn.",
                                     style = CareNestTextStyles.bodyMd,
                                     color = TextPrimary,
                                     textAlign = TextAlign.Center
@@ -248,7 +248,7 @@ fun PostDetailScreen(
                                 Spacer(modifier = Modifier.height(12.dp))
                                 TextButton(onClick = { comments.retry() }) {
                                     Text(
-                                        text = "Thử lại",
+                                        text = "Th\u1eed l\u1ea1i",
                                         style = CareNestTextStyles.labelMd,
                                         color = PrimaryBlue
                                     )
@@ -266,7 +266,7 @@ fun PostDetailScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Chưa có bình luận nào. Hãy là người đầu tiên bình luận!",
+                                    text = "Ch\u01b0a c\u00f3 b\u00ecnh lu\u1eadn n\u00e0o. H\u00e3y l\u00e0 ng\u01b0\u1eddi \u0111\u1ea7u ti\u00ean b\u00ecnh lu\u1eadn!",
                                     style = CareNestTextStyles.bodyMd,
                                     color = TextSecondary,
                                     textAlign = TextAlign.Center
@@ -316,14 +316,14 @@ fun PostDetailScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Text(
-                                            text = "Không thể tải thêm bình luận.",
+                                            text = "Kh\u00f4ng th\u1ec3 t\u1ea3i th\u00eam b\u00ecnh lu\u1eadn.",
                                             style = CareNestTextStyles.bodySm,
                                             color = ThemeError,
                                             modifier = Modifier.weight(1f)
                                         )
                                         TextButton(onClick = { comments.retry() }) {
                                             Text(
-                                                text = "Thử lại",
+                                                text = "Th\u1eed l\u1ea1i",
                                                 style = CareNestTextStyles.labelSm,
                                                 color = PrimaryBlue
                                             )
