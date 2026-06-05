@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -52,29 +54,19 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
 import com.example.carenest.feature.chat.presentation.AiChatViewModel
-import com.example.carenest.feature.dashboard.presentation.DashboardState
-import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 
 private enum class ChatHubTab(val label: String) {
-    FAMILY("Tổ ấm"),
     AI("AI Care"),
+    DOCTOR("Bác sĩ"),
 }
 
 @Composable
 fun ChatHubScreen(
-    dashboardViewModel: DashboardViewModel,
     aiChatViewModel: AiChatViewModel,
     refreshTrigger: Int = 0,
-    onNavigateToChatRoom: (Long, String) -> Unit,
+    onNavigateToAppointments: () -> Unit,
 ) {
-    var activeTab by remember { mutableStateOf(ChatHubTab.FAMILY) }
-    val dashboardState by dashboardViewModel.dashboardState.collectAsState()
-
-    LaunchedEffect(refreshTrigger, activeTab) {
-        if (activeTab == ChatHubTab.FAMILY) {
-            dashboardViewModel.fetchDashboard()
-        }
-    }
+    var activeTab by remember { mutableStateOf(ChatHubTab.AI) }
 
     Column(
         modifier = Modifier
@@ -112,81 +104,68 @@ fun ChatHubScreen(
         }
 
         when (activeTab) {
-            ChatHubTab.FAMILY -> FamilyHubPane(dashboardState, onNavigateToChatRoom)
             ChatHubTab.AI -> AiCarePane(aiChatViewModel)
+            ChatHubTab.DOCTOR -> DoctorMessagingPlaceholder(onNavigateToAppointments)
         }
     }
 }
 
 @Composable
-private fun FamilyHubPane(
-    dashboardState: DashboardState,
-    onNavigateToChatRoom: (Long, String) -> Unit,
+private fun DoctorMessagingPlaceholder(
+    onNavigateToAppointments: () -> Unit,
 ) {
-    val families = (dashboardState as? DashboardState.Success)?.data?.families.orEmpty()
-    if (families.isEmpty()) {
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(AppSpacing.x3),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(AppSpacing.x3),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+                .size(80.dp)
+                .background(Color(0xFFEFF6FF), CircleShape),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(Color(0xFFF1F5F9), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                CareNestIcon(name = "group", contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(48.dp))
-            }
-            Spacer(modifier = Modifier.height(AppSpacing.lg))
-            Text("Bạn chưa thuộc gia đình nào.", style = CareNestTextStyles.titleMd, color = TextPrimary, textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(AppSpacing.sm))
-            Text(
-                "Vào tab Gia đình để tạo hoặc tham gia một tổ ấm nhé!",
-                style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp),
-                color = TextSecondary,
-                textAlign = TextAlign.Center,
+            CareNestIcon(
+                name = "medical_services",
+                contentDescription = null,
+                tint = PrimaryBlue,
+                modifier = Modifier.size(40.dp)
             )
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(AppSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
+        Spacer(modifier = Modifier.height(AppSpacing.lg))
+        Text(
+            text = "Tư vấn trực tiếp với Bác sĩ",
+            style = CareNestTextStyles.titleMd,
+            color = TextPrimary,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.sm))
+        Text(
+            text = "Tính năng trò chuyện trực tiếp với Bác sĩ chuyên khoa đang được phát triển và sẽ sớm ra mắt.\n\nĐể nhận tư vấn y tế trực tiếp từ các bác sĩ đối tác của CareNest, bạn có thể đặt lịch hẹn khám tại đây.",
+            style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp),
+            color = TextSecondary,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.x2))
+        Button(
+            onClick = onNavigateToAppointments,
+            shape = RoundedCornerShape(999.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = PrimaryBlue,
+                contentColor = Color.White
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .height(48.dp)
         ) {
-            items(families, key = { it.id }) { family ->
-                Card(
-                    shape = RoundedCornerShape(AppRadius.xl),
-                    colors = CardDefaults.cardColors(containerColor = CardBackground),
-                    modifier = Modifier.clickable {
-                        onNavigateToChatRoom(family.id.toLongOrNull() ?: 0L, family.name)
-                    }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(AppSpacing.lg),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(Color(0xFFE0F2FE), CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CareNestIcon(name = "home", contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(28.dp))
-                        }
-                        Column(modifier = Modifier.weight(1f).padding(start = AppSpacing.lg)) {
-                            Text(family.name, style = CareNestTextStyles.labelLg, color = TextPrimary)
-                            Spacer(modifier = Modifier.height(AppSpacing.xs))
-                            Text("Bấm để bắt đầu trò chuyện", style = CareNestTextStyles.bodyMd, color = TextSecondary)
-                        }
-                        CareNestIcon(name = "chevron_right", contentDescription = null, tint = Color(0xFFCBD5E1))
-                    }
-                }
-            }
+            Text(
+                text = "Đặt lịch hẹn khám",
+                style = CareNestTextStyles.labelMd,
+                color = Color.White
+            )
         }
     }
 }
