@@ -42,7 +42,7 @@ Có 2 cách để chạy ứng dụng:
 ### Bước 3: Truy cập tài liệu API (Swagger UI)
 Khi backend đã chạy thành công (hiện chữ `Started CareNestBackendApplication` trên terminal), mở trình duyệt và truy cập vào đường dẫn sau:
 
-👉 **[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)**
+👉 **[http://localhost:8080/api/v1/swagger-ui/index.html](http://localhost:8080/api/v1/swagger-ui/index.html)**
 
 Tại đây, giao diện đồ hoạ Swagger sẽ liệt kê toàn bộ mọi API của ứng dụng, chuẩn hoá cấu trúc `Request/Response`, giúp bạn dễ dàng Test API mà không cần dùng Postman!
 

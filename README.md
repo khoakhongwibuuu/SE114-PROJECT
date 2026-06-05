@@ -1,8 +1,8 @@
 # 🏠 CareNest - Family Health Management System
 
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.5-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![React Native](https://img.shields.io/badge/React_Native-0.85.2-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactnative.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Latest-4285F4?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.x-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
@@ -35,11 +35,12 @@ Hệ thống được xây dựng trên nền tảng công nghệ mạnh mẽ, c
 *   **Security:** Spring Security, JWT (Access & Refresh Token strategy)
 
 ### Frontend (Mobile App)
-*   **Core:** React Native 0.85.2 (TypeScript)
-*   **Navigation:** React Navigation (Bottom Tabs, Native Stack)
-*   **Real-time Client:** `@stomp/stompjs` (STOMP over WebSocket)
-*   **Network:** Axios (với cơ chế interceptor cho Auth Token)
-*   **Storage:** AsyncStorage
+*   **Core:** Jetpack Compose (Kotlin)
+*   **Architecture:** MVVM (Model-View-ViewModel)
+*   **Navigation:** Jetpack Navigation Compose
+*   **Real-time Client:** STOMP over WebSocket (NaikSoftware)
+*   **Network:** Retrofit 2 & OkHttp (với cơ chế interceptor cho Auth Token)
+*   **Storage:** Jetpack DataStore (Preferences)
 
 ---
 
@@ -71,51 +72,63 @@ Kiến trúc phân quyền phức tạp được giải quyết thông qua `Fami
 
 ## 🚀 Hướng dẫn chạy dự án (Getting Started)
 
-### 1. Clone Repo
+### 1. Yêu cầu hệ thống (Prerequisites)
+*   **Java 17** (Dành cho Spring Boot và Android Build)
+*   **Docker & Docker Compose** (Dành cho Database)
+*   **Android Studio** (Koala / Ladybug hoặc mới nhất)
+
+### 2. Clone Repo
 ```bash
 git clone https://github.com/khoakhongwibuuu/SE114-PROJECT.git
 cd SE114-PROJECT
 ```
 
-### 2. Thiết lập Backend
-**Cấu hình biến môi trường:**
+### 3. Thiết lập Backend (Spring Boot)
+
+**Khởi động Database & Redis (bằng Docker):**
 ```bash
 cd backend
-cp .env.example .env.dev
-# Mở file .env.dev và điền GEMINI_API_KEY=your_key_here
+docker-compose up -d
 ```
 
-**Khởi động Database & Redis (Docker):**
-```bash
-docker-compose up -d carenest-db carenest-redis
-```
+**Cấu hình biến môi trường (nếu cần sử dụng tính năng AI):**
+Trong thư mục `backend`, copy file `.env.example` thành `.env` và điền `GEMINI_API_KEY` của bạn.
 
 **Chạy Spring Boot Server:**
+Bạn có thể mở thư mục `backend` bằng **IntelliJ IDEA** và chạy class `CarenestApplication`. Hoặc dùng dòng lệnh:
 ```bash
-# Windows
+# Trên Windows
 .\mvnw.cmd spring-boot:run
 
-# MacOS/Linux
+# Trên MacOS/Linux
 ./mvnw spring-boot:run
 ```
+*(Backend sẽ chạy ở cổng `http://localhost:8080/api/v1`)*
 
-### 3. Thiết lập Frontend (Mobile App)
-**Cài đặt thư viện:**
+### 4. Thiết lập Frontend (Android App)
+
+**Cấu hình IP máy tính:**
+Để ứng dụng Android (chạy trên điện thoại hoặc máy ảo) kết nối được với Backend đang chạy trên máy tính, bạn cần cấu hình IP nội bộ:
+1. Mở terminal, dùng lệnh `ipconfig` (Windows) hoặc `ifconfig` (Mac/Linux) để tìm **IPv4 Address** của máy tính (ví dụ: `192.168.1.5`).
+2. Mở file `frontend/local.properties` (nếu chưa có thì tự tạo) và thêm dòng sau:
+   `HOST_IP=192.168.1.5`
+
+**Chạy ứng dụng:**
+
+**Cách 1: Dùng Android Studio (Khuyến nghị)**
+1. Mở thư mục `frontend` bằng phần mềm **Android Studio**.
+2. Chờ Gradle đồng bộ (sync) hoàn tất.
+3. Cắm cáp điện thoại Android hoặc mở máy ảo (Android Emulator).
+4. Bấm nút **Run (▶️)** trên thanh công cụ của Android Studio.
+
+**Cách 2: Dùng Command Line (Terminal)**
+Nếu bạn không muốn mở Android Studio, chỉ cần cắm điện thoại thật (đã bật USB Debugging) hoặc bật máy ảo lên, sau đó mở terminal ở thư mục `frontend` và chạy lệnh sau để build và cài trực tiếp lên máy:
 ```bash
-cd ../frontend/CareNestApp
-npm install
-```
+# Trên Windows
+.\gradlew.bat :app:installDebug
 
-**Cấu hình IP Backend:**
-Mở file `frontend/CareNestApp/src/api/config.ts` và đổi `API_HOST` của `android` thành IP mạng LAN của máy tính bạn (ví dụ: `http://192.168.1.x:8080`).
-
-**Chạy ứng dụng (Android):**
-```bash
-# Chạy Metro Bundler
-npx react-native start
-
-# Mở một Terminal khác để Build & Install APK lên máy thật/máy ảo
-npx react-native run-android
+# Trên MacOS/Linux
+./gradlew :app:installDebug
 ```
 
 ---

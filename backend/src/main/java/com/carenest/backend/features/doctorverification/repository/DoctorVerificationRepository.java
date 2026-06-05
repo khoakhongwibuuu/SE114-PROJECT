@@ -19,4 +19,6 @@ public interface DoctorVerificationRepository extends JpaRepository<DoctorVerifi
 
     @EntityGraph(attributePaths = "user")
     List<DoctorVerification> findAllByStatusOrderByCreatedAtAsc(VerificationStatus status);
+
+    long countByStatus(VerificationStatus status);
 }

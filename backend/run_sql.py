@@ -2,7 +2,7 @@ import psycopg2
 import sys
 
 def main():
-    conn_string = "postgresql://postgres.przewpjbkomkwgzyfadc:doletuankiet06@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres"
+    conn_string = "postgresql://postgres:doletuankiet06@db.przewpjbkomkwgzyfadc.supabase.co:5432/postgres"
     print(f"Connecting to {conn_string}...")
     try:
         conn = psycopg2.connect(conn_string)
