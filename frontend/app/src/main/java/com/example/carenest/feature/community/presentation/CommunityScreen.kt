@@ -84,7 +84,18 @@ fun CommunityScreen(
                 refreshTrigger = refreshTrigger,
                 onOpenGroup = onOpenGroup
             )
-            CommunityTopTab.GROUPS -> SocialGroupsPane(onOpenGroup = {})
+            CommunityTopTab.GROUPS -> SocialGroupsPane(onOpenGroup = { socialGroup ->
+                onOpenGroup(
+                    ChatGroup(
+                        id = socialGroup.id,
+                        name = socialGroup.name,
+                        description = socialGroup.description ?: "",
+                        category = socialGroup.category ?: "",
+                        tags = "",
+                        private = false
+                    )
+                )
+            })
         }
     }
 }

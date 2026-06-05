@@ -43,7 +43,8 @@ data class Post(
     val imageUrls: List<String> = emptyList(),
     val likeCount: Long = 0,
     val commentCount: Long = 0,
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    val likedByMe: Boolean = false
 )
 
 data class Comment(

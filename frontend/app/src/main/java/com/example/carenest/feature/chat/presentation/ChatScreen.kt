@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.chat.presentation
+package com.example.carenest.feature.chat.presentation
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -461,22 +461,13 @@ fun ChatScreen(
             shadowElevation = 0.dp,
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                if (!state.isConnected && !state.isLoading) {
-                    val hardError = state.error?.contains("Không thể", ignoreCase = true) == true ||
-                        state.error?.contains("Khong the", ignoreCase = true) == true
-                    if (hardError) {
-                        Text(
-                            text = state.error.orEmpty(),
-                            color = Color(0xFFDC2626),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        )
-                    }
-                } else if (!state.error.isNullOrBlank()) {
+                val errorMsg = state.error
+                if (!errorMsg.isNullOrBlank()) {
+                    val isFallbackSuccess = errorMsg.contains("Đã lưu", ignoreCase = true)
+                    val textColor = if (isFallbackSuccess) Color(0xFF0F766E) else Color(0xFFDC2626)
                     Text(
-                        text = state.error.orEmpty(),
-                        color = Color(0xFFDC2626),
+                        text = errorMsg,
+                        color = textColor,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
