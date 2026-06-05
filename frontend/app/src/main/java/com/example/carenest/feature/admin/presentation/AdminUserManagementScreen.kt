@@ -107,13 +107,10 @@ fun AdminUserManagementScreen() {
 
             users.loadState.refresh is LoadState.Error -> {
                 val error = (users.loadState.refresh as LoadState.Error).error
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = error.localizedMessage ?: "Không thể tải danh sách người dùng",
-                        color = Color(0xFFB91C1C),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
+                com.example.carenest.feature.admin.presentation.components.AdminErrorState(
+                    message = error.localizedMessage ?: "Không thể tải danh sách người dùng",
+                    onRetry = { users.retry() }
+                )
             }
 
             users.itemCount == 0 -> {

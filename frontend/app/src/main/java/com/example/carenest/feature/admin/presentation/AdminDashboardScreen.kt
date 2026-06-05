@@ -52,13 +52,10 @@ fun AdminDashboardScreen() {
         }
 
         state.error != null -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = state.error.orEmpty(),
-                    color = Color(0xFFB91C1C),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
+            com.example.carenest.feature.admin.presentation.components.AdminErrorState(
+                message = state.error.orEmpty(),
+                onRetry = { viewModel.refresh() }
+            )
         }
 
         else -> {

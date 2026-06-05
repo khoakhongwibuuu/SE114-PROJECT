@@ -89,13 +89,10 @@ fun AdminModerationScreen() {
 
         reports.loadState.refresh is LoadState.Error -> {
             val error = (reports.loadState.refresh as LoadState.Error).error
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = error.localizedMessage ?: "Không thể tải danh sách báo cáo",
-                    color = Color(0xFFB91C1C),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
+            com.example.carenest.feature.admin.presentation.components.AdminErrorState(
+                message = error.localizedMessage ?: "Không thể tải danh sách báo cáo",
+                onRetry = { reports.retry() }
+            )
         }
 
         else -> {

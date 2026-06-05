@@ -46,7 +46,7 @@ private enum class AdminTab(
     ),
     EKYC(
         title = "Duyệt hồ sơ bác sĩ",
-        label = "eKYC",
+        label = "Bác sĩ",
         icon = { Icon(Icons.Default.VerifiedUser, contentDescription = "eKYC") },
     ),
     MODERATION(
@@ -68,10 +68,15 @@ fun AdminMainScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(text = currentTab.title, color = Color.White)
+                    Text(
+                        text = currentTab.title,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                 },
                 actions = {
-                    IconButton(onClick = onLogout) {
+                    androidx.compose.material3.TextButton(onClick = onLogout) {
                         Text(text = "Đăng xuất", color = Color.White)
                     }
                 },

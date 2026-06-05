@@ -66,7 +66,7 @@ fun CommentInputBar(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Đang phản hồi $replyingToName",
+                        text = "\u0110ang ph\u1ea3n h\u1ed3i $replyingToName",
                         style = CareNestTextStyles.bodySm,
                         color = TextSecondary
                     )
@@ -76,7 +76,7 @@ fun CommentInputBar(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Hủy phản hồi",
+                            contentDescription = "H\u1ee7y ph\u1ea3n h\u1ed3i",
                             tint = TextSecondary,
                             modifier = Modifier.size(14.dp)
                         )
@@ -94,7 +94,7 @@ fun CommentInputBar(
                     onValueChange = onValueChange,
                     placeholder = {
                         Text(
-                            text = if (replyingToName.isNullOrBlank()) "Viết bình luận..." else "Viết câu trả lời...",
+                            text = if (replyingToName.isNullOrBlank()) "Vi\u1ebft b\u00ecnh lu\u1eadn..." else "Vi\u1ebft c\u00e2u tr\u1ea3 l\u1eddi...",
                             style = CareNestTextStyles.bodyMd
                         )
                     },
@@ -124,7 +124,7 @@ fun CommentInputBar(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Gửi",
+                        contentDescription = "G\u1eedi",
                         tint = if (value.isNotBlank()) PrimaryBlue else TextSecondary.copy(alpha = 0.5f)
                     )
                 }

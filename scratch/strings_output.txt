@@ -1,0 +1,24 @@
+=== frontend/app/src/main/java/com/example/carenest/feature/social/presentation/SocialFeedScreen.kt
+64: Bảng tin nhóm
+73: Quay lại
+108: Đã xảy ra lỗi khi tải bảng tin.
+119: Cảnh báo lỗi
+136: Thử lại
+154: Chưa có bài viết nào trong nhóm này.
+213: Không thể tải thêm bài viết.
+220: Thử lại
+=== frontend/app/src/main/java/com/example/carenest/feature/social/presentation/PostDetailScreen.kt
+84: Gửi thành công!
+106: Chi tiết bài viết
+115: Quay lại
+182: Không thể cập nhật lượt thích
+202: Bình luận ($localCommentCount)
+237: Lỗi
+243: Lỗi tải bình luận.
+251: Thử lại
+269: Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
+319: Không thể tải thêm bình luận.
+326: Thử lại
+=== frontend/app/src/main/java/com/example/carenest/feature/social/presentation/PostDetailViewModel.kt
+45: Không thể gửi bình luận
+58: Không thể gửi câu trả lời
