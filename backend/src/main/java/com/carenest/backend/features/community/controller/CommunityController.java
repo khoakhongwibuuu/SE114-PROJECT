@@ -3,8 +3,8 @@ package com.carenest.backend.features.community.controller;
 import com.carenest.backend.core.api.ApiResponse;
 import com.carenest.backend.core.api.PageResponse;
 import com.carenest.backend.features.community.dto.request.CreateGroupPostRequest;
-import com.carenest.backend.features.community.dto.response.CommunityGroupPreviewResponse;
-import com.carenest.backend.features.community.dto.response.CommunityGroupResponse;
+import com.carenest.backend.features.community.dto.response.ChatGroupPreviewResponse;
+import com.carenest.backend.features.community.dto.response.ChatGroupResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostResponse;
 import com.carenest.backend.features.community.service.CommunityKnowledgeService;
 import jakarta.validation.Valid;
@@ -35,37 +35,37 @@ public class CommunityController {
     private final CommunityKnowledgeService communityKnowledgeService;
 
     @GetMapping
-    public ApiResponse<List<CommunityGroupResponse>> getCommunityGroups(
+    public ApiResponse<List<ChatGroupResponse>> getChatGroups(
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "category", required = false) String category) {
-        return ApiResponse.success(communityKnowledgeService.getCommunityGroups(search, category));
+        return ApiResponse.success(communityKnowledgeService.getChatGroups(search, category));
     }
 
     @GetMapping("/my")
-    public ApiResponse<List<CommunityGroupResponse>> getMyCommunityGroups(
+    public ApiResponse<List<ChatGroupResponse>> getMyChatGroups(
             @RequestParam(value = "search", required = false) String search) {
-        return ApiResponse.success(communityKnowledgeService.getMyCommunityGroups(search));
+        return ApiResponse.success(communityKnowledgeService.getMyChatGroups(search));
     }
 
     @GetMapping("/discover")
-    public ApiResponse<List<CommunityGroupResponse>> getDiscoverCommunityGroups(
+    public ApiResponse<List<ChatGroupResponse>> getDiscoverChatGroups(
             @RequestParam(value = "search", required = false) String search) {
-        return ApiResponse.success(communityKnowledgeService.getDiscoverCommunityGroups(search));
+        return ApiResponse.success(communityKnowledgeService.getDiscoverChatGroups(search));
     }
 
     @GetMapping("/{id}/preview")
-    public ApiResponse<CommunityGroupPreviewResponse> getCommunityGroupPreview(@PathVariable("id") Long id) {
-        return ApiResponse.success(communityKnowledgeService.getCommunityGroupPreview(id));
+    public ApiResponse<ChatGroupPreviewResponse> getChatGroupPreview(@PathVariable("id") Long id) {
+        return ApiResponse.success(communityKnowledgeService.getChatGroupPreview(id));
     }
 
     @PostMapping("/{id}/join")
-    public ApiResponse<CommunityGroupPreviewResponse> joinCommunityGroup(@PathVariable("id") Long id) {
-        return ApiResponse.success("ÄÃ£ tham gia nhÃ³m", communityKnowledgeService.joinCommunityGroup(id));
+    public ApiResponse<ChatGroupPreviewResponse> joinChatGroup(@PathVariable("id") Long id) {
+        return ApiResponse.success("ÄÃ£ tham gia nhÃ³m", communityKnowledgeService.joinChatGroup(id));
     }
 
     @PostMapping("/{id}/leave")
-    public ApiResponse<Void> leaveCommunityGroup(@PathVariable("id") Long id) {
-        communityKnowledgeService.leaveCommunityGroup(id);
+    public ApiResponse<Void> leaveChatGroup(@PathVariable("id") Long id) {
+        communityKnowledgeService.leaveChatGroup(id);
         return ApiResponse.success("ÄÃ£ rá»i nhÃ³m", null);
     }
 

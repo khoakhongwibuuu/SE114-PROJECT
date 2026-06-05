@@ -26,7 +26,7 @@ import com.example.carenest.core.presentation.theme.CardBackground
 import com.example.carenest.core.presentation.theme.Outline
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-import com.example.carenest.feature.community.domain.model.CommunityGroup
+import com.example.carenest.feature.chat.domain.model.ChatGroup
 
 private enum class CommunityTopTab(val label: String) {
     WIKI("Cẩm nang"),
@@ -37,7 +37,7 @@ private enum class CommunityTopTab(val label: String) {
 fun CommunityScreen(
     canCreateArticle: Boolean = false,
     refreshTrigger: Int = 0,
-    onOpenGroup: (CommunityGroup) -> Unit = {},
+    onOpenGroup: (ChatGroup) -> Unit = {},
 ) {
     var activeTab by remember { mutableStateOf(CommunityTopTab.WIKI) }
 
@@ -84,10 +84,7 @@ fun CommunityScreen(
                 refreshTrigger = refreshTrigger,
                 onOpenGroup = onOpenGroup
             )
-            CommunityTopTab.GROUPS -> CommunityGroupsPane(
-                refreshTrigger = refreshTrigger,
-                onOpenGroup = onOpenGroup
-            )
+            CommunityTopTab.GROUPS -> SocialGroupsPane(onOpenGroup = {})
         }
     }
 }

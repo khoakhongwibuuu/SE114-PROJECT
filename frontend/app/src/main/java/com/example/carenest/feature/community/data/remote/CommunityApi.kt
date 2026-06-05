@@ -1,8 +1,8 @@
 package com.example.carenest.feature.community.data.remote
 
 import com.example.carenest.core.data.network.ApiResponse
-import com.example.carenest.feature.community.domain.model.CommunityGroup
-import com.example.carenest.feature.community.domain.model.CommunityGroupPreview
+import com.example.carenest.feature.chat.domain.model.ChatGroup
+import com.example.carenest.feature.chat.domain.model.ChatGroupPreview
 import com.example.carenest.feature.community.domain.model.CreateGroupPostRequest
 import com.example.carenest.feature.community.domain.model.CreateArticleCommentRequest
 import com.example.carenest.feature.community.domain.model.CreateArticleRequest
@@ -25,16 +25,16 @@ data class ReportPostRequest(
 
 interface CommunityApi {
     @GET("/api/v1/communities/my")
-    suspend fun myGroups(@Query("search") search: String? = null): Response<ApiResponse<List<CommunityGroup>>>
+    suspend fun myGroups(@Query("search") search: String? = null): Response<ApiResponse<List<ChatGroup>>>
 
     @GET("/api/v1/communities/discover")
-    suspend fun discoverGroups(@Query("search") search: String? = null): Response<ApiResponse<List<CommunityGroup>>>
+    suspend fun discoverGroups(@Query("search") search: String? = null): Response<ApiResponse<List<ChatGroup>>>
 
     @GET("/api/v1/communities/{id}/preview")
-    suspend fun preview(@Path("id") id: Long): Response<ApiResponse<CommunityGroupPreview>>
+    suspend fun preview(@Path("id") id: Long): Response<ApiResponse<ChatGroupPreview>>
 
     @POST("/api/v1/communities/{id}/join")
-    suspend fun join(@Path("id") id: Long): Response<ApiResponse<CommunityGroupPreview>>
+    suspend fun join(@Path("id") id: Long): Response<ApiResponse<ChatGroupPreview>>
 
     @GET("/api/v1/communities/{id}/posts")
     suspend fun posts(

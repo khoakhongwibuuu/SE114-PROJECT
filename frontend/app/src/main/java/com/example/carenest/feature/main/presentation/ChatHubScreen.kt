@@ -1,5 +1,7 @@
 package com.example.carenest.feature.main.presentation
 
+import com.example.carenest.feature.chat.domain.model.ChatGroup
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,13 +59,14 @@ import com.example.carenest.feature.chat.presentation.AiChatViewModel
 
 private enum class ChatHubTab(val label: String) {
     AI("AI Care"),
-    DOCTOR("B\u00e1c s\u0129"),
+    CHAT_GROUPS("Nhóm Chat"),
 }
 
 @Composable
 fun ChatHubScreen(
     aiChatViewModel: AiChatViewModel,
     onNavigateToAppointments: () -> Unit,
+    onOpenGroup: (ChatGroup) -> Unit = {}
 ) {
     var activeTab by remember { mutableStateOf(ChatHubTab.AI) }
 
@@ -104,70 +107,11 @@ fun ChatHubScreen(
 
         when (activeTab) {
             ChatHubTab.AI -> AiCarePane(aiChatViewModel)
-            ChatHubTab.DOCTOR -> DoctorMessagingPlaceholder(onNavigateToAppointments)
+            ChatHubTab.CHAT_GROUPS -> ChatGroupDirectoryPane(onOpenGroup = onOpenGroup)
         }
     }
 }
 
-@Composable
-private fun DoctorMessagingPlaceholder(
-    onNavigateToAppointments: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(AppSpacing.x3),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .background(Color(0xFFEFF6FF), CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            CareNestIcon(
-                name = "medical_services",
-                contentDescription = null,
-                tint = PrimaryBlue,
-                modifier = Modifier.size(40.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(AppSpacing.lg))
-        Text(
-            text = "T\u01b0 v\u1ea5n tr\u1ef1c ti\u1ebfp v\u1edbi B\u00e1c s\u0129",
-            style = CareNestTextStyles.titleMd,
-            color = TextPrimary,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(AppSpacing.sm))
-        Text(
-            text = "T\u00ednh n\u0103ng tr\u00f2 chuy\u1ec7n tr\u1ef1c ti\u1ebfp v\u1edbi B\u00e1c s\u0129 chuy\u00ean khoa \u0111ang \u0111\u01b0\u1ee3c ph\u00e1t tri\u1ec3n v\u00e0 s\u1ebd s\u1edbm ra m\u1eaft.\n\n\u0110\u1ec3 nh\u1eadn t\u01b0 v\u1ea5n y t\u1ebf tr\u1ef1c ti\u1ebfp t\u1eeb c\u00e1c b\u00e1c s\u0129 \u0111\u1ed1i t\u00e1c c\u1ee7a CareNest, b\u1ea1n c\u00f3 th\u1ec3 \u0111\u1eb7t l\u1ecbch h\u1eb9n kh\u00e1m t\u1ea1i \u0111\u00e2y.",
-            style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp),
-            color = TextSecondary,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(AppSpacing.x2))
-        Button(
-            onClick = onNavigateToAppointments,
-            shape = RoundedCornerShape(999.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = PrimaryBlue,
-                contentColor = Color.White
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .height(48.dp)
-        ) {
-            Text(
-                text = "\u0110\u1eb7t l\u1ecbch h\u1eb9n kh\u00e1m",
-                style = CareNestTextStyles.labelMd,
-                color = Color.White
-            )
-        }
-    }
-}
 
 @Composable
 private fun AiCarePane(viewModel: AiChatViewModel) {

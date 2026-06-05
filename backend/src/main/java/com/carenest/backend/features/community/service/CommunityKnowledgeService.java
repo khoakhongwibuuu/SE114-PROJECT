@@ -8,8 +8,8 @@ import com.carenest.backend.features.community.dto.request.ReportPostRequest;
 import com.carenest.backend.features.community.dto.response.ArticleCommentResponse;
 import com.carenest.backend.features.community.dto.response.ArticleLikeResponse;
 import com.carenest.backend.features.community.dto.response.ArticleResponse;
-import com.carenest.backend.features.community.dto.response.CommunityGroupPreviewResponse;
-import com.carenest.backend.features.community.dto.response.CommunityGroupResponse;
+import com.carenest.backend.features.community.dto.response.ChatGroupPreviewResponse;
+import com.carenest.backend.features.community.dto.response.ChatGroupResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostResponse;
 
 import java.util.List;
@@ -25,17 +25,17 @@ public interface CommunityKnowledgeService {
 
     ArticleCommentResponse createArticleComment(Long articleId, CreateArticleCommentRequest request);
 
-    List<CommunityGroupResponse> getCommunityGroups(String search, String category);
+    List<ChatGroupResponse> getChatGroups(String search, String category);
 
-    List<CommunityGroupResponse> getMyCommunityGroups(String search);
+    List<ChatGroupResponse> getMyChatGroups(String search);
 
-    List<CommunityGroupResponse> getDiscoverCommunityGroups(String search);
+    List<ChatGroupResponse> getDiscoverChatGroups(String search);
 
-    CommunityGroupPreviewResponse getCommunityGroupPreview(Long groupId);
+    ChatGroupPreviewResponse getChatGroupPreview(Long groupId);
 
-    CommunityGroupPreviewResponse joinCommunityGroup(Long groupId);
+    ChatGroupPreviewResponse joinChatGroup(Long groupId);
 
-    void leaveCommunityGroup(Long groupId);
+    void leaveChatGroup(Long groupId);
 
     PageResponse<GroupPostResponse> getGroupPosts(Long groupId, org.springframework.data.domain.Pageable pageable);
 

@@ -12,19 +12,19 @@ import java.util.Optional;
 
 @Repository
 public interface GroupPostRepository extends JpaRepository<GroupPost, Long> {
-    Page<GroupPost> findAllByCommunityGroupIdOrderByCreatedAtDesc(Long communityGroupId, Pageable pageable);
+    Page<GroupPost> findAllByChatGroupIdOrderByCreatedAtDesc(Long chatGroupId, Pageable pageable);
 
-    Optional<GroupPost> findFirstByCommunityGroupIdOrderByCreatedAtDesc(Long communityGroupId);
+    Optional<GroupPost> findFirstByChatGroupIdOrderByCreatedAtDesc(Long chatGroupId);
 
     @Modifying
     @Query("""
             UPDATE GroupPost post
             SET post.replyToPost = NULL
-            WHERE post.communityGroup.id = :communityGroupId
+            WHERE post.chatGroup.id = :chatGroupId
             """)
-    void clearRepliesByCommunityGroupId(@Param("communityGroupId") Long communityGroupId);
+    void clearRepliesByChatGroupId(@Param("chatGroupId") Long chatGroupId);
 
     @Modifying
-    @Query("DELETE FROM GroupPost post WHERE post.communityGroup.id = :communityGroupId")
-    void deleteAllByCommunityGroupId(@Param("communityGroupId") Long communityGroupId);
+    @Query("DELETE FROM GroupPost post WHERE post.chatGroup.id = :chatGroupId")
+    void deleteAllByChatGroupId(@Param("chatGroupId") Long chatGroupId);
 }

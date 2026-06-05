@@ -76,7 +76,7 @@ import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.community.domain.model.Article
 import com.example.carenest.feature.community.domain.model.ArticleComment
-import com.example.carenest.feature.community.domain.model.CommunityGroup
+import com.example.carenest.feature.chat.domain.model.ChatGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -86,7 +86,7 @@ import kotlinx.coroutines.withContext
 fun CommunityWikiScreen(
     canCreateArticle: Boolean = false,
     refreshTrigger: Int = 0,
-    onOpenGroup: (CommunityGroup) -> Unit = {},
+    onOpenGroup: (ChatGroup) -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
@@ -638,7 +638,7 @@ fun CommunityWikiScreen(
                                         repository.preview(privateId)
                                     }
                                     if (preview.joined) {
-                                        val group = CommunityGroup(
+                                        val group = ChatGroup(
                                             id = preview.id,
                                             name = preview.name,
                                             description = preview.description,
@@ -652,7 +652,7 @@ fun CommunityWikiScreen(
                                         val joinedPreview = withContext(Dispatchers.IO) {
                                             repository.join(privateId)
                                         }
-                                        val group = CommunityGroup(
+                                        val group = ChatGroup(
                                             id = joinedPreview.id,
                                             name = joinedPreview.name,
                                             description = joinedPreview.description,
@@ -695,7 +695,7 @@ fun CommunityWikiScreen(
                                         repository.preview(specialtyId)
                                     }
                                     if (preview.joined) {
-                                        val group = CommunityGroup(
+                                        val group = ChatGroup(
                                             id = preview.id,
                                             name = preview.name,
                                             description = preview.description,
@@ -709,7 +709,7 @@ fun CommunityWikiScreen(
                                         val joinedPreview = withContext(Dispatchers.IO) {
                                             repository.join(specialtyId)
                                         }
-                                        val group = CommunityGroup(
+                                        val group = ChatGroup(
                                             id = joinedPreview.id,
                                             name = joinedPreview.name,
                                             description = joinedPreview.description,

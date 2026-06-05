@@ -23,7 +23,7 @@ class AdminRepository(
         if (!response.isSuccessful) {
             throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách người dùng")
         }
-        return response.body()?.data.orEmpty()
+        return response.body()?.data?.content.orEmpty()
     }
 
     suspend fun updateUserStatus(userId: Long, status: String): AdminUserStatusUpdateResponse {

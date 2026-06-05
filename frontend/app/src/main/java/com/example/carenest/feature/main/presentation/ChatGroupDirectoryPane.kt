@@ -1,4 +1,4 @@
-package com.example.carenest.feature.community.presentation
+package com.example.carenest.feature.main.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -62,7 +62,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-import com.example.carenest.feature.community.domain.model.CommunityGroup
+import com.example.carenest.feature.chat.domain.model.ChatGroup
+import com.example.carenest.feature.chat.presentation.ChatGroupDirectoryViewModel
+import com.example.carenest.feature.chat.presentation.ChatGroupDirectoryViewModelFactory
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -76,18 +78,18 @@ private enum class GroupTab(val label: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommunityGroupsPane(
+fun ChatGroupDirectoryPane(
     refreshTrigger: Int = 0,
-    onOpenGroup: (CommunityGroup) -> Unit = {},
+    onOpenGroup: (ChatGroup) -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as CareNestApplication
-    val viewModel: CommunityViewModel = viewModel(
-        factory = CommunityViewModelFactory(application.communityRepository),
+    val viewModel: ChatGroupDirectoryViewModel = viewModel(
+        factory = ChatGroupDirectoryViewModelFactory(application.communityRepository),
     )
     val state by viewModel.uiState.collectAsState()
     var activeTab by remember { mutableStateOf(GroupTab.MINE) }
     var showPreview by remember { mutableStateOf(false) }
-    var selectedGroupForPreview by remember { mutableStateOf<CommunityGroup?>(null) }
+    var selectedGroupForPreview by remember { mutableStateOf<ChatGroup?>(null) }
     val previewSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
 
@@ -177,7 +179,7 @@ fun CommunityGroupsPane(
             }
 
             activeTab == GroupTab.MINE -> {
-                CommunityGroupList(
+                ChatGroupList(
                     groups = state.myGroups,
                     emptyIcon = Icons.Default.Groups,
                     emptyTitle = "Bạn chưa tham gia nhóm nào",
@@ -199,7 +201,7 @@ fun CommunityGroupsPane(
             }
 
             else -> {
-                CommunityGroupList(
+                ChatGroupList(
                     groups = state.discoverGroups,
                     emptyIcon = Icons.Default.PersonSearch,
                     emptyTitle = "Không tìm thấy nhóm phù hợp",
@@ -382,12 +384,12 @@ fun CommunityGroupsPane(
 }
 
 @Composable
-private fun CommunityGroupList(
-    groups: List<CommunityGroup>,
+private fun ChatGroupList(
+    groups: List<ChatGroup>,
     emptyIcon: androidx.compose.ui.graphics.vector.ImageVector,
     emptyTitle: String,
     emptyText: String,
-    itemContent: @Composable (CommunityGroup) -> Unit,
+    itemContent: @Composable (ChatGroup) -> Unit,
 ) {
     if (groups.isEmpty()) {
         Column(
@@ -420,7 +422,7 @@ private fun CommunityGroupList(
 }
 
 @Composable
-private fun MyGroupItem(group: CommunityGroup, onClick: () -> Unit) {
+private fun MyGroupItem(group: ChatGroup, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(8.dp),
@@ -465,7 +467,7 @@ private fun MyGroupItem(group: CommunityGroup, onClick: () -> Unit) {
 
 @Composable
 private fun DiscoverGroupItem(
-    group: CommunityGroup,
+    group: ChatGroup,
     joining: Boolean,
     onPreview: () -> Unit,
     onJoin: () -> Unit,
@@ -519,7 +521,7 @@ private fun DiscoverGroupItem(
 }
 
 @Composable
-private fun GroupAvatar(group: CommunityGroup, large: Boolean = false) {
+private fun GroupAvatar(group: ChatGroup, large: Boolean = false) {
     val size = if (large) 54.dp else 48.dp
     Box(
         modifier = Modifier

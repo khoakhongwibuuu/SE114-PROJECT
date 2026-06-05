@@ -9,8 +9,8 @@ import java.time.Instant;
 @Builder
 public class GroupPostResponse {
     private Long id;
-    private Long communityGroupId;
-    private String communityGroupName;
+    private Long chatGroupId;
+    private String chatGroupName;
     private Long authorId;
     private String authorName;
     private String authorRole;

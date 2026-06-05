@@ -1,6 +1,7 @@
 package com.example.carenest.feature.admin.data
 
 import com.example.carenest.core.data.network.ApiResponse
+import com.example.carenest.core.data.network.PageResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -71,7 +72,7 @@ interface AdminApi {
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 20,
         @Query("search") search: String? = null,
-    ): Response<ApiResponse<List<AdminUserSummaryResponse>>>
+    ): Response<ApiResponse<PageResponse<AdminUserSummaryResponse>>>
 
     @PATCH("/api/v1/admin/users/{userId}/status")
     suspend fun updateUserStatus(
