@@ -5,7 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -14,17 +19,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.CardBackground
+import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.medical.presentation.MedicineScreen
 import com.example.carenest.feature.medical.presentation.MedicineViewModel
 
 private enum class FamilyTab(val label: String) {
-    MEMBERS("Thành viên"),
-    MEDICINE("Tủ thuốc"),
+    MEMBERS("Th\u00e0nh vi\u00ean"),
+    MEDICINE("T\u1ee7 thu\u1ed1c"),
 }
 
 @Composable
@@ -40,14 +45,14 @@ fun FamilyFlowScreen(
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
-    
+
     val familyViewModel: FamilyViewModel = viewModel(
         factory = FamilyViewModelFactory(application.familyRepository)
     )
 
     var activeTab by remember { mutableStateOf(FamilyTab.MEMBERS) }
     var currentScreen by remember { mutableStateOf("picker") }
-    var managementMode by remember { mutableStateOf<String?>(null) } // "create", "join", null
+    var managementMode by remember { mutableStateOf<String?>(null) }
 
     BackHandler(enabled = activeTab == FamilyTab.MEMBERS && currentScreen != "picker") {
         currentScreen = "picker"
@@ -65,7 +70,6 @@ fun FamilyFlowScreen(
             .background(PageBackground)
             .statusBarsPadding()
     ) {
-        // Custom top tab bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -112,6 +116,7 @@ fun FamilyFlowScreen(
                                 }
                             )
                         }
+
                         "management" -> {
                             FamilyManagementScreen(
                                 viewModel = familyViewModel,
@@ -121,6 +126,7 @@ fun FamilyFlowScreen(
                         }
                     }
                 }
+
                 FamilyTab.MEDICINE -> {
                     MedicineScreen(
                         viewModel = medicineViewModel,
