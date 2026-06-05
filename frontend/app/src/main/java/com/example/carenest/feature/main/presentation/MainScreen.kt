@@ -1,6 +1,5 @@
 package com.example.carenest.feature.main.presentation
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -80,7 +79,6 @@ fun MainScreen(
     var selectedTab by remember { mutableIntStateOf(TAB_HOME) }
     var homeRefreshTrigger by remember { mutableIntStateOf(0) }
     var familyRefreshTrigger by remember { mutableIntStateOf(0) }
-    var chatRefreshTrigger by remember { mutableIntStateOf(0) }
     var communityRefreshTrigger by remember { mutableIntStateOf(0) }
     var profileRefreshTrigger by remember { mutableIntStateOf(0) }
 
@@ -126,7 +124,6 @@ fun MainScreen(
                 TAB_HOME -> homeRefreshTrigger++
                 TAB_FAMILY -> familyRefreshTrigger++
                 TAB_COMMUNITY -> communityRefreshTrigger++
-                TAB_CHAT -> chatRefreshTrigger++
                 TAB_PROFILE -> profileRefreshTrigger++
             }
         } else {
@@ -150,36 +147,36 @@ fun MainScreen(
                 NavigationBarItem(
                     selected = selectedTab == TAB_HOME,
                     onClick = { handleTabSelection(TAB_HOME) },
-                    icon = { CareNestIcon(name = "home", contentDescription = "Trang chủ") },
-                    label = { NavLabel("Trang chủ") },
+                    icon = { CareNestIcon(name = "home", contentDescription = "Trang ch\u1ee7") },
+                    label = { NavLabel("Trang ch\u1ee7") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == TAB_FAMILY,
                     onClick = { handleTabSelection(TAB_FAMILY) },
-                    icon = { CareNestIcon(name = "group", contentDescription = "Gia đình") },
-                    label = { NavLabel("Gia đình") },
+                    icon = { CareNestIcon(name = "group", contentDescription = "Gia \u0111\u00ecnh") },
+                    label = { NavLabel("Gia \u0111\u00ecnh") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == TAB_COMMUNITY,
                     onClick = { handleTabSelection(TAB_COMMUNITY) },
-                    icon = { CareNestIcon(name = "globe", contentDescription = "Cộng đồng") },
-                    label = { NavLabel("Cộng đồng") },
+                    icon = { CareNestIcon(name = "globe", contentDescription = "C\u1ed9ng \u0111\u1ed3ng") },
+                    label = { NavLabel("C\u1ed9ng \u0111\u1ed3ng") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == TAB_CHAT,
                     onClick = { handleTabSelection(TAB_CHAT) },
-                    icon = { CareNestIcon(name = "chat-processing", contentDescription = "Tin nhắn") },
-                    label = { NavLabel("Tin nhắn") },
+                    icon = { CareNestIcon(name = "chat-processing", contentDescription = "Tin nh\u1eafn") },
+                    label = { NavLabel("Tin nh\u1eafn") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == TAB_PROFILE,
                     onClick = { handleTabSelection(TAB_PROFILE) },
-                    icon = { CareNestIcon(name = "person", contentDescription = "Tôi") },
-                    label = { NavLabel("Tôi") },
+                    icon = { CareNestIcon(name = "person", contentDescription = "T\u00f4i") },
+                    label = { NavLabel("T\u00f4i") },
                     colors = navColors(),
                 )
             }
@@ -227,7 +224,6 @@ fun MainScreen(
 
                 TAB_CHAT -> ChatHubScreen(
                     aiChatViewModel = aiChatViewModel,
-                    refreshTrigger = chatRefreshTrigger,
                     onNavigateToAppointments = {
                         val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
                         onNavigateToAppointments(profileId)

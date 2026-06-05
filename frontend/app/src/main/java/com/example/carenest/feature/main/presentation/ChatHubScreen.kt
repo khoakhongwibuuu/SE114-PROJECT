@@ -46,8 +46,8 @@ import androidx.compose.ui.unit.sp
 import com.example.carenest.core.presentation.components.CareNestIcon
 import com.example.carenest.core.presentation.theme.AppRadius
 import com.example.carenest.core.presentation.theme.AppSpacing
-import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.CardBackground
+import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
@@ -57,13 +57,12 @@ import com.example.carenest.feature.chat.presentation.AiChatViewModel
 
 private enum class ChatHubTab(val label: String) {
     AI("AI Care"),
-    DOCTOR("Bác sĩ"),
+    DOCTOR("B\u00e1c s\u0129"),
 }
 
 @Composable
 fun ChatHubScreen(
     aiChatViewModel: AiChatViewModel,
-    refreshTrigger: Int = 0,
     onNavigateToAppointments: () -> Unit,
 ) {
     var activeTab by remember { mutableStateOf(ChatHubTab.AI) }
@@ -136,14 +135,14 @@ private fun DoctorMessagingPlaceholder(
         }
         Spacer(modifier = Modifier.height(AppSpacing.lg))
         Text(
-            text = "Tư vấn trực tiếp với Bác sĩ",
+            text = "T\u01b0 v\u1ea5n tr\u1ef1c ti\u1ebfp v\u1edbi B\u00e1c s\u0129",
             style = CareNestTextStyles.titleMd,
             color = TextPrimary,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(AppSpacing.sm))
         Text(
-            text = "Tính năng trò chuyện trực tiếp với Bác sĩ chuyên khoa đang được phát triển và sẽ sớm ra mắt.\n\nĐể nhận tư vấn y tế trực tiếp từ các bác sĩ đối tác của CareNest, bạn có thể đặt lịch hẹn khám tại đây.",
+            text = "T\u00ednh n\u0103ng tr\u00f2 chuy\u1ec7n tr\u1ef1c ti\u1ebfp v\u1edbi B\u00e1c s\u0129 chuy\u00ean khoa \u0111ang \u0111\u01b0\u1ee3c ph\u00e1t tri\u1ec3n v\u00e0 s\u1ebd s\u1edbm ra m\u1eaft.\n\n\u0110\u1ec3 nh\u1eadn t\u01b0 v\u1ea5n y t\u1ebf tr\u1ef1c ti\u1ebfp t\u1eeb c\u00e1c b\u00e1c s\u0129 \u0111\u1ed1i t\u00e1c c\u1ee7a CareNest, b\u1ea1n c\u00f3 th\u1ec3 \u0111\u1eb7t l\u1ecbch h\u1eb9n kh\u00e1m t\u1ea1i \u0111\u00e2y.",
             style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp),
             color = TextSecondary,
             textAlign = TextAlign.Center,
@@ -162,7 +161,7 @@ private fun DoctorMessagingPlaceholder(
                 .height(48.dp)
         ) {
             Text(
-                text = "Đặt lịch hẹn khám",
+                text = "\u0110\u1eb7t l\u1ecbch h\u1eb9n kh\u00e1m",
                 style = CareNestTextStyles.labelMd,
                 color = Color.White
             )
@@ -212,7 +211,11 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                             .background(bg, RoundedCornerShape(AppRadius.xl))
                             .padding(horizontal = AppSpacing.lg, vertical = 10.dp)
                     ) {
-                        Text(text = msg.text, color = textColor, style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp))
+                        Text(
+                            text = msg.text,
+                            color = textColor,
+                            style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp)
+                        )
                     }
                 }
             }
@@ -227,7 +230,11 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                                 .background(Color(0xFFF1F5F9), RoundedCornerShape(AppRadius.xl))
                                 .padding(horizontal = AppSpacing.lg, vertical = 10.dp)
                         ) {
-                            Text("Đang trả lời...", color = Color(0xFF94A3B8), style = CareNestTextStyles.bodyMd.copy(fontStyle = FontStyle.Italic))
+                            Text(
+                                "\u0110ang tr\u1ea3 l\u1eddi...",
+                                color = Color(0xFF94A3B8),
+                                style = CareNestTextStyles.bodyMd.copy(fontStyle = FontStyle.Italic)
+                            )
                         }
                     }
                 }
@@ -236,12 +243,16 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
             if (messages.size == 1) {
                 item {
                     Spacer(modifier = Modifier.height(AppSpacing.lg))
-                    Text("Gợi ý cho bạn:", style = CareNestTextStyles.labelSm.copy(fontSize = 13.sp), color = TextSecondary)
+                    Text(
+                        "G\u1ee3i \u00fd cho b\u1ea1n:",
+                        style = CareNestTextStyles.labelSm.copy(fontSize = 13.sp),
+                        color = TextSecondary
+                    )
                     Spacer(modifier = Modifier.height(AppSpacing.sm))
                     val prompts = listOf(
-                        "Hôm nay cần uống thuốc gì?",
-                        "Thuốc nào sắp hết hạn?",
-                        "Tóm tắt sức khỏe của gia đình"
+                        "H\u00f4m nay c\u1ea7n u\u1ed1ng thu\u1ed1c g\u00ec?",
+                        "Thu\u1ed1c n\u00e0o s\u1eafp h\u1ebft h\u1ea1n?",
+                        "T\u00f3m t\u1eaft s\u1ee9c kh\u1ecfe c\u1ee7a gia \u0111\u00ecnh"
                     )
                     prompts.forEach { prompt ->
                         Card(
@@ -277,7 +288,13 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
-                placeholder = { Text("Hỏi CareNest AI...", color = Color(0xFF94A3B8), style = CareNestTextStyles.bodyMd) },
+                placeholder = {
+                    Text(
+                        "H\u1ecfi CareNest AI...",
+                        color = Color(0xFF94A3B8),
+                        style = CareNestTextStyles.bodyMd
+                    )
+                },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(AppRadius.full),
                 colors = TextFieldDefaults.colors(
@@ -292,7 +309,10 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .background(if (inputText.isNotBlank() && !isTyping) PrimaryBlue else Color(0xFFE2E8F0), CircleShape)
+                    .background(
+                        if (inputText.isNotBlank() && !isTyping) PrimaryBlue else Color(0xFFE2E8F0),
+                        CircleShape
+                    )
                     .clickable(enabled = inputText.isNotBlank() && !isTyping) {
                         viewModel.sendMessage(inputText)
                         inputText = ""
@@ -300,11 +320,15 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                 contentAlignment = Alignment.Center
             ) {
                 if (isTyping) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = PrimaryBlue, strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = PrimaryBlue,
+                        strokeWidth = 2.dp
+                    )
                 } else {
                     CareNestIcon(
                         name = "send",
-                        contentDescription = "Gửi",
+                        contentDescription = "G\u1eedi",
                         tint = if (inputText.isNotBlank()) Color.White else Color(0xFF94A3B8),
                         modifier = Modifier.size(20.dp)
                     )
