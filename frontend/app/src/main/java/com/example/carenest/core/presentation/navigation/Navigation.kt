@@ -45,8 +45,6 @@ import com.example.carenest.feature.dashboard.presentation.DashboardViewModelFac
 import com.example.carenest.feature.medical.presentation.MedicineViewModel
 import com.example.carenest.feature.medical.presentation.MedicineViewModelFactory
 import com.example.carenest.feature.chat.presentation.ChatScreen
-import com.example.carenest.feature.chat.presentation.FamilyChatScreen
-import com.example.carenest.core.presentation.navigation.FamilyChatRoom
 
 import kotlinx.coroutines.launch
 
@@ -257,14 +255,6 @@ fun MainNavigation() {
           ChatScreen(
             groupId = key.id,
             groupName = key.name,
-            onBack = { backStack.removeLastOrNull() }
-          )
-        }
-        entry<FamilyChatRoom> {
-          val key = it as FamilyChatRoom
-          FamilyChatScreen(
-            familyId = key.familyId,
-            familyName = key.familyName,
             onBack = { backStack.removeLastOrNull() }
           )
         }
