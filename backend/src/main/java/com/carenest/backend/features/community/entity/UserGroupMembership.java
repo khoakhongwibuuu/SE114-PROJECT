@@ -46,7 +46,7 @@ public class UserGroupMembership extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "community_group_id", nullable = false)
-    private CommunityGroup group;
+    private ChatGroup group;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "group_role", nullable = false, length = 20)

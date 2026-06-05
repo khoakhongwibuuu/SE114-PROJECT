@@ -1,11 +1,11 @@
-package com.example.carenest.feature.community.presentation
+package com.example.carenest.feature.chat.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.feature.community.data.repository.CommunityRepository
-import com.example.carenest.feature.community.domain.model.CommunityGroup
-import com.example.carenest.feature.community.domain.model.CommunityGroupPreview
+import com.example.carenest.feature.chat.domain.model.ChatGroup
+import com.example.carenest.feature.chat.domain.model.ChatGroupPreview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,23 +15,23 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class CommunityUiState(
+data class ChatGroupDirectoryUiState(
     val isLoading: Boolean = true,
     val search: String = "",
-    val myGroups: List<CommunityGroup> = emptyList(),
-    val discoverGroups: List<CommunityGroup> = emptyList(),
+    val myGroups: List<ChatGroup> = emptyList(),
+    val discoverGroups: List<ChatGroup> = emptyList(),
     val error: String? = null,
     val joiningGroupId: Long? = null,
-    val previewGroup: CommunityGroupPreview? = null,
+    val previewGroup: ChatGroupPreview? = null,
     val isPreviewLoading: Boolean = false
 )
 
 @OptIn(FlowPreview::class)
-class CommunityViewModel(
+class ChatGroupDirectoryViewModel(
     private val repository: CommunityRepository
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(CommunityUiState())
-    val uiState: StateFlow<CommunityUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ChatGroupDirectoryUiState())
+    val uiState: StateFlow<ChatGroupDirectoryUiState> = _uiState.asStateFlow()
     private val searchFlow = MutableStateFlow("")
 
     init {
@@ -79,7 +79,7 @@ class CommunityViewModel(
         _uiState.value = _uiState.value.copy(error = null)
     }
 
-    fun join(group: CommunityGroup, onSuccess: (CommunityGroup) -> Unit = {}) {
+    fun join(group: ChatGroup, onSuccess: (ChatGroup) -> Unit = {}) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(joiningGroupId = group.id, error = null)
             try {
@@ -109,7 +109,7 @@ class CommunityViewModel(
         }
     }
 
-    fun joinFromPreview(preview: CommunityGroupPreview, onSuccess: (CommunityGroup) -> Unit = {}) {
+    fun joinFromPreview(preview: ChatGroupPreview, onSuccess: (ChatGroup) -> Unit = {}) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(joiningGroupId = preview.id, error = null)
             try {
@@ -117,7 +117,7 @@ class CommunityViewModel(
                     repository.join(preview.id)
                 }
                 val discoverList = _uiState.value.discoverGroups.filterNot { it.id == preview.id }
-                val joinedGroup = CommunityGroup(
+                val joinedGroup = ChatGroup(
                     id = preview.id,
                     name = preview.name,
                     description = preview.description,
@@ -171,13 +171,13 @@ class CommunityViewModel(
     }
 }
 
-class CommunityViewModelFactory(
+class ChatGroupDirectoryViewModelFactory(
     private val repository: CommunityRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(CommunityViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(ChatGroupDirectoryViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return CommunityViewModel(repository) as T
+            return ChatGroupDirectoryViewModel(repository) as T
         }
         throw IllegalArgumentException("Không tìm thấy ViewModel phù hợp")
     }

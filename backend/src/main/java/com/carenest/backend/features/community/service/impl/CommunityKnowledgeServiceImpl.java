@@ -14,13 +14,13 @@ import com.carenest.backend.features.community.dto.request.ReportPostRequest;
 import com.carenest.backend.features.community.dto.response.ArticleCommentResponse;
 import com.carenest.backend.features.community.dto.response.ArticleLikeResponse;
 import com.carenest.backend.features.community.dto.response.ArticleResponse;
-import com.carenest.backend.features.community.dto.response.CommunityGroupPreviewResponse;
-import com.carenest.backend.features.community.dto.response.CommunityGroupResponse;
+import com.carenest.backend.features.community.dto.response.ChatGroupPreviewResponse;
+import com.carenest.backend.features.community.dto.response.ChatGroupResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostResponse;
 import com.carenest.backend.features.community.entity.Article;
 import com.carenest.backend.features.community.entity.ArticleComment;
 import com.carenest.backend.features.community.entity.ArticleLike;
-import com.carenest.backend.features.community.entity.CommunityGroup;
+import com.carenest.backend.features.community.entity.ChatGroup;
 import com.carenest.backend.features.community.entity.GroupPost;
 import com.carenest.backend.features.community.entity.ReportTicket;
 import com.carenest.backend.features.community.entity.UserGroupMembership;
@@ -28,7 +28,7 @@ import com.carenest.backend.features.community.enums.GroupRole;
 import com.carenest.backend.features.community.repository.ArticleCommentRepository;
 import com.carenest.backend.features.community.repository.ArticleLikeRepository;
 import com.carenest.backend.features.community.repository.ArticleRepository;
-import com.carenest.backend.features.community.repository.CommunityGroupRepository;
+import com.carenest.backend.features.community.repository.ChatGroupRepository;
 import com.carenest.backend.features.community.repository.GroupPostRepository;
 import com.carenest.backend.features.community.repository.ReportTicketRepository;
 import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
@@ -60,7 +60,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
     private final ArticleRepository articleRepository;
     private final ArticleLikeRepository articleLikeRepository;
     private final ArticleCommentRepository articleCommentRepository;
-    private final CommunityGroupRepository communityGroupRepository;
+    private final ChatGroupRepository chatGroupRepository;
     private final GroupPostRepository groupPostRepository;
     private final UserGroupMembershipRepository membershipRepository;
     private final ReportTicketRepository reportTicketRepository;
@@ -146,10 +146,10 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     @Override
     @Transactional(readOnly = true)
-    public List<CommunityGroupResponse> getCommunityGroups(String search, String category) {
+    public List<ChatGroupResponse> getChatGroups(String search, String category) {
         String keyword = normalizeOptionalText(search);
         String normalizedCategory = normalizeOptionalText(category);
-        return communityGroupRepository.searchGroups(keyword, normalizedCategory)
+        return chatGroupRepository.searchGroups(keyword, normalizedCategory)
                 .stream()
                 .map(group -> toGroupResponse(group, getCurrentUserIdOrNull()))
                 .toList();
@@ -157,7 +157,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     @Override
     @Transactional(readOnly = true)
-    public List<CommunityGroupResponse> getMyCommunityGroups(String search) {
+    public List<ChatGroupResponse> getMyChatGroups(String search) {
         User currentUser = getCurrentUser();
         String keyword = normalizeOptionalText(search);
         return membershipRepository.findAllByUserIdOrderByJoinedAtDesc(currentUser.getId())
@@ -166,7 +166,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .filter(group -> matchesGroupSearch(group, keyword))
                 .map(group -> toGroupResponse(group, currentUser.getId()))
                 .sorted(Comparator.comparing(
-                        CommunityGroupResponse::getLatestActivityAt,
+                        ChatGroupResponse::getLatestActivityAt,
                         Comparator.nullsLast(Comparator.reverseOrder())
                 ))
                 .toList();
@@ -174,10 +174,10 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     @Override
     @Transactional(readOnly = true)
-    public List<CommunityGroupResponse> getDiscoverCommunityGroups(String search) {
+    public List<ChatGroupResponse> getDiscoverChatGroups(String search) {
         User currentUser = getCurrentUser();
         String keyword = normalizeOptionalText(search);
-        return communityGroupRepository.searchGroups(keyword, null)
+        return chatGroupRepository.searchGroups(keyword, null)
                 .stream()
                 .filter(group -> !membershipRepository.existsByGroupIdAndUserId(group.getId(), currentUser.getId()))
                 .map(group -> toGroupResponse(group, currentUser.getId()))
@@ -186,17 +186,17 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     @Override
     @Transactional(readOnly = true)
-    public CommunityGroupPreviewResponse getCommunityGroupPreview(Long groupId) {
+    public ChatGroupPreviewResponse getChatGroupPreview(Long groupId) {
         User currentUser = getCurrentUser();
-        CommunityGroup group = getCommunityGroupOrThrow(groupId);
+        ChatGroup group = getChatGroupOrThrow(groupId);
         return toGroupPreviewResponse(group, currentUser);
     }
 
     @Override
     @Transactional
-    public CommunityGroupPreviewResponse joinCommunityGroup(Long groupId) {
+    public ChatGroupPreviewResponse joinChatGroup(Long groupId) {
         User currentUser = getCurrentUser();
-        CommunityGroup group = getCommunityGroupOrThrow(groupId);
+        ChatGroup group = getChatGroupOrThrow(groupId);
 
         membershipRepository.findByGroupIdAndUserId(groupId, currentUser.getId())
                 .orElseGet(() -> membershipRepository.save(UserGroupMembership.builder()
@@ -210,7 +210,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     @Override
     @Transactional
-    public void leaveCommunityGroup(Long groupId) {
+    public void leaveChatGroup(Long groupId) {
         User currentUser = getCurrentUser();
         UserGroupMembership membership = membershipRepository.findByGroupIdAndUserId(groupId, currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("UserGroupMembership", "groupId", groupId.toString()));
@@ -226,11 +226,11 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
     @Transactional(readOnly = true)
     public PageResponse<GroupPostResponse> getGroupPosts(Long groupId, Pageable pageable) {
         User currentUser = getCurrentUser();
-        getCommunityGroupOrThrow(groupId);
+        getChatGroupOrThrow(groupId);
         ensureCanEnterGroup(groupId, currentUser);
 
         Page<GroupPostResponse> page = groupPostRepository
-                .findAllByCommunityGroupIdOrderByCreatedAtDesc(groupId, pageable)
+                .findAllByChatGroupIdOrderByCreatedAtDesc(groupId, pageable)
                 .map(this::toPostResponse);
         return PageResponse.of(page);
     }
@@ -239,7 +239,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
     @Transactional
     public GroupPostResponse createGroupPost(Long groupId, CreateGroupPostRequest request) {
         User currentUser = getCurrentUser();
-        CommunityGroup communityGroup = getCommunityGroupOrThrow(groupId);
+        ChatGroup chatGroup = getChatGroupOrThrow(groupId);
         ensureCanEnterGroup(groupId, currentUser);
         enforceSlowMode(groupId, currentUser);
 
@@ -247,14 +247,14 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         if (request.getReplyToPostId() != null) {
             replyToPost = groupPostRepository.findById(request.getReplyToPostId())
                     .orElseThrow(() -> new ResourceNotFoundException("GroupPost", request.getReplyToPostId()));
-            if (replyToPost.getCommunityGroup() == null
-                    || !groupId.equals(replyToPost.getCommunityGroup().getId())) {
+            if (replyToPost.getChatGroup() == null
+                    || !groupId.equals(replyToPost.getChatGroup().getId())) {
                 throw new BadRequestException("Tin nháº¯n Ä‘Æ°á»£c tráº£ lá»i khÃ´ng thuá»™c há»™i nhÃ³m nÃ y");
             }
         }
 
         GroupPost post = GroupPost.builder()
-                .communityGroup(communityGroup)
+                .chatGroup(chatGroup)
                 .author(currentUser)
                 .replyToPost(replyToPost)
                 .content(request.getContent().trim())
@@ -269,9 +269,9 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         User currentUser = getCurrentUser();
         GroupPost post = groupPostRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("GroupPost", postId));
-        CommunityGroup group = post.getCommunityGroup();
+        ChatGroup group = post.getChatGroup();
         if (group == null) {
-            throw new ResourceNotFoundException("CommunityGroup", "postId", postId.toString());
+            throw new ResourceNotFoundException("ChatGroup", "postId", postId.toString());
         }
         ensureCanEnterGroup(group.getId(), currentUser);
 
@@ -286,7 +286,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
     @Transactional
     public void kickMember(Long groupId, Long targetUserId) {
         User currentUser = getCurrentUser();
-        CommunityGroup group = getCommunityGroupOrThrow(groupId);
+        ChatGroup group = getChatGroupOrThrow(groupId);
         UserGroupMembership targetMembership = membershipRepository.findByGroupIdAndUserId(groupId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("UserGroupMembership", "targetUserId", targetUserId.toString()));
 
@@ -330,9 +330,9 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         lastUserPostAt.put(key, now);
     }
 
-    private CommunityGroup getCommunityGroupOrThrow(Long groupId) {
-        return communityGroupRepository.findById(groupId)
-                .orElseThrow(() -> new ResourceNotFoundException("CommunityGroup", groupId));
+    private ChatGroup getChatGroupOrThrow(Long groupId) {
+        return chatGroupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("ChatGroup", groupId));
     }
 
     private void ensureCanEnterGroup(Long groupId, User currentUser) {
@@ -342,7 +342,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         throw new AccessDeniedException("Vui lÃ²ng tham gia nhÃ³m trÆ°á»›c khi xem hoáº·c gá»­i tin nháº¯n");
     }
 
-    private boolean isLeadDoctor(CommunityGroup group, User user) {
+    private boolean isLeadDoctor(ChatGroup group, User user) {
         return group.getLeadDoctor() != null && group.getLeadDoctor().getId().equals(user.getId());
     }
 
@@ -360,11 +360,11 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 ? doctorVerificationRepository.findByUserId(author.getId()).orElse(null)
                 : null;
         String specialty = verification != null ? verification.getSpecialty() : null;
-        CommunityGroup privateGroup = author != null
-                ? communityGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(author.getId()).orElse(null)
+        ChatGroup privateGroup = author != null
+                ? chatGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(author.getId()).orElse(null)
                 : null;
-        CommunityGroup specialtyGroup = specialty != null
-                ? communityGroupRepository.findFirstByCategoryIgnoreCaseAndIsPrivateFalse(specialty).orElse(null)
+        ChatGroup specialtyGroup = specialty != null
+                ? chatGroupRepository.findFirstByCategoryIgnoreCaseAndIsPrivateFalse(specialty).orElse(null)
                 : null;
         return ArticleResponse.builder()
                 .id(article.getId())
@@ -432,7 +432,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .build();
     }
 
-    private boolean matchesGroupSearch(CommunityGroup group, String keyword) {
+    private boolean matchesGroupSearch(ChatGroup group, String keyword) {
         if (keyword == null) {
             return true;
         }
@@ -448,10 +448,10 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         return value != null && value.toLowerCase().contains(normalizedKeyword);
     }
 
-    private CommunityGroupResponse toGroupResponse(CommunityGroup group, Long currentUserId) {
+    private ChatGroupResponse toGroupResponse(ChatGroup group, Long currentUserId) {
         User leadDoctor = group.getLeadDoctor();
-        GroupPost latestPost = groupPostRepository.findFirstByCommunityGroupIdOrderByCreatedAtDesc(group.getId()).orElse(null);
-        return CommunityGroupResponse.builder()
+        GroupPost latestPost = groupPostRepository.findFirstByChatGroupIdOrderByCreatedAtDesc(group.getId()).orElse(null);
+        return ChatGroupResponse.builder()
                 .id(group.getId())
                 .name(group.getName())
                 .description(group.getDescription())
@@ -467,10 +467,10 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .build();
     }
 
-    private CommunityGroupPreviewResponse toGroupPreviewResponse(CommunityGroup group, User currentUser) {
+    private ChatGroupPreviewResponse toGroupPreviewResponse(ChatGroup group, User currentUser) {
         User leadDoctor = group.getLeadDoctor();
         var membership = membershipRepository.findByGroupIdAndUserId(group.getId(), currentUser.getId()).orElse(null);
-        return CommunityGroupPreviewResponse.builder()
+        return ChatGroupPreviewResponse.builder()
                 .id(group.getId())
                 .name(group.getName())
                 .description(group.getDescription())
@@ -488,11 +488,11 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     private GroupPostResponse toPostResponse(GroupPost post) {
         User author = post.getAuthor();
-        CommunityGroup group = post.getCommunityGroup();
+        ChatGroup group = post.getChatGroup();
         return GroupPostResponse.builder()
                 .id(post.getId())
-                .communityGroupId(group != null ? group.getId() : null)
-                .communityGroupName(group != null ? group.getName() : null)
+                .chatGroupId(group != null ? group.getId() : null)
+                .chatGroupName(group != null ? group.getName() : null)
                 .authorId(author != null ? author.getId() : null)
                 .authorName(author != null ? author.getFullName() : null)
                 .authorRole(author != null && author.getRole() != null ? author.getRole().name() : null)

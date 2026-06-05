@@ -1,12 +1,11 @@
 package com.carenest.backend.features.community.dto.response;
 
-import com.carenest.backend.features.community.enums.GroupRole;
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class CommunityGroupPreviewResponse {
+public class ChatGroupResponse {
     private Long id;
     private String name;
     private String description;
@@ -17,6 +16,6 @@ public class CommunityGroupPreviewResponse {
     private String leadDoctorName;
     private long memberCount;
     private boolean joined;
-    private GroupRole myRole;
-    private String rules;
+    private String latestMessage;
+    private java.time.Instant latestActivityAt;
 }

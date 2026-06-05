@@ -32,7 +32,7 @@ public class GroupPost extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "community_group_id", nullable = false)
-    private CommunityGroup communityGroup;
+    private ChatGroup chatGroup;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)

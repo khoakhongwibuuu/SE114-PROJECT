@@ -17,17 +17,17 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "community_groups", indexes = {
-        @Index(name = "idx_community_groups_category", columnList = "category"),
-        @Index(name = "idx_community_groups_lead_doctor", columnList = "lead_doctor_id"),
-        @Index(name = "idx_community_groups_private", columnList = "is_private")
+@Table(name = "chat_groups", indexes = {
+        @Index(name = "idx_chat_groups_category", columnList = "category"),
+        @Index(name = "idx_chat_groups_lead_doctor", columnList = "lead_doctor_id"),
+        @Index(name = "idx_chat_groups_private", columnList = "is_private")
 })
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommunityGroup extends BaseEntity {
+public class ChatGroup extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 120)
     private String name;

@@ -65,17 +65,30 @@ class AuthViewModel(
                 val response = withContext(Dispatchers.IO) {
                     authApi.login(LoginRequest(email, password))
                 }
-                val envelope = response.body()
-                val auth = envelope?.data
-                if (response.isSuccessful && auth != null) {
-                    withContext(Dispatchers.IO) {
-                        secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
-                        auth.user?.let(::persistAuthenticatedUser)
-                            ?: pullCurrentUser()?.let(::persistAuthenticatedUser)
+                if (response.isSuccessful) {
+                    val envelope = response.body()
+                    val auth = envelope?.data
+                    if (auth != null) {
+                        withContext(Dispatchers.IO) {
+                            secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
+                            auth.user?.let(::persistAuthenticatedUser)
+                                ?: pullCurrentUser()?.let(::persistAuthenticatedUser)
+                        }
+                        _authState.value = AuthState.Success(envelope.message ?: "Đăng nhập thành công")
+                    } else {
+                        _authState.value = AuthState.Error("Không nhận được dữ liệu đăng nhập")
                     }
-                    _authState.value = AuthState.Success(envelope.message ?: "Đăng nhập thành công")
                 } else {
-                    _authState.value = AuthState.Error(envelope?.message ?: "Đăng nhập thất bại: ${response.code()}")
+                    var errorMessage = "Đăng nhập thất bại: ${response.code()}"
+                    response.errorBody()?.string()?.let { errorJson ->
+                        try {
+                            val jsonObject = org.json.JSONObject(errorJson)
+                            if (jsonObject.has("message")) {
+                                errorMessage = jsonObject.getString("message")
+                            }
+                        } catch (e: Exception) { }
+                    }
+                    _authState.value = AuthState.Error(errorMessage)
                 }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
@@ -102,7 +115,16 @@ class AuthViewModel(
                     }
                     _authState.value = AuthState.Success(envelope?.message ?: "Đăng ký thành công")
                 } else {
-                    _authState.value = AuthState.Error(envelope?.message ?: "Đăng ký thất bại: ${response.code()}")
+                    var errorMessage = "Đăng ký thất bại: ${response.code()}"
+                    response.errorBody()?.string()?.let { errorJson ->
+                        try {
+                            val jsonObject = org.json.JSONObject(errorJson)
+                            if (jsonObject.has("message")) {
+                                errorMessage = jsonObject.getString("message")
+                            }
+                        } catch (e: Exception) { }
+                    }
+                    _authState.value = AuthState.Error(errorMessage)
                 }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")

@@ -5,12 +5,14 @@ import com.carenest.backend.core.exception.ResourceNotFoundException;
 import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.repository.UserRepository;
-import com.carenest.backend.features.community.entity.CommunityGroup;
+import com.carenest.backend.features.community.entity.ChatGroup;
 import com.carenest.backend.features.community.entity.UserGroupMembership;
 import com.carenest.backend.features.community.enums.GroupRole;
-import com.carenest.backend.features.community.repository.CommunityGroupRepository;
+import com.carenest.backend.features.community.repository.ChatGroupRepository;
 import com.carenest.backend.features.community.repository.GroupPostRepository;
 import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
+import com.carenest.backend.features.community.repository.SocialGroupRepository;
+import com.carenest.backend.features.community.entity.SocialGroup;
 import com.carenest.backend.features.doctorverification.dto.request.RejectDoctorVerificationRequest;
 import com.carenest.backend.features.doctorverification.dto.request.SubmitDoctorVerificationRequest;
 import com.carenest.backend.features.doctorverification.dto.response.DoctorSummaryResponse;
@@ -33,9 +35,10 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
     private final DoctorVerificationRepository doctorVerificationRepository;
     private final UserRepository userRepository;
     private final FamilySecurityUtil familySecurityUtil;
-    private final CommunityGroupRepository communityGroupRepository;
+    private final ChatGroupRepository chatGroupRepository;
     private final GroupPostRepository groupPostRepository;
     private final UserGroupMembershipRepository membershipRepository;
+    private final SocialGroupRepository socialGroupRepository;
 
     @Override
     @Transactional
@@ -168,19 +171,19 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
             doctorVerificationRepository.save(verification);
         });
 
-        communityGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(userId).ifPresent(privateGroup -> {
-            groupPostRepository.clearRepliesByCommunityGroupId(privateGroup.getId());
-            groupPostRepository.deleteAllByCommunityGroupId(privateGroup.getId());
+        chatGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(userId).ifPresent(privateGroup -> {
+            groupPostRepository.clearRepliesByChatGroupId(privateGroup.getId());
+            groupPostRepository.deleteAllByChatGroupId(privateGroup.getId());
             membershipRepository.deleteAllByGroupId(privateGroup.getId());
-            communityGroupRepository.delete(privateGroup);
+            chatGroupRepository.delete(privateGroup);
         });
     }
 
     private void createCommunityChannelsForDoctor(DoctorVerification verification, User user) {
         String specialty = normalizeSpecialty(verification.getSpecialty());
 
-        CommunityGroup publicGroup = communityGroupRepository.findFirstByCategoryIgnoreCaseAndIsPrivateFalse(specialty)
-                .orElseGet(() -> communityGroupRepository.save(CommunityGroup.builder()
+        ChatGroup publicGroup = chatGroupRepository.findFirstByCategoryIgnoreCaseAndIsPrivateFalse(specialty)
+                .orElseGet(() -> chatGroupRepository.save(ChatGroup.builder()
                         .name("Cộng đồng " + specialty)
                         .description("Không gian trao đổi kiến thức và kinh nghiệm chăm sóc sức khỏe về " + specialty + ".")
                         .category(specialty)
@@ -189,8 +192,8 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
                         .build()));
         ensureHostMembership(publicGroup, user);
 
-        if (communityGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(user.getId()).isEmpty()) {
-            CommunityGroup privateGroup = communityGroupRepository.save(CommunityGroup.builder()
+        if (chatGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(user.getId()).isEmpty()) {
+            ChatGroup privateGroup = chatGroupRepository.save(ChatGroup.builder()
                     .name("Phòng tư vấn - BS. " + resolveDoctorDisplayName(user))
                     .description("Phòng tư vấn riêng của bác sĩ " + resolveDoctorDisplayName(user) + ".")
                     .category(specialty)
@@ -200,9 +203,16 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
                     .build());
             ensureHostMembership(privateGroup, user);
         }
+
+        socialGroupRepository.findFirstByCategoryIgnoreCase(specialty)
+                .orElseGet(() -> socialGroupRepository.save(SocialGroup.builder()
+                        .name("Cộng đồng " + specialty)
+                        .description("Không gian mạng xã hội về " + specialty + ".")
+                        .category(specialty)
+                        .build()));
     }
 
-    private void ensureHostMembership(CommunityGroup group, User user) {
+    private void ensureHostMembership(ChatGroup group, User user) {
         membershipRepository.findByGroupIdAndUserId(group.getId(), user.getId())
                 .orElseGet(() -> membershipRepository.save(UserGroupMembership.builder()
                         .group(group)

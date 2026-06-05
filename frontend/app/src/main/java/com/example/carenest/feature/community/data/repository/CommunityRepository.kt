@@ -9,8 +9,8 @@ import com.example.carenest.feature.community.data.remote.CommunityApi
 import com.example.carenest.feature.community.domain.model.Article
 import com.example.carenest.feature.community.domain.model.ArticleComment
 import com.example.carenest.feature.community.domain.model.ArticleLikeResponse
-import com.example.carenest.feature.community.domain.model.CommunityGroup
-import com.example.carenest.feature.community.domain.model.CommunityGroupPreview
+import com.example.carenest.feature.chat.domain.model.ChatGroup
+import com.example.carenest.feature.chat.domain.model.ChatGroupPreview
 import com.example.carenest.feature.community.domain.model.CreateArticleCommentRequest
 import com.example.carenest.feature.community.domain.model.CreateArticleRequest
 import com.example.carenest.feature.community.domain.model.CreateGroupPostRequest
@@ -23,7 +23,7 @@ class CommunityRepository(
     private val api: CommunityApi,
     private val mediaApi: MediaApi
 ) {
-    suspend fun myGroups(search: String?): List<CommunityGroup> {
+    suspend fun myGroups(search: String?): List<ChatGroup> {
         val response = api.myGroups(search)
         if (!response.isSuccessful) {
             throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách nhóm của bạn")
@@ -31,7 +31,7 @@ class CommunityRepository(
         return response.body()?.data.orEmpty()
     }
 
-    suspend fun discoverGroups(search: String?): List<CommunityGroup> {
+    suspend fun discoverGroups(search: String?): List<ChatGroup> {
         val response = api.discoverGroups(search)
         if (!response.isSuccessful) {
             throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách nhóm gợi ý")
@@ -39,7 +39,7 @@ class CommunityRepository(
         return response.body()?.data.orEmpty()
     }
 
-    suspend fun join(groupId: Long): CommunityGroupPreview {
+    suspend fun join(groupId: Long): ChatGroupPreview {
         val response = api.join(groupId)
         if (!response.isSuccessful) {
             throw IllegalStateException(response.body()?.message ?: "Không thể tham gia nhóm")
@@ -47,7 +47,7 @@ class CommunityRepository(
         return response.body()?.data ?: throw IllegalStateException("Không thể tham gia nhóm")
     }
 
-    suspend fun preview(groupId: Long): CommunityGroupPreview {
+    suspend fun preview(groupId: Long): ChatGroupPreview {
         val response = api.preview(groupId)
         if (!response.isSuccessful) {
             throw IllegalStateException(response.body()?.message ?: "Không thể tải chi tiết nhóm")
