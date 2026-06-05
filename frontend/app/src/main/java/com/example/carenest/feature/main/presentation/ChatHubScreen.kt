@@ -58,6 +58,7 @@ import com.example.carenest.core.presentation.theme.TextSecondary
 import com.example.carenest.feature.chat.presentation.AiChatViewModel
 
 private enum class ChatHubTab(val label: String) {
+    FAMILY("Gia đình"),
     AI("AI Care"),
     CHAT_GROUPS("Nhóm Chat"),
 }
@@ -68,7 +69,7 @@ fun ChatHubScreen(
     onNavigateToAppointments: () -> Unit,
     onOpenGroup: (ChatGroup) -> Unit = {}
 ) {
-    var activeTab by remember { mutableStateOf(ChatHubTab.AI) }
+    var activeTab by remember { mutableStateOf(ChatHubTab.FAMILY) }
 
     Column(
         modifier = Modifier
@@ -106,6 +107,7 @@ fun ChatHubScreen(
         }
 
         when (activeTab) {
+            ChatHubTab.FAMILY -> com.example.carenest.feature.chat.presentation.FamilyChatPane()
             ChatHubTab.AI -> AiCarePane(aiChatViewModel)
             ChatHubTab.CHAT_GROUPS -> ChatGroupDirectoryPane(onOpenGroup = onOpenGroup)
         }
