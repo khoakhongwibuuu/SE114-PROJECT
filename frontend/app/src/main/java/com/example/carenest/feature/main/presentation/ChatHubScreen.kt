@@ -58,18 +58,16 @@ import com.example.carenest.core.presentation.theme.TextSecondary
 import com.example.carenest.feature.chat.presentation.AiChatViewModel
 
 private enum class ChatHubTab(val label: String) {
-    FAMILY("Gia đình"),
     AI("AI Care"),
-    CHAT_GROUPS("Nhóm Chat"),
+    DOCTOR("Bác sĩ"),
 }
 
 @Composable
 fun ChatHubScreen(
     aiChatViewModel: AiChatViewModel,
-    onNavigateToAppointments: () -> Unit,
-    onOpenGroup: (ChatGroup) -> Unit = {}
+    onNavigateToAppointments: () -> Unit
 ) {
-    var activeTab by remember { mutableStateOf(ChatHubTab.FAMILY) }
+    var activeTab by remember { mutableStateOf(ChatHubTab.AI) }
 
     Column(
         modifier = Modifier
@@ -107,13 +105,60 @@ fun ChatHubScreen(
         }
 
         when (activeTab) {
-            ChatHubTab.FAMILY -> com.example.carenest.feature.chat.presentation.FamilyChatPane()
             ChatHubTab.AI -> AiCarePane(aiChatViewModel)
-            ChatHubTab.CHAT_GROUPS -> ChatGroupDirectoryPane(onOpenGroup = onOpenGroup)
+            ChatHubTab.DOCTOR -> DoctorMessagingPlaceholder(onNavigateToAppointments = onNavigateToAppointments)
         }
     }
 }
 
+@Composable
+private fun DoctorMessagingPlaceholder(onNavigateToAppointments: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CardBackground)
+            .padding(AppSpacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CareNestIcon(
+            name = "chat",
+            contentDescription = "Bác sĩ",
+            tint = PrimaryBlue,
+            modifier = Modifier.size(64.dp)
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.lg))
+        Text(
+            text = "Tư vấn trực tiếp với Bác sĩ",
+            style = CareNestTextStyles.titleMd,
+            color = TextPrimary,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.sm))
+        Text(
+            text = "Tính năng trò chuyện trực tiếp với Bác sĩ chuyên khoa đang được phát triển và sẽ sớm ra mắt.\n\nĐể nhận tư vấn y tế trực tiếp từ các bác sĩ đối tác của CareNest, bạn có thể đặt lịch hẹn khám tại đây.",
+            style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp),
+            color = TextSecondary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = AppSpacing.lg)
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.xl))
+        Button(
+            onClick = onNavigateToAppointments,
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+            shape = RoundedCornerShape(AppRadius.md),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        ) {
+            Text(
+                text = "Đặt lịch hẹn khám",
+                style = CareNestTextStyles.labelMd,
+                color = Color.White
+            )
+        }
+    }
+}
 
 @Composable
 private fun AiCarePane(viewModel: AiChatViewModel) {
@@ -177,7 +222,7 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                                 .padding(horizontal = AppSpacing.lg, vertical = 10.dp)
                         ) {
                             Text(
-                                "\u0110ang tr\u1ea3 l\u1eddi...",
+                                "Đang trả lời...",
                                 color = Color(0xFF94A3B8),
                                 style = CareNestTextStyles.bodyMd.copy(fontStyle = FontStyle.Italic)
                             )
@@ -190,15 +235,15 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                 item {
                     Spacer(modifier = Modifier.height(AppSpacing.lg))
                     Text(
-                        "G\u1ee3i \u00fd cho b\u1ea1n:",
+                        "Gợi ý cho bạn:",
                         style = CareNestTextStyles.labelSm.copy(fontSize = 13.sp),
                         color = TextSecondary
                     )
                     Spacer(modifier = Modifier.height(AppSpacing.sm))
                     val prompts = listOf(
-                        "H\u00f4m nay c\u1ea7n u\u1ed1ng thu\u1ed1c g\u00ec?",
-                        "Thu\u1ed1c n\u00e0o s\u1eafp h\u1ebft h\u1ea1n?",
-                        "T\u00f3m t\u1eaft s\u1ee9c kh\u1ecfe c\u1ee7a gia \u0111\u00ecnh"
+                        "Hôm nay cần uống thuốc gì?",
+                        "Thuốc nào sắp hết hạn?",
+                        "Tóm tắt sức khỏe của gia đình"
                     )
                     prompts.forEach { prompt ->
                         Card(
@@ -236,7 +281,7 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                 onValueChange = { inputText = it },
                 placeholder = {
                     Text(
-                        "H\u1ecfi CareNest AI...",
+                        "Hỏi CareNest AI...",
                         color = Color(0xFF94A3B8),
                         style = CareNestTextStyles.bodyMd
                     )
@@ -274,7 +319,7 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                 } else {
                     CareNestIcon(
                         name = "send",
-                        contentDescription = "G\u1eedi",
+                        contentDescription = "Gửi",
                         tint = if (inputText.isNotBlank()) Color.White else Color(0xFF94A3B8),
                         modifier = Modifier.size(20.dp)
                     )

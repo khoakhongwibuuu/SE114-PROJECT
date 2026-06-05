@@ -64,7 +64,7 @@ fun SocialFeedScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "B\u1ea3ng tin nh\u00f3m",
+                        text = "Bảng tin nhóm",
                         style = CareNestTextStyles.titleLg,
                         color = PrimaryBlue
                     )
@@ -73,7 +73,7 @@ fun SocialFeedScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay l\u1ea1i",
+                            contentDescription = "Quay lại",
                             tint = PrimaryBlue
                         )
                     }
@@ -108,7 +108,7 @@ fun SocialFeedScreen(
                 }
 
                 refreshState is LoadState.Error -> {
-                    val errorMessage = refreshState.error.localizedMessage ?: "\u0110\u00e3 x\u1ea3y ra l\u1ed7i khi t\u1ea3i b\u1ea3ng tin."
+                    val errorMessage = refreshState.error.localizedMessage ?: "Đã xảy ra lỗi khi tải bảng tin."
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -119,7 +119,7 @@ fun SocialFeedScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "C\u1ea3nh b\u00e1o l\u1ed7i",
+                            contentDescription = "Cảnh báo lỗi",
                             tint = Error,
                             modifier = Modifier.size(48.dp)
                         )
@@ -136,7 +136,7 @@ fun SocialFeedScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                         ) {
                             Text(
-                                text = "Th\u1eed l\u1ea1i",
+                                text = "Thử lại",
                                 style = CareNestTextStyles.labelMd,
                                 color = Color.White
                             )
@@ -154,7 +154,7 @@ fun SocialFeedScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Ch\u01b0a c\u00f3 b\u00e0i vi\u1ebft n\u00e0o trong nh\u00f3m n\u00e0y.",
+                                text = "Chưa có bài viết nào trong nhóm này.",
                                 style = CareNestTextStyles.bodyLg,
                                 color = TextSecondary,
                                 textAlign = TextAlign.Center
@@ -172,13 +172,14 @@ fun SocialFeedScreen(
                                 if (post != null) {
                                     PostCard(
                                         post = post,
+                                        isLiked = post.likedByMe,
                                         onLikeClick = { clickedPost ->
                                             scope.launch {
                                                 val result = viewModel.reactToPost(clickedPost.id)
                                                 if (result.isSuccess) {
                                                     posts.refresh()
                                                 } else {
-                                                    Toast.makeText(context, "Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt l\u01b0\u1ee3t th\u00edch", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, "Không thể cập nhật lượt thích", Toast.LENGTH_SHORT).show()
                                                 }
                                             }
                                         },
@@ -215,14 +216,14 @@ fun SocialFeedScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
-                                                text = "Kh\u00f4ng th\u1ec3 t\u1ea3i th\u00eam b\u00e0i vi\u1ebft.",
+                                                text = "Không thể tải thêm bài viết.",
                                                 style = CareNestTextStyles.bodySm,
                                                 color = Error,
                                                 modifier = Modifier.weight(1f)
                                             )
                                             TextButton(onClick = { posts.retry() }) {
                                                 Text(
-                                                    text = "Th\u1eed l\u1ea1i",
+                                                    text = "Thử lại",
                                                     style = CareNestTextStyles.labelSm,
                                                     color = PrimaryBlue
                                                 )

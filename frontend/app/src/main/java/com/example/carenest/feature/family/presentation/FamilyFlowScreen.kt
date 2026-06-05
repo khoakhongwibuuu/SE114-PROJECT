@@ -28,8 +28,9 @@ import com.example.carenest.feature.medical.presentation.MedicineScreen
 import com.example.carenest.feature.medical.presentation.MedicineViewModel
 
 private enum class FamilyTab(val label: String) {
-    MEMBERS("Th\u00e0nh vi\u00ean"),
-    MEDICINE("T\u1ee7 thu\u1ed1c"),
+    MEMBERS("Thành viên"),
+    MEDICINE("Tủ thuốc"),
+    CHAT("Trò chuyện"),
 }
 
 @Composable
@@ -136,6 +137,10 @@ fun FamilyFlowScreen(
                         onAddScheduleClick = onNavigateToAddSchedule,
                         onOcrClick = onNavigateToOcrScanner,
                     )
+                }
+
+                FamilyTab.CHAT -> {
+                    com.example.carenest.feature.chat.presentation.FamilyChatPane()
                 }
             }
         }
