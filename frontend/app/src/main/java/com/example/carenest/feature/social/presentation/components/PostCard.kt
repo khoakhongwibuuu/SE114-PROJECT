@@ -192,7 +192,7 @@ fun PostCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (post.likeCount > 0) "${post.likeCount}" else "Thích",
+                        text = if (post.likeCount > 0) "${post.likeCount}" else "Th\u00edch",
                         style = CareNestTextStyles.labelMd,
                         color = if (isLiked) ThemeError else TextSecondary
                     )
@@ -214,7 +214,7 @@ fun PostCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (post.commentCount > 0) "${post.commentCount}" else "Bình luận",
+                        text = if (post.commentCount > 0) "${post.commentCount}" else "B\u00ecnh lu\u1eadn",
                         style = CareNestTextStyles.labelMd,
                         color = TextSecondary
                     )

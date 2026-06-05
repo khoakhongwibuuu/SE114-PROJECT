@@ -1,0 +1,24 @@
+=== frontend/app/src/main/java/com/example/carenest/feature/social/presentation/SocialFeedScreen.kt
+64: "Bảng tin nhóm" -> ả: U+1EA3, ó: U+00F3
+73: "Quay lại" -> ạ: U+1EA1
+108: "Đã xảy ra lỗi khi tải bảng tin." -> Đ: U+0110, ã: U+00E3, ả: U+1EA3, ỗ: U+1ED7, ả: U+1EA3, ả: U+1EA3
+119: "Cảnh báo lỗi" -> ả: U+1EA3, á: U+00E1, ỗ: U+1ED7
+136: "Thử lại" -> ử: U+1EED, ạ: U+1EA1
+154: "Chưa có bài viết nào trong nhóm này." -> ư: U+01B0, ó: U+00F3, à: U+00E0, ế: U+1EBF, à: U+00E0, ó: U+00F3, à: U+00E0
+213: "Không thể tải thêm bài viết." -> ô: U+00F4, ể: U+1EC3, ả: U+1EA3, ê: U+00EA, à: U+00E0, ế: U+1EBF
+220: "Thử lại" -> ử: U+1EED, ạ: U+1EA1
+=== frontend/app/src/main/java/com/example/carenest/feature/social/presentation/PostDetailScreen.kt
+84: "Gửi thành công!" -> ử: U+1EED, à: U+00E0, ô: U+00F4
+106: "Chi tiết bài viết" -> ế: U+1EBF, à: U+00E0, ế: U+1EBF
+115: "Quay lại" -> ạ: U+1EA1
+182: "Không thể cập nhật lượt thích" -> ô: U+00F4, ể: U+1EC3, ậ: U+1EAD, ậ: U+1EAD, ư: U+01B0, ợ: U+1EE3, í: U+00ED
+202: "Bình luận ($localCommentCount)" -> ì: U+00EC, ậ: U+1EAD
+237: "Lỗi" -> ỗ: U+1ED7
+243: "Lỗi tải bình luận." -> ỗ: U+1ED7, ả: U+1EA3, ì: U+00EC, ậ: U+1EAD
+251: "Thử lại" -> ử: U+1EED, ạ: U+1EA1
+269: "Chưa có bình luận nào. Hãy là người đầu tiên bình luận!" -> ư: U+01B0, ó: U+00F3, ì: U+00EC, ậ: U+1EAD, à: U+00E0, ã: U+00E3, à: U+00E0, ư: U+01B0, ờ: U+1EDD, đ: U+0111, ầ: U+1EA7, ê: U+00EA, ì: U+00EC, ậ: U+1EAD
+319: "Không thể tải thêm bình luận." -> ô: U+00F4, ể: U+1EC3, ả: U+1EA3, ê: U+00EA, ì: U+00EC, ậ: U+1EAD
+326: "Thử lại" -> ử: U+1EED, ạ: U+1EA1
+=== frontend/app/src/main/java/com/example/carenest/feature/social/presentation/PostDetailViewModel.kt
+45: "Không thể gửi bình luận" -> ô: U+00F4, ể: U+1EC3, ử: U+1EED, ì: U+00EC, ậ: U+1EAD
+58: "Không thể gửi câu trả lời" -> ô: U+00F4, ể: U+1EC3, ử: U+1EED, â: U+00E2, ả: U+1EA3, ờ: U+1EDD

@@ -1,0 +1,20 @@
+=== frontend/app/src/main/java/com/example/carenest/feature/social/presentation/SocialFeedScreen.kt
+64: text = "Bảng tin nhóm",
+73: contentDescription = "Quay lại",
+108: val errorMessage = refreshState.error.localizedMessage ?: "Đã xảy ra lỗi khi tải bảng tin."
+119: contentDescription = "Cảnh báo lỗi",
+136: text = "Thử lại",
+154: text = "Chưa có bài viết nào trong nhóm này.",
+213: text = "Không thể tải thêm bài viết.",
+220: text = "Thử lại",
+=== frontend/app/src/main/java/com/example/carenest/feature/social/presentation/PostDetailScreen.kt
+83: Toast.makeText(context, "Gửi thành công!", Toast.LENGTH_SHORT).show()
+104: text = "Chi tiết bài viết",
+113: contentDescription = "Quay lại",
+188: text = "Bình luận (${post.commentCount})",
+223: contentDescription = "Lỗi",
+229: text = refreshState.error.localizedMessage ?: "Lỗi tải bình luận.",
+237: text = "Thử lại",
+255: text = "Chưa có bình luận nào. Hãy là người đầu tiên bình luận!",
+305: text = "Không thể tải thêm bình luận.",
+312: text = "Thử lại",

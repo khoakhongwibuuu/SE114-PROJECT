@@ -6,7 +6,7 @@ import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class SecureSessionManager(context: Context) {
+class SecureSessionManager(private val context: Context) {
     companion object {
         private const val PREFS_NAME = "secure_carenest_session"
         private const val ACCESS_TOKEN_KEY = "access_token"
@@ -21,17 +21,22 @@ class SecureSessionManager(context: Context) {
         private const val ONBOARDING_DONE_KEY = "@carenest_onboarding_done"
     }
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val encryptedPrefs = try {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
 
-    private val encryptedPrefs = EncryptedSharedPreferences.create(
-        context,
-        PREFS_NAME,
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+        EncryptedSharedPreferences.create(
+            context,
+            PREFS_NAME,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    } catch (e: Exception) {
+        android.util.Log.e("SecureSessionManager", "Keystore failed, falling back to regular SharedPreferences", e)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
 
     private val _tokenFlow = MutableStateFlow(encryptedPrefs.getString(ACCESS_TOKEN_KEY, null))
     val tokenFlow: StateFlow<String?> = _tokenFlow
@@ -160,10 +165,26 @@ class SecureSessionManager(context: Context) {
     }
 
     suspend fun clearAll() {
-        val onboardingDone = encryptedPrefs.getString(ONBOARDING_DONE_KEY, null)
-        encryptedPrefs.edit().clear().apply()
-        if (onboardingDone != null) {
-            encryptedPrefs.edit().putString(ONBOARDING_DONE_KEY, onboardingDone).apply()
+        var onboardingDone: String? = null
+        try {
+            onboardingDone = encryptedPrefs.getString(ONBOARDING_DONE_KEY, null)
+        } catch (e: Exception) {
+            android.util.Log.e("SecureSessionManager", "Failed to get onboarding state during clearAll", e)
+        }
+
+        try {
+            encryptedPrefs.edit().clear().apply()
+        } catch (e: Exception) {
+            android.util.Log.e("SecureSessionManager", "EncryptedSharedPreferences clear failed", e)
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
+        }
+
+        try {
+            if (onboardingDone != null) {
+                encryptedPrefs.edit().putString(ONBOARDING_DONE_KEY, onboardingDone).apply()
+            }
+        } catch (e: Exception) {
+             // Ignore
         }
         _tokenFlow.value = null
         _refreshTokenFlow.value = null

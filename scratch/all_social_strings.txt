@@ -1,0 +1,11 @@
+=== feature\social\presentation\components\CommentInputBar.kt
+69: Đang phản hồi $replyingToName
+79: Hủy phản hồi
+97: Viết bình luận...
+97: Viết câu trả lời...
+127: Gửi
+=== feature\social\presentation\components\CommentItem.kt
+133: Phản hồi
+=== feature\social\presentation\components\PostCard.kt
+195: Thích
+217: Bình luận
