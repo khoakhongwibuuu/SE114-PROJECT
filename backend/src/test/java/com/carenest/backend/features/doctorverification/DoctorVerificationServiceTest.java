@@ -5,8 +5,10 @@ import com.carenest.backend.core.exception.ResourceNotFoundException;
 import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.repository.UserRepository;
-import com.carenest.backend.features.community.entity.CommunityGroup;
-import com.carenest.backend.features.community.repository.CommunityGroupRepository;
+import com.carenest.backend.features.community.entity.ChatGroup;
+import com.carenest.backend.features.community.entity.SocialGroup;
+import com.carenest.backend.features.community.repository.ChatGroupRepository;
+import com.carenest.backend.features.community.repository.SocialGroupRepository;
 import com.carenest.backend.features.community.repository.GroupPostRepository;
 import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
 import com.carenest.backend.features.doctorverification.dto.request.RejectDoctorVerificationRequest;
@@ -45,7 +47,10 @@ class DoctorVerificationServiceTest {
     private FamilySecurityUtil familySecurityUtil;
 
     @Mock
-    private CommunityGroupRepository communityGroupRepository;
+    private ChatGroupRepository chatGroupRepository;
+
+    @Mock
+    private SocialGroupRepository socialGroupRepository;
 
     @Mock
     private GroupPostRepository groupPostRepository;
@@ -163,12 +168,20 @@ class DoctorVerificationServiceTest {
 
         when(doctorVerificationRepository.findById(10L)).thenReturn(Optional.of(pendingVerification));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
-        when(communityGroupRepository.findFirstByCategoryIgnoreCaseAndIsPrivateFalse("Nhi khoa")).thenReturn(Optional.empty());
-        when(communityGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(1L)).thenReturn(Optional.empty());
-        when(communityGroupRepository.save(any(CommunityGroup.class))).thenAnswer(invocation -> {
-            CommunityGroup group = invocation.getArgument(0);
+        when(chatGroupRepository.findFirstByCategoryIgnoreCaseAndIsPrivateFalse("Nhi khoa")).thenReturn(Optional.empty());
+        when(chatGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(1L)).thenReturn(Optional.empty());
+        when(chatGroupRepository.save(any(ChatGroup.class))).thenAnswer(invocation -> {
+            ChatGroup group = invocation.getArgument(0);
             if (group.getId() == null) {
                 group.setId(group.isPrivate() ? 102L : 101L);
+            }
+            return group;
+        });
+        when(socialGroupRepository.findFirstByCategoryIgnoreCase("Nhi khoa")).thenReturn(Optional.empty());
+        when(socialGroupRepository.save(any(SocialGroup.class))).thenAnswer(invocation -> {
+            SocialGroup group = invocation.getArgument(0);
+            if (group.getId() == null) {
+                group.setId(103L);
             }
             return group;
         });
@@ -182,7 +195,7 @@ class DoctorVerificationServiceTest {
         assertEquals(Role.DOCTOR, testUser.getRole());
 
         verify(userRepository).save(testUser);
-        verify(communityGroupRepository, times(2)).save(any(CommunityGroup.class));
+        verify(chatGroupRepository, times(2)).save(any(ChatGroup.class));
         verify(membershipRepository, times(2)).save(any());
         verify(doctorVerificationRepository).save(pendingVerification);
     }
@@ -190,7 +203,7 @@ class DoctorVerificationServiceTest {
     @Test
     void revokeDoctorRights_shouldRemovePrivateDoctorGroupAndPosts() {
         testUser.setRole(Role.DOCTOR);
-        CommunityGroup privateGroup = CommunityGroup.builder()
+        ChatGroup privateGroup = ChatGroup.builder()
                 .name("Phòng tư vấn - BS. Test User")
                 .isPrivate(true)
                 .leadDoctor(testUser)
@@ -205,7 +218,7 @@ class DoctorVerificationServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
         when(doctorVerificationRepository.findByUserId(1L)).thenReturn(Optional.of(approvedVerification));
-        when(communityGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(1L)).thenReturn(Optional.of(privateGroup));
+        when(chatGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(1L)).thenReturn(Optional.of(privateGroup));
 
         doctorVerificationService.revokeDoctorRights(1L);
 
@@ -213,10 +226,10 @@ class DoctorVerificationServiceTest {
         assertEquals(VerificationStatus.REJECTED, approvedVerification.getStatus());
         assertEquals("Quyền bác sĩ đã bị thu hồi bởi Admin", approvedVerification.getRejectionReason());
 
-        verify(groupPostRepository).clearRepliesByCommunityGroupId(99L);
-        verify(groupPostRepository).deleteAllByCommunityGroupId(99L);
+        verify(groupPostRepository).clearRepliesByChatGroupId(99L);
+        verify(groupPostRepository).deleteAllByChatGroupId(99L);
         verify(membershipRepository).deleteAllByGroupId(99L);
-        verify(communityGroupRepository).delete(privateGroup);
+        verify(chatGroupRepository).delete(privateGroup);
     }
 
     @Test
