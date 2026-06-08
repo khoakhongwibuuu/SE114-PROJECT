@@ -30,5 +30,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object Policy : NavKey
 
 @Serializable data class ChatRoom(val id: Long, val name: String) : NavKey
+@Serializable data class FamilyChatRoom(val id: Long, val name: String, val memberCount: Int) : NavKey
 
 

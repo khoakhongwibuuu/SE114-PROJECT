@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,17 +71,18 @@ fun MainScreen(
     onNavigateToDoctorVerification: () -> Unit = {},
     onNavigateToPolicy: () -> Unit = {},
     onNavigateToMedicalRecord: (Long) -> Unit = {},
+    onNavigateToFamilyChat: (Long, String, Int) -> Unit = { _, _, _ -> },
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
     authViewModel: AuthViewModel,
     dashboardViewModel: DashboardViewModel,
     medicineViewModel: MedicineViewModel,
 ) {
-    var selectedTab by remember { mutableIntStateOf(TAB_HOME) }
-    var homeRefreshTrigger by remember { mutableIntStateOf(0) }
-    var familyRefreshTrigger by remember { mutableIntStateOf(0) }
-    var communityRefreshTrigger by remember { mutableIntStateOf(0) }
-    var profileRefreshTrigger by remember { mutableIntStateOf(0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(TAB_HOME) }
+    var homeRefreshTrigger by rememberSaveable { mutableIntStateOf(0) }
+    var familyRefreshTrigger by rememberSaveable { mutableIntStateOf(0) }
+    var communityRefreshTrigger by rememberSaveable { mutableIntStateOf(0) }
+    var profileRefreshTrigger by rememberSaveable { mutableIntStateOf(0) }
 
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
@@ -217,6 +219,9 @@ fun MainScreen(
                     onNavigateToMedicineSchedule = onNavigateToMedicineSchedule,
                     onNavigateToAddSchedule = onNavigateToAddMedicineSchedule,
                     onNavigateToOcrScanner = onNavigateToOcrScanner,
+                    onOpenFamilyChat = { family ->
+                        onNavigateToFamilyChat(family.id, family.name, family.memberCount)
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
 

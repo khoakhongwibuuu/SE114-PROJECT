@@ -462,7 +462,16 @@ fun ChatScreen(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 val errorMsg = state.error
-                if (!errorMsg.isNullOrBlank()) {
+                val hintMsg = state.connectionStatusHint
+                if (!hintMsg.isNullOrBlank()) {
+                    Text(
+                        text = hintMsg,
+                        color = Color(0xFF0F766E),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    )
+                } else if (!errorMsg.isNullOrBlank()) {
                     val isFallbackSuccess = errorMsg.contains("Đã lưu", ignoreCase = true)
                     val textColor = if (isFallbackSuccess) Color(0xFF0F766E) else Color(0xFFDC2626)
                     Text(

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,8 +32,9 @@ import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-import com.example.carenest.feature.chat.presentation.FamilyChatPane
+import com.example.carenest.feature.chat.presentation.FamilyChatDirectoryPane
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
+import com.example.carenest.feature.family.domain.model.FamilySummary
 import com.example.carenest.feature.medical.presentation.MedicineScreen
 import com.example.carenest.feature.medical.presentation.MedicineViewModel
 
@@ -51,14 +53,15 @@ fun FamilyFlowScreen(
     onNavigateToMedicineSchedule: () -> Unit = {},
     onNavigateToAddSchedule: () -> Unit = {},
     onNavigateToOcrScanner: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onOpenFamilyChat: (FamilySummary) -> Unit = {},
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
-
     val familyViewModel: FamilyViewModel = viewModel(
-        factory = FamilyViewModelFactory(application.familyRepository)
+        factory = FamilyViewModelFactory(application.familyRepository),
     )
+    val familyUiState by familyViewModel.uiState.collectAsState()
 
     var activeTab by remember { mutableStateOf(FamilyTab.MEMBERS) }
     var currentScreen by remember { mutableStateOf("picker") }
@@ -74,11 +77,14 @@ fun FamilyFlowScreen(
         }
     }
 
+    val activeFamilyId = familyUiState.activeFamily?.id ?: familyUiState.activeFamilyId
+    val activeFamilySummary = familyUiState.myFamilies.firstOrNull { it.id == activeFamilyId }
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(PageBackground)
-            .statusBarsPadding()
+            .statusBarsPadding(),
     ) {
         Row(
             modifier = Modifier
@@ -112,7 +118,7 @@ fun FamilyFlowScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .weight(1f)
+                .weight(1f),
         ) {
             when (activeTab) {
                 FamilyTab.MEMBERS -> {
@@ -122,13 +128,13 @@ fun FamilyFlowScreen(
                             onNavigateToManagement = { mode ->
                                 managementMode = mode
                                 currentScreen = "management"
-                            }
+                            },
                         )
 
                         "management" -> FamilyManagementScreen(
                             viewModel = familyViewModel,
                             mode = managementMode,
-                            onBack = { currentScreen = "picker" }
+                            onBack = { currentScreen = "picker" },
                         )
                     }
                 }
@@ -142,7 +148,15 @@ fun FamilyFlowScreen(
                     onOcrClick = onNavigateToOcrScanner,
                 )
 
-                FamilyTab.CHAT -> FamilyChatPane()
+                FamilyTab.CHAT -> FamilyChatDirectoryPane(
+                    families = familyUiState.myFamilies,
+                    activeFamilyId = activeFamilyId,
+                    onOpenMembersTab = { activeTab = FamilyTab.MEMBERS },
+                    onSelectFamily = { family ->
+                        familyViewModel.selectFamily(family.id)
+                        onOpenFamilyChat(family)
+                    },
+                )
             }
         }
     }

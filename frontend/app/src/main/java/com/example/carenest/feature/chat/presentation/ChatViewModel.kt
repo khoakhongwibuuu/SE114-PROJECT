@@ -23,6 +23,7 @@ data class ChatUiState(
     val inputText: String = "",
     val isConnected: Boolean = false,
     val error: String? = null,
+    val connectionStatusHint: String? = null,
     val slowCountdown: Int = 0,
     val isSending: Boolean = false,
 )
@@ -33,6 +34,7 @@ class ChatViewModel(
 ) : ViewModel() {
     private var reconnectJob: Job? = null
     private var countdownJob: Job? = null
+    private var reconnectAttempt = 0
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
@@ -162,20 +164,41 @@ class ChatViewModel(
             repository.connect(groupId) { event ->
                 when (event) {
                     ChatRepositoryEvent.Connected -> {
+                        reconnectAttempt = 0
                         _uiState.update { it.copy(isConnected = true, error = null) }
                     }
 
                     is ChatRepositoryEvent.Disconnected -> {
-                        _uiState.update { it.copy(isConnected = false, error = event.message) }
+                        val msg = event.message
+                        val isReconnecting = msg.contains("Đang kết nối lại", ignoreCase = true)
+                        if (isReconnecting) {
+                            _uiState.update {
+                                it.copy(
+                                    isConnected = false,
+                                    connectionStatusHint = msg,
+                                )
+                            }
+                        } else {
+                            _uiState.update {
+                                it.copy(
+                                    isConnected = false,
+                                    error = msg,
+                                    connectionStatusHint = null,
+                                )
+                            }
+                        }
                         reconnect()
                     }
 
                     is ChatRepositoryEvent.MessageReceived -> {
                         _uiState.update { current ->
-                            if (current.messages.any { it.id == event.message.id }) {
+                            val withoutOptimistic = current.messages.filterNot {
+                                it.isMe && it.text == event.message.text && it.id.startsWith("local-")
+                            }
+                            if (withoutOptimistic.any { it.id == event.message.id }) {
                                 current
                             } else {
-                                current.copy(messages = listOf(event.message) + current.messages)
+                                current.copy(messages = listOf(event.message) + withoutOptimistic)
                             }
                         }
                     }
@@ -186,8 +209,19 @@ class ChatViewModel(
 
     private fun reconnect() {
         if (reconnectJob?.isActive == true) return
+        if (reconnectAttempt >= 5) {
+            _uiState.update {
+                it.copy(
+                    isConnected = false,
+                    connectionStatusHint = null,
+                    error = "Không thể kết nối lại sau nhiều lần thử. Vui lòng kiểm tra mạng."
+                )
+            }
+            return
+        }
+        reconnectAttempt++
         reconnectJob = viewModelScope.launch {
-            delay(2500)
+            delay(2000L * reconnectAttempt)
             connect()
         }
     }
