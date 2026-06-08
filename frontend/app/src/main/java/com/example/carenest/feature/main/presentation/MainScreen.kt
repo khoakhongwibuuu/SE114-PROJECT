@@ -147,36 +147,36 @@ fun MainScreen(
                 NavigationBarItem(
                     selected = selectedTab == TAB_HOME,
                     onClick = { handleTabSelection(TAB_HOME) },
-                    icon = { CareNestIcon(name = "home", contentDescription = "Trang ch\u1ee7") },
-                    label = { NavLabel("Trang ch\u1ee7") },
+                    icon = { CareNestIcon(name = "home", contentDescription = "Trang chủ") },
+                    label = { NavLabel("Trang chủ") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == TAB_FAMILY,
                     onClick = { handleTabSelection(TAB_FAMILY) },
-                    icon = { CareNestIcon(name = "group", contentDescription = "Gia \u0111\u00ecnh") },
-                    label = { NavLabel("Gia \u0111\u00ecnh") },
+                    icon = { CareNestIcon(name = "group", contentDescription = "Gia đình") },
+                    label = { NavLabel("Gia đình") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == TAB_COMMUNITY,
                     onClick = { handleTabSelection(TAB_COMMUNITY) },
-                    icon = { CareNestIcon(name = "globe", contentDescription = "C\u1ed9ng \u0111\u1ed3ng") },
-                    label = { NavLabel("C\u1ed9ng \u0111\u1ed3ng") },
+                    icon = { CareNestIcon(name = "globe", contentDescription = "Cộng đồng") },
+                    label = { NavLabel("Cộng đồng") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == TAB_CHAT,
                     onClick = { handleTabSelection(TAB_CHAT) },
-                    icon = { CareNestIcon(name = "chat-processing", contentDescription = "Tin nh\u1eafn") },
-                    label = { NavLabel("Tin nh\u1eafn") },
+                    icon = { CareNestIcon(name = "chat-processing", contentDescription = "Tin nhắn") },
+                    label = { NavLabel("Tin nhắn") },
                     colors = navColors(),
                 )
                 NavigationBarItem(
                     selected = selectedTab == TAB_PROFILE,
                     onClick = { handleTabSelection(TAB_PROFILE) },
-                    icon = { CareNestIcon(name = "person", contentDescription = "T\u00f4i") },
-                    label = { NavLabel("T\u00f4i") },
+                    icon = { CareNestIcon(name = "person", contentDescription = "Tôi") },
+                    label = { NavLabel("Tôi") },
                     colors = navColors(),
                 )
             }
