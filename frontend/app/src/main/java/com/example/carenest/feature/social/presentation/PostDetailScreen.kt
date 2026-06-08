@@ -36,7 +36,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,6 +55,7 @@ import com.example.carenest.feature.social.domain.model.Post
 import com.example.carenest.feature.social.presentation.components.CommentInputBar
 import com.example.carenest.feature.social.presentation.components.CommentItem
 import com.example.carenest.feature.social.presentation.components.PostCard
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,7 +71,6 @@ fun PostDetailScreen(
 
     var inputText by remember { mutableStateOf("") }
     var replyingToComment by remember { mutableStateOf<Comment?>(null) }
-
     var localLikeCount by remember(post.id) { mutableStateOf(post.likeCount) }
     var localIsLiked by remember(post.id) { mutableStateOf(post.likedByMe) }
     var localCommentCount by remember(post.id) { mutableStateOf(post.commentCount) }
@@ -88,11 +87,13 @@ fun PostDetailScreen(
                 comments.refresh()
                 viewModel.clearMutationState()
             }
+
             is CommentMutationState.Error -> {
                 val errMsg = (mutationState as CommentMutationState.Error).message
                 Toast.makeText(context, errMsg, Toast.LENGTH_LONG).show()
                 viewModel.clearMutationState()
             }
+
             else -> Unit
         }
     }
@@ -117,9 +118,7 @@ fun PostDetailScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
         bottomBar = {
@@ -163,8 +162,7 @@ fun PostDetailScreen(
                             scope.launch {
                                 val wasLiked = localIsLiked
                                 val originalLikeCount = localLikeCount
-                                
-                                // 1. Apply optimistic UI updates immediately
+
                                 if (localIsLiked) {
                                     localLikeCount = (localLikeCount - 1).coerceAtLeast(0)
                                     localIsLiked = false
@@ -172,20 +170,20 @@ fun PostDetailScreen(
                                     localLikeCount += 1
                                     localIsLiked = true
                                 }
-                                
-                                // 2. Perform network request
+
                                 val result = viewModel.reactToPost()
                                 if (result.isFailure) {
-                                    // 3. Rollback on failure
                                     localIsLiked = wasLiked
                                     localLikeCount = originalLikeCount
-                                    Toast.makeText(context, "Không thể cập nhật lượt thích", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Không thể cập nhật lượt thích",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
                         },
-                        onCommentClick = {
-                            // Intentionally reserved for future focus behavior.
-                        },
+                        onCommentClick = {},
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }

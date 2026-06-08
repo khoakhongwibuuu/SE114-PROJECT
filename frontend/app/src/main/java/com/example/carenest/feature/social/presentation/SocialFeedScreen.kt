@@ -1,5 +1,6 @@
 package com.example.carenest.feature.social.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,14 +26,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
@@ -45,6 +44,7 @@ import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
 import com.example.carenest.feature.social.domain.model.Post
 import com.example.carenest.feature.social.presentation.components.PostCard
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,9 +78,7 @@ fun SocialFeedScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
         containerColor = PageBackground
@@ -100,15 +98,13 @@ fun SocialFeedScreen(
                             .background(PageBackground),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(
-                            color = PrimaryBlue,
-                            strokeWidth = 3.dp
-                        )
+                        CircularProgressIndicator(color = PrimaryBlue, strokeWidth = 3.dp)
                     }
                 }
 
                 refreshState is LoadState.Error -> {
-                    val errorMessage = refreshState.error.localizedMessage ?: "Đã xảy ra lỗi khi tải bảng tin."
+                    val errorMessage = refreshState.error.localizedMessage
+                        ?: "Đã xảy ra lỗi khi tải bảng tin."
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -179,7 +175,11 @@ fun SocialFeedScreen(
                                                 if (result.isSuccess) {
                                                     posts.refresh()
                                                 } else {
-                                                    Toast.makeText(context, "Không thể cập nhật lượt thích", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Không thể cập nhật lượt thích",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
                                             }
                                         },

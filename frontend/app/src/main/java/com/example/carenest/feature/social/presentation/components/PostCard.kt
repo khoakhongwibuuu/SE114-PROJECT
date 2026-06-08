@@ -33,13 +33,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.CardBackground
+import com.example.carenest.core.presentation.theme.CareNestTextStyles
+import com.example.carenest.core.presentation.theme.Error as ThemeError
 import com.example.carenest.core.presentation.theme.OutlineVariant
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
-import com.example.carenest.core.presentation.theme.Error as ThemeError
 import com.example.carenest.feature.social.domain.model.AuthorRole
 import com.example.carenest.feature.social.domain.model.Post
 

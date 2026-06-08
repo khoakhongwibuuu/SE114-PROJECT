@@ -17,20 +17,20 @@ import java.util.List;
 @NoArgsConstructor
 public class CreateMedicationRequest {
 
-    @NotBlank(message = "TÃªn thuá»‘c khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Tên thuốc không được để trống")
     private String medicineName;
 
     private String dosage;
 
-    @NotNull(message = "Táº§n suáº¥t uá»‘ng thuá»‘c khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotNull(message = "Tần suất uống thuốc không được để trống")
     private MedicationFrequency frequency;
 
     private Integer timesPerDay;
 
-    // Danh sÃ¡ch giá» uá»‘ng thuá»‘c, VD: ["08:00", "13:00", "20:00"]
+    // Danh sách giờ uống thuốc, VD: ["08:00", "13:00", "20:00"]
     private List<String> timeSlots;
 
-    @NotNull(message = "NgÃ y báº¯t Ä‘áº§u khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotNull(message = "Ngày bắt đầu không được để trống")
     private LocalDate startDate;
 
     private LocalDate endDate;

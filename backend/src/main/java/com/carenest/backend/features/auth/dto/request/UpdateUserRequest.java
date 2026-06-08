@@ -1,12 +1,13 @@
 package com.carenest.backend.features.auth.dto.request;
 
-import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
 import java.time.LocalDate;
 
 @Data
 public class UpdateUserRequest {
-    @NotBlank(message = "Vui lÃ²ng nháº­p há» vÃ  tÃªn")
+    @NotBlank(message = "Vui lòng nhập họ và tên")
     private String fullName;
 
     private String phone;

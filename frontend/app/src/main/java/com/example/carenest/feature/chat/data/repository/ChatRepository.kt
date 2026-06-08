@@ -3,10 +3,10 @@ package com.example.carenest.feature.chat.data.repository
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.chat.data.remote.ChatSocketEvent
 import com.example.carenest.feature.chat.data.remote.ChatWebSocketClient
+import com.example.carenest.feature.chat.domain.model.ChatGroupPreview
 import com.example.carenest.feature.chat.domain.model.ChatMessage
 import com.example.carenest.feature.community.data.remote.CommunityApi
 import com.example.carenest.feature.community.data.remote.ReportPostRequest
-import com.example.carenest.feature.chat.domain.model.ChatGroupPreview
 import com.example.carenest.feature.community.domain.model.CreateGroupPostRequest
 import com.example.carenest.feature.community.domain.model.GroupPost
 import com.google.gson.Gson
@@ -40,7 +40,8 @@ class ChatRepository(
         if (!response.isSuccessful) {
             throw IllegalStateException(response.body()?.message ?: "Không thể tải thông tin nhóm")
         }
-        return response.body()?.data ?: throw IllegalStateException("Không nhận được thông tin nhóm")
+        return response.body()?.data
+            ?: throw IllegalStateException("Không nhận được thông tin nhóm")
     }
 
     suspend fun sendViaRest(groupId: Long, content: String): ChatMessage {
@@ -49,7 +50,8 @@ class ChatRepository(
             throw IllegalStateException(response.body()?.message ?: "Không thể gửi tin nhắn")
         }
 
-        val post = response.body()?.data ?: throw IllegalStateException("Không nhận được tin nhắn mới")
+        val post = response.body()?.data
+            ?: throw IllegalStateException("Không nhận được tin nhắn mới")
         return post.toChatMessage(secureSessionManager.getUserId())
     }
 

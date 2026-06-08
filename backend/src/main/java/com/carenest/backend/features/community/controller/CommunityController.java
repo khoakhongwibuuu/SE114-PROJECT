@@ -60,13 +60,13 @@ public class CommunityController {
 
     @PostMapping("/{id}/join")
     public ApiResponse<ChatGroupPreviewResponse> joinChatGroup(@PathVariable("id") Long id) {
-        return ApiResponse.success("ÄÃ£ tham gia nhÃ³m", communityKnowledgeService.joinChatGroup(id));
+        return ApiResponse.success("Đã tham gia nhóm", communityKnowledgeService.joinChatGroup(id));
     }
 
     @PostMapping("/{id}/leave")
     public ApiResponse<Void> leaveChatGroup(@PathVariable("id") Long id) {
         communityKnowledgeService.leaveChatGroup(id);
-        return ApiResponse.success("ÄÃ£ rá»i nhÃ³m", null);
+        return ApiResponse.success("Đã rời nhóm", null);
     }
 
     @GetMapping("/{id}/posts")
@@ -81,7 +81,7 @@ public class CommunityController {
     public ApiResponse<GroupPostResponse> createGroupPost(
             @PathVariable("id") Long id,
             @Valid @RequestBody CreateGroupPostRequest request) {
-        return ApiResponse.success("ÄÃ£ gá»­i tin nháº¯n vÃ o nhÃ³m", communityKnowledgeService.createGroupPost(id, request));
+        return ApiResponse.success("Đã gửi tin nhắn vào nhóm", communityKnowledgeService.createGroupPost(id, request));
     }
 
     @DeleteMapping("/{id}/members/{targetUserId}")
@@ -89,6 +89,6 @@ public class CommunityController {
             @PathVariable("id") Long id,
             @PathVariable("targetUserId") Long targetUserId) {
         communityKnowledgeService.kickMember(id, targetUserId);
-        return ApiResponse.success("ÄÃ£ má»i thÃ nh viÃªn ra khá»i nhÃ³m", null);
+        return ApiResponse.success("Đã mời thành viên ra khỏi nhóm", null);
     }
 }

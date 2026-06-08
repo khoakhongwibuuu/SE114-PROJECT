@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,8 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.CardBackground
+import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
@@ -84,18 +84,21 @@ fun CommunityScreen(
                 refreshTrigger = refreshTrigger,
                 onOpenGroup = onOpenGroup
             )
-            CommunityTopTab.GROUPS -> SocialGroupsPane(onOpenGroup = { socialGroup ->
-                onOpenGroup(
-                    ChatGroup(
-                        id = socialGroup.id,
-                        name = socialGroup.name,
-                        description = socialGroup.description ?: "",
-                        category = socialGroup.category ?: "",
-                        tags = "",
-                        private = false
+
+            CommunityTopTab.GROUPS -> SocialGroupsPane(
+                onOpenGroup = { socialGroup ->
+                    onOpenGroup(
+                        ChatGroup(
+                            id = socialGroup.id,
+                            name = socialGroup.name,
+                            description = socialGroup.description ?: "",
+                            category = socialGroup.category ?: "",
+                            tags = "",
+                            private = false,
+                        )
                     )
-                )
-            })
+                }
+            )
         }
     }
 }

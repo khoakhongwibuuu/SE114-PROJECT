@@ -130,7 +130,7 @@ fun CommentItem(
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = "Ph\u1ea3n h\u1ed3i",
+                    text = "Phản hồi",
                     style = CareNestTextStyles.labelSm,
                     color = PrimaryBlue,
                     modifier = Modifier.clickable { onReplyClick(comment) }

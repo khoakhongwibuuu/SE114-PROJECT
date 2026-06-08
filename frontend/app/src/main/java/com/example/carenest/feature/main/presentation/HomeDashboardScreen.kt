@@ -343,9 +343,9 @@ fun MemberPill(name: String, isActive: Boolean, onClick: () -> Unit) {
 @Composable
 fun ShortcutGrid(onMed: () -> Unit, onAppt: () -> Unit, onVac: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.md), modifier = Modifier.fillMaxWidth()) {
-        ShortcutCard("L\u1ECBch thu\u1ED1c", "pill", 0xFF0EA5E9, 0xFFE0F2FE, Modifier.weight(1f), onMed)
-        ShortcutCard("L\u1ECBch h\u1EB9n", "calendar_month", 0xFFA855F7, 0xFFF3E8FF, Modifier.weight(1f), onAppt)
-        ShortcutCard("Ti\u00EAm ch\u1EE7ng", "syringe", 0xFF0097A7, 0xFFE0F7FA, Modifier.weight(1f), onVac)
+        ShortcutCard("Lịch thuốc", "pill", 0xFF0EA5E9, 0xFFE0F2FE, Modifier.weight(1f), onMed)
+        ShortcutCard("Lịch hẹn", "calendar_month", 0xFFA855F7, 0xFFF3E8FF, Modifier.weight(1f), onAppt)
+        ShortcutCard("Tiêm chủng", "syringe", 0xFF0097A7, 0xFFE0F7FA, Modifier.weight(1f), onVac)
     }
 }
 

@@ -24,9 +24,7 @@ fun FamilyChatPane() {
             .background(CardBackground),
         contentAlignment = Alignment.Center
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
                 Box(
                     modifier = Modifier
@@ -35,7 +33,7 @@ fun FamilyChatPane() {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Bạn chưa có cuộc trò chuyện cá nhân nào.",
+                        text = "Bạn chưa có cuộc trò chuyện gia đình nào.",
                         style = CareNestTextStyles.bodyMd,
                         color = TextSecondary,
                         textAlign = TextAlign.Center

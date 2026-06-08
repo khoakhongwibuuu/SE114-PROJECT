@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class ReportPostRequest {
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p lÃ½ do bÃ¡o cÃ¡o")
-    @Size(max = 500, message = "LÃ½ do bÃ¡o cÃ¡o khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 500 kÃ½ tá»±")
+    @NotBlank(message = "Vui lòng nhập lý do báo cáo")
+    @Size(max = 500, message = "Lý do báo cáo không được vượt quá 500 ký tự")
     private String reason;
 }

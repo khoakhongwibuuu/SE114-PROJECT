@@ -216,7 +216,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .orElseThrow(() -> new ResourceNotFoundException("UserGroupMembership", "groupId", groupId.toString()));
 
         if (membership.getGroupRole() == GroupRole.HOST && currentUser.getRole() != Role.ADMIN) {
-            throw new BadRequestException("Host khÃ´ng thá»ƒ rá»i phÃ²ng tÆ° váº¥n Ä‘ang quáº£n lÃ½");
+            throw new BadRequestException("Host không thể rời phòng tư vấn đang quản lý");
         }
 
         membershipRepository.delete(membership);
@@ -249,7 +249,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                     .orElseThrow(() -> new ResourceNotFoundException("GroupPost", request.getReplyToPostId()));
             if (replyToPost.getChatGroup() == null
                     || !groupId.equals(replyToPost.getChatGroup().getId())) {
-                throw new BadRequestException("Tin nháº¯n Ä‘Æ°á»£c tráº£ lá»i khÃ´ng thuá»™c há»™i nhÃ³m nÃ y");
+                throw new BadRequestException("Tin nhắn được trả lời không thuộc hội nhóm này");
             }
         }
 
@@ -298,15 +298,15 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         );
 
         if (!isSystemAdmin && !isHostOfThisGroup) {
-            throw new AccessDeniedException("Báº¡n khÃ´ng cÃ³ quyá»n má»i thÃ nh viÃªn ra khá»i nhÃ³m nÃ y");
+            throw new AccessDeniedException("Bạn không có quyền mời thành viên ra khỏi nhóm này");
         }
 
         if (currentUser.getId().equals(targetUserId)) {
-            throw new BadRequestException("Báº¡n khÃ´ng thá»ƒ tá»± má»i chÃ­nh mÃ¬nh ra khá»i nhÃ³m");
+            throw new BadRequestException("Bạn không thể tự mời chính mình ra khỏi nhóm");
         }
 
         if (targetMembership.getGroupRole() == GroupRole.HOST && !isSystemAdmin) {
-            throw new AccessDeniedException("Chá»‰ Admin há»‡ thá»‘ng má»›i cÃ³ quyá»n gá»¡ Host khá»i nhÃ³m");
+            throw new AccessDeniedException("Chỉ Admin hệ thống mới có quyền gỡ Host khỏi nhóm");
         }
 
         membershipRepository.delete(targetMembership);
@@ -324,7 +324,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
             long elapsed = now.getEpochSecond() - lastSentAt.getEpochSecond();
             if (elapsed < USER_SLOW_MODE_SECONDS) {
                 long remaining = USER_SLOW_MODE_SECONDS - elapsed;
-                throw new BadRequestException("Vui lÃ²ng chá» " + remaining + " giÃ¢y trÆ°á»›c khi gá»­i tin nháº¯n tiáº¿p theo");
+                throw new BadRequestException("Vui lòng chờ " + remaining + " giây trước khi gửi tin nhắn tiếp theo");
             }
         }
         lastUserPostAt.put(key, now);
@@ -339,7 +339,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         if (currentUser.getRole() == Role.ADMIN || membershipRepository.existsByGroupIdAndUserId(groupId, currentUser.getId())) {
             return;
         }
-        throw new AccessDeniedException("Vui lÃ²ng tham gia nhÃ³m trÆ°á»›c khi xem hoáº·c gá»­i tin nháº¯n");
+        throw new AccessDeniedException("Vui lòng tham gia nhóm trước khi xem hoặc gửi tin nhắn");
     }
 
     private boolean isLeadDoctor(ChatGroup group, User user) {
@@ -405,7 +405,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Vui lÃ²ng Ä‘Äƒng nháº­p");
+            throw new UnauthorizedException("Vui lòng đăng nhập");
         }
         Object principal = authentication.getPrincipal();
         if (principal instanceof User user) {
@@ -413,10 +413,10 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         }
         String email = authentication.getName();
         if (email == null || "anonymousUser".equals(email)) {
-            throw new UnauthorizedException("Vui lÃ²ng Ä‘Äƒng nháº­p");
+            throw new UnauthorizedException("Vui lòng đăng nhập");
         }
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Vui lÃ²ng Ä‘Äƒng nháº­p"));
+                .orElseThrow(() -> new UnauthorizedException("Vui lòng đăng nhập"));
     }
 
     private ArticleCommentResponse toArticleCommentResponse(ArticleComment comment) {
@@ -462,7 +462,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .leadDoctorName(leadDoctor != null ? leadDoctor.getFullName() : null)
                 .memberCount(membershipRepository.countByGroupId(group.getId()))
                 .joined(currentUserId != null && membershipRepository.existsByGroupIdAndUserId(group.getId(), currentUserId))
-                .latestMessage(latestPost != null ? latestPost.getContent() : "NhÃ³m vá»«a Ä‘Æ°á»£c táº¡o")
+                .latestMessage(latestPost != null ? latestPost.getContent() : "Nhóm vừa được tạo")
                 .latestActivityAt(latestPost != null ? latestPost.getCreatedAt() : group.getCreatedAt())
                 .build();
     }
@@ -482,7 +482,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .memberCount(membershipRepository.countByGroupId(group.getId()))
                 .joined(membership != null || currentUser.getRole() == Role.ADMIN)
                 .myRole(membership != null ? membership.getGroupRole() : null)
-                .rules("Trao Ä‘á»•i vÄƒn minh, khÃ´ng tá»± Ã½ cháº©n Ä‘oÃ¡n hoáº·c thay tháº¿ chá»‰ Ä‘á»‹nh cá»§a bÃ¡c sÄ©. Khi cÃ³ dáº¥u hiá»‡u nguy hiá»ƒm, hÃ£y liÃªn há»‡ cÆ¡ sá»Ÿ y táº¿ gáº§n nháº¥t.")
+                .rules("Trao đổi văn minh, không tự ý chẩn đoán hoặc thay thế chỉ định của bác sĩ. Khi có dấu hiệu nguy hiểm, hãy liên hệ cơ sở y tế gần nhất.")
                 .build();
     }
 
@@ -503,3 +503,6 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .build();
     }
 }
+
+
+

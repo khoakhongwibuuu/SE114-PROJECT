@@ -1,8 +1,8 @@
 package com.carenest.backend.features.auth.service.impl;
 
+import com.carenest.backend.config.security.JwtService;
 import com.carenest.backend.core.exception.DuplicateResourceException;
 import com.carenest.backend.core.exception.ResourceNotFoundException;
-import com.carenest.backend.config.security.JwtService;
 import com.carenest.backend.features.auth.dto.request.LoginRequest;
 import com.carenest.backend.features.auth.dto.request.RegisterRequest;
 import com.carenest.backend.features.auth.dto.response.AuthResponse;
@@ -59,8 +59,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         String email = request.getEmail() != null ? request.getEmail().trim() : null;
-        
-        // Authenticate credentials against SecurityContext
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         email,
@@ -85,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
     public UserInfoResponse getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         return userMapper.toUserInfoResponse(user);
     }
 
@@ -94,7 +93,7 @@ public class AuthServiceImpl implements AuthService {
         String userEmail = jwtService.extractUsername(refreshToken);
         if (userEmail != null) {
             User user = userRepository.findByEmail(userEmail)
-                    .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
             if (jwtService.isTokenValid(refreshToken, user)) {
                 var accessToken = jwtService.generateToken(user);
                 return AuthResponse.builder()
@@ -104,14 +103,16 @@ public class AuthServiceImpl implements AuthService {
                         .build();
             }
         }
-        throw new IllegalArgumentException("Refresh token khÃ´ng há»£p lá»‡");
+        throw new IllegalArgumentException("Refresh token không hợp lệ");
     }
+
     @Override
     @Transactional
-    public UserInfoResponse updateCurrentUser(com.carenest.backend.features.auth.dto.request.UpdateUserRequest request) {
+    public UserInfoResponse updateCurrentUser(
+            com.carenest.backend.features.auth.dto.request.UpdateUserRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         user.setFullName(request.getFullName());
         user.setPhone(request.getPhone());

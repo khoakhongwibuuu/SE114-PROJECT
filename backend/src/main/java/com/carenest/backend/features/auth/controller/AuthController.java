@@ -6,15 +6,20 @@ import com.carenest.backend.features.auth.dto.request.RegisterRequest;
 import com.carenest.backend.features.auth.dto.response.AuthResponse;
 import com.carenest.backend.features.auth.dto.response.UserInfoResponse;
 import com.carenest.backend.features.auth.service.AuthService;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Refill;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,11 +41,11 @@ public class AuthController {
             HttpServletRequest httpRequest) {
         if (!resolveBucket(httpRequest).tryConsume(1)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(ApiResponse.error("QuÃ¡ nhiá»u yÃªu cáº§u. Vui lÃ²ng thá»­ láº¡i sau."));
+                    .body(ApiResponse.error("Quá nhiều yêu cầu. Vui lòng thử lại sau."));
         }
         AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("ÄÄƒng kÃ½ tÃ i khoáº£n thÃ nh cÃ´ng", response));
+                .body(ApiResponse.success("Đăng ký tài khoản thành công", response));
     }
 
     @PostMapping("/login")
@@ -49,10 +54,10 @@ public class AuthController {
             HttpServletRequest httpRequest) {
         if (!resolveBucket(httpRequest).tryConsume(1)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(ApiResponse.error("QuÃ¡ nhiá»u yÃªu cáº§u. Vui lÃ²ng thá»­ láº¡i sau."));
+                    .body(ApiResponse.error("Quá nhiều yêu cầu. Vui lòng thử lại sau."));
         }
         AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.success("ÄÄƒng nháº­p thÃ nh cÃ´ng", response));
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
     }
 
     @GetMapping("/me")
@@ -64,15 +69,17 @@ public class AuthController {
 
     @PutMapping("/me")
     @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
-    public ResponseEntity<ApiResponse<UserInfoResponse>> updateCurrentUser(@RequestBody @Valid com.carenest.backend.features.auth.dto.request.UpdateUserRequest request) {
+    public ResponseEntity<ApiResponse<UserInfoResponse>> updateCurrentUser(
+            @RequestBody @Valid com.carenest.backend.features.auth.dto.request.UpdateUserRequest request) {
         UserInfoResponse response = authService.updateCurrentUser(request);
-        return ResponseEntity.ok(ApiResponse.success("Cáº­p nháº­t thÃ´ng tin tÃ i khoáº£n thÃ nh cÃ´ng", response));
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật thông tin tài khoản thành công", response));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@RequestBody @Valid com.carenest.backend.features.auth.dto.request.RefreshTokenRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(
+            @RequestBody @Valid com.carenest.backend.features.auth.dto.request.RefreshTokenRequest request) {
         AuthResponse response = authService.refreshToken(request.getRefreshToken());
-        return ResponseEntity.ok(ApiResponse.success("LÃ m má»›i phiÃªn Ä‘Äƒng nháº­p thÃ nh cÃ´ng", response));
+        return ResponseEntity.ok(ApiResponse.success("Làm mới phiên đăng nhập thành công", response));
     }
 
     private Bucket resolveBucket(HttpServletRequest request) {

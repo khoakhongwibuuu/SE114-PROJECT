@@ -7,16 +7,16 @@ import lombok.Data;
 @Data
 public class CreateArticleRequest {
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p tiÃªu Ä‘á»")
-    @Size(max = 200, message = "TiÃªu Ä‘á» khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 200 kÃ½ tá»±")
+    @NotBlank(message = "Vui lòng nhập tiêu đề")
+    @Size(max = 200, message = "Tiêu đề không được vượt quá 200 ký tự")
     private String title;
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p ná»™i dung")
+    @NotBlank(message = "Vui lòng nhập nội dung")
     private String content;
 
-    @Size(max = 500, message = "Tháº» khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 500 kÃ½ tá»±")
+    @Size(max = 500, message = "Thẻ không được vượt quá 500 ký tự")
     private String tags;
 
-    @Size(max = 1000, message = "ÄÆ°á»ng dáº«n áº£nh khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 1000 kÃ½ tá»±")
+    @Size(max = 1000, message = "Đường dẫn ảnh không được vượt quá 1000 ký tự")
     private String imageUrl;
 }
