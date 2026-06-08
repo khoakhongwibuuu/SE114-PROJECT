@@ -194,11 +194,15 @@ fun MainScreen(
                     refreshTrigger = homeRefreshTrigger,
                     onNavigateToMedicine = onNavigateToMedicineSchedule,
                     onNavigateToAppointment = {
-                        val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
+                        val profileId = currentProfileId
+                            ?: application.secureSessionManager.getProfileId()
+                            ?: 0L
                         onNavigateToAppointments(profileId)
                     },
                     onNavigateToVaccine = {
-                        val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
+                        val profileId = currentProfileId
+                            ?: application.secureSessionManager.getProfileId()
+                            ?: 0L
                         onNavigateToVaccinations(profileId)
                     },
                     onNavigateToNotifications = onNavigateToNotifications,
@@ -225,7 +229,9 @@ fun MainScreen(
                 TAB_CHAT -> ChatHubScreen(
                     aiChatViewModel = aiChatViewModel,
                     onNavigateToAppointments = {
-                        val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
+                        val profileId = currentProfileId
+                            ?: application.secureSessionManager.getProfileId()
+                            ?: 0L
                         onNavigateToAppointments(profileId)
                     }
                 )
@@ -235,7 +241,9 @@ fun MainScreen(
                     refreshTrigger = profileRefreshTrigger,
                     onLogout = onLogout,
                     onNavigateToMedicalRecord = {
-                        val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
+                        val profileId = currentProfileId
+                            ?: application.secureSessionManager.getProfileId()
+                            ?: 0L
                         onNavigateToMedicalRecord(profileId)
                     },
                     onNavigateToDoctorVerification = onNavigateToDoctorVerification,

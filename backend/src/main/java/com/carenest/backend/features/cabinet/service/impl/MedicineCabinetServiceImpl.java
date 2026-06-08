@@ -44,15 +44,14 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
         Family family = familyRepository.findById(request.getFamilyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Family", "id", request.getFamilyId().toString()));
 
-        // Check if cabinet already exists for family
         Optional<MedicineCabinet> existing = cabinetRepository.findByFamilyId(request.getFamilyId());
         if (existing.isPresent()) {
-            throw new IllegalArgumentException("Gia Ä‘Ã¬nh nÃ y Ä‘Ã£ cÃ³ tá»§ thuá»‘c");
+            throw new IllegalArgumentException("Gia đình này đã có tủ thuốc");
         }
 
         MedicineCabinet cabinet = MedicineCabinet.builder()
                 .family(family)
-                .name(request.getName() != null ? request.getName() : "Tá»§ thuá»‘c gia Ä‘Ã¬nh")
+                .name(request.getName() != null ? request.getName() : "Tủ thuốc gia đình")
                 .build();
 
         MedicineCabinet saved = cabinetRepository.save(cabinet);
@@ -86,8 +85,8 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
                 .orElseThrow(() -> new ResourceNotFoundException("MedicineCabinet", "id", cabinetId.toString()));
         assertCabinetAccess(cabinet);
 
-        // Check if medicine with same name already exists in cabinet
-        Optional<CabinetMedicine> existing = medicineRepository.findByCabinetIdAndMedicineNameIgnoreCase(cabinetId, request.getMedicineName());
+        Optional<CabinetMedicine> existing = medicineRepository
+                .findByCabinetIdAndMedicineNameIgnoreCase(cabinetId, request.getMedicineName());
 
         CabinetMedicine medicine;
         if (existing.isPresent()) {

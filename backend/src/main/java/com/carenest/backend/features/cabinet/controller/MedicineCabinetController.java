@@ -10,7 +10,16 @@ import com.carenest.backend.features.cabinet.service.MedicineCabinetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -26,13 +35,13 @@ public class MedicineCabinetController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<MedicineCabinetResponse> createCabinet(@Valid @RequestBody CabinetCreateRequest request) {
         MedicineCabinetResponse response = medicineCabinetService.createCabinet(request);
-        return ApiResponse.success("Táº¡o tá»§ thuá»‘c thÃ nh cÃ´ng", response);
+        return ApiResponse.success("Tạo tủ thuốc thành công", response);
     }
 
     @GetMapping("/families/{familyId}/cabinets")
     public ApiResponse<MedicineCabinetResponse> getFamilyCabinet(@PathVariable("familyId") Long familyId) {
         MedicineCabinetResponse response = medicineCabinetService.getFamilyCabinet(familyId);
-        return ApiResponse.success("Láº¥y tá»§ thuá»‘c gia Ä‘Ã¬nh thÃ nh cÃ´ng", response);
+        return ApiResponse.success("Lấy tủ thuốc gia đình thành công", response);
     }
 
     @PostMapping("/cabinets/{id}/medicines")
@@ -41,7 +50,7 @@ public class MedicineCabinetController {
             @PathVariable("id") Long id,
             @Valid @RequestBody CabinetMedicineRequest request) {
         CabinetMedicineResponse response = medicineCabinetService.addMedicine(id, request);
-        return ApiResponse.success("ÄÃ£ thÃªm thuá»‘c vÃ o tá»§ thuá»‘c", response);
+        return ApiResponse.success("Đã thêm thuốc vào tủ thuốc", response);
     }
 
     @PutMapping("/cabinets/{id}/medicines/{medicineId}")
@@ -50,7 +59,7 @@ public class MedicineCabinetController {
             @PathVariable("medicineId") Long medicineId,
             @Valid @RequestBody CabinetMedicineUpdateRequest request) {
         CabinetMedicineResponse response = medicineCabinetService.updateMedicine(id, medicineId, request);
-        return ApiResponse.success("Cáº­p nháº­t thuá»‘c thÃ nh cÃ´ng", response);
+        return ApiResponse.success("Cập nhật thuốc thành công", response);
     }
 
     @DeleteMapping("/cabinets/{id}/medicines/{medicineId}")
@@ -58,7 +67,7 @@ public class MedicineCabinetController {
             @PathVariable("id") Long id,
             @PathVariable("medicineId") Long medicineId) {
         medicineCabinetService.removeMedicine(id, medicineId);
-        return ApiResponse.success("ÄÃ£ xÃ³a thuá»‘c khá»i tá»§ thuá»‘c", null);
+        return ApiResponse.success("Đã xóa thuốc khỏi tủ thuốc", null);
     }
 
     @GetMapping("/cabinets/{id}/medicines")
@@ -66,6 +75,6 @@ public class MedicineCabinetController {
             @PathVariable("id") Long id,
             @RequestParam(required = false, defaultValue = "all") String status) {
         List<CabinetMedicineResponse> responses = medicineCabinetService.getMedicines(id, status);
-        return ApiResponse.success("Láº¥y danh sÃ¡ch thuá»‘c thÃ nh cÃ´ng", responses);
+        return ApiResponse.success("Lấy danh sách thuốc thành công", responses);
     }
 }

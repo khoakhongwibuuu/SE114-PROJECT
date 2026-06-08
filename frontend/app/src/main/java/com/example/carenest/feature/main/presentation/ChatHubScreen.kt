@@ -1,7 +1,5 @@
 package com.example.carenest.feature.main.presentation
 
-import com.example.carenest.feature.chat.domain.model.ChatGroup
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -129,14 +127,14 @@ private fun DoctorMessagingPlaceholder(onNavigateToAppointments: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(AppSpacing.lg))
         Text(
-            text = "Tư vấn trực tiếp với Bác sĩ",
+            text = "Tư vấn trực tiếp với bác sĩ",
             style = CareNestTextStyles.titleMd,
             color = TextPrimary,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(AppSpacing.sm))
         Text(
-            text = "Tính năng trò chuyện trực tiếp với Bác sĩ chuyên khoa đang được phát triển và sẽ sớm ra mắt.\n\nĐể nhận tư vấn y tế trực tiếp từ các bác sĩ đối tác của CareNest, bạn có thể đặt lịch hẹn khám tại đây.",
+            text = "Tính năng trò chuyện trực tiếp với bác sĩ chuyên khoa đang được phát triển và sẽ sớm ra mắt.\n\nĐể nhận tư vấn y tế trực tiếp từ các bác sĩ đối tác của CareNest, bạn có thể đặt lịch hẹn khám tại đây.",
             style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp),
             color = TextSecondary,
             textAlign = TextAlign.Center,
@@ -253,9 +251,7 @@ private fun AiCarePane(viewModel: AiChatViewModel) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = AppSpacing.sm)
-                                .clickable {
-                                    viewModel.sendMessage(prompt)
-                                }
+                                .clickable { viewModel.sendMessage(prompt) }
                         ) {
                             Text(
                                 text = prompt,

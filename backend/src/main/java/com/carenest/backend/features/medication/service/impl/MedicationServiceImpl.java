@@ -232,7 +232,7 @@ public class MedicationServiceImpl implements MedicationService {
         if (newStatus == MedicationLogStatus.TAKEN) {
             log.setTakenTime(Instant.now());
 
-            // Tá»± Ä‘á»™ng trá»« thuá»‘c trong tá»§ cá»§a gia Ä‘Ã¬nh khi Ä‘Ã¡nh dáº¥u Ä‘Ã£ uá»‘ng thuá»‘c
+            // TÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng trÃ¡Â»Â« thuÃ¡Â»â€˜c trong tÃ¡Â»Â§ cÃ¡Â»Â§a gia Ã„â€˜ÃƒÂ¬nh khi Ã„â€˜ÃƒÂ¡nh dÃ¡ÂºÂ¥u Ã„â€˜ÃƒÂ£ uÃ¡Â»â€˜ng thuÃ¡Â»â€˜c
             HealthProfile profile = log.getMedication().getHealthProfile();
             if (profile.getFamily() != null) {
                 Long familyId = profile.getFamily().getId();
@@ -249,7 +249,7 @@ public class MedicationServiceImpl implements MedicationService {
         } else if (newStatus == MedicationLogStatus.PENDING) {
             log.setTakenTime(null);
 
-            // Tá»± Ä‘á»™ng cá»™ng tráº£ láº¡i thuá»‘c vÃ o tá»§ gia Ä‘Ã¬nh náº¿u trÆ°á»›c Ä‘Ã³ Ä‘Ã£ Ä‘Ã¡nh dáº¥u TAKEN
+            // TÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng cÃ¡Â»â„¢ng trÃ¡ÂºÂ£ lÃ¡ÂºÂ¡i thuÃ¡Â»â€˜c vÃƒÂ o tÃ¡Â»Â§ gia Ã„â€˜ÃƒÂ¬nh nÃ¡ÂºÂ¿u trÃ†Â°Ã¡Â»â€ºc Ã„â€˜ÃƒÂ³ Ã„â€˜ÃƒÂ£ Ã„â€˜ÃƒÂ¡nh dÃ¡ÂºÂ¥u TAKEN
             if (oldStatus == MedicationLogStatus.TAKEN) {
                 HealthProfile profile = log.getMedication().getHealthProfile();
                 if (profile.getFamily() != null) {
@@ -278,12 +278,12 @@ public class MedicationServiceImpl implements MedicationService {
 
     private int parseDosageQuantity(String dosage) {
         if (dosage == null || dosage.trim().isEmpty()) {
-            return 1; // Máº·c Ä‘á»‹nh 1 náº¿u trá»‘ng
+            return 1; // MÃ¡ÂºÂ·c Ã„â€˜Ã¡Â»â€¹nh 1 nÃ¡ÂºÂ¿u trÃ¡Â»â€˜ng
         }
 
         String clean = dosage.trim().replaceAll(",", ".");
 
-        // Khá»›p sá»‘ hoáº·c phÃ¢n sá»‘ á»Ÿ Ä‘áº§u chuá»—i (vÃ­ dá»¥: "1", "2.5", "1/2", "0.5")
+        // KhÃ¡Â»â€ºp sÃ¡Â»â€˜ hoÃ¡ÂºÂ·c phÃƒÂ¢n sÃ¡Â»â€˜ Ã¡Â»Å¸ Ã„â€˜Ã¡ÂºÂ§u chuÃ¡Â»â€”i (vÃƒÂ­ dÃ¡Â»Â¥: "1", "2.5", "1/2", "0.5")
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^(\\d+(?:\\.\\d+)?|\\d+/\\d+)");
         java.util.regex.Matcher matcher = pattern.matcher(clean);
 
@@ -307,7 +307,7 @@ public class MedicationServiceImpl implements MedicationService {
                 }
             }
         }
-        return 1; // Fallback máº·c Ä‘á»‹nh lÃ  1 náº¿u khÃ´ng tÃ¬m tháº¥y sá»‘
+        return 1; // Fallback mÃ¡ÂºÂ·c Ã„â€˜Ã¡Â»â€¹nh lÃƒÂ  1 nÃ¡ÂºÂ¿u khÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y sÃ¡Â»â€˜
     }
 
     private void generateLogsForMedication(Medication medication) {
@@ -387,7 +387,7 @@ public class MedicationServiceImpl implements MedicationService {
 
     private void validateDates(LocalDate start, LocalDate end) {
         if (end != null && end.isBefore(start)) {
-            throw new BadRequestException("NgÃ y káº¿t thÃºc khÃ´ng Ä‘Æ°á»£c trÆ°á»›c ngÃ y báº¯t Ä‘áº§u");
+            throw new BadRequestException("Ngày kết thúc không được trước ngày bắt đầu");
         }
     }
 
@@ -397,44 +397,44 @@ public class MedicationServiceImpl implements MedicationService {
             try {
                 LocalTime.parse(time);
             } catch (DateTimeParseException e) {
-                throw new BadRequestException("Äá»‹nh dáº¡ng giá» khÃ´ng há»£p lá»‡. Vui lÃ²ng dÃ¹ng HH:mm (VD: 08:00)");
+                throw new BadRequestException("Định dạng giờ không hợp lệ. Vui lòng dùng HH:mm (VD: 08:00)");
             }
         }
     }
     @Override
     @Transactional
     public void createBatchFromOcr(BatchCreateMedicationRequest request) {
-        // [QUY Táº®C 3]: XÃ¡c nháº­n báº£o máº­t sá»Ÿ há»¯u HealthProfile vÃ  Family
+        // [QUY TÃ¡ÂºÂ®C 3]: XÃƒÂ¡c nhÃ¡ÂºÂ­n bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t sÃ¡Â»Å¸ hÃ¡Â»Â¯u HealthProfile vÃƒÂ  Family
         familySecurityUtil.checkHealthProfileBelongsToFamily(request.getHealthProfileId(), request.getFamilyId());
 
         HealthProfile profile = healthProfileRepository.findById(request.getHealthProfileId())
-                .orElseThrow(() -> new ResourceNotFoundException("Há»“ sÆ¡ sá»©c khá»e", request.getHealthProfileId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ sức khỏe", request.getHealthProfileId()));
 
-        // Tá»§ thuá»‘c (Module 9)
+        // TÃ¡Â»Â§ thuÃ¡Â»â€˜c (Module 9)
         MedicineCabinet cabinet = medicineCabinetRepository.findByFamilyId(request.getFamilyId())
                 .orElseGet(() -> {
                     MedicineCabinet newCabinet = MedicineCabinet.builder()
                             .family(profile.getFamily())
-                            .name("Tá»§ thuá»‘c gia Ä‘Ã¬nh")
+                            .name("Tủ thuốc gia đình")
                             .build();
                     return medicineCabinetRepository.save(newCabinet);
                 });
 
-        // VÃ²ng láº·p Transactional lÆ°u hÃ ng loáº¡t
+        // VÃƒÂ²ng lÃ¡ÂºÂ·p Transactional lÃ†Â°u hÃƒÂ ng loÃ¡ÂºÂ¡t
         for (ParsedMedicationDto dto : request.getMedications()) {
-            // 1. Äá»“ng bá»™ Tá»§ thuá»‘c
+            // 1. Ã„ÂÃ¡Â»â€œng bÃ¡Â»â„¢ TÃ¡Â»Â§ thuÃ¡Â»â€˜c
             CabinetMedicine cabMed = cabinetMedicineRepository.findByCabinetIdAndMedicineNameIgnoreCase(cabinet.getId(), dto.getMedicineName())
                     .orElse(CabinetMedicine.builder()
                             .cabinet(cabinet)
                             .medicineName(dto.getMedicineName())
-                            .unit(dto.getUnit() != null ? dto.getUnit() : "ViÃªn")
+                            .unit(dto.getUnit() != null ? dto.getUnit() : "Viên")
                             .quantity(0)
                             .build());
 
             cabMed.setQuantity(cabMed.getQuantity() + (dto.getTotalQuantity() != null ? dto.getTotalQuantity() : 0));
             cabinetMedicineRepository.save(cabMed);
 
-            // 2. Táº¡o Káº¿ hoáº¡ch uá»‘ng thuá»‘c (Medication Plan)
+            // 2. TÃ¡ÂºÂ¡o KÃ¡ÂºÂ¿ hoÃ¡ÂºÂ¡ch uÃ¡Â»â€˜ng thuÃ¡Â»â€˜c (Medication Plan)
             Medication medication = Medication.builder()
                     .healthProfile(profile)
                     .medicineName(dto.getMedicineName())
@@ -450,7 +450,7 @@ public class MedicationServiceImpl implements MedicationService {
                     .build();
             medication = medicationRepository.save(medication);
 
-            // 3. Sinh Káº¿ hoáº¡ch nháº¯c nhá»Ÿ (MedicationLog)
+            // 3. Sinh KÃ¡ÂºÂ¿ hoÃ¡ÂºÂ¡ch nhÃ¡ÂºÂ¯c nhÃ¡Â»Å¸ (MedicationLog)
             generateLogsForMedication(medication);
         }
 
@@ -475,3 +475,4 @@ public class MedicationServiceImpl implements MedicationService {
         evictDashboardCache(medication.getHealthProfile());
     }
 }
+

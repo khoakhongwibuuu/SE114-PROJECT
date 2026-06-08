@@ -37,13 +37,13 @@ public class ArticleController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
     public ApiResponse<ArticleResponse> createArticle(@Valid @RequestBody CreateArticleRequest request) {
-        return ApiResponse.success("ÄÃ£ táº¡o bÃ i viáº¿t", communityKnowledgeService.createArticle(request));
+        return ApiResponse.success("Đã tạo bài viết", communityKnowledgeService.createArticle(request));
     }
 
     @PostMapping("/{id}/like")
     @PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
     public ApiResponse<ArticleLikeResponse> toggleArticleLike(@PathVariable("id") Long id) {
-        return ApiResponse.success("ÄÃ£ cáº­p nháº­t lÆ°á»£t thÃ­ch", communityKnowledgeService.toggleArticleLike(id));
+        return ApiResponse.success("Đã cập nhật lượt thích", communityKnowledgeService.toggleArticleLike(id));
     }
 
     @GetMapping("/{id}/comments")
@@ -58,6 +58,6 @@ public class ArticleController {
     public ApiResponse<ArticleCommentResponse> createArticleComment(
             @PathVariable("id") Long id,
             @Valid @RequestBody CreateArticleCommentRequest request) {
-        return ApiResponse.success("ÄÃ£ gá»­i bÃ¬nh luáº­n", communityKnowledgeService.createArticleComment(id, request));
+        return ApiResponse.success("Đã gửi bình luận", communityKnowledgeService.createArticleComment(id, request));
     }
 }

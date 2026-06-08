@@ -7,12 +7,12 @@ import lombok.Data;
 @Data
 public class CreateGroupPostRequest {
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p ná»™i dung")
-    @Size(max = 4000, message = "Tin nháº¯n khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 4000 kÃ½ tá»±")
+    @NotBlank(message = "Vui lòng nhập nội dung")
+    @Size(max = 4000, message = "Tin nhắn không được vượt quá 4000 ký tự")
     private String content;
 
     private Long replyToPostId;
 
-    @Size(max = 1000, message = "ÄÆ°á»ng dáº«n áº£nh khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 1000 kÃ½ tá»±")
+    @Size(max = 1000, message = "Đường dẫn ảnh không được vượt quá 1000 ký tự")
     private String imageUrl;
 }

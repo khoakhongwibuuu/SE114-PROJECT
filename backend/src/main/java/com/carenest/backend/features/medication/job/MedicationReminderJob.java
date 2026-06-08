@@ -32,13 +32,13 @@ public class MedicationReminderJob {
     private final NotificationService notificationService;
 
     /**
-     * Cháº¡y má»—i 5 phÃºt (0 0/5 * * * *).
-     * QuÃ©t cÃ¡c Ä‘Æ¡n thuá»‘c sáº¯p tá»›i trong 15 phÃºt tá»›i chÆ°a Ä‘Æ°á»£c thÃ´ng bÃ¡o.
+     * Chạy mỗi 5 phút (0 0/5 * * * *).
+     * Quét các đơn thuốc sắp tới trong 15 phút tới chưa được thông báo.
      */
     @Scheduled(cron = "0 0/5 * * * *")
     @Transactional
     public void scanAndRemindMedications() {
-        log.info("Báº¯t Ä‘áº§u Cronjob: QuÃ©t lá»‹ch uá»‘ng thuá»‘c sáº¯p tá»›i...");
+        log.info("Bắt đầu Cronjob: Quét lịch uống thuốc sắp tới...");
         Instant now = Instant.now();
         Instant next15Mins = now.plus(15, ChronoUnit.MINUTES);
 
@@ -50,24 +50,24 @@ public class MedicationReminderJob {
                 );
 
         if (upcomingLogs.isEmpty()) {
-            log.info("Cronjob hoÃ n táº¥t: KhÃ´ng cÃ³ lá»‹ch uá»‘ng thuá»‘c má»›i nÃ o.");
+            log.info("Cronjob hoàn tất: Không có lịch uống thuốc mới nào.");
             return;
         }
 
-        log.info("TÃ¬m tháº¥y {} cá»¯ thuá»‘c cáº§n nháº¯c nhá»Ÿ.", upcomingLogs.size());
+        log.info("Tìm thấy {} cữ thuốc cần nhắc nhở.", upcomingLogs.size());
 
         for (MedicationLog logItem : upcomingLogs) {
             HealthProfile profile = logItem.getMedication().getHealthProfile();
             List<User> targetUsers = getNotificationTargets(profile);
 
-            String title = "Äáº¿n giá» uá»‘ng thuá»‘c!";
-            String message = String.format("Nháº¯c nhá»Ÿ: Sáº¯p Ä‘áº¿n giá» uá»‘ng %s cho %s (%s).",
+            String title = "Đến giờ uống thuốc!";
+            String message = String.format(
+                    "Nhắc nhở: Sắp đến giờ uống %s cho %s (%s).",
                     logItem.getMedication().getMedicineName(),
                     profile.getFullName(),
                     logItem.getMedication().getDosage()
             );
 
-            // Gá»­i thÃ´ng bÃ¡o
             notificationService.createNotificationForUsers(
                     targetUsers,
                     title,
@@ -77,24 +77,21 @@ public class MedicationReminderJob {
                     logItem.getId()
             );
 
-            // Cáº­p nháº­t cá»
             logItem.setIsNotified(true);
             medicationLogRepository.save(logItem);
         }
 
-        log.info("Cronjob hoÃ n táº¥t: ÄÃ£ gá»­i thÃ´ng bÃ¡o cho {} cá»¯ thuá»‘c.", upcomingLogs.size());
+        log.info("Cronjob hoàn tất: Đã gửi thông báo cho {} cữ thuốc.", upcomingLogs.size());
     }
 
     private List<User> getNotificationTargets(HealthProfile profile) {
         Family family = profile.getFamily();
         if (family != null) {
-            // Láº¥y táº¥t cáº£ thÃ nh viÃªn trong gia Ä‘Ã¬nh
             List<FamilyMember> members = familyMemberRepository.findAllByFamilyId(family.getId());
             return members.stream()
                     .map(FamilyMember::getUser)
                     .collect(Collectors.toList());
         } else {
-            // Náº¿u há»“ sÆ¡ cÃ¡ nhÃ¢n khÃ´ng thuá»™c gia Ä‘Ã¬nh, chá»‰ bÃ¡o cho chÃ­nh ngÆ°á»i Ä‘Ã³
             return Collections.singletonList(profile.getUser());
         }
     }

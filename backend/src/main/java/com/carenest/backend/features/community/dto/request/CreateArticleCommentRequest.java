@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class CreateArticleCommentRequest {
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p bÃ¬nh luáº­n")
-    @Size(max = 2000, message = "BÃ¬nh luáº­n khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 2000 kÃ½ tá»±")
+    @NotBlank(message = "Vui lòng nhập bình luận")
+    @Size(max = 2000, message = "Bình luận không được vượt quá 2000 ký tự")
     private String content;
 }

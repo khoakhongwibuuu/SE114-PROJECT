@@ -28,6 +28,6 @@ public class GroupPostController {
             @PathVariable("postId") Long postId,
             @Valid @RequestBody ReportPostRequest request) {
         communityKnowledgeService.reportPost(postId, request);
-        return ApiResponse.success("ÄÃ£ gá»­i bÃ¡o cÃ¡o vi pháº¡m", null);
+        return ApiResponse.success("Đã gửi báo cáo vi phạm", null);
     }
 }

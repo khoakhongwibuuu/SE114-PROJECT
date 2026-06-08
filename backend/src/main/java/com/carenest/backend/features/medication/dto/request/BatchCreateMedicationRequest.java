@@ -9,12 +9,12 @@ import java.util.List;
 
 @Data
 public class BatchCreateMedicationRequest {
-    @NotNull(message = "Health Profile ID khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotNull(message = "Health Profile ID không được để trống")
     private Long healthProfileId;
 
-    @NotNull(message = "Family ID khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotNull(message = "Family ID không được để trống")
     private Long familyId;
 
-    @NotEmpty(message = "Danh sÃ¡ch thuá»‘c khÃ´ng Ä‘Æ°á»£c rá»—ng")
+    @NotEmpty(message = "Danh sách thuốc không được rỗng")
     private List<ParsedMedicationDto> medications;
 }

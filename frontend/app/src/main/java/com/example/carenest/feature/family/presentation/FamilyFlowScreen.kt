@@ -3,7 +3,15 @@ package com.example.carenest.feature.family.presentation
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +31,7 @@ import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import com.example.carenest.feature.chat.presentation.FamilyChatPane
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.medical.presentation.MedicineScreen
 import com.example.carenest.feature.medical.presentation.MedicineViewModel
@@ -108,40 +117,32 @@ fun FamilyFlowScreen(
             when (activeTab) {
                 FamilyTab.MEMBERS -> {
                     when (currentScreen) {
-                        "picker" -> {
-                            FamilyPickerScreen(
-                                viewModel = familyViewModel,
-                                onNavigateToManagement = { mode ->
-                                    managementMode = mode
-                                    currentScreen = "management"
-                                }
-                            )
-                        }
+                        "picker" -> FamilyPickerScreen(
+                            viewModel = familyViewModel,
+                            onNavigateToManagement = { mode ->
+                                managementMode = mode
+                                currentScreen = "management"
+                            }
+                        )
 
-                        "management" -> {
-                            FamilyManagementScreen(
-                                viewModel = familyViewModel,
-                                mode = managementMode,
-                                onBack = { currentScreen = "picker" }
-                            )
-                        }
+                        "management" -> FamilyManagementScreen(
+                            viewModel = familyViewModel,
+                            mode = managementMode,
+                            onBack = { currentScreen = "picker" }
+                        )
                     }
                 }
 
-                FamilyTab.MEDICINE -> {
-                    MedicineScreen(
-                        viewModel = medicineViewModel,
-                        refreshTrigger = refreshTrigger,
-                        onAddMedicineClick = onNavigateToAddMedicine,
-                        onScheduleClick = onNavigateToMedicineSchedule,
-                        onAddScheduleClick = onNavigateToAddSchedule,
-                        onOcrClick = onNavigateToOcrScanner,
-                    )
-                }
+                FamilyTab.MEDICINE -> MedicineScreen(
+                    viewModel = medicineViewModel,
+                    refreshTrigger = refreshTrigger,
+                    onAddMedicineClick = onNavigateToAddMedicine,
+                    onScheduleClick = onNavigateToMedicineSchedule,
+                    onAddScheduleClick = onNavigateToAddSchedule,
+                    onOcrClick = onNavigateToOcrScanner,
+                )
 
-                FamilyTab.CHAT -> {
-                    com.example.carenest.feature.chat.presentation.FamilyChatPane()
-                }
+                FamilyTab.CHAT -> FamilyChatPane()
             }
         }
     }

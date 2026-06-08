@@ -8,17 +8,17 @@ import lombok.Data;
 @Data
 public class RegisterRequest {
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p email")
-    @Email(message = "Email khÃ´ng Ä‘Ãºng Ä‘á»‹nh dáº¡ng")
+    @NotBlank(message = "Vui lòng nhập email")
+    @Email(message = "Email không đúng định dạng")
     private String email;
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p máº­t kháº©u")
-    @Size(min = 6, message = "Máº­t kháº©u pháº£i cÃ³ Ã­t nháº¥t 6 kÃ½ tá»±")
+    @NotBlank(message = "Vui lòng nhập mật khẩu")
+    @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
     private String password;
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p há» vÃ  tÃªn")
+    @NotBlank(message = "Vui lòng nhập họ và tên")
     private String fullName;
 
-    @Size(max = 20, message = "Sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 20 kÃ½ tá»±")
+    @Size(max = 20, message = "Số điện thoại không được vượt quá 20 ký tự")
     private String phoneNumber;
 }
