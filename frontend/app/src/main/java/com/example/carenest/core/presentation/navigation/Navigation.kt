@@ -196,6 +196,9 @@ fun MainNavigation() {
               onNavigateToDoctorVerification = { backStack.add(DoctorVerification) },
               onNavigateToPolicy = { backStack.add(Policy) },
               onNavigateToMedicalRecord = { profileId -> backStack.add(UserMedical(profileId)) },
+              onNavigateToFamilyChat = { familyId, familyName, memberCount ->
+                  backStack.add(FamilyChatRoom(familyId, familyName, memberCount))
+              },
               onLogout = {
                   scope.launch {
                       application.secureSessionManager.clearAll()
@@ -255,6 +258,15 @@ fun MainNavigation() {
           ChatScreen(
             groupId = key.id,
             groupName = key.name,
+            onBack = { backStack.removeLastOrNull() }
+          )
+        }
+        entry<FamilyChatRoom> {
+          val key = it as FamilyChatRoom
+          com.example.carenest.feature.chat.presentation.FamilyChatPane(
+            familyId = key.id,
+            familyName = key.name,
+            memberCount = key.memberCount,
             onBack = { backStack.removeLastOrNull() }
           )
         }

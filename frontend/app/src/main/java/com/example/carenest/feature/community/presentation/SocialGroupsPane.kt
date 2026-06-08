@@ -48,15 +48,61 @@ fun SocialGroupsPane(
 ) {
     val viewModel: SocialHubViewModel = viewModel()
     val state by viewModel.uiState.collectAsState()
+    val errorMsg = state.error
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF8FAFC)),
     ) {
+        // Demo data banner
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFFFF3E0))
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Groups,
+                contentDescription = null,
+                tint = Color(0xFFE65100),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "Đây là dữ liệu mẫu. Hội nhóm xã hội đang được phát triển.",
+                fontSize = 11.sp,
+                color = Color(0xFFE65100)
+            )
+        }
         if (state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryBlue)
+            }
+        } else if (!errorMsg.isNullOrBlank()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = errorMsg,
+                    fontSize = 14.sp,
+                    color = Color(0xFF64748B),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        } else if (state.myGroups.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Chưa có hội nhóm nào để hiển thị.",
+                    fontSize = 14.sp,
+                    color = Color(0xFF94A3B8),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
             }
         } else {
             LazyColumn(

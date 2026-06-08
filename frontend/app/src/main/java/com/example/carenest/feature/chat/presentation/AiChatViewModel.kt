@@ -20,7 +20,12 @@ class AiChatViewModel(
     private val aiChatApi: AiChatApi
 ) : ViewModel() {
     private val _messages = MutableStateFlow<List<AiMessage>>(
-        listOf(AiMessage("Xin chào! Tôi là trợ lý AI CareNest. Bạn cần hỏi gì về sức khỏe gia đình?", isUser = false))
+        listOf(AiMessage(
+            text = "Xin chào! Tôi là CareNest AI — trợ lý sức khỏe thông minh.\n\n" +
+                "Tôi có thể giúp bạn tra cứu thông tin thuốc, nhắc lịch uống thuốc, và giải đáp các thắc mắc sức khỏe phổ thông.\n\n" +
+                "⚠️ Lưu ý: Đây là trợ lý AI, không phải bác sĩ. Thông tin tôi cung cấp chỉ mang tính tham khảo — không thay thế tư vấn y tế trực tiếp từ chuyên gia.",
+            isUser = false
+        ))
     )
     val messages: StateFlow<List<AiMessage>> = _messages.asStateFlow()
     
