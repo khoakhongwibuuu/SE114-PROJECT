@@ -17,19 +17,27 @@ import com.carenest.backend.features.community.dto.response.ArticleResponse;
 import com.carenest.backend.features.community.dto.response.ChatGroupPreviewResponse;
 import com.carenest.backend.features.community.dto.response.ChatGroupResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostResponse;
+import com.carenest.backend.features.community.dto.response.GroupPostInteractionResponse;
+import com.carenest.backend.features.community.dto.response.GroupPostCommentResponse;
+import com.carenest.backend.features.community.dto.request.CreateGroupPostCommentRequest;
 import com.carenest.backend.features.community.entity.Article;
 import com.carenest.backend.features.community.entity.ArticleComment;
 import com.carenest.backend.features.community.entity.ArticleLike;
 import com.carenest.backend.features.community.entity.ChatGroup;
 import com.carenest.backend.features.community.entity.GroupPost;
+import com.carenest.backend.features.community.entity.GroupPostLike;
+import com.carenest.backend.features.community.entity.GroupPostComment;
 import com.carenest.backend.features.community.entity.ReportTicket;
 import com.carenest.backend.features.community.entity.UserGroupMembership;
 import com.carenest.backend.features.community.enums.GroupRole;
+import com.carenest.backend.features.community.enums.PostStatus;
 import com.carenest.backend.features.community.repository.ArticleCommentRepository;
 import com.carenest.backend.features.community.repository.ArticleLikeRepository;
 import com.carenest.backend.features.community.repository.ArticleRepository;
 import com.carenest.backend.features.community.repository.ChatGroupRepository;
 import com.carenest.backend.features.community.repository.GroupPostRepository;
+import com.carenest.backend.features.community.repository.GroupPostLikeRepository;
+import com.carenest.backend.features.community.repository.GroupPostCommentRepository;
 import com.carenest.backend.features.community.repository.ReportTicketRepository;
 import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
 import com.carenest.backend.features.community.service.CommunityKnowledgeService;
@@ -62,6 +70,8 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
     private final ArticleCommentRepository articleCommentRepository;
     private final ChatGroupRepository chatGroupRepository;
     private final GroupPostRepository groupPostRepository;
+    private final GroupPostLikeRepository groupPostLikeRepository;
+    private final GroupPostCommentRepository groupPostCommentRepository;
     private final UserGroupMembershipRepository membershipRepository;
     private final ReportTicketRepository reportTicketRepository;
     private final UserRepository userRepository;
@@ -230,9 +240,67 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         ensureCanEnterGroup(groupId, currentUser);
 
         Page<GroupPostResponse> page = groupPostRepository
-                .findAllByChatGroupIdOrderByCreatedAtDesc(groupId, pageable)
+                .findAllByChatGroupIdAndStatusOrderByCreatedAtDesc(groupId, PostStatus.APPROVED, pageable)
                 .map(this::toPostResponse);
         return PageResponse.of(page);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<GroupPostResponse> getMyGroupPosts(Long groupId, Pageable pageable) {
+        User currentUser = getCurrentUser();
+        getChatGroupOrThrow(groupId);
+        ensureCanEnterGroup(groupId, currentUser);
+
+        Page<GroupPostResponse> page = groupPostRepository
+                .findAllByChatGroupIdAndAuthorIdOrderByCreatedAtDesc(groupId, currentUser.getId(), pageable)
+                .map(this::toPostResponse);
+        return PageResponse.of(page);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<GroupPostResponse> getPendingGroupPosts(Long groupId, Pageable pageable) {
+        User currentUser = getCurrentUser();
+        ChatGroup group = getChatGroupOrThrow(groupId);
+        ensureCanModerate(group, currentUser);
+
+        Page<GroupPostResponse> page = groupPostRepository
+                .findAllByChatGroupIdAndStatusOrderByCreatedAtDesc(groupId, PostStatus.PENDING_APPROVAL, pageable)
+                .map(this::toPostResponse);
+        return PageResponse.of(page);
+    }
+
+    @Override
+    @Transactional
+    public void approveGroupPost(Long postId) {
+        User currentUser = getCurrentUser();
+        GroupPost post = groupPostRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("GroupPost", postId));
+        
+        ensureCanModerate(post.getChatGroup(), currentUser);
+        
+        post.setStatus(PostStatus.APPROVED);
+        post.setReviewer(currentUser);
+        groupPostRepository.save(post);
+    }
+
+    @Override
+    @Transactional
+    public void rejectGroupPost(Long postId, String reason) {
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new BadRequestException("Lý do từ chối không được để trống");
+        }
+        User currentUser = getCurrentUser();
+        GroupPost post = groupPostRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("GroupPost", postId));
+        
+        ensureCanModerate(post.getChatGroup(), currentUser);
+        
+        post.setStatus(PostStatus.REJECTED);
+        post.setRejectionReason(reason);
+        post.setReviewer(currentUser);
+        groupPostRepository.save(post);
     }
 
     @Override
@@ -243,13 +311,23 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         ensureCanEnterGroup(groupId, currentUser);
         enforceSlowMode(groupId, currentUser);
 
+        // Service-level whitespace guard (catches whitespace-only strings that pass @NotBlank)
+        String trimmedTitle = request.getTitle() != null ? request.getTitle().trim() : "";
+        String trimmedContent = request.getContent() != null ? request.getContent().trim() : "";
+        if (trimmedTitle.isBlank()) {
+            throw new BadRequestException("Tiêu đề không được để trống");
+        }
+        if (trimmedContent.isBlank()) {
+            throw new BadRequestException("Nội dung không được để trống");
+        }
+
         GroupPost replyToPost = null;
         if (request.getReplyToPostId() != null) {
             replyToPost = groupPostRepository.findById(request.getReplyToPostId())
                     .orElseThrow(() -> new ResourceNotFoundException("GroupPost", request.getReplyToPostId()));
             if (replyToPost.getChatGroup() == null
                     || !groupId.equals(replyToPost.getChatGroup().getId())) {
-                throw new BadRequestException("Tin nhắn được trả lời không thuộc hội nhóm này");
+                throw new BadRequestException("Bài viết được trả lời không thuộc hội nhóm này");
             }
         }
 
@@ -257,8 +335,11 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .chatGroup(chatGroup)
                 .author(currentUser)
                 .replyToPost(replyToPost)
-                .content(request.getContent().trim())
+                .title(trimmedTitle)
+                .content(trimmedContent)
+                .tags(normalizeOptionalText(request.getTags()))
                 .imageUrl(normalizeOptionalText(request.getImageUrl()))
+                .status(PostStatus.PENDING_APPROVAL)
                 .build();
         return toPostResponse(groupPostRepository.save(post));
     }
@@ -312,6 +393,97 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         membershipRepository.delete(targetMembership);
     }
 
+    @Override
+    @Transactional
+    public GroupPostInteractionResponse toggleGroupPostLike(Long postId) {
+        User currentUser = getCurrentUser();
+        GroupPost post = groupPostRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("GroupPost", postId));
+        
+        if (post.getStatus() != PostStatus.APPROVED) {
+            throw new BadRequestException("Chỉ có thể tương tác với bài viết đã được duyệt");
+        }
+        ensureCanEnterGroup(post.getChatGroup().getId(), currentUser);
+
+        boolean likedByMe;
+        var existing = groupPostLikeRepository.findByGroupPostIdAndUserId(postId, currentUser.getId());
+        if (existing.isPresent()) {
+            groupPostLikeRepository.delete(existing.get());
+            likedByMe = false;
+        } else {
+            groupPostLikeRepository.save(GroupPostLike.builder()
+                    .groupPost(post)
+                    .user(currentUser)
+                    .build());
+            likedByMe = true;
+        }
+
+        return GroupPostInteractionResponse.builder()
+                .postId(postId)
+                .likedByMe(likedByMe)
+                .likeCount(groupPostLikeRepository.countByGroupPostId(postId))
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<GroupPostCommentResponse> getGroupPostComments(Long postId, Pageable pageable) {
+        User currentUser = getCurrentUser();
+        GroupPost post = groupPostRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("GroupPost", postId));
+        
+        if (post.getStatus() != PostStatus.APPROVED) {
+            throw new BadRequestException("Chỉ có thể xem bình luận của bài viết đã được duyệt");
+        }
+        ensureCanEnterGroup(post.getChatGroup().getId(), currentUser);
+
+        Page<GroupPostCommentResponse> page = groupPostCommentRepository
+                .findByGroupPostIdOrderByCreatedAtDesc(postId, pageable)
+                .map(this::toGroupPostCommentResponse);
+        return PageResponse.of(page);
+    }
+
+    @Override
+    @Transactional
+    public GroupPostCommentResponse createGroupPostComment(Long postId, CreateGroupPostCommentRequest request) {
+        User currentUser = getCurrentUser();
+        GroupPost post = groupPostRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("GroupPost", postId));
+
+        if (post.getStatus() != PostStatus.APPROVED) {
+            throw new BadRequestException("Chỉ có thể bình luận trên bài viết đã được duyệt");
+        }
+        ensureCanEnterGroup(post.getChatGroup().getId(), currentUser);
+
+        String trimmedContent = normalizeOptionalText(request.getContent());
+        if (trimmedContent == null) {
+            throw new BadRequestException("Nội dung bình luận không được để trống");
+        }
+
+        GroupPostComment comment = GroupPostComment.builder()
+                .groupPost(post)
+                .author(currentUser)
+                .content(trimmedContent)
+                .build();
+
+        return toGroupPostCommentResponse(groupPostCommentRepository.save(comment));
+    }
+
+    private GroupPostCommentResponse toGroupPostCommentResponse(GroupPostComment comment) {
+        User author = comment.getAuthor();
+        GroupPost post = comment.getGroupPost();
+        return GroupPostCommentResponse.builder()
+                .id(comment.getId())
+                .groupPostId(post != null ? post.getId() : null)
+                .authorId(author != null ? author.getId() : null)
+                .authorName(author != null ? author.getFullName() : null)
+                .authorAvatarUrl(author != null ? author.getAvatarUrl() : null)
+                .authorRole(author != null && author.getRole() != null ? author.getRole().name() : null)
+                .content(comment.getContent())
+                .createdAt(comment.getCreatedAt())
+                .build();
+    }
+
     private void enforceSlowMode(Long groupId, User currentUser) {
         if (currentUser.getRole() == null || currentUser.getRole() == Role.DOCTOR || currentUser.getRole() == Role.ADMIN) {
             return;
@@ -319,12 +491,12 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
         String key = groupId + ":" + currentUser.getId();
         Instant now = Instant.now();
-        Instant lastSentAt = lastUserPostAt.get(key);
-        if (lastSentAt != null) {
-            long elapsed = now.getEpochSecond() - lastSentAt.getEpochSecond();
-            if (elapsed < USER_SLOW_MODE_SECONDS) {
-                long remaining = USER_SLOW_MODE_SECONDS - elapsed;
-                throw new BadRequestException("Vui lòng chờ " + remaining + " giây trước khi gửi tin nhắn tiếp theo");
+        Instant lastPostTime = lastUserPostAt.get(key);
+        if (lastPostTime != null) {
+            long secondsSinceLastPost = java.time.Duration.between(lastPostTime, now).getSeconds();
+            if (secondsSinceLastPost < 60) {
+                long remaining = 60 - secondsSinceLastPost;
+                throw new BadRequestException("Vui lòng đợi " + remaining + " giây trước khi gửi bài viết tiếp theo");
             }
         }
         lastUserPostAt.put(key, now);
@@ -335,11 +507,25 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .orElseThrow(() -> new ResourceNotFoundException("ChatGroup", groupId));
     }
 
-    private void ensureCanEnterGroup(Long groupId, User currentUser) {
-        if (currentUser.getRole() == Role.ADMIN || membershipRepository.existsByGroupIdAndUserId(groupId, currentUser.getId())) {
+    private void ensureCanEnterGroup(Long groupId, User user) {
+        boolean isMember = membershipRepository.existsByGroupIdAndUserId(groupId, user.getId());
+        if (!isMember && user.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("Bạn phải tham gia nhóm trước khi xem hoặc gửi bài viết");
+        }
+    }
+
+    private void ensureCanModerate(ChatGroup group, User currentUser) {
+        if (currentUser.getRole() == Role.ADMIN) {
             return;
         }
-        throw new AccessDeniedException("Vui lòng tham gia nhóm trước khi xem hoặc gửi tin nhắn");
+        boolean isHost = membershipRepository.existsByGroupIdAndUserIdAndGroupRole(
+                group.getId(),
+                currentUser.getId(),
+                GroupRole.HOST
+        );
+        if (!isHost) {
+            throw new AccessDeniedException("Chỉ Quản trị viên và Host mới có quyền duyệt bài viết");
+        }
     }
 
     private boolean isLeadDoctor(ChatGroup group, User user) {
@@ -489,6 +675,8 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
     private GroupPostResponse toPostResponse(GroupPost post) {
         User author = post.getAuthor();
         ChatGroup group = post.getChatGroup();
+        Long currentUserId = getCurrentUserIdOrNull();
+
         return GroupPostResponse.builder()
                 .id(post.getId())
                 .chatGroupId(group != null ? group.getId() : null)
@@ -496,12 +684,20 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .authorId(author != null ? author.getId() : null)
                 .authorName(author != null ? author.getFullName() : null)
                 .authorRole(author != null && author.getRole() != null ? author.getRole().name() : null)
+                .title(post.getTitle())
                 .content(post.getContent())
+                .tags(post.getTags())
                 .replyToPostId(post.getReplyToPost() != null ? post.getReplyToPost().getId() : null)
                 .imageUrl(post.getImageUrl())
                 .createdAt(post.getCreatedAt())
+                .status(post.getStatus())
+                .rejectionReason(post.getRejectionReason())
+                .likeCount(groupPostLikeRepository.countByGroupPostId(post.getId()))
+                .commentCount(groupPostCommentRepository.countByGroupPostId(post.getId()))
+                .likedByMe(currentUserId != null && groupPostLikeRepository.existsByGroupPostIdAndUserId(post.getId(), currentUserId))
                 .build();
     }
+
 }
 
 

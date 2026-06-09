@@ -44,7 +44,8 @@ import com.example.carenest.feature.community.domain.model.SocialGroup
 
 @Composable
 fun SocialGroupsPane(
-    onOpenGroup: (SocialGroup) -> Unit = {}
+    onOpenGroup: (SocialGroup) -> Unit = {},
+    onOpenGroupPosts: (SocialGroup) -> Unit = {}
 ) {
     val viewModel: SocialHubViewModel = viewModel()
     val state by viewModel.uiState.collectAsState()
@@ -113,7 +114,8 @@ fun SocialGroupsPane(
                 items(items = state.myGroups, key = { it.id }) { group ->
                     SocialGroupCard(
                         group = group,
-                        onClick = { onOpenGroup(group) }
+                        onClick = { onOpenGroup(group) },
+                        onOpenGroupPosts = { onOpenGroupPosts(group) }
                     )
                 }
             }
@@ -124,12 +126,11 @@ fun SocialGroupsPane(
 @Composable
 fun SocialGroupCard(
     group: SocialGroup,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onOpenGroupPosts: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -191,14 +192,28 @@ fun SocialGroupCard(
                 }
             }
             Spacer(modifier = Modifier.width(10.dp))
-            Button(
-                onClick = onClick,
-                modifier = Modifier.height(34.dp),
-                shape = RoundedCornerShape(999.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Truy cập", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color.White)
+                Button(
+                    onClick = onOpenGroupPosts,
+                    modifier = Modifier.height(30.dp),
+                    shape = RoundedCornerShape(999.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEFF6FF)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                ) {
+                    Text("Thảo luận", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                }
+                Button(
+                    onClick = onClick,
+                    modifier = Modifier.height(30.dp),
+                    shape = RoundedCornerShape(999.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                ) {
+                    Text("Vào chat", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
             }
         }
     }

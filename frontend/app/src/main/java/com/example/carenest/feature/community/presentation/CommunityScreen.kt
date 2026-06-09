@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,8 +39,14 @@ fun CommunityScreen(
     canCreateArticle: Boolean = false,
     refreshTrigger: Int = 0,
     onOpenGroup: (ChatGroup) -> Unit = {},
+    onOpenGroupPosts: (ChatGroup) -> Unit = {},
 ) {
-    var activeTab by remember { mutableStateOf(CommunityTopTab.WIKI) }
+    var activeTabName by rememberSaveable { mutableStateOf(CommunityTopTab.WIKI.name) }
+    val activeTab = try {
+        CommunityTopTab.valueOf(activeTabName)
+    } catch (e: Exception) {
+        CommunityTopTab.WIKI
+    }
 
     Column(
         modifier = Modifier
@@ -57,7 +64,7 @@ fun CommunityScreen(
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { activeTab = tab }
+                            .clickable { activeTabName = tab.name }
                             .padding(top = 14.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -82,12 +89,25 @@ fun CommunityScreen(
             CommunityTopTab.WIKI -> CommunityWikiScreen(
                 canCreateArticle = canCreateArticle,
                 refreshTrigger = refreshTrigger,
-                onOpenGroup = onOpenGroup
+                onOpenGroup = onOpenGroup,
+                onOpenGroupPosts = onOpenGroupPosts
             )
 
             CommunityTopTab.GROUPS -> SocialGroupsPane(
                 onOpenGroup = { socialGroup ->
                     onOpenGroup(
+                        ChatGroup(
+                            id = socialGroup.id,
+                            name = socialGroup.name,
+                            description = socialGroup.description ?: "",
+                            category = socialGroup.category ?: "",
+                            tags = "",
+                            private = false,
+                        )
+                    )
+                },
+                onOpenGroupPosts = { socialGroup ->
+                    onOpenGroupPosts(
                         ChatGroup(
                             id = socialGroup.id,
                             name = socialGroup.name,

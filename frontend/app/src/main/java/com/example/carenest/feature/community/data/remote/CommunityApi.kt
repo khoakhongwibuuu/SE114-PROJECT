@@ -11,6 +11,9 @@ import com.example.carenest.feature.community.domain.model.PageResponse
 import com.example.carenest.feature.community.domain.model.Article
 import com.example.carenest.feature.community.domain.model.ArticleComment
 import com.example.carenest.feature.community.domain.model.ArticleLikeResponse
+import com.example.carenest.feature.community.domain.model.GroupPostComment
+import com.example.carenest.feature.community.domain.model.CreateGroupPostCommentRequest
+import com.example.carenest.feature.community.domain.model.GroupPostInteractionResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -43,11 +46,52 @@ interface CommunityApi {
         @Query("size") size: Int = 30
     ): Response<ApiResponse<PageResponse<GroupPost>>>
 
+    @GET("/api/v1/communities/{id}/posts/my")
+    suspend fun myPosts(
+        @Path("id") id: Long,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 30
+    ): Response<ApiResponse<PageResponse<GroupPost>>>
+
+    @GET("/api/v1/communities/{id}/posts/pending")
+    suspend fun pendingPosts(
+        @Path("id") id: Long,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 30
+    ): Response<ApiResponse<PageResponse<GroupPost>>>
+
+    @POST("/api/v1/communities/posts/{id}/approve")
+    suspend fun approvePost(
+        @Path("id") id: Long
+    ): Response<ApiResponse<Unit>>
+
+    @POST("/api/v1/communities/posts/{id}/reject")
+    suspend fun rejectPost(
+        @Path("id") id: Long,
+        @Query("reason") reason: String
+    ): Response<ApiResponse<Unit>>
+
     @POST("/api/v1/communities/{id}/posts")
     suspend fun sendPost(
         @Path("id") id: Long,
         @Body request: CreateGroupPostRequest
     ): Response<ApiResponse<GroupPost>>
+
+    @POST("/api/v1/communities/posts/{id}/like")
+    suspend fun likeGroupPost(
+        @Path("id") id: Long
+    ): Response<ApiResponse<GroupPostInteractionResponse>>
+
+    @GET("/api/v1/communities/posts/{id}/comments")
+    suspend fun getGroupPostComments(
+        @Path("id") id: Long
+    ): Response<ApiResponse<PageResponse<GroupPostComment>>>
+
+    @POST("/api/v1/communities/posts/{id}/comments")
+    suspend fun createGroupPostComment(
+        @Path("id") id: Long,
+        @Body request: CreateGroupPostCommentRequest
+    ): Response<ApiResponse<GroupPostComment>>
 
     @GET("/api/v1/articles")
     suspend fun getArticles(): Response<ApiResponse<List<Article>>>
