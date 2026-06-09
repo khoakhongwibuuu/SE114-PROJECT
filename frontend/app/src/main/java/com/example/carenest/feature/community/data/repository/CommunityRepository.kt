@@ -9,6 +9,9 @@ import com.example.carenest.feature.community.data.remote.CommunityApi
 import com.example.carenest.feature.community.domain.model.Article
 import com.example.carenest.feature.community.domain.model.ArticleComment
 import com.example.carenest.feature.community.domain.model.ArticleLikeResponse
+import com.example.carenest.feature.community.domain.model.GroupPostComment
+import com.example.carenest.feature.community.domain.model.CreateGroupPostCommentRequest
+import com.example.carenest.feature.community.domain.model.GroupPostInteractionResponse
 import com.example.carenest.feature.chat.domain.model.ChatGroup
 import com.example.carenest.feature.chat.domain.model.ChatGroupPreview
 import com.example.carenest.feature.community.domain.model.CreateArticleCommentRequest
@@ -58,17 +61,89 @@ class CommunityRepository(
     suspend fun posts(groupId: Long): List<GroupPost> {
         val response = api.posts(groupId)
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể tải tin nhắn")
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải bài viết của nhóm")
         }
         return response.body()?.data?.content.orEmpty()
     }
 
-    suspend fun sendPost(groupId: Long, content: String, replyToPostId: Long? = null): GroupPost {
-        val response = api.sendPost(groupId, CreateGroupPostRequest(content, replyToPostId))
+    suspend fun myPosts(groupId: Long): List<GroupPost> {
+        val response = api.myPosts(groupId)
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể gửi tin nhắn")
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách bài viết")
         }
-        return response.body()?.data ?: throw IllegalStateException("Không thể gửi tin nhắn")
+        return response.body()?.data?.content.orEmpty()
+    }
+
+    suspend fun pendingPosts(groupId: Long): List<GroupPost> {
+        val response = api.pendingPosts(groupId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách chờ duyệt")
+        }
+        return response.body()?.data?.content.orEmpty()
+    }
+
+    suspend fun approvePost(postId: Long) {
+        val response = api.approvePost(postId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể duyệt bài viết")
+        }
+    }
+
+    suspend fun rejectPost(postId: Long, reason: String) {
+        val response = api.rejectPost(postId, reason)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể từ chối bài viết")
+        }
+    }
+
+    suspend fun likeGroupPost(postId: Long): Result<GroupPostInteractionResponse> {
+        return try {
+            val response = api.likeGroupPost(postId)
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Không thể thả tim bài viết"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getGroupPostComments(postId: Long): Result<List<GroupPostComment>> {
+        return try {
+            val response = api.getGroupPostComments(postId)
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!.content)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Không thể tải bình luận"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createGroupPostComment(postId: Long, content: String): Result<GroupPostComment> {
+        return try {
+            val response = api.createGroupPostComment(
+                postId,
+                CreateGroupPostCommentRequest(content)
+            )
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Không thể gửi bình luận"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun sendPost(groupId: Long, title: String?, content: String, tags: String? = null, replyToPostId: Long? = null): GroupPost {
+        val response = api.sendPost(groupId, CreateGroupPostRequest(title = title, content = content, tags = tags, replyToPostId = replyToPostId))
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể đăng bài viết")
+        }
+        return response.body()?.data ?: throw IllegalStateException("Không nhận được dữ liệu bài viết từ server")
     }
 
     suspend fun getArticles(): List<Article> {
@@ -156,7 +231,7 @@ class CommunityRepository(
     suspend fun reportPost(postId: Long, reason: String) {
         val response = api.reportPost(postId, com.example.carenest.feature.community.data.remote.ReportPostRequest(reason))
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể báo cáo tin nhắn")
+            throw IllegalStateException(response.body()?.message ?: "Không thể báo cáo bài viết")
         }
     }
 }

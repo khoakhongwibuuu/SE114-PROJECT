@@ -87,6 +87,7 @@ fun CommunityWikiScreen(
     canCreateArticle: Boolean = false,
     refreshTrigger: Int = 0,
     onOpenGroup: (ChatGroup) -> Unit = {},
+    onOpenGroupPosts: (ChatGroup) -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
@@ -704,7 +705,7 @@ fun CommunityWikiScreen(
                                             joined = true
                                         )
                                         selectedDoctorArticle = null
-                                        onOpenGroup(group)
+                                        onOpenGroupPosts(group)
                                     } else {
                                         val joinedPreview = withContext(Dispatchers.IO) {
                                             repository.join(specialtyId)
@@ -718,7 +719,7 @@ fun CommunityWikiScreen(
                                             joined = true
                                         )
                                         selectedDoctorArticle = null
-                                        onOpenGroup(group)
+                                        onOpenGroupPosts(group)
                                     }
                                 } catch (e: Exception) {
                                     android.widget.Toast.makeText(
@@ -836,7 +837,7 @@ private fun ArticleFeedCard(
                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF0EA5E9), modifier = Modifier.size(15.dp))
                         }
                     }
-                    Text(article.authorSpecialty ?: "Vừa đăng", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF94A3B8))
+                    Text(article.authorSpecialty ?: "Chuyên khoa", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF94A3B8))
                 }
             }
 

@@ -6,6 +6,9 @@ import com.carenest.backend.features.community.dto.request.CreateGroupPostReques
 import com.carenest.backend.features.community.dto.response.ChatGroupPreviewResponse;
 import com.carenest.backend.features.community.dto.response.ChatGroupResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostResponse;
+import com.carenest.backend.features.community.dto.response.GroupPostInteractionResponse;
+import com.carenest.backend.features.community.dto.response.GroupPostCommentResponse;
+import com.carenest.backend.features.community.dto.request.CreateGroupPostCommentRequest;
 import com.carenest.backend.features.community.service.CommunityKnowledgeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -81,7 +84,55 @@ public class CommunityController {
     public ApiResponse<GroupPostResponse> createGroupPost(
             @PathVariable("id") Long id,
             @Valid @RequestBody CreateGroupPostRequest request) {
-        return ApiResponse.success("Đã gửi tin nhắn vào nhóm", communityKnowledgeService.createGroupPost(id, request));
+        return ApiResponse.success("Đã gửi bài viết chờ duyệt", communityKnowledgeService.createGroupPost(id, request));
+    }
+
+    @GetMapping("/{id}/posts/my")
+    public ApiResponse<PageResponse<GroupPostResponse>> getMyGroupPosts(
+            @PathVariable("id") Long id,
+            @PageableDefault(size = 30, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ApiResponse.success(communityKnowledgeService.getMyGroupPosts(id, pageable));
+    }
+
+    @GetMapping("/{id}/posts/pending")
+    public ApiResponse<PageResponse<GroupPostResponse>> getPendingGroupPosts(
+            @PathVariable("id") Long id,
+            @PageableDefault(size = 30, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ApiResponse.success(communityKnowledgeService.getPendingGroupPosts(id, pageable));
+    }
+
+    @PostMapping("/posts/{postId}/approve")
+    public ApiResponse<Void> approveGroupPost(@PathVariable("postId") Long postId) {
+        communityKnowledgeService.approveGroupPost(postId);
+        return ApiResponse.success("Đã duyệt bài viết", null);
+    }
+
+    @PostMapping("/posts/{postId}/reject")
+    public ApiResponse<Void> rejectGroupPost(
+            @PathVariable("postId") Long postId,
+            @RequestParam("reason") String reason) {
+        communityKnowledgeService.rejectGroupPost(postId, reason);
+        return ApiResponse.success("Đã từ chối bài viết", null);
+    }
+
+    @PostMapping("/posts/{postId}/like")
+    public ApiResponse<GroupPostInteractionResponse> toggleGroupPostLike(@PathVariable("postId") Long postId) {
+        return ApiResponse.success(communityKnowledgeService.toggleGroupPostLike(postId));
+    }
+
+    @GetMapping("/posts/{postId}/comments")
+    public ApiResponse<PageResponse<GroupPostCommentResponse>> getGroupPostComments(
+            @PathVariable("postId") Long postId,
+            @PageableDefault(size = 30, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ApiResponse.success(communityKnowledgeService.getGroupPostComments(postId, pageable));
+    }
+
+    @PostMapping("/posts/{postId}/comments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<GroupPostCommentResponse> createGroupPostComment(
+            @PathVariable("postId") Long postId,
+            @Valid @RequestBody CreateGroupPostCommentRequest request) {
+        return ApiResponse.success("Đã gửi bình luận", communityKnowledgeService.createGroupPostComment(postId, request));
     }
 
     @DeleteMapping("/{id}/members/{targetUserId}")

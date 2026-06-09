@@ -18,14 +18,44 @@ data class GroupPost(
     val authorId: Long? = null,
     val authorName: String? = null,
     val authorRole: String? = null,
+    val title: String? = null,
     val content: String,
+    val tags: String? = null,
     val replyToPostId: Long? = null,
     val imageUrl: String? = null,
+    val createdAt: String? = null,
+    val status: String? = null,
+    val rejectionReason: String? = null,
+    val likeCount: Long = 0,
+    val commentCount: Long = 0,
+    val likedByMe: Boolean = false
+)
+
+data class GroupPostInteractionResponse(
+    val postId: Long,
+    val likedByMe: Boolean,
+    val likeCount: Long
+)
+
+data class GroupPostComment(
+    val id: Long,
+    val groupPostId: Long,
+    val authorId: Long? = null,
+    val authorName: String? = null,
+    val authorRole: String? = null,
+    val authorAvatarUrl: String? = null,
+    val content: String,
     val createdAt: String? = null
 )
 
+data class CreateGroupPostCommentRequest(
+    val content: String
+)
+
 data class CreateGroupPostRequest(
+    val title: String? = null,
     val content: String,
+    val tags: String? = null,
     val replyToPostId: Long? = null,
     val imageUrl: String? = null
 )

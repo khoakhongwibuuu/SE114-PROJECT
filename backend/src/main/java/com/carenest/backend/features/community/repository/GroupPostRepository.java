@@ -1,6 +1,7 @@
 package com.carenest.backend.features.community.repository;
 
 import com.carenest.backend.features.community.entity.GroupPost;
+import com.carenest.backend.features.community.enums.PostStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,10 @@ import java.util.Optional;
 @Repository
 public interface GroupPostRepository extends JpaRepository<GroupPost, Long> {
     Page<GroupPost> findAllByChatGroupIdOrderByCreatedAtDesc(Long chatGroupId, Pageable pageable);
+
+    Page<GroupPost> findAllByChatGroupIdAndStatusOrderByCreatedAtDesc(Long chatGroupId, PostStatus status, Pageable pageable);
+
+    Page<GroupPost> findAllByChatGroupIdAndAuthorIdOrderByCreatedAtDesc(Long chatGroupId, Long authorId, Pageable pageable);
 
     Optional<GroupPost> findFirstByChatGroupIdOrderByCreatedAtDesc(Long chatGroupId);
 
