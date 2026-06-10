@@ -13,5 +13,6 @@ public class ArticleCommentResponse {
     private Long authorId;
     private String authorName;
     private String content;
+    private String authorRole;
     private Instant createdAt;
 }

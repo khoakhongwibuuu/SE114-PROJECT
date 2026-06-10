@@ -60,7 +60,8 @@ fun GroupPostDetailScreen(
     groupId: Long,
     groupName: String,
     onBack: () -> Unit = {},
-    onNavigateToCreatePost: (Long) -> Unit = {}
+    onNavigateToCreatePost: (Long) -> Unit = {},
+    onNavigateToDoctorProfile: (Long) -> Unit = {}
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
@@ -151,7 +152,8 @@ fun GroupPostDetailScreen(
                     error = state.error,
                     onNavigateToCreatePost = { onNavigateToCreatePost(groupId) },
                     onLikeClick = { viewModel.toggleLike(it) },
-                    onCommentClick = { viewModel.openCommentSheet(it) }
+                    onCommentClick = { viewModel.openCommentSheet(it) },
+                    onDoctorClick = onNavigateToDoctorProfile
                 )
                 GroupPostTab.MY_POSTS -> MyGroupPostsPane(
                     posts = state.myPosts,
@@ -159,7 +161,8 @@ fun GroupPostDetailScreen(
                     error = state.error,
                     onNavigateToCreatePost = { onNavigateToCreatePost(groupId) },
                     onLikeClick = { viewModel.toggleLike(it) },
-                    onCommentClick = { viewModel.openCommentSheet(it) }
+                    onCommentClick = { viewModel.openCommentSheet(it) },
+                    onDoctorClick = onNavigateToDoctorProfile
                 )
                 GroupPostTab.PENDING -> ModerationQueuePane(
                     posts = state.pendingPosts,
@@ -202,7 +205,10 @@ fun GroupPostDetailScreen(
                         modifier = Modifier.weight(1f, fill = false).height(300.dp)
                     ) {
                         items(state.commentsList, key = { it.id }) { comment ->
-                            GroupPostCommentItem(comment = comment)
+                            GroupPostCommentItem(
+                                comment = comment,
+                                onDoctorClick = onNavigateToDoctorProfile
+                            )
                         }
                         if (state.commentsList.isEmpty()) {
                             item {
@@ -244,9 +250,12 @@ fun GroupPostDetailScreen(
 }
 
 @Composable
-fun GroupPostCommentItem(comment: GroupPostComment) {
+fun GroupPostCommentItem(
+    comment: GroupPostComment,
+    onDoctorClick: ((Long) -> Unit)? = null
+) {
     val initials = (comment.authorName ?: "?").take(1).uppercase()
-    val isDoctor = comment.authorRole == "DOCTOR" || comment.authorRole == "ADMIN"
+    val isDoctor = comment.authorRole == "DOCTOR"
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Box(
             modifier = Modifier
@@ -259,7 +268,15 @@ fun GroupPostCommentItem(comment: GroupPostComment) {
         }
         Spacer(modifier = Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier
+                    .then(
+                        if (isDoctor && comment.authorId != null && onDoctorClick != null) {
+                            Modifier.clickable { onDoctorClick(comment.authorId) }
+                        } else Modifier
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = comment.authorName ?: "Thành viên",
                     fontWeight = FontWeight.Bold,

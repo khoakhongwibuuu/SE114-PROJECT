@@ -1,6 +1,7 @@
 package com.example.carenest.feature.community.presentation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,7 +86,8 @@ fun ApprovedPostsPane(
     error: String?,
     onNavigateToCreatePost: () -> Unit,
     onLikeClick: (Long) -> Unit,
-    onCommentClick: (Long) -> Unit
+    onCommentClick: (Long) -> Unit,
+    onDoctorClick: (Long) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -105,7 +107,8 @@ fun ApprovedPostsPane(
                     StructuredGroupPostCard(
                         post = post,
                         onLikeClick = onLikeClick,
-                        onCommentClick = onCommentClick
+                        onCommentClick = onCommentClick,
+                        onDoctorClick = onDoctorClick
                     )
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -132,7 +135,8 @@ fun MyGroupPostsPane(
     error: String?,
     onNavigateToCreatePost: () -> Unit,
     onLikeClick: (Long) -> Unit,
-    onCommentClick: (Long) -> Unit
+    onCommentClick: (Long) -> Unit,
+    onDoctorClick: (Long) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -153,7 +157,8 @@ fun MyGroupPostsPane(
                         post = post, 
                         showStatus = true,
                         onLikeClick = onLikeClick,
-                        onCommentClick = onCommentClick
+                        onCommentClick = onCommentClick,
+                        onDoctorClick = onDoctorClick
                     )
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -286,12 +291,13 @@ fun StructuredGroupPostCard(
     showStatus: Boolean = false,
     onLikeClick: ((Long) -> Unit)? = null,
     onCommentClick: ((Long) -> Unit)? = null,
+    onDoctorClick: ((Long) -> Unit)? = null,
     actionRow: (@Composable () -> Unit)? = null
 ) {
     val displayTitle = post.displayTitle()
     val tags = post.tags?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.take(5).orEmpty()
     val initials = (post.authorName ?: "?").take(1).uppercase()
-    val isDoctor = post.authorRole == "DOCTOR" || post.authorRole == "ADMIN"
+    val isDoctor = post.authorRole == "DOCTOR"
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -305,6 +311,11 @@ fun StructuredGroupPostCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .then(
+                        if (isDoctor && post.authorId != null && onDoctorClick != null) {
+                            Modifier.clickable { onDoctorClick(post.authorId) }
+                        } else Modifier
+                    )
                     .padding(horizontal = 14.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

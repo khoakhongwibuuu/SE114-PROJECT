@@ -100,6 +100,7 @@ data class ArticleComment(
     val articleId: Long,
     val authorId: Long? = null,
     val authorName: String? = null,
+    val authorRole: String? = null,
     val authorAvatarUrl: String? = null,
     val content: String,
     val createdAt: String? = null
