@@ -11,6 +11,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.carenest.backend.features.booking.dto.response.ActiveConsultationDto;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,6 +54,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(DuplicateActiveConsultationException.class)
+    public ResponseEntity<ApiResponse<ActiveConsultationDto>> handleDuplicateActiveConsultation(DuplicateActiveConsultationException ex) {
+        log.warn("Duplicate active consultation: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.<ActiveConsultationDto>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(new ActiveConsultationDto(
+                                "DUPLICATE_CONSULTATION",
+                                ex.getExistingBookingId(),
+                                ex.getStatus().name()
+                        ))
+                        .build());
     }
 
     @ExceptionHandler(BadCredentialsException.class)
