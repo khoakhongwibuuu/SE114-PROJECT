@@ -218,6 +218,7 @@ fun BookingRequestCard(
                     BookingStatus.REJECTED -> Triple(Color(0xFFEF4444), "Từ chối", Color(0xFFFEE2E2))
                     BookingStatus.ACTIVE -> Triple(Color(0xFF3B82F6), "Đang khám", Color(0xFFDBEAFE))
                     BookingStatus.COMPLETED -> Triple(Color(0xFF64748B), "Hoàn thành", Color(0xFFF1F5F9))
+                    BookingStatus.CANCELLED -> Triple(Color(0xFFEF4444), "Đã hủy", Color(0xFFFEE2E2))
                     BookingStatus.RESTRICTED -> Triple(Color(0xFFF59E0B), "Hạn chế", Color(0xFFFEF3C7))
                 }
                 

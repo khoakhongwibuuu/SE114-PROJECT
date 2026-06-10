@@ -42,6 +42,8 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.PrimaryFixed
 import com.example.carenest.core.presentation.theme.SurfaceLowest
 import com.example.carenest.feature.auth.presentation.AuthViewModel
+import com.example.carenest.feature.booking.presentation.BookingCenterViewModel
+import com.example.carenest.feature.booking.presentation.BookingCenterViewModelFactory
 import com.example.carenest.feature.chat.presentation.AiChatViewModel
 import com.example.carenest.feature.chat.presentation.AiChatViewModelFactory
 import com.example.carenest.feature.community.presentation.CommunityScreen
@@ -94,6 +96,12 @@ fun MainScreen(
     val application = context.applicationContext as CareNestApplication
     val aiChatViewModel: AiChatViewModel = viewModel(
         factory = AiChatViewModelFactory(application.aiChatApi)
+    )
+    val bookingCenterViewModel: BookingCenterViewModel = viewModel(
+        factory = BookingCenterViewModelFactory(
+            application.bookingRepository,
+            application.secureSessionManager
+        )
     )
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
@@ -247,14 +255,7 @@ fun MainScreen(
 
                 TAB_CHAT -> ChatHubScreen(
                     aiChatViewModel = aiChatViewModel,
-                    onNavigateToAppointments = {
-                        val profileId = currentProfileId
-                        if (profileId != null) {
-                            onNavigateToMedicalRecord(profileId)
-                        } else {
-                            onNavigateToNotifications() // Fallback
-                        }
-                    },
+                    onNavigateToAppointments = { onNavigateToAppointments(-1L) },
                     onNavigateToConsultationRoom = onNavigateToConsultationRoom
                 )
 

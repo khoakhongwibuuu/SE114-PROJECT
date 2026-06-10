@@ -6,6 +6,8 @@ import com.example.carenest.feature.chat.data.remote.ChatWebSocketClient
 import com.example.carenest.feature.chat.data.repository.ChatRepository
 import com.example.carenest.feature.admin.data.AdminApi
 import com.example.carenest.feature.admin.data.repository.AdminRepository
+import com.example.carenest.feature.booking.data.remote.BookingApi
+import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.example.carenest.feature.community.data.repository.CommunityRepository
 import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.core.data.network.MediaApi
@@ -20,8 +22,7 @@ import com.example.carenest.feature.appointment.data.remote.AppointmentApi
 import com.example.carenest.feature.notifications.data.remote.NotificationApi
 import com.example.carenest.feature.doctor.data.remote.DoctorApi
 import com.example.carenest.feature.doctor.data.repository.DoctorRepository
-import com.example.carenest.feature.booking.data.remote.BookingApi
-import com.example.carenest.feature.booking.domain.repository.BookingRepository
+
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -72,10 +73,10 @@ class CareNestApplication : Application() {
         appointmentApi = retrofit.create(AppointmentApi::class.java)
         notificationApi = retrofit.create(NotificationApi::class.java)
         val adminApi = retrofit.create(AdminApi::class.java)
+        val bookingApi = retrofit.create(BookingApi::class.java)
         adminRepository = AdminRepository(adminApi)
         doctorApi = retrofit.create(DoctorApi::class.java)
         doctorRepository = DoctorRepository(doctorApi)
-        bookingApi = retrofit.create(BookingApi::class.java)
         bookingRepository = BookingRepository(bookingApi)
 
         val aiOkHttpClient = OkHttpClient.Builder()

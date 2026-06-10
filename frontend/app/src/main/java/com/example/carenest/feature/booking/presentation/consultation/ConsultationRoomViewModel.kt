@@ -8,7 +8,7 @@ import com.example.carenest.feature.booking.data.remote.ConsultationWebSocketCli
 import com.example.carenest.feature.booking.domain.model.ConsultationMessage
 import com.example.carenest.feature.booking.domain.model.ConsultationThreadResponse
 import com.example.carenest.feature.booking.domain.model.SendConsultationMessageRequest
-import com.example.carenest.feature.booking.domain.repository.BookingRepository
+import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
