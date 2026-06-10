@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.medical.data.remote.CabinetMedicineResponse
 import com.example.carenest.feature.medical.data.remote.CheckInRequest
+import com.example.carenest.feature.medical.data.remote.CreateCabinetRequest
 import com.example.carenest.feature.medical.data.remote.CreateCabinetMedicineRequest
 import com.example.carenest.feature.medical.data.remote.CreateMedicationScheduleRequest
 import com.example.carenest.feature.medical.data.remote.MedicationLogResponse
@@ -18,7 +19,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 // ── Cabinet State ──────────────────────────────────────────────────────────
@@ -155,8 +160,15 @@ class MedicineViewModel(
                         }
                         return@launch
                     }
+                    val familyIdLong = fid.toLongOrNull() ?: run {
+                        _isActionLoading.value = false
+                        withContext(Dispatchers.Main) {
+                            onError("Ma gia dinh khong hop le")
+                        }
+                        return@launch
+                    }
                     val createResponse = medicineApi.createCabinet(
-                        mapOf("familyId" to fid, "name" to "Tủ thuốc gia đình")
+                        CreateCabinetRequest(familyId = familyIdLong, name = "Tu thuoc gia dinh")
                     )
                     cabinetId = createResponse.body()?.data?.id ?: run {
                         _isActionLoading.value = false
@@ -256,8 +268,15 @@ class MedicineViewModel(
                         }
                         return@launch
                     }
+                    val familyIdLong = fid.toLongOrNull() ?: run {
+                        _isActionLoading.value = false
+                        withContext(Dispatchers.Main) {
+                            onError("Ma gia dinh khong hop le")
+                        }
+                        return@launch
+                    }
                     val createResponse = medicineApi.createCabinet(
-                        mapOf("familyId" to fid, "name" to "Tủ thuốc gia đình")
+                        CreateCabinetRequest(familyId = familyIdLong, name = "Tu thuoc gia dinh")
                     )
                     cabinetId = createResponse.body()?.data?.id ?: run {
                         _isActionLoading.value = false
@@ -355,11 +374,12 @@ class MedicineViewModel(
                         _scheduleState.value = ScheduleState.Empty
                         return@launch
                     }
+                    val sortedLogs = logs.sortedBy { parseScheduledLocalTime(it.scheduledTime) ?: LocalTime.MAX }
                     _scheduleState.value = ScheduleState.Success(
                         profileName = "Hôm nay",
-                        sections = groupIntosessions(logs),
-                        takenCount = logs.count { it.status == "TAKEN" },
-                        totalCount = logs.size
+                        sections = groupIntoSessions(sortedLogs),
+                        takenCount = sortedLogs.count { it.status == "TAKEN" },
+                        totalCount = sortedLogs.size
                     )
                 } else {
                     _scheduleState.value = ScheduleState.Error("Không thể tải lịch thuốc")
@@ -370,31 +390,48 @@ class MedicineViewModel(
         }
     }
 
-    private fun groupIntosessions(logs: List<MedicationLogResponse>): List<DoseSection> {
+    private fun groupIntoSessions(logs: List<MedicationLogResponse>): List<DoseSection> {
         val morning = mutableListOf<MedicationLogResponse>()
         val noon = mutableListOf<MedicationLogResponse>()
         val evening = mutableListOf<MedicationLogResponse>()
-        val fmt = DateTimeFormatter.ofPattern("HH:mm")
+        val unscheduled = mutableListOf<MedicationLogResponse>()
 
         logs.forEach { log ->
-            try {
-                // scheduledTime could be ISO datetime or just HH:mm
-                val timeStr = log.scheduledTime.takeLast(5) // "HH:mm"
-                val time = LocalTime.parse(timeStr, fmt)
-                when {
-                    time.hour < 12 -> morning.add(log)
-                    time.hour < 17 -> noon.add(log)
-                    else -> evening.add(log)
-                }
-            } catch (e: Exception) {
-                morning.add(log) // default fallback
+            val time = parseScheduledLocalTime(log.scheduledTime)
+            when {
+                time == null -> unscheduled.add(log)
+                time.hour < 12 -> morning.add(log)
+                time.hour < 17 -> noon.add(log)
+                else -> evening.add(log)
             }
         }
         return buildList {
             if (morning.isNotEmpty()) add(DoseSection("MORNING", "Buổi sáng", morning))
             if (noon.isNotEmpty()) add(DoseSection("NOON", "Buổi trưa", noon))
             if (evening.isNotEmpty()) add(DoseSection("EVENING", "Buổi tối", evening))
+            if (unscheduled.isNotEmpty()) add(DoseSection("UNSCHEDULED", "Chua xac dinh", unscheduled))
         }
+    }
+
+    private fun parseScheduledLocalTime(value: String): LocalTime? {
+        val raw = value.trim()
+        if (raw.isEmpty()) return null
+
+        runCatching {
+            return Instant.parse(raw).atZone(ZoneId.systemDefault()).toLocalTime()
+        }
+        runCatching {
+            return OffsetDateTime.parse(raw).toLocalTime()
+        }
+        runCatching {
+            return LocalDateTime.parse(raw).toLocalTime()
+        }
+        runCatching {
+            return LocalTime.parse(raw, DateTimeFormatter.ofPattern("HH:mm"))
+        }
+
+        val match = Regex("""\b([01]\d|2[0-3]):([0-5]\d)\b""").find(raw)
+        return match?.value?.let { LocalTime.parse(it, DateTimeFormatter.ofPattern("HH:mm")) }
     }
 
     fun toggleDose(logId: Long, currentTaken: Boolean) {
@@ -490,12 +527,17 @@ class MedicineViewModel(
         }
     }
 
-    fun deleteSchedule(scheduleId: Long, profileId: Long) {
+    fun deleteSchedule(scheduleId: Long, profileId: Long? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 medicineApi.deleteMedicationSchedule(scheduleId)
-                fetchTodaySchedule(profileId)
-                fetchSchedules(profileId)
+                val resolvedProfileId = profileId
+                    ?: secureSessionManager.getActiveProfileId()
+                    ?: secureSessionManager.getProfileId()
+                if (resolvedProfileId != null) {
+                    fetchTodaySchedule(resolvedProfileId)
+                    fetchSchedules(resolvedProfileId)
+                }
             } catch (e: Exception) {
                 // ignore
             }

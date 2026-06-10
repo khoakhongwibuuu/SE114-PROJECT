@@ -2,12 +2,20 @@ package com.example.carenest.feature.medical.data.remote
 
 import com.example.carenest.core.data.network.ApiResponse
 import retrofit2.Response
-import retrofit2.http.*
-
-// ── Cabinet (Tủ thuốc) ─────────────────────────────────────────────────────
+import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 data class CabinetResponse(
     val id: Long = 0,
+    val familyId: Long? = null,
+    val name: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
     val medicines: List<CabinetMedicineResponse> = emptyList()
 )
 
@@ -15,12 +23,18 @@ data class CabinetMedicineResponse(
     val id: Long = 0,
     val medicineName: String = "",
     val quantity: Int = 0,
-    val unit: String = "viên",
+    val unit: String = "vien",
     val expiryDate: String? = null,
-    val status: String = "AVAILABLE",
+    val addedDate: String? = null,
+    val notes: String? = null,
     val isExpired: Boolean = false,
     val isExpiring: Boolean = false,
     val isLowStock: Boolean = false
+)
+
+data class CreateCabinetRequest(
+    val familyId: Long,
+    val name: String? = null
 )
 
 data class CreateCabinetMedicineRequest(
@@ -28,7 +42,7 @@ data class CreateCabinetMedicineRequest(
     val quantity: Int,
     val unit: String,
     val expiryDate: String? = null,
-    val status: String = "AVAILABLE"
+    val notes: String? = null
 )
 
 data class UpdateCabinetMedicineRequest(
@@ -39,8 +53,6 @@ data class UpdateCabinetMedicineRequest(
     val notes: String? = null
 )
 
-// ── Daily Schedule (Lịch uống hôm nay) ────────────────────────────────────
-
 data class MedicationLogResponse(
     val id: Long = 0,
     val medicationId: Long? = null,
@@ -48,25 +60,27 @@ data class MedicationLogResponse(
     val dosage: String = "",
     val notes: String? = null,
     val status: String = "PENDING",
-    val scheduledTime: String = ""
+    val scheduledTime: String = "",
+    val takenTime: String? = null
 )
 
 data class CheckInRequest(
-    val status: String,   // "TAKEN" | "PENDING"
+    val status: String,
     val notes: String? = null
 )
 
-// ── Medication Schedule (Lịch dùng thuốc dài hạn) ─────────────────────────
-
 data class MedicationScheduleResponse(
     val id: Long = 0,
+    val healthProfileId: Long? = null,
     val medicineName: String = "",
     val dosage: String = "",
+    val frequency: String = "DAILY",
     val timesPerDay: Int = 1,
     val timeSlots: List<String> = emptyList(),
     val notes: String? = null,
     val startDate: String = "",
-    val endDate: String = ""
+    val endDate: String? = null,
+    val status: String = "ACTIVE"
 )
 
 data class CreateMedicationScheduleRequest(
@@ -80,11 +94,16 @@ data class CreateMedicationScheduleRequest(
     val notes: String? = null
 )
 
-// ── Retrofit Interface ──────────────────────────────────────────────────────
+data class PagedMedicationResponse(
+    val content: List<MedicationScheduleResponse> = emptyList(),
+    val page: Int = 0,
+    val size: Int = 0,
+    val totalElements: Long = 0,
+    val totalPages: Int = 0,
+    val last: Boolean = true
+)
 
 interface MedicineApi {
-
-    // Cabinet
     @GET("/api/v1/families/{familyId}/cabinets")
     suspend fun getCabinet(@Path("familyId") familyId: String): Response<ApiResponse<CabinetResponse>>
 
@@ -108,9 +127,8 @@ interface MedicineApi {
     ): Response<ApiResponse<Unit>>
 
     @POST("/api/v1/cabinets")
-    suspend fun createCabinet(@Body body: Map<String, Any>): Response<ApiResponse<CabinetResponse>>
+    suspend fun createCabinet(@Body request: CreateCabinetRequest): Response<ApiResponse<CabinetResponse>>
 
-    // Daily logs
     @GET("/api/v1/medications/today")
     suspend fun getTodayLogs(@Query("profileId") profileId: Long): Response<ApiResponse<List<MedicationLogResponse>>>
 
@@ -120,7 +138,6 @@ interface MedicineApi {
         @Body request: CheckInRequest
     ): Response<ApiResponse<Unit>>
 
-    // Schedule (long-term)
     @GET("/api/v1/health-profiles/{profileId}/medications")
     suspend fun getMedicationSchedules(
         @Path("profileId") profileId: Long,
@@ -137,10 +154,7 @@ interface MedicineApi {
 
     @DELETE("/api/v1/medications/{scheduleId}")
     suspend fun deleteMedicationSchedule(@Path("scheduleId") scheduleId: Long): Response<ApiResponse<Unit>>
-}
 
-data class PagedMedicationResponse(
-    val content: List<MedicationScheduleResponse> = emptyList(),
-    val totalElements: Long = 0,
-    val totalPages: Int = 0
-)
+    @PUT("/api/v1/medications/{scheduleId}/complete")
+    suspend fun completeMedicationSchedule(@Path("scheduleId") scheduleId: Long): Response<ApiResponse<Unit>>
+}

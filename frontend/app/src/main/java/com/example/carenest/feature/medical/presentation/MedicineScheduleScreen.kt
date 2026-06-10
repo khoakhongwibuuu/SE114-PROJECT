@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Check
@@ -64,12 +65,14 @@ private val SESSION_CONFIGS = mapOf(
     "MORNING" to SessionConfig(Icons.Default.LightMode, Color(0xFFFFF9C4), Color(0xFFF9A825)),
     "NOON" to SessionConfig(Icons.Default.WbTwilight, Color(0xFFE3F2FD), Color(0xFF1976D2)),
     "EVENING" to SessionConfig(Icons.Default.Bedtime, Color(0xFFEDE7F6), Color(0xFF7B1FA2)),
+    "UNSCHEDULED" to SessionConfig(Icons.Default.AccessTime, Color(0xFFF1F5F9), Color(0xFF64748B)),
 )
 
 private val SESSION_LABELS = mapOf(
     "MORNING" to "Buổi sáng",
     "NOON" to "Buổi trưa",
     "EVENING" to "Buổi tối",
+    "UNSCHEDULED" to "Chua xac dinh",
 )
 
 @Composable
@@ -83,15 +86,14 @@ fun MedicineScheduleScreen(
     val application = context.applicationContext as CareNestApplication
 
     val scheduleState by viewModel.scheduleState.collectAsState()
+    val resolvedProfileId = remember(profileId) {
+        profileId.takeIf { it > 0L }
+            ?: application.secureSessionManager.getActiveProfileId()
+            ?: application.secureSessionManager.getProfileId()
+    }
 
-    LaunchedEffect(profileId) {
-        if (profileId > 0L) {
-            viewModel.fetchTodaySchedule(profileId)
-        } else {
-            // Use current user's profileId from session if available
-            val pid = application.secureSessionManager.getProfileId()
-            if (pid != null) viewModel.fetchTodaySchedule(pid)
-        }
+    LaunchedEffect(resolvedProfileId) {
+        resolvedProfileId?.let { viewModel.fetchTodaySchedule(it) }
     }
 
     Box(
@@ -175,7 +177,7 @@ fun MedicineScheduleScreen(
 
                     // Dose sections
                     state.sections.forEach { section ->
-                        val config = SESSION_CONFIGS[section.session] ?: SESSION_CONFIGS["MORNING"]!!
+                        val config = SESSION_CONFIGS[section.session] ?: SESSION_CONFIGS["UNSCHEDULED"]!!
                         val label = SESSION_LABELS[section.session] ?: section.session
 
                         item {
@@ -208,7 +210,7 @@ fun MedicineScheduleScreen(
                                             onToggle = { viewModel.toggleDose(log.id, log.status == "TAKEN") },
                                             onDelete = {
                                                 log.medicationId?.let { medId ->
-                                                    viewModel.deleteSchedule(medId, profileId.coerceAtLeast(1L))
+                                                    viewModel.deleteSchedule(medId, resolvedProfileId)
                                                 }
                                             },
                                         )
