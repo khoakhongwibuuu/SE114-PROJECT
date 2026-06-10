@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.feature.booking.domain.model.BookingResponse
-import com.example.carenest.feature.booking.domain.repository.BookingRepository
+import com.example.carenest.feature.booking.data.repository.BookingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,16 +31,17 @@ class DoctorWorkspaceViewModel(
     fun loadBookings() {
         _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            val result = repository.getDoctorBookings()
-            result.onSuccess { bookings ->
+            try {
+                val bookings = repository.getDoctorBookings()
                 // Deduplicate: for each patient, keep only the most actionable booking.
-                // Priority: ACTIVE > APPROVED > PENDING > COMPLETED > REJECTED
+                // Priority: ACTIVE > APPROVED > PENDING > COMPLETED > REJECTED > CANCELLED
                 val statusPriority = mapOf(
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.ACTIVE to 5,
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.APPROVED to 4,
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.PENDING to 3,
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.COMPLETED to 2,
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.REJECTED to 1
+                    com.example.carenest.feature.booking.domain.model.BookingStatus.ACTIVE to 6,
+                    com.example.carenest.feature.booking.domain.model.BookingStatus.APPROVED to 5,
+                    com.example.carenest.feature.booking.domain.model.BookingStatus.PENDING to 4,
+                    com.example.carenest.feature.booking.domain.model.BookingStatus.COMPLETED to 3,
+                    com.example.carenest.feature.booking.domain.model.BookingStatus.REJECTED to 2,
+                    com.example.carenest.feature.booking.domain.model.BookingStatus.CANCELLED to 1
                 )
                 val deduped = bookings
                     .groupBy { it.patientId }
@@ -50,8 +51,8 @@ class DoctorWorkspaceViewModel(
                     }
                     .sortedByDescending { statusPriority[it.status] ?: 0 }
                 _uiState.update { it.copy(isLoading = false, bookings = deduped) }
-            }.onFailure { error ->
-                _uiState.update { it.copy(isLoading = false, error = error.message) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }
@@ -74,16 +75,16 @@ class DoctorWorkspaceViewModel(
 
     fun rejectBooking(id: Long, reason: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            val result = repository.rejectBooking(id, reason)
-            if (result.isSuccess) {
+            try {
+                val result = repository.rejectBooking(id, reason)
                 // Update local list
                 val updatedBookings = _uiState.value.bookings.map {
-                    if (it.id == id) result.getOrNull()!! else it
+                    if (it.id == id) result else it
                 }
                 _uiState.update { it.copy(bookings = updatedBookings) }
                 onSuccess()
-            } else {
-                onError(result.exceptionOrNull()?.message ?: "Có lỗi xảy ra")
+            } catch (e: Exception) {
+                onError(e.message ?: "Có lỗi xảy ra")
             }
         }
     }

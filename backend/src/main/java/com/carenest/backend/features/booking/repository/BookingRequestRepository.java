@@ -1,6 +1,7 @@
 package com.carenest.backend.features.booking.repository;
 
 import com.carenest.backend.features.booking.entity.BookingRequest;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,10 +11,14 @@ import com.carenest.backend.features.booking.enums.BookingRequestType;
 import com.carenest.backend.features.booking.enums.BookingStatus;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BookingRequestRepository extends JpaRepository<BookingRequest, Long> {
+    @EntityGraph(attributePaths = {"patient", "doctor", "healthProfile", "appointment"})
     List<BookingRequest> findAllByDoctorIdOrderByCreatedAtDesc(Long doctorId);
+
+    @EntityGraph(attributePaths = {"patient", "doctor", "healthProfile", "appointment"})
     List<BookingRequest> findAllByPatientIdOrderByCreatedAtDesc(Long patientId);
 
     java.util.Optional<BookingRequest> findFirstByPatientIdAndDoctorIdAndRequestTypeAndStatusInOrderByCreatedAtDesc(
@@ -30,4 +35,11 @@ public interface BookingRequestRepository extends JpaRepository<BookingRequest, 
         @Param("requestType") BookingRequestType requestType,
         @Param("statuses") List<BookingStatus> statuses
     );
+
+    @EntityGraph(attributePaths = {"patient", "doctor", "healthProfile", "appointment"})
+    List<BookingRequest> findAllByOrderByCreatedAtDesc();
+
+    @Override
+    @EntityGraph(attributePaths = {"patient", "doctor", "healthProfile", "appointment"})
+    Optional<BookingRequest> findById(Long id);
 }

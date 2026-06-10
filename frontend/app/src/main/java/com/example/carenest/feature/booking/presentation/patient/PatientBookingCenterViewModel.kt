@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.feature.booking.domain.model.BookingResponse
-import com.example.carenest.feature.booking.domain.repository.BookingRepository
+import com.example.carenest.feature.booking.data.repository.BookingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,11 +27,11 @@ class PatientBookingCenterViewModel(
     fun loadBookings() {
         _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            val result = repository.getPatientBookings()
-            result.onSuccess { bookings ->
+            try {
+                val bookings = repository.getMyBookings()
                 _uiState.update { it.copy(isLoading = false, bookings = bookings) }
-            }.onFailure { error ->
-                _uiState.update { it.copy(isLoading = false, error = error.message) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }
