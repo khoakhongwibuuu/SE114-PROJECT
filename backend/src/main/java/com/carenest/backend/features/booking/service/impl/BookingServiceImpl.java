@@ -484,10 +484,10 @@ public class BookingServiceImpl implements BookingService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .avatarUrl(user.getAvatarUrl())
-                .certificationNumber(verification != null ? verification.getCertificationNumber() : null)
+                .certificationNumber(maskCertificationNumber(verification != null ? verification.getCertificationNumber() : null))
                 .specialty(verification != null ? verification.getSpecialty() : null)
                 .hospitalName(verification != null ? verification.getHospitalName() : null)
-                .documentUrl(verification != null ? verification.getDocumentUrl() : null)
+                .documentUrl(null)
                 .approvedAt(verification != null ? verification.getUpdatedAt() : null)
                 .build();
     }
@@ -578,5 +578,16 @@ public class BookingServiceImpl implements BookingService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String maskCertificationNumber(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() <= 4) {
+            return "*".repeat(trimmed.length());
+        }
+        return "*".repeat(trimmed.length() - 4) + trimmed.substring(trimmed.length() - 4);
     }
 }

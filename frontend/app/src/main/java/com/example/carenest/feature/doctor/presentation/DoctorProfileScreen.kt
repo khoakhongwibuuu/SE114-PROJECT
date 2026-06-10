@@ -25,7 +25,6 @@ import com.example.carenest.CareNestApplication
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import com.example.carenest.feature.booking.presentation.BookingRequestSheet
-import com.example.carenest.feature.booking.domain.model.CreateBookingRequest
 import com.example.carenest.feature.booking.domain.model.DuplicateActiveConsultationException
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -287,9 +286,17 @@ fun DoctorProfileScreen(
                     scope.launch {
                         bookingLoading = true
                         try {
-                            val result = bookingRepository.createBooking(
+                            val healthProfileId = application.secureSessionManager.getActiveProfileId()
+                                ?: application.secureSessionManager.getProfileId()
+                            if (healthProfileId == null) {
+                                bookingLoading = false
+                                showBookingSheet = false
+                                snackbarHostState.showSnackbar("Vui lòng chọn hồ sơ sức khỏe trước khi đặt lịch")
+                                return@launch
+                            }
+                            bookingRepository.createBooking(
                                 doctorId = doctorId,
-                                healthProfileId = 0L, // Default or primary profile
+                                healthProfileId = healthProfileId,
                                 type = requestType,
                                 preferredSchedule = preferredTimeNote,
                                 patientNote = note

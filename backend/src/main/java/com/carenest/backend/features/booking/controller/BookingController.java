@@ -72,7 +72,9 @@ public class BookingController {
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('DOCTOR')")
-    public ApiResponse<BookingResponse> rejectBooking(@PathVariable("id") Long bookingId, @Valid @RequestBody RejectBookingRequest request) {
+    public ApiResponse<BookingResponse> rejectBooking(
+            @PathVariable("id") Long bookingId,
+            @Valid @RequestBody RejectBookingRequest request) {
         return ApiResponse.success("Đã từ chối yêu cầu khám", bookingService.rejectBooking(bookingId, request));
     }
 
@@ -87,55 +89,23 @@ public class BookingController {
     @PostMapping("/{id}/complete")
     @PreAuthorize("hasRole('DOCTOR')")
     public ApiResponse<BookingResponse> completeConsultation(@PathVariable("id") Long id) {
-        try {
-            return ApiResponse.success("Phiên tư vấn đã kết thúc", bookingService.completeConsultation(id));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ApiResponse.<BookingResponse>builder()
-                    .success(false)
-                    .message("Lỗi 500: " + e.toString())
-                    .build();
-        }
+        return ApiResponse.success("Phiên tư vấn đã kết thúc", bookingService.completeConsultation(id));
     }
 
     @PostMapping("/{id}/restrict")
     @PreAuthorize("hasRole('DOCTOR')")
     public ApiResponse<BookingResponse> restrictMessaging(@PathVariable("id") Long id) {
-        try {
-            return ApiResponse.success("Đã hạn chế nhắn tin", bookingService.restrictMessaging(id));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ApiResponse.<BookingResponse>builder()
-                    .success(false)
-                    .message("Lỗi 500: " + e.toString())
-                    .build();
-        }
+        return ApiResponse.success("Đã hạn chế nhắn tin", bookingService.restrictMessaging(id));
     }
 
     @PostMapping("/{id}/consultation-thread")
     public ApiResponse<ConsultationThreadResponse> provisionConsultationThread(@PathVariable("id") Long id) {
-        try {
-            return ApiResponse.success("Đã lấy thông tin luồng tư vấn", bookingService.provisionConsultationThread(id));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ApiResponse.<ConsultationThreadResponse>builder()
-                    .success(false)
-                    .message("Lỗi 500: " + e.toString())
-                    .build();
-        }
+        return ApiResponse.success("Đã lấy thông tin luồng tư vấn", bookingService.provisionConsultationThread(id));
     }
 
     @PostMapping("/{id}/unrestrict")
     @PreAuthorize("hasRole('DOCTOR')")
     public ApiResponse<BookingResponse> unrestrictMessaging(@PathVariable("id") Long id) {
-        try {
-            return ApiResponse.success("Đã hủy hạn chế nhắn tin", bookingService.unrestrictMessaging(id));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ApiResponse.<BookingResponse>builder()
-                    .success(false)
-                    .message("Lỗi 500: " + e.toString())
-                    .build();
-        }
+        return ApiResponse.success("Đã hủy hạn chế nhắn tin", bookingService.unrestrictMessaging(id));
     }
 }
