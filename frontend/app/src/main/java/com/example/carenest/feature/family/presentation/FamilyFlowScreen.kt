@@ -19,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,12 +64,23 @@ fun FamilyFlowScreen(
     )
     val familyUiState by familyViewModel.uiState.collectAsState()
 
-    var activeTab by remember { mutableStateOf(FamilyTab.MEMBERS) }
-    var currentScreen by remember { mutableStateOf("picker") }
-    var managementMode by remember { mutableStateOf<String?>(null) }
+    var activeTabName by rememberSaveable { mutableStateOf(FamilyTab.MEMBERS.name) }
+    val activeTab = try {
+        FamilyTab.valueOf(activeTabName)
+    } catch (e: Exception) {
+        FamilyTab.MEMBERS
+    }
 
+    var currentScreen by rememberSaveable { mutableStateOf("picker") }
+    var managementMode by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Back on MEMBERS non-picker sub-screen: return to picker
     BackHandler(enabled = activeTab == FamilyTab.MEMBERS && currentScreen != "picker") {
         currentScreen = "picker"
+    }
+    // Back on MEDICINE or CHAT tab: return to MEMBERS instead of propagating to NavDisplay
+    BackHandler(enabled = activeTab == FamilyTab.MEDICINE || activeTab == FamilyTab.CHAT) {
+        activeTabName = FamilyTab.MEMBERS.name
     }
 
     LaunchedEffect(refreshTrigger, activeTab) {
@@ -95,7 +107,7 @@ fun FamilyFlowScreen(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { activeTab = tab }
+                        .clickable { activeTabName = tab.name }
                         .padding(top = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -151,7 +163,7 @@ fun FamilyFlowScreen(
                 FamilyTab.CHAT -> FamilyChatDirectoryPane(
                     families = familyUiState.myFamilies,
                     activeFamilyId = activeFamilyId,
-                    onOpenMembersTab = { activeTab = FamilyTab.MEMBERS },
+                    onOpenMembersTab = { activeTabName = FamilyTab.MEMBERS.name },
                     onSelectFamily = { family ->
                         familyViewModel.selectFamily(family.id)
                         onOpenFamilyChat(family)
