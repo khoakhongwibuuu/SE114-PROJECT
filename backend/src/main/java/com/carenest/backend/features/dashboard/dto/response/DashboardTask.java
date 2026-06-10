@@ -20,13 +20,13 @@ public class DashboardTask {
     @Schema(description = "Thá»i gian thá»±c hiá»‡n", example = "2023-10-27T08:00:00Z")
     private String time;
 
-    @Schema(description = "TÃªn thÃ nh viÃªn gia Ä‘Ã¬nh", example = "BÃ© Na")
+    @Schema(description = "TÃªn thành viên gia Ä‘Ã¬nh", example = "BÃ© Na")
     private String memberName;
 
     @Schema(description = "ID tham chiáº¿u cá»§a cÃ´ng viá»‡c (MedicationLog ID hoáº·c VaccinationDose ID)", example = "123")
     private Long referenceId;
 
-    @Schema(description = "ID há»“ sÆ¡ sá»©c khá»e cá»§a thÃ nh viÃªn", example = "3")
+    @Schema(description = "ID há»“ sÆ¡ sá»©c khá»e cá»§a thành viên", example = "3")
     private Long profileId;
 
     @Schema(description = "MÃ´ táº£ phá»¥ hoáº·c tháº» nháº¯c nhá»Ÿ", example = "â³ NgÃ y mai")

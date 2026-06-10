@@ -1,4 +1,4 @@
-﻿package com.example.carenest.core.data.network
+package com.example.carenest.core.data.network
 
 import com.example.carenest.core.data.storage.SecureSessionManager
 import okhttp3.Interceptor

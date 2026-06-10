@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.main.presentation
+package com.example.carenest.feature.main.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -60,7 +60,7 @@ public class AppointmentController {
             @PathVariable("id") Long id,
             @Valid @RequestBody AppointmentMemberRequest request) {
         AppointmentResponse response = appointmentService.assignMember(id, request);
-        return ApiResponse.success("ÄÃ£ gÃ¡n thÃ nh viÃªn vÃ o lá»‹ch khÃ¡m", response);
+        return ApiResponse.success("ÄÃ£ gÃ¡n thành viên vÃ o lá»‹ch khÃ¡m", response);
     }
 
     @GetMapping("/appointments/{id}/notes")
