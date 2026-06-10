@@ -18,6 +18,10 @@ import com.example.carenest.feature.chat.data.remote.AiChatApi
 import com.example.carenest.feature.medical.data.remote.MedicineApi
 import com.example.carenest.feature.appointment.data.remote.AppointmentApi
 import com.example.carenest.feature.notifications.data.remote.NotificationApi
+import com.example.carenest.feature.doctor.data.remote.DoctorApi
+import com.example.carenest.feature.doctor.data.repository.DoctorRepository
+import com.example.carenest.feature.booking.data.remote.BookingApi
+import com.example.carenest.feature.booking.domain.repository.BookingRepository
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -39,6 +43,10 @@ class CareNestApplication : Application() {
     lateinit var appointmentApi: AppointmentApi
     lateinit var notificationApi: NotificationApi
     lateinit var adminRepository: AdminRepository
+    lateinit var doctorApi: DoctorApi
+    lateinit var doctorRepository: DoctorRepository
+    lateinit var bookingApi: BookingApi
+    lateinit var bookingRepository: BookingRepository
 
     override fun onCreate() {
         super.onCreate()
@@ -65,6 +73,10 @@ class CareNestApplication : Application() {
         notificationApi = retrofit.create(NotificationApi::class.java)
         val adminApi = retrofit.create(AdminApi::class.java)
         adminRepository = AdminRepository(adminApi)
+        doctorApi = retrofit.create(DoctorApi::class.java)
+        doctorRepository = DoctorRepository(doctorApi)
+        bookingApi = retrofit.create(BookingApi::class.java)
+        bookingRepository = BookingRepository(bookingApi)
 
         val aiOkHttpClient = OkHttpClient.Builder()
             .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })

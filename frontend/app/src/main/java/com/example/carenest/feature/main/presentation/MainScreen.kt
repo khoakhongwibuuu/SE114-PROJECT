@@ -1,5 +1,6 @@
 package com.example.carenest.feature.main.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.components.CareNestIcon
 import com.example.carenest.core.presentation.navigation.ChatRoom
+import com.example.carenest.core.presentation.navigation.GroupPostDetail
 import com.example.carenest.core.presentation.theme.AppRadius
 import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
@@ -69,9 +71,13 @@ fun MainScreen(
     onNavigateToVaccinations: (Long) -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToDoctorVerification: () -> Unit = {},
+    onNavigateToDoctorWorkspace: () -> Unit = {},
+    onNavigateToPatientBookingCenter: () -> Unit = {},
+    onNavigateToConsultationRoom: (Long) -> Unit = {},
     onNavigateToPolicy: () -> Unit = {},
     onNavigateToMedicalRecord: (Long) -> Unit = {},
     onNavigateToFamilyChat: (Long, String, Int) -> Unit = { _, _, _ -> },
+    onNavigateToDoctorProfile: (Long) -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
     authViewModel: AuthViewModel,
@@ -131,6 +137,12 @@ fun MainScreen(
         } else {
             selectedTab = tabIndex
         }
+    }
+
+    // When user is on a non-home tab and presses Android system back, return to Home tab
+    // instead of propagating to NavDisplay (which would pop MainDashboard off the stack).
+    BackHandler(enabled = selectedTab != TAB_HOME) {
+        selectedTab = TAB_HOME
     }
 
     Scaffold(
@@ -228,17 +240,22 @@ fun MainScreen(
                 TAB_COMMUNITY -> CommunityScreen(
                     canCreateArticle = canAccessDoctorUi,
                     refreshTrigger = communityRefreshTrigger,
-                    onOpenGroup = { onItemClick(ChatRoom(it.id, it.name)) }
+                    onOpenGroup = { onItemClick(ChatRoom(it.id, it.name)) },
+                    onOpenGroupPosts = { group -> onItemClick(GroupPostDetail(group.id, group.name)) },
+                    onNavigateToDoctorProfile = onNavigateToDoctorProfile
                 )
 
                 TAB_CHAT -> ChatHubScreen(
                     aiChatViewModel = aiChatViewModel,
                     onNavigateToAppointments = {
                         val profileId = currentProfileId
-                            ?: application.secureSessionManager.getProfileId()
-                            ?: 0L
-                        onNavigateToAppointments(profileId)
-                    }
+                        if (profileId != null) {
+                            onNavigateToMedicalRecord(profileId)
+                        } else {
+                            onNavigateToNotifications() // Fallback
+                        }
+                    },
+                    onNavigateToConsultationRoom = onNavigateToConsultationRoom
                 )
 
                 TAB_PROFILE -> ProfileScreen(
@@ -246,12 +263,12 @@ fun MainScreen(
                     refreshTrigger = profileRefreshTrigger,
                     onLogout = onLogout,
                     onNavigateToMedicalRecord = {
-                        val profileId = currentProfileId
-                            ?: application.secureSessionManager.getProfileId()
-                            ?: 0L
+                        val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
                         onNavigateToMedicalRecord(profileId)
                     },
                     onNavigateToDoctorVerification = onNavigateToDoctorVerification,
+                    onNavigateToDoctorWorkspace = onNavigateToDoctorWorkspace,
+                    onNavigateToPatientBookingCenter = onNavigateToPatientBookingCenter,
                     onNavigateToPolicy = onNavigateToPolicy
                 )
             }

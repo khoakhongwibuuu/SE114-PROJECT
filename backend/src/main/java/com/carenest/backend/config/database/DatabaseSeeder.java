@@ -26,6 +26,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final ChatGroupRepository chatGroupRepository;
     private final UserGroupMembershipRepository membershipRepository;
+    private final com.carenest.backend.features.doctorverification.repository.DoctorVerificationRepository verificationRepository;
 
     @Override
     @Transactional
@@ -41,21 +42,32 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private User seedUser(String email, String password, String fullName, Role role) {
-        if (!userRepository.existsByEmail(email)) {
-            User user = new User();
-            user.setEmail(email);
-            user.setPasswordHash(passwordEncoder.encode(password));
-            user.setFullName(fullName);
-            user.setRole(role);
-            user.setIsActive(true);
-            user.setIsVerified(true);
-            User saved = userRepository.save(user);
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User newUser = new User();
+            newUser.setEmail(email);
+            newUser.setPasswordHash(passwordEncoder.encode(password));
+            newUser.setFullName(fullName);
+            newUser.setRole(role);
+            newUser.setIsActive(true);
+            newUser.setIsVerified(true);
+            User saved = userRepository.save(newUser);
             log.info("Seeded account: {} ({})", email, role.name());
             return saved;
+        });
+
+        if (role == Role.DOCTOR && verificationRepository.findByUserId(user.getId()).isEmpty()) {
+            com.carenest.backend.features.doctorverification.entity.DoctorVerification verification = new com.carenest.backend.features.doctorverification.entity.DoctorVerification();
+            verification.setUser(user);
+            verification.setSpecialty("Chuyên khoa " + fullName);
+            verification.setHospitalName("Bệnh viện CareNest");
+            verification.setCertificationNumber("123456789");
+            verification.setDocumentUrl("https://example.com/document.jpg");
+            verification.setStatus(com.carenest.backend.features.doctorverification.enums.VerificationStatus.APPROVED);
+            verificationRepository.save(verification);
+            log.info("Seeded verification for doctor: {}", email);
         }
 
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Cannot reload seeded user: " + email));
+        return user;
     }
 
     private void ensureQaModeratorHostsAllGroups(User qaModerator) {

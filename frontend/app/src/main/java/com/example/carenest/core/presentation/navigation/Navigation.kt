@@ -107,7 +107,7 @@ fun MainNavigation() {
 
   NavDisplay(
     backStack = backStack,
-    onBack = { backStack.removeLastOrNull() },
+    onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
     entryProvider =
       entryProvider {
         entry<Onboarding> {
@@ -194,10 +194,16 @@ fun MainNavigation() {
               onNavigateToVaccinations = { profileId -> backStack.add(VaccinationTracker(profileId)) },
               onNavigateToNotifications = { backStack.add(NotificationsCenter) },
               onNavigateToDoctorVerification = { backStack.add(DoctorVerification) },
+              onNavigateToDoctorWorkspace = { backStack.add(DoctorWorkspace) },
+              onNavigateToPatientBookingCenter = { backStack.add(PatientBookingCenter) },
+              onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) },
               onNavigateToPolicy = { backStack.add(Policy) },
               onNavigateToMedicalRecord = { profileId -> backStack.add(UserMedical(profileId)) },
               onNavigateToFamilyChat = { familyId, familyName, memberCount ->
                   backStack.add(FamilyChatRoom(familyId, familyName, memberCount))
+              },
+              onNavigateToDoctorProfile = { doctorId -> 
+                  backStack.add(DoctorProfile(doctorId)) 
               },
               onLogout = {
                   scope.launch {
@@ -259,6 +265,34 @@ fun MainNavigation() {
             groupId = key.id,
             groupName = key.name,
             onBack = { backStack.removeLastOrNull() }
+          )
+        }
+        entry<DoctorProfile> {
+            val key = it as DoctorProfile
+            com.example.carenest.feature.doctor.presentation.DoctorProfileScreen(
+                doctorId = key.doctorId,
+                onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) },
+                onNavigateToPatientBookingCenter = { backStack.add(PatientBookingCenter) },
+                onBack = { backStack.removeLastOrNull() }
+            )
+        }
+        
+        entry<GroupPostDetail> {
+          val key = it as GroupPostDetail
+          com.example.carenest.feature.community.presentation.GroupPostDetailScreen(
+            groupId = key.groupId,
+            groupName = key.groupName,
+            onBack = { backStack.removeLastOrNull() },
+            onNavigateToCreatePost = { id -> backStack.add(CreateGroupPost(id)) },
+            onNavigateToDoctorProfile = { doctorId -> backStack.add(DoctorProfile(doctorId)) }
+          )
+        }
+        entry<CreateGroupPost> {
+          val key = it as CreateGroupPost
+          com.example.carenest.feature.community.presentation.CreateGroupPostScreen(
+            groupId = key.groupId,
+            onBack = { backStack.removeLastOrNull() },
+            onPostSuccess = { backStack.removeLastOrNull() }
           )
         }
         entry<FamilyChatRoom> {
@@ -330,6 +364,31 @@ fun MainNavigation() {
         }
         entry<Policy> {
             PolicyScreen(
+                onBack = { backStack.removeLastOrNull() }
+            )
+        }
+        entry<DoctorWorkspace> {
+            com.example.carenest.feature.booking.presentation.doctorworkspace.DoctorWorkspaceScreen(
+                onBack = { backStack.removeLastOrNull() },
+                onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) }
+            )
+        }
+        entry<PatientBookingCenter> {
+            com.example.carenest.feature.booking.presentation.patient.PatientBookingCenterScreen(
+                onBack = { backStack.removeLastOrNull() },
+                onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) }
+            )
+        }
+        entry<ConsultationRoom> { args ->
+            val viewModel: com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModel = viewModel(
+                factory = com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModelFactory(
+                    repository = application.bookingRepository,
+                    webSocketClient = com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient(application.secureSessionManager)
+                )
+            )
+            com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomScreen(
+                bookingId = args.bookingId,
+                viewModel = viewModel,
                 onBack = { backStack.removeLastOrNull() }
             )
         }

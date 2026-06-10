@@ -35,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +55,7 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
 import com.example.carenest.feature.chat.presentation.AiChatViewModel
+import com.example.carenest.feature.chat.presentation.ConsultationInboxPane
 
 private enum class ChatHubTab(val label: String) {
     AI("AI Care"),
@@ -63,9 +65,10 @@ private enum class ChatHubTab(val label: String) {
 @Composable
 fun ChatHubScreen(
     aiChatViewModel: AiChatViewModel,
-    onNavigateToAppointments: () -> Unit
+    onNavigateToAppointments: () -> Unit,
+    onNavigateToConsultationRoom: (Long) -> Unit
 ) {
-    var activeTab by remember { mutableStateOf(ChatHubTab.AI) }
+    var activeTab by rememberSaveable { mutableStateOf(ChatHubTab.AI) }
 
     Column(
         modifier = Modifier
@@ -104,7 +107,7 @@ fun ChatHubScreen(
 
         when (activeTab) {
             ChatHubTab.AI -> AiCarePane(aiChatViewModel)
-            ChatHubTab.DOCTOR -> DoctorMessagingPlaceholder(onNavigateToAppointments = onNavigateToAppointments)
+            ChatHubTab.DOCTOR -> ConsultationInboxPane(onNavigateToConsultationRoom = onNavigateToConsultationRoom)
         }
     }
 }

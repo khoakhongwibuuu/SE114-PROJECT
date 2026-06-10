@@ -1,0 +1,199 @@
+package com.example.carenest.feature.booking.presentation.patient
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.carenest.CareNestApplication
+import com.example.carenest.core.presentation.theme.PrimaryBlue
+import com.example.carenest.feature.booking.domain.model.BookingResponse
+import com.example.carenest.feature.booking.domain.model.BookingRequestType
+import com.example.carenest.feature.booking.domain.model.BookingStatus
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PatientBookingCenterScreen(
+    onBack: () -> Unit,
+    onNavigateToConsultationRoom: (Long) -> Unit
+) {
+    val context = LocalContext.current
+    val application = context.applicationContext as CareNestApplication
+    val viewModel: PatientBookingCenterViewModel = viewModel(
+        factory = PatientBookingCenterViewModel.Factory(application.bookingRepository)
+    )
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadBookings()
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Lịch sử đặt khám", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Trở về")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF8FAFC))
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
+                }
+                uiState.error != null -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(uiState.error!!, color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { viewModel.loadBookings() }) {
+                            Text("Thử lại")
+                        }
+                    }
+                }
+                uiState.bookings.isEmpty() -> {
+                    Text(
+                        text = "Chưa có lịch sử đặt khám",
+                        color = Color(0xFF64748B),
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                else -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(uiState.bookings) { booking ->
+                            PatientBookingCard(
+                                booking = booking,
+                                onNavigateToConsultationRoom = { onNavigateToConsultationRoom(booking.id) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PatientBookingCard(
+    booking: BookingResponse,
+    onNavigateToConsultationRoom: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE2E8F0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = booking.doctorAvatarUrl ?: "https://api.dicebear.com/7.x/avataaars/png?seed=${booking.doctorFullName ?: booking.doctorId}",
+                        contentDescription = "Avatar",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "BS. ${booking.doctorFullName ?: booking.doctorId}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = if (booking.requestType == BookingRequestType.ONLINE_CHAT) "Tư vấn trực tuyến" else "Khám trực tiếp",
+                        fontSize = 13.sp,
+                        color = PrimaryBlue
+                    )
+                }
+                
+                // Status Badge
+                val (statusColor, statusText, statusBg) = when(booking.status) {
+                    BookingStatus.PENDING -> Triple(Color(0xFFEAB308), "Chờ duyệt", Color(0xFFFEF9C3))
+                    BookingStatus.APPROVED -> Triple(Color(0xFF22C55E), "Đã chấp nhận", Color(0xFFDCFCE7))
+                    BookingStatus.REJECTED -> Triple(Color(0xFFEF4444), "Đã từ chối", Color(0xFFFEE2E2))
+                    BookingStatus.ACTIVE -> Triple(Color(0xFF3B82F6), "Đang khám", Color(0xFFDBEAFE))
+                    BookingStatus.COMPLETED -> Triple(Color(0xFF64748B), "Hoàn thành", Color(0xFFF1F5F9))
+                    BookingStatus.RESTRICTED -> Triple(Color(0xFFF59E0B), "Hạn chế", Color(0xFFFEF3C7))
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(statusBg)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text("Ghi chú của bạn:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
+            Text(booking.note, fontSize = 14.sp, color = Color(0xFF0F172A))
+
+            if (!booking.preferredTimeNote.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Thời gian mong muốn:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
+                Text(booking.preferredTimeNote, fontSize = 14.sp, color = Color(0xFF0F172A))
+            }
+            
+            if (booking.status == BookingStatus.REJECTED && !booking.rejectReason.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Lý do từ chối:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFEF4444))
+                Text(booking.rejectReason, fontSize = 14.sp, color = Color(0xFF0F172A))
+            }
+
+            if (booking.status == BookingStatus.APPROVED || booking.status == BookingStatus.ACTIVE) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onNavigateToConsultationRoom,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                ) {
+                    Text("Vào phòng tư vấn riêng tư")
+                }
+            }
+        }
+    }
+}

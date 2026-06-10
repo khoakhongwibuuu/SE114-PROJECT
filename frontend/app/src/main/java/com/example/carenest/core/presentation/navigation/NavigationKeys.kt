@@ -28,8 +28,17 @@ import kotlinx.serialization.Serializable
 @Serializable data object DoctorVerification : NavKey
 @Serializable data class UserMedical(val profileId: Long) : NavKey
 @Serializable data object Policy : NavKey
+@Serializable data object PatientBookingCenter : NavKey
 
 @Serializable data class ChatRoom(val id: Long, val name: String) : NavKey
 @Serializable data class FamilyChatRoom(val id: Long, val name: String, val memberCount: Int) : NavKey
 
 
+@Serializable data class GroupPostDetail(val groupId: Long, val groupName: String) : NavKey
+@Serializable data class CreateGroupPost(val groupId: Long) : NavKey
+
+@Serializable data class DoctorProfile(val doctorId: Long) : NavKey
+
+@Serializable data object DoctorWorkspace : NavKey
+
+@Serializable data class ConsultationRoom(val bookingId: Long) : NavKey
