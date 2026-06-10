@@ -286,18 +286,25 @@ fun DoctorProfileScreen(
                 onSubmitRequest = { _, requestType, note, preferredTimeNote ->
                     scope.launch {
                         bookingLoading = true
-                        val request = CreateBookingRequest(doctorId, requestType, note, preferredTimeNote)
-                        val result = bookingRepository.createBookingRequest(request)
-                        bookingLoading = false
-                        showBookingSheet = false
-                        if (result.isSuccess) {
-                            snackbarHostState.showSnackbar("Yêu cầu đã được gửi. Đang chờ bác sĩ xác nhận.")
-                        } else {
-                            val exception = result.exceptionOrNull()
-                            if (exception is DuplicateActiveConsultationException) {
-                                duplicateException = exception
+                        try {
+                            val result = bookingRepository.createBooking(
+                                doctorId = doctorId,
+                                healthProfileId = 0L, // Default or primary profile
+                                type = requestType,
+                                preferredSchedule = preferredTimeNote,
+                                patientNote = note
+                            )
+                            bookingLoading = false
+                            showBookingSheet = false
+                            snackbarHostState.showSnackbar("Đã gửi yêu cầu tư vấn thành công")
+                            onNavigateToPatientBookingCenter()
+                        } catch (e: Exception) {
+                            bookingLoading = false
+                            showBookingSheet = false
+                            if (e is DuplicateActiveConsultationException) {
+                                duplicateException = e
                             } else {
-                                snackbarHostState.showSnackbar(exception?.message ?: "Có lỗi xảy ra")
+                                snackbarHostState.showSnackbar("Lỗi: ${e.message}")
                             }
                         }
                     }

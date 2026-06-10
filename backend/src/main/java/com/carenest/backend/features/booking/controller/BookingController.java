@@ -1,12 +1,15 @@
 package com.carenest.backend.features.booking.controller;
 
 import com.carenest.backend.core.api.ApiResponse;
+import com.carenest.backend.features.booking.dto.request.CancelBookingRequest;
+import com.carenest.backend.features.booking.dto.request.ConfirmBookingScheduleRequest;
 import com.carenest.backend.features.booking.dto.request.CreateBookingRequest;
 import com.carenest.backend.features.booking.dto.request.RejectBookingRequest;
 import com.carenest.backend.features.booking.dto.response.BookingResponse;
 import com.carenest.backend.features.booking.dto.response.ConsultationThreadInboxResponse;
 import com.carenest.backend.features.booking.dto.response.ConsultationThreadResponse;
 import com.carenest.backend.features.booking.service.BookingService;
+import com.carenest.backend.features.doctorverification.dto.response.DoctorSummaryResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +31,11 @@ public class BookingController {
     public ApiResponse<BookingResponse> createBookingRequest(@Valid @RequestBody CreateBookingRequest request) {
         BookingResponse response = bookingService.createBookingRequest(request);
         return ApiResponse.success("Yêu cầu đã được gửi. Đang chờ bác sĩ xác nhận.", response);
+    }
+
+    @GetMapping("/doctors")
+    public ApiResponse<List<DoctorSummaryResponse>> getAvailableDoctors() {
+        return ApiResponse.success("Danh sách bác sĩ khả dụng", bookingService.getAvailableDoctors());
     }
 
     @GetMapping("/doctor")
@@ -54,10 +62,26 @@ public class BookingController {
         return ApiResponse.success("Đã chấp nhận yêu cầu khám", bookingService.approveBooking(id));
     }
 
+    @PostMapping("/{id}/confirm-schedule")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ApiResponse<BookingResponse> confirmSchedule(
+            @PathVariable("id") Long bookingId,
+            @Valid @RequestBody ConfirmBookingScheduleRequest request) {
+        return ApiResponse.success("Đã xác nhận lịch hẹn", bookingService.confirmSchedule(bookingId, request));
+    }
+
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('DOCTOR')")
-    public ApiResponse<BookingResponse> rejectBooking(@PathVariable("id") Long id, @Valid @RequestBody RejectBookingRequest request) {
-        return ApiResponse.success("Đã từ chối yêu cầu khám", bookingService.rejectBooking(id, request));
+    public ApiResponse<BookingResponse> rejectBooking(@PathVariable("id") Long bookingId, @Valid @RequestBody RejectBookingRequest request) {
+        return ApiResponse.success("Đã từ chối yêu cầu khám", bookingService.rejectBooking(bookingId, request));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ApiResponse<BookingResponse> cancelBooking(
+            @PathVariable("id") Long bookingId,
+            @RequestBody(required = false) CancelBookingRequest request) {
+        CancelBookingRequest payload = request != null ? request : new CancelBookingRequest();
+        return ApiResponse.success("Đã hủy yêu cầu đặt lịch", bookingService.cancelBooking(bookingId, payload));
     }
 
     @PostMapping("/{id}/complete")

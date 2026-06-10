@@ -1,11 +1,10 @@
 package com.carenest.backend.features.booking.enums;
 
-public enum BookingStatus {
+public enum BookingRequestStatus {
     PENDING,
-    APPROVED,
+    CONFIRMED,
     REJECTED,
     CANCELLED,
-    ACTIVE,
-    COMPLETED,
-    RESTRICTED
+    ACTIVE_CONSULTATION,
+    COMPLETED
 }

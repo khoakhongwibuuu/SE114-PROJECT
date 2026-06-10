@@ -4,11 +4,13 @@ data class CreateBookingRequest(
     val doctorId: Long,
     val requestType: BookingRequestType,
     val note: String,
-    val preferredTimeNote: String? = null
+    val preferredTimeNote: String? = null,
+    val healthProfileId: Long? = null,
+    val preferredSchedule: String? = null
 )
 
 data class RejectBookingRequest(
-    val reason: String
+    val rejectionReason: String
 )
 
 data class BookingResponse(
@@ -19,11 +21,20 @@ data class BookingResponse(
     val doctorId: Long,
     val doctorFullName: String? = null,
     val doctorAvatarUrl: String? = null,
+    val doctorSpecialty: String? = null,
+    val doctorHospitalName: String? = null,
+    val healthProfileName: String? = null,
     val requestType: BookingRequestType,
     val status: BookingStatus,
     val note: String,
     val preferredTimeNote: String? = null,
     val rejectReason: String? = null,
+    val cancellationReason: String? = null,
+    val scheduledAt: String? = null,
+    val confirmedLocation: String? = null,
+    val confirmedNote: String? = null,
+    val appointmentId: Long? = null,
+    val healthProfileId: Long? = null,
     val createdAt: String? = null
 )
 

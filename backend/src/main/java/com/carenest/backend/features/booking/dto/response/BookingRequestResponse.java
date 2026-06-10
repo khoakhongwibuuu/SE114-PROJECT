@@ -1,34 +1,32 @@
 package com.carenest.backend.features.booking.dto.response;
 
+import com.carenest.backend.features.booking.enums.BookingRequestStatus;
 import com.carenest.backend.features.booking.enums.BookingRequestType;
-import com.carenest.backend.features.booking.enums.BookingStatus;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
 import java.time.Instant;
 
-@Data
+@Getter
 @Builder
-public class BookingResponse {
+public class BookingRequestResponse {
     private Long id;
     private Long patientId;
-    private String patientFullName;
-    private String patientAvatarUrl;
+    private String patientName;
     private Long doctorId;
-    private String doctorFullName;
-    private String doctorAvatarUrl;
+    private String doctorName;
     private String doctorSpecialty;
     private String doctorHospitalName;
     private Long healthProfileId;
     private String healthProfileName;
-    private BookingRequestType requestType;
-    private BookingStatus status;
-    private String note;
-    private String preferredTimeNote;
-    private String rejectReason;
+    private BookingRequestType type;
+    private BookingRequestStatus status;
+    private String preferredSchedule;
+    private String patientNote;
     private Instant scheduledAt;
     private String confirmedLocation;
     private String confirmedNote;
+    private String rejectionReason;
     private String cancellationReason;
     private Long appointmentId;
     private String appointmentStatus;
