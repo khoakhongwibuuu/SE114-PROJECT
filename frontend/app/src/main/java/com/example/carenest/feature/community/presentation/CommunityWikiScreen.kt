@@ -88,6 +88,7 @@ fun CommunityWikiScreen(
     refreshTrigger: Int = 0,
     onOpenGroup: (ChatGroup) -> Unit = {},
     onOpenGroupPosts: (ChatGroup) -> Unit = {},
+    onNavigateToDoctorProfile: (Long) -> Unit = {}
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
@@ -110,8 +111,6 @@ fun CommunityWikiScreen(
     var uploadingImage by remember { mutableStateOf(false) }
     var savingArticle by remember { mutableStateOf(false) }
     val likingMap = remember { mutableStateMapOf<Long, Boolean>() }
-    var selectedDoctorArticle by remember { mutableStateOf<Article?>(null) }
-    var groupActionLoadingId by remember { mutableStateOf<Long?>(null) }
 
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
@@ -256,7 +255,11 @@ fun CommunityWikiScreen(
                                     }
                                 }
                             },
-                            onDoctorClick = { selectedDoctorArticle = it }
+                            onDoctorClick = { clickedArticle ->
+                                if (clickedArticle.authorRole == "DOCTOR" && clickedArticle.authorId != null) {
+                                    onNavigateToDoctorProfile(clickedArticle.authorId)
+                                }
+                            }
                         )
                     }
 
@@ -352,7 +355,7 @@ fun CommunityWikiScreen(
                             }
                         } else {
                             items(comments, key = { it.id }) { comment ->
-                                CommentRow(comment)
+                                CommentRow(comment, onNavigateToDoctorProfile)
                             }
                         }
                     }
@@ -534,268 +537,6 @@ fun CommunityWikiScreen(
             }
         }
     }
-
-    if (selectedDoctorArticle != null) {
-        val doctorArticle = selectedDoctorArticle ?: return
-        val doctorSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = { selectedDoctorArticle = null },
-            containerColor = Color.White,
-            sheetState = doctorSheetState,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 18.dp, vertical = 10.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .size(width = 44.dp, height = 5.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(Color(0xFFCBD5E1)),
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFDBEAFE)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                (doctorArticle.authorName ?: "B").take(1),
-                                color = PrimaryBlue,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    doctorArticle.authorName ?: "Bác sĩ CareNest",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFF0F172A)
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = "Verified",
-                                    tint = Color(0xFF0EA5E9),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            Text(
-                                doctorArticle.authorSpecialty ?: "Chuyên khoa",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PrimaryBlue
-                            )
-                            if (!doctorArticle.authorHospitalName.isNullOrBlank()) {
-                                Text(
-                                    doctorArticle.authorHospitalName,
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF64748B)
-                                )
-                            }
-                        }
-                    }
-                    IconButton(onClick = { selectedDoctorArticle = null }) {
-                        Icon(Icons.Default.Close, contentDescription = "Đóng", tint = Color(0xFF64748B))
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    "Dịch vụ hỗ trợ trực tuyến",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF0F172A)
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                
-                val privateId = doctorArticle.authorPrivateGroupId
-                val hasPrivate = privateId != null
-                DoctorActionBlock(
-                    title = "Phòng tư vấn riêng",
-                    description = "Nhắn tin và trao đổi trực tiếp 1-1 với bác sĩ về tình trạng của gia đình.",
-                    enabled = hasPrivate,
-                    loading = groupActionLoadingId == privateId && privateId != null,
-                    onClick = {
-                        if (privateId != null) {
-                            groupActionLoadingId = privateId
-                            scope.launch {
-                                try {
-                                    val preview = withContext(Dispatchers.IO) {
-                                        repository.preview(privateId)
-                                    }
-                                    if (preview.joined) {
-                                        val group = ChatGroup(
-                                            id = preview.id,
-                                            name = preview.name,
-                                            description = preview.description,
-                                            private = preview.private,
-                                            leadDoctorName = preview.leadDoctorName,
-                                            joined = true
-                                        )
-                                        selectedDoctorArticle = null
-                                        onOpenGroup(group)
-                                    } else {
-                                        val joinedPreview = withContext(Dispatchers.IO) {
-                                            repository.join(privateId)
-                                        }
-                                        val group = ChatGroup(
-                                            id = joinedPreview.id,
-                                            name = joinedPreview.name,
-                                            description = joinedPreview.description,
-                                            private = joinedPreview.private,
-                                            leadDoctorName = joinedPreview.leadDoctorName,
-                                            joined = true
-                                        )
-                                        selectedDoctorArticle = null
-                                        onOpenGroup(group)
-                                    }
-                                } catch (e: Exception) {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        e.localizedMessage ?: "Không thể kết nối phòng tư vấn",
-                                        android.widget.Toast.LENGTH_SHORT
-                                    ).show()
-                                } finally {
-                                    groupActionLoadingId = null
-                                }
-                            }
-                        }
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                val specialtyId = doctorArticle.authorSpecialtyGroupId
-                val hasSpecialty = specialtyId != null
-                DoctorActionBlock(
-                    title = "Cộng đồng chuyên khoa",
-                    description = "Tham gia nhóm cộng đồng do bác sĩ phụ trách để cùng thảo luận và nhận tin y khoa.",
-                    enabled = hasSpecialty,
-                    loading = groupActionLoadingId == specialtyId && specialtyId != null,
-                    onClick = {
-                        if (specialtyId != null) {
-                            groupActionLoadingId = specialtyId
-                            scope.launch {
-                                try {
-                                    val preview = withContext(Dispatchers.IO) {
-                                        repository.preview(specialtyId)
-                                    }
-                                    if (preview.joined) {
-                                        val group = ChatGroup(
-                                            id = preview.id,
-                                            name = preview.name,
-                                            description = preview.description,
-                                            private = preview.private,
-                                            leadDoctorName = preview.leadDoctorName,
-                                            joined = true
-                                        )
-                                        selectedDoctorArticle = null
-                                        onOpenGroupPosts(group)
-                                    } else {
-                                        val joinedPreview = withContext(Dispatchers.IO) {
-                                            repository.join(specialtyId)
-                                        }
-                                        val group = ChatGroup(
-                                            id = joinedPreview.id,
-                                            name = joinedPreview.name,
-                                            description = joinedPreview.description,
-                                            private = joinedPreview.private,
-                                            leadDoctorName = joinedPreview.leadDoctorName,
-                                            joined = true
-                                        )
-                                        selectedDoctorArticle = null
-                                        onOpenGroupPosts(group)
-                                    }
-                                } catch (e: Exception) {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        e.localizedMessage ?: "Không thể tham gia cộng đồng chuyên khoa",
-                                        android.widget.Toast.LENGTH_SHORT
-                                    ).show()
-                                } finally {
-                                    groupActionLoadingId = null
-                                }
-                            }
-                        }
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(18.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun DoctorActionBlock(
-    title: String,
-    description: String,
-    enabled: Boolean,
-    loading: Boolean,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled && !loading, onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (enabled) Color(0xFFF8FAFC) else Color(0xFFF1F5F9)
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (enabled) Color(0xFFE2E8F0) else Color(0xFFE2E8F0).copy(alpha = 0.5f)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Black,
-                    color = if (enabled) Color(0xFF0F172A) else Color(0xFF94A3B8)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (enabled) description else "Dịch vụ hiện chưa được bác sĩ thiết lập.",
-                    fontSize = 12.sp,
-                    color = if (enabled) Color(0xFF64748B) else Color(0xFFCBD5E1),
-                    lineHeight = 18.sp
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            if (loading) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = PrimaryBlue, strokeWidth = 2.dp)
-            } else {
-                Text(
-                    text = if (enabled) "Liên kết" else "Chưa mở",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = if (enabled) PrimaryBlue else Color(0xFF94A3B8)
-                )
-            }
-        }
-    }
 }
 
 @Composable
@@ -815,7 +556,11 @@ private fun ArticleFeedCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onDoctorClick(article) }
+                    .then(
+                        if (article.authorRole == "DOCTOR" && article.authorId != null) {
+                            Modifier.clickable { onDoctorClick(article) }
+                        } else Modifier
+                    )
                     .padding(horizontal = 14.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -949,7 +694,7 @@ private fun ArticleFeedCard(
 }
 
 @Composable
-private fun CommentRow(comment: ArticleComment) {
+private fun CommentRow(comment: ArticleComment, onDoctorClick: (Long) -> Unit) {
     Row(verticalAlignment = Alignment.Top) {
         Box(
             modifier = Modifier
@@ -968,7 +713,21 @@ private fun CommentRow(comment: ArticleComment) {
                 .background(Color(0xFFF8FAFC))
                 .padding(horizontal = 11.dp, vertical = 9.dp),
         ) {
-            Text(comment.authorName ?: "Người dùng CareNest", fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+            Row(
+                modifier = Modifier
+                    .then(
+                        if (comment.authorRole == "DOCTOR" && comment.authorId != null) {
+                            Modifier.clickable { onDoctorClick(comment.authorId) }
+                        } else Modifier
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(comment.authorName ?: "Người dùng CareNest", fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                if (comment.authorRole == "DOCTOR") {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF0EA5E9), modifier = Modifier.size(13.dp))
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text(comment.content, fontSize = 14.sp, color = Color(0xFF334155), lineHeight = 20.sp)
         }

@@ -40,6 +40,7 @@ fun CommunityScreen(
     refreshTrigger: Int = 0,
     onOpenGroup: (ChatGroup) -> Unit = {},
     onOpenGroupPosts: (ChatGroup) -> Unit = {},
+    onNavigateToDoctorProfile: (Long) -> Unit = {}
 ) {
     var activeTabName by rememberSaveable { mutableStateOf(CommunityTopTab.WIKI.name) }
     val activeTab = try {
@@ -90,7 +91,8 @@ fun CommunityScreen(
                 canCreateArticle = canCreateArticle,
                 refreshTrigger = refreshTrigger,
                 onOpenGroup = onOpenGroup,
-                onOpenGroupPosts = onOpenGroupPosts
+                onOpenGroupPosts = onOpenGroupPosts,
+                onNavigateToDoctorProfile = onNavigateToDoctorProfile
             )
 
             CommunityTopTab.GROUPS -> SocialGroupsPane(

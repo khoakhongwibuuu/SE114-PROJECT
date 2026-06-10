@@ -613,6 +613,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .articleId(article != null ? article.getId() : null)
                 .authorId(author != null ? author.getId() : null)
                 .authorName(author != null ? author.getFullName() : null)
+                .authorRole(author != null && author.getRole() != null ? author.getRole().name() : null)
                 .content(comment.getContent())
                 .createdAt(comment.getCreatedAt())
                 .build();
