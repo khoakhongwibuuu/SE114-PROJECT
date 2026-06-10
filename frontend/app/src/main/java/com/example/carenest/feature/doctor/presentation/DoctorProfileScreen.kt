@@ -25,7 +25,6 @@ import com.example.carenest.CareNestApplication
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import com.example.carenest.feature.booking.presentation.BookingRequestSheet
-import com.example.carenest.feature.booking.domain.model.CreateBookingRequest
 import com.example.carenest.feature.booking.domain.model.DuplicateActiveConsultationException
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -286,18 +285,33 @@ fun DoctorProfileScreen(
                 onSubmitRequest = { _, requestType, note, preferredTimeNote ->
                     scope.launch {
                         bookingLoading = true
-                        val request = CreateBookingRequest(doctorId, requestType, note, preferredTimeNote)
-                        val result = bookingRepository.createBookingRequest(request)
-                        bookingLoading = false
-                        showBookingSheet = false
-                        if (result.isSuccess) {
-                            snackbarHostState.showSnackbar("Yêu cầu đã được gửi. Đang chờ bác sĩ xác nhận.")
-                        } else {
-                            val exception = result.exceptionOrNull()
-                            if (exception is DuplicateActiveConsultationException) {
-                                duplicateException = exception
+                        try {
+                            val healthProfileId = application.secureSessionManager.getActiveProfileId()
+                                ?: application.secureSessionManager.getProfileId()
+                            if (healthProfileId == null) {
+                                bookingLoading = false
+                                showBookingSheet = false
+                                snackbarHostState.showSnackbar("Vui lòng chọn hồ sơ sức khỏe trước khi đặt lịch")
+                                return@launch
+                            }
+                            bookingRepository.createBooking(
+                                doctorId = doctorId,
+                                healthProfileId = healthProfileId,
+                                type = requestType,
+                                preferredSchedule = preferredTimeNote,
+                                patientNote = note
+                            )
+                            bookingLoading = false
+                            showBookingSheet = false
+                            snackbarHostState.showSnackbar("Đã gửi yêu cầu tư vấn thành công")
+                            onNavigateToPatientBookingCenter()
+                        } catch (e: Exception) {
+                            bookingLoading = false
+                            showBookingSheet = false
+                            if (e is DuplicateActiveConsultationException) {
+                                duplicateException = e
                             } else {
-                                snackbarHostState.showSnackbar(exception?.message ?: "Có lỗi xảy ra")
+                                snackbarHostState.showSnackbar("Lỗi: ${e.message}")
                             }
                         }
                     }
