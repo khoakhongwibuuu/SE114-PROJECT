@@ -43,7 +43,7 @@ public class ChatServiceImpl implements ChatService {
         // Kiá»ƒm tra ngÆ°á»i gá»­i cÃ³ thuá»™c gia Ä‘Ã¬nh nÃ y khÃ´ng
         boolean isMember = familyMemberRepository.existsByFamilyIdAndUserId(familyId, senderId);
         if (!isMember) {
-            throw new BadRequestException("Báº¡n khÃ´ng pháº£i thÃ nh viÃªn cá»§a gia Ä‘Ã¬nh nÃ y.");
+            throw new BadRequestException("Báº¡n khÃ´ng pháº£i thành viên cá»§a gia Ä‘Ã¬nh nÃ y.");
         }
 
         ChatMessage message = ChatMessage.builder()
@@ -61,10 +61,10 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional(readOnly = true)
     public Page<ChatMessageResponse> getFamilyMessages(Long familyId, Long requesterId, Pageable pageable) {
-        // Kiá»ƒm tra ngÆ°á»i yÃªu cáº§u cÃ³ pháº£i thÃ nh viÃªn khÃ´ng
+        // Kiá»ƒm tra ngÆ°á»i yÃªu cáº§u cÃ³ pháº£i thành viên khÃ´ng
         boolean isMember = familyMemberRepository.existsByFamilyIdAndUserId(familyId, requesterId);
         if (!isMember) {
-            throw new BadRequestException("Báº¡n khÃ´ng pháº£i thÃ nh viÃªn cá»§a gia Ä‘Ã¬nh nÃ y.");
+            throw new BadRequestException("Báº¡n khÃ´ng pháº£i thành viên cá»§a gia Ä‘Ã¬nh nÃ y.");
         }
 
         return chatMessageRepository

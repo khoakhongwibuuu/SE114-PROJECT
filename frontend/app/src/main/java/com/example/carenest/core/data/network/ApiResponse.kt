@@ -1,4 +1,4 @@
-﻿package com.example.carenest.core.data.network
+package com.example.carenest.core.data.network
 
 data class ApiResponse<T>(
     val success: Boolean = false,

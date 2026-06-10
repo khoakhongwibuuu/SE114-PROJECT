@@ -74,7 +74,7 @@ public class FamilyController {
             @PathVariable("memberId") Long memberId,
             @Valid @RequestBody UpdateRoleRequest request) {
         familyService.updateMemberRole(id, memberId, request);
-        return ApiResponse.success("Cáº­p nháº­t vai trÃ² thÃ nh viÃªn thÃ nh cÃ´ng", null);
+        return ApiResponse.success("Cáº­p nháº­t vai trÃ² thành viên thÃ nh cÃ´ng", null);
     }
 
     @GetMapping("/join-code")

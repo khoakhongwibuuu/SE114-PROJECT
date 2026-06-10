@@ -1,4 +1,4 @@
-﻿package com.example.carenest.feature.medical.domain.model
+package com.example.carenest.feature.medical.domain.model
 
 enum class MedicineStatus {
     NORMAL,

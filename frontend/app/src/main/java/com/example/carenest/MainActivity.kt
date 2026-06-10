@@ -1,4 +1,4 @@
-﻿package com.example.carenest
+package com.example.carenest
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
