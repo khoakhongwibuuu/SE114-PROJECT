@@ -77,6 +77,11 @@ interface CommunityApi {
         @Body request: CreateGroupPostRequest
     ): Response<ApiResponse<GroupPost>>
 
+    @DELETE("/api/v1/communities/posts/{id}")
+    suspend fun deleteGroupPost(
+        @Path("id") id: Long
+    ): Response<ApiResponse<Unit>>
+
     @POST("/api/v1/communities/posts/{id}/like")
     suspend fun likeGroupPost(
         @Path("id") id: Long

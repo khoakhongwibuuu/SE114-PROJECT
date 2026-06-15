@@ -96,6 +96,13 @@ class CommunityRepository(
         }
     }
 
+    suspend fun deleteGroupPost(postId: Long) {
+        val response = api.deleteGroupPost(postId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "KhÃ´ng thá»ƒ gá»¡ bÃ i viáº¿t")
+        }
+    }
+
     suspend fun likeGroupPost(postId: Long): Result<GroupPostInteractionResponse> {
         return try {
             val response = api.likeGroupPost(postId)

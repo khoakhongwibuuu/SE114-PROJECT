@@ -87,6 +87,12 @@ public class CommunityController {
         return ApiResponse.success("Đã gửi bài viết chờ duyệt", communityKnowledgeService.createGroupPost(id, request));
     }
 
+    @DeleteMapping("/posts/{postId}")
+    public ApiResponse<Void> deleteGroupPost(@PathVariable("postId") Long postId) {
+        communityKnowledgeService.deleteGroupPost(postId);
+        return ApiResponse.success("Đã gỡ bài viết", null);
+    }
+
     @GetMapping("/{id}/posts/my")
     public ApiResponse<PageResponse<GroupPostResponse>> getMyGroupPosts(
             @PathVariable("id") Long id,

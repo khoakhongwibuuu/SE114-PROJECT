@@ -84,10 +84,12 @@ fun ApprovedPostsPane(
     posts: List<GroupPost>,
     isLoading: Boolean,
     error: String?,
+    canRemovePosts: Boolean,
     onNavigateToCreatePost: () -> Unit,
     onLikeClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit,
-    onDoctorClick: (Long) -> Unit
+    onDoctorClick: (Long) -> Unit,
+    onDeleteClick: (GroupPost) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -108,7 +110,19 @@ fun ApprovedPostsPane(
                         post = post,
                         onLikeClick = onLikeClick,
                         onCommentClick = onCommentClick,
-                        onDoctorClick = onDoctorClick
+                        onDoctorClick = onDoctorClick,
+                        actionRow = if (canRemovePosts) {
+                            {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(onClick = { onDeleteClick(post) }) {
+                                        Text("Gỡ bài", color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        } else null
                     )
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) }
