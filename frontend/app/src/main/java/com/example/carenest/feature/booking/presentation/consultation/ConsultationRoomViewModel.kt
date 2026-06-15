@@ -5,10 +5,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.feature.booking.data.remote.ConsultationSocketEvent
 import com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient
+import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.example.carenest.feature.booking.domain.model.ConsultationMessage
 import com.example.carenest.feature.booking.domain.model.ConsultationThreadResponse
 import com.example.carenest.feature.booking.domain.model.SendConsultationMessageRequest
-import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +22,7 @@ data class ConsultationRoomState(
     val thread: ConsultationThreadResponse? = null,
     val messages: List<ConsultationMessage> = emptyList(),
     val isConnected: Boolean = false,
+    val isActionLoading: Boolean = false,
     val actionSuccess: String? = null
 )
 
@@ -71,76 +72,103 @@ class ConsultationRoomViewModel(
                 is ConsultationSocketEvent.MessageReceived -> {
                     try {
                         val newMessage = gson.fromJson(event.payload, ConsultationMessage::class.java)
+                        if (newMessage.id <= 0L) {
+                            _state.update {
+                                it.copy(error = newMessage.content.removePrefix("ERROR:").trim())
+                            }
+                            return@connect
+                        }
                         _state.update {
                             val newList = it.messages.toMutableList()
-                            // Simple deduplication based on ID if needed, but append is fine
                             if (newList.none { msg -> msg.id == newMessage.id }) {
                                 newList.add(newMessage)
                             }
                             it.copy(messages = newList)
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    } catch (_: Exception) {
                     }
                 }
             }
         }
     }
 
-    fun sendMessage(content: String) {
-        val threadId = _state.value.thread?.id ?: return
-        val request = SendConsultationMessageRequest(content = content)
+    fun sendMessage(content: String): Boolean {
+        val threadId = _state.value.thread?.id ?: return false
+        val normalized = content.trim()
+        if (normalized.isBlank()) {
+            _state.update { it.copy(error = "Nội dung tin nhắn không được để trống") }
+            return false
+        }
+        if (!_state.value.isConnected) {
+            _state.update { it.copy(error = "Phòng tư vấn đang mất kết nối, vui lòng thử lại sau") }
+            return false
+        }
+        val request = SendConsultationMessageRequest(content = normalized)
         val payload = gson.toJson(request)
-        webSocketClient.send(threadId, payload) { error ->
+        val queued = webSocketClient.send(threadId, payload) { error ->
             _state.update { it.copy(error = error.message ?: "Không thể gửi tin nhắn") }
         }
+        if (!queued) {
+            _state.update { it.copy(error = "Phòng tư vấn chưa sẵn sàng để gửi tin nhắn") }
+        }
+        return queued
     }
 
     fun completeConsultation(bookingId: Long, onDone: () -> Unit) {
         viewModelScope.launch {
+            _state.update { it.copy(isActionLoading = true, error = null) }
             val result = repository.completeConsultation(bookingId)
             result.onSuccess { updated ->
                 _state.update { it.copy(
                     thread = it.thread?.copy(status = updated.status),
+                    isActionLoading = false,
                     actionSuccess = "Phiên tư vấn đã kết thúc."
-                )}
+                ) }
                 onDone()
             }.onFailure { e ->
-                _state.update { it.copy(error = e.message) }
+                _state.update { it.copy(isActionLoading = false, error = e.message) }
             }
         }
     }
 
     fun restrictMessaging(bookingId: Long) {
         viewModelScope.launch {
+            _state.update { it.copy(isActionLoading = true, error = null) }
             val result = repository.restrictMessaging(bookingId)
             result.onSuccess { updated ->
                 _state.update { it.copy(
                     thread = it.thread?.copy(status = updated.status),
+                    isActionLoading = false,
                     actionSuccess = "Đã hạn chế nhắn tin trong phiên này."
-                )}
+                ) }
             }.onFailure { e ->
-                _state.update { it.copy(error = e.message) }
+                _state.update { it.copy(isActionLoading = false, error = e.message) }
             }
         }
     }
 
     fun unrestrictMessaging(bookingId: Long) {
         viewModelScope.launch {
+            _state.update { it.copy(isActionLoading = true, error = null) }
             val result = repository.unrestrictMessaging(bookingId)
             result.onSuccess { updated ->
                 _state.update { it.copy(
                     thread = it.thread?.copy(status = updated.status),
+                    isActionLoading = false,
                     actionSuccess = "Đã hủy hạn chế nhắn tin thành công."
-                )}
+                ) }
             }.onFailure { e ->
-                _state.update { it.copy(error = e.message) }
+                _state.update { it.copy(isActionLoading = false, error = e.message) }
             }
         }
     }
 
     fun clearActionSuccess() {
         _state.update { it.copy(actionSuccess = null) }
+    }
+
+    fun clearError() {
+        _state.update { it.copy(error = null) }
     }
 
     override fun onCleared() {

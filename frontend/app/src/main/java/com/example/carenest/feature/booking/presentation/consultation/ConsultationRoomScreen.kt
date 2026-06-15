@@ -1,7 +1,20 @@
 package com.example.carenest.feature.booking.presentation.consultation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
@@ -11,8 +24,34 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,18 +76,25 @@ fun ConsultationRoomScreen(
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
     val currentUserId = application.secureSessionManager.getUserId() ?: -1L
-    
+
     val state by viewModel.state.collectAsState()
     var showDoctorMenu by remember { mutableStateOf(false) }
     var showEndSessionDialog by remember { mutableStateOf(false) }
     var showRestrictDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(state.actionSuccess) {
-        if (state.actionSuccess != null) {
-            snackbarHostState.showSnackbar(state.actionSuccess!!)
+        state.actionSuccess?.let { message ->
+            snackbarHostState.showSnackbar(message)
             viewModel.clearActionSuccess()
+        }
+    }
+
+    LaunchedEffect(state.error, state.thread?.id) {
+        val message = state.error
+        if (message != null && state.thread != null) {
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearError()
         }
     }
 
@@ -62,16 +108,14 @@ fun ConsultationRoomScreen(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (state.thread != null) {
-                            val thread = state.thread!!
-                            
+                        val thread = state.thread
+                        if (thread != null) {
                             val isPatient = thread.patientId == currentUserId
                             val counterpartName = if (isPatient) {
                                 "BS. ${thread.doctorFullName}"
                             } else {
                                 thread.patientFullName
                             }
-                            
                             val counterpartAvatar = if (isPatient) {
                                 thread.doctorAvatarUrl ?: "https://api.dicebear.com/7.x/avataaars/png?seed=${thread.doctorFullName}"
                             } else {
@@ -114,21 +158,26 @@ fun ConsultationRoomScreen(
                 ),
                 actions = {
                     val thread = state.thread
-                    val isDoctor = thread != null && thread.doctorId == currentUserId
-                    val canControl = isDoctor &&
-                        thread?.status != BookingStatus.COMPLETED &&
-                        thread?.status != BookingStatus.REJECTED
-                    if (canControl) {
-                        IconButton(onClick = { showDoctorMenu = true }) {
+                    val controllableThread = thread?.takeIf {
+                        it.doctorId == currentUserId &&
+                            (it.status == BookingStatus.APPROVED ||
+                                it.status == BookingStatus.ACTIVE ||
+                                it.status == BookingStatus.RESTRICTED)
+                    }
+                    if (controllableThread != null) {
+                        IconButton(
+                            onClick = { showDoctorMenu = true },
+                            enabled = !state.isActionLoading
+                        ) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Tùy chọn", tint = Color(0xFF1E293B))
                         }
                         DropdownMenu(
                             expanded = showDoctorMenu,
                             onDismissRequest = { showDoctorMenu = false }
                         ) {
-                            if (thread?.status != BookingStatus.RESTRICTED) {
+                            if (controllableThread.status != BookingStatus.RESTRICTED) {
                                 DropdownMenuItem(
-                                    text = { Text("ⓘ  Hạn chế nhắn tin", color = Color(0xFFF59E0B)) },
+                                    text = { Text("Hạn chế nhắn tin", color = Color(0xFFF59E0B)) },
                                     onClick = {
                                         showDoctorMenu = false
                                         showRestrictDialog = true
@@ -136,18 +185,18 @@ fun ConsultationRoomScreen(
                                 )
                             } else {
                                 DropdownMenuItem(
-                                    text = { Text("ⓘ  Hủy hạn chế", color = Color(0xFF3B82F6)) },
+                                    text = { Text("Hủy hạn chế", color = Color(0xFF3B82F6)) },
                                     onClick = {
                                         showDoctorMenu = false
-                                        val bookingId = state.thread?.bookingRequestId
-                                        if (bookingId != null) {
-                                            viewModel.unrestrictMessaging(bookingId)
+                                        val activeBookingId = state.thread?.bookingRequestId
+                                        if (activeBookingId != null) {
+                                            viewModel.unrestrictMessaging(activeBookingId)
                                         }
                                     }
                                 )
                             }
                             DropdownMenuItem(
-                                text = { Text("✓  Kết thúc phiên", color = Color(0xFF22C55E)) },
+                                text = { Text("Kết thúc phiên", color = Color(0xFF22C55E)) },
                                 onClick = {
                                     showDoctorMenu = false
                                     showEndSessionDialog = true
@@ -166,47 +215,80 @@ fun ConsultationRoomScreen(
                 .padding(padding)
                 .imePadding()
         ) {
+            val threadSnapshot = state.thread
             when {
                 state.isLoading -> {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = PrimaryBlue)
                     }
                 }
-                state.error != null -> {
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text("Lỗi: ${state.error}", color = Color.Red)
+
+                state.error != null && threadSnapshot == null -> {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("Không thể vào phòng tư vấn", fontWeight = FontWeight.Bold, color = Color(0xFFB91C1C))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(state.error.orEmpty(), color = Color(0xFF64748B), fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { viewModel.loadRoom(bookingId) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        ) {
+                            Text("Thử lại", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
-                state.thread != null -> {
-                    val thread = state.thread!!
-                       // Chat message list area
+
+                threadSnapshot != null -> {
+                    val thread = threadSnapshot
+                    if (!state.isConnected && !thread.status.isReadOnlyConsultation()) {
+                        Surface(
+                            color = Color(0xFFFFF7ED),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Đang mất kết nối phòng tư vấn. Tin nhắn mới có thể chưa gửi hoặc nhận được.",
+                                color = Color(0xFF9A3412),
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                            )
+                        }
+                    }
+
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(16.dp),
                             reverseLayout = true
                         ) {
-                            // Messages (reversed because LazyColumn has reverseLayout=true)
                             items(state.messages.size) { index ->
-                                // Note: with reverseLayout = true, item 0 is at bottom.
-                                // We reverse the list for displaying bottom-up.
                                 val msg = state.messages.reversed()[index]
                                 val isMe = msg.senderId == currentUserId
-                                
+
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
                                     horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start
                                 ) {
                                     if (!isMe) {
                                         AsyncImage(
                                             model = msg.senderAvatarUrl ?: "https://api.dicebear.com/7.x/avataaars/png?seed=${msg.senderName}",
                                             contentDescription = "Avatar",
-                                            modifier = Modifier.size(32.dp).clip(CircleShape),
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape),
                                             contentScale = ContentScale.Crop
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                     }
-                                    
+
                                     Box(
                                         modifier = Modifier
                                             .widthIn(max = 260.dp)
@@ -227,13 +309,14 @@ fun ConsultationRoomScreen(
                                     }
                                 }
                             }
-                            
+
                             item {
-                                // Honest UX Alert
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
                                     shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp, top = 8.dp)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp, top = 8.dp)
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(16.dp),
@@ -248,14 +331,22 @@ fun ConsultationRoomScreen(
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column {
                                             Text(
-                                                text = if (thread.status == BookingStatus.COMPLETED) "Phiên tư vấn đã kết thúc." else "Kết nối tư vấn thành công.",
+                                                text = if (thread.status == BookingStatus.COMPLETED) {
+                                                    "Phiên tư vấn đã kết thúc."
+                                                } else {
+                                                    "Kết nối tư vấn thành công."
+                                                },
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = Color(0xFF1E3A8A),
                                                 fontSize = 14.sp
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = if (thread.status == BookingStatus.COMPLETED) "Phiên chat này hiện chỉ ở chế độ đọc." else "Bạn và bác sĩ đã có thể nhắn tin trực tiếp trong phòng chat này. Hãy giữ lịch sự và tôn trọng lẫn nhau.",
+                                                text = if (thread.status == BookingStatus.COMPLETED) {
+                                                    "Phiên chat này hiện chỉ ở chế độ đọc."
+                                                } else {
+                                                    "Bạn và bác sĩ đã có thể nhắn tin trực tiếp trong phòng chat này. Hãy giữ lịch sự và tôn trọng lẫn nhau."
+                                                },
                                                 color = Color(0xFF1E3A8A),
                                                 fontSize = 13.sp,
                                                 lineHeight = 20.sp
@@ -265,17 +356,15 @@ fun ConsultationRoomScreen(
                                 }
                             }
                         }
-                    }                      // Input Bar
+                    }
+
                     Surface(
                         color = Color.White,
                         shadowElevation = 8.dp,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         var messageText by remember { mutableStateOf("") }
-                    val isReadOnly = thread.status == BookingStatus.COMPLETED
-                        || thread.status == BookingStatus.REJECTED
-                        || thread.status == BookingStatus.PENDING
-                        || thread.status == BookingStatus.RESTRICTED
+                        val isReadOnly = thread.status.isReadOnlyConsultation()
 
                         Row(
                             modifier = Modifier
@@ -292,7 +381,7 @@ fun ConsultationRoomScreen(
                                 ) {
                                     Text(
                                         text = when (thread.status) {
-                                            BookingStatus.RESTRICTED -> "⛔ Nhắn tin đã bị hạn chế"
+                                            BookingStatus.RESTRICTED -> "Nhắn tin đã bị hạn chế"
                                             BookingStatus.COMPLETED -> "Phiên tư vấn đã kết thúc"
                                             else -> "Không thể nhắn tin"
                                         },
@@ -332,18 +421,24 @@ fun ConsultationRoomScreen(
                                 IconButton(
                                     onClick = {
                                         if (messageText.isNotBlank()) {
-                                            viewModel.sendMessage(messageText)
-                                            messageText = ""
+                                            val queued = viewModel.sendMessage(messageText)
+                                            if (queued) {
+                                                messageText = ""
+                                            }
                                         }
                                     },
+                                    enabled = messageText.isNotBlank() && state.isConnected,
                                     modifier = Modifier
                                         .size(48.dp)
-                                        .background(if (messageText.isNotBlank()) PrimaryBlue else Color(0xFFE2E8F0), shape = CircleShape)
+                                        .background(
+                                            if (messageText.isNotBlank() && state.isConnected) PrimaryBlue else Color(0xFFE2E8F0),
+                                            shape = CircleShape
+                                        )
                                 ) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.Send,
                                         contentDescription = "Send",
-                                        tint = if (messageText.isNotBlank()) Color.White else Color(0xFF94A3B8)
+                                        tint = if (messageText.isNotBlank() && state.isConnected) Color.White else Color(0xFF94A3B8)
                                     )
                                 }
                             }
@@ -354,7 +449,6 @@ fun ConsultationRoomScreen(
         }
     }
 
-    // End session dialog
     if (showEndSessionDialog) {
         AlertDialog(
             onDismissRequest = { showEndSessionDialog = false },
@@ -364,11 +458,12 @@ fun ConsultationRoomScreen(
                 Button(
                     onClick = {
                         showEndSessionDialog = false
-                        val bookingId = state.thread?.bookingRequestId
-                        if (bookingId != null) {
-                            viewModel.completeConsultation(bookingId) {}
+                        val activeBookingId = state.thread?.bookingRequestId
+                        if (activeBookingId != null) {
+                            viewModel.completeConsultation(activeBookingId) {}
                         }
                     },
+                    enabled = !state.isActionLoading,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E))
                 ) { Text("Kết thúc") }
             },
@@ -380,7 +475,6 @@ fun ConsultationRoomScreen(
         )
     }
 
-    // Restrict messaging dialog
     if (showRestrictDialog) {
         AlertDialog(
             onDismissRequest = { showRestrictDialog = false },
@@ -390,11 +484,12 @@ fun ConsultationRoomScreen(
                 Button(
                     onClick = {
                         showRestrictDialog = false
-                        val bookingId = state.thread?.bookingRequestId
-                        if (bookingId != null) {
-                            viewModel.restrictMessaging(bookingId)
+                        val activeBookingId = state.thread?.bookingRequestId
+                        if (activeBookingId != null) {
+                            viewModel.restrictMessaging(activeBookingId)
                         }
                     },
+                    enabled = !state.isActionLoading,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
                 ) { Text("Hạn chế") }
             },
@@ -405,4 +500,13 @@ fun ConsultationRoomScreen(
             shape = RoundedCornerShape(16.dp)
         )
     }
+}
+
+private fun BookingStatus?.isReadOnlyConsultation(): Boolean {
+    return this == null ||
+        this == BookingStatus.COMPLETED ||
+        this == BookingStatus.REJECTED ||
+        this == BookingStatus.CANCELLED ||
+        this == BookingStatus.PENDING ||
+        this == BookingStatus.RESTRICTED
 }
