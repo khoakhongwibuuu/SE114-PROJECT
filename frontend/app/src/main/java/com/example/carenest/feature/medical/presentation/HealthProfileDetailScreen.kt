@@ -48,11 +48,6 @@ fun HealthProfileDetailScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = {
-                    IconButton(onClick = { /* Handle notifications */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications")
-                    }
-                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
         }
@@ -66,6 +61,7 @@ fun HealthProfileDetailScreen(
                 Text(uiState.error ?: "Lỗi tải dữ liệu", color = Color.Red)
             }
         } else if (uiState.profileData != null) {
+            val profileData = uiState.profileData ?: return@Scaffold
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -73,7 +69,7 @@ fun HealthProfileDetailScreen(
                     .padding(padding)
                     .verticalScroll(scrollState)
             ) {
-                HeaderSection(uiState.profileData!!)
+                HeaderSection(profileData)
                 CustomTabRow(
                     selectedTab = uiState.selectedTab,
                     onTabSelected = { viewModel.selectTab(it) }
@@ -83,11 +79,11 @@ fun HealthProfileDetailScreen(
 
                 AnimatedVisibility(visible = uiState.selectedTab == 0) {
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        HealthOverviewSection(uiState.profileData!!)
+                        HealthOverviewSection(profileData)
                         Spacer(modifier = Modifier.height(16.dp))
-                        VitalsSection(uiState.profileData!!)
+                        VitalsSection(profileData)
                         Spacer(modifier = Modifier.height(16.dp))
-                        MedicalHistorySection(uiState.profileData!!)
+                        MedicalHistorySection(profileData)
                     }
                 }
                 
@@ -99,7 +95,7 @@ fun HealthProfileDetailScreen(
 
                 AnimatedVisibility(visible = uiState.selectedTab == 2) {
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        EmergencyContactCard(uiState.profileData!!)
+                        EmergencyContactCard(profileData)
                     }
                 }
                 

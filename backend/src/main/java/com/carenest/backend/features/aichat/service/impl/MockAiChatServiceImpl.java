@@ -1,6 +1,7 @@
 package com.carenest.backend.features.aichat.service.impl;
 
 import com.carenest.backend.core.api.PageResponse;
+import com.carenest.backend.core.exception.BadRequestException;
 import com.carenest.backend.core.exception.ResourceNotFoundException;
 import com.carenest.backend.features.aichat.dto.request.ChatRequest;
 import com.carenest.backend.features.aichat.dto.response.AiChatMessageResponse;
@@ -12,7 +13,6 @@ import com.carenest.backend.features.aichat.service.AiChatService;
 import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.family.util.FamilySecurityUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,11 +27,7 @@ public class MockAiChatServiceImpl implements AiChatService {
 
     @Override
     public ChatResponse sendMessage(ChatRequest request) {
-        return ChatResponse.builder()
-                .reply("Xin chÃ o! TÃ´i lÃ  trá»£ lÃ½ áº£o CareNest (Mock). CÃ¢u há»i cá»§a báº¡n lÃ : '"
-                        + request.getMessage()
-                        + "'. Vui lÃ²ng Ä‘i khÃ¡m bÃ¡c sÄ© náº¿u cÃ³ triá»‡u chá»©ng náº·ng.")
-                .build();
+        throw new BadRequestException("AI chat chua co provider that trong MVP va se duoc bat lai o phase cuoi.");
     }
 
     @Override
