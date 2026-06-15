@@ -16,6 +16,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByResetPasswordToken(String token);
     List<User> findAllByRoleOrderByCreatedAtDesc(Role role);
     long countByRole(Role role);
+    long countByRoleAndIsActiveTrue(Role role);
 
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE " +
             "(:search IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%')))")

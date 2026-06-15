@@ -1,6 +1,7 @@
 package com.carenest.backend.features.admin.service.impl;
 
 import com.carenest.backend.core.api.PageResponse;
+import com.carenest.backend.core.exception.BadRequestException;
 import com.carenest.backend.core.exception.ResourceNotFoundException;
 import com.carenest.backend.features.admin.dto.request.AdminUserStatusUpdateRequest;
 import com.carenest.backend.features.admin.dto.response.AdminDashboardStatsResponse;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,10 +70,17 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public AdminUserStatusUpdateResponse updateUserStatus(Long userId, AdminUserStatusUpdateRequest request) {
+        User currentAdmin = getCurrentAdmin();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
         
         boolean isActive = !"BANNED".equalsIgnoreCase(request.getStatus());
+        if (!isActive && currentAdmin.getId().equals(user.getId())) {
+            throw new BadRequestException("Admin khong the tu khoa tai khoan cua chinh minh");
+        }
+        if (!isActive && user.getRole() == Role.ADMIN && userRepository.countByRoleAndIsActiveTrue(Role.ADMIN) <= 1) {
+            throw new BadRequestException("Khong the khoa admin hoat dong cuoi cung cua he thong");
+        }
         user.setIsActive(isActive);
         userRepository.save(user);
         
@@ -79,5 +88,11 @@ public class AdminServiceImpl implements AdminService {
                 .id(user.getId())
                 .status(isActive ? "ACTIVE" : "BANNED")
                 .build();
+    }
+
+    private User getCurrentAdmin() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
     }
 }
