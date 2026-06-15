@@ -21,8 +21,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,10 +34,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,6 +64,8 @@ fun AdminUserManagementScreen() {
     )
     val state by viewModel.uiState.collectAsState()
     val users = viewModel.users.collectAsLazyPagingItems()
+    val statusTarget = remember { mutableStateOf<AdminUserSummaryResponse?>(null) }
+    val currentUserId = application.secureSessionManager.getUserId()
 
     LaunchedEffect(state.error, state.message) {
         state.error?.let {
@@ -86,7 +93,7 @@ fun AdminUserManagementScreen() {
                 Icon(Icons.Default.Search, contentDescription = null)
             },
             placeholder = {
-                Text("Tìm theo email hoặc tên người dùng")
+                Text("Tim theo email hoac ten nguoi dung")
             },
             singleLine = true,
             shape = RoundedCornerShape(18.dp),
@@ -108,7 +115,7 @@ fun AdminUserManagementScreen() {
             users.loadState.refresh is LoadState.Error -> {
                 val error = (users.loadState.refresh as LoadState.Error).error
                 com.example.carenest.feature.admin.presentation.components.AdminErrorState(
-                    message = error.localizedMessage ?: "Không thể tải danh sách người dùng",
+                    message = error.localizedMessage ?: "Khong the tai danh sach nguoi dung",
                     onRetry = { users.retry() }
                 )
             }
@@ -116,7 +123,7 @@ fun AdminUserManagementScreen() {
             users.itemCount == 0 -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "Không tìm thấy người dùng phù hợp",
+                        text = "Khong tim thay nguoi dung phu hop",
                         color = Color(0xFF64748B),
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -135,7 +142,8 @@ fun AdminUserManagementScreen() {
                         AdminUserRow(
                             user = user,
                             status = status,
-                            onToggleStatus = { viewModel.toggleUserStatus(user) },
+                            isCurrentAdmin = user.id == currentUserId,
+                            onToggleStatus = { statusTarget.value = user },
                         )
                     }
 
@@ -155,12 +163,56 @@ fun AdminUserManagementScreen() {
             }
         }
     }
+
+    statusTarget.value?.let { user ->
+        val currentStatus = state.optimisticStatuses[user.id] ?: user.status
+        val isBanned = currentStatus.equals("BANNED", ignoreCase = true) ||
+            currentStatus.equals("INACTIVE", ignoreCase = true)
+        AlertDialog(
+            onDismissRequest = { statusTarget.value = null },
+            title = {
+                Text(
+                    text = if (isBanned) "Mo lai tai khoan" else "Khoa tai khoan",
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    text = if (isBanned) {
+                        "Nguoi dung se dang nhap va su dung CareNest tro lai."
+                    } else if (user.id == currentUserId) {
+                        "Ban khong the tu khoa tai khoan admin cua chinh minh."
+                    } else {
+                        "Nguoi dung se khong the dang nhap hoac su dung CareNest cho den khi duoc mo lai."
+                    },
+                    color = Color(0xFF475569),
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.toggleUserStatus(user)
+                        statusTarget.value = null
+                    },
+                    enabled = user.id != currentUserId,
+                ) {
+                    Text(if (isBanned) "Mo lai" else "Khoa")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { statusTarget.value = null }) {
+                    Text("Huy")
+                }
+            },
+        )
+    }
 }
 
 @Composable
 private fun AdminUserRow(
     user: AdminUserSummaryResponse,
     status: String,
+    isCurrentAdmin: Boolean,
     onToggleStatus: () -> Unit,
 ) {
     val isBanned = status.equals("BANNED", ignoreCase = true) || status.equals("INACTIVE", ignoreCase = true)
@@ -191,7 +243,7 @@ private fun AdminUserRow(
             Spacer(modifier = Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = user.fullName?.takeIf { it.isNotBlank() } ?: "Người dùng CareNest",
+                    text = user.fullName?.takeIf { it.isNotBlank() } ?: "Nguoi dung CareNest",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFF0F172A),
@@ -218,18 +270,28 @@ private fun AdminUserRow(
                     )
                     AssistChip(
                         onClick = {},
-                        label = { Text(if (isBanned) "Đã khóa" else "Hoạt động") },
+                        label = { Text(if (isBanned) "Da khoa" else "Hoat dong") },
                         colors = AssistChipDefaults.assistChipColors(
                             containerColor = if (isBanned) Color(0xFFFEF2F2) else Color(0xFFECFDF5),
                             labelColor = if (isBanned) Color(0xFFB91C1C) else Color(0xFF047857),
                         ),
                     )
+                    if (isCurrentAdmin) {
+                        AssistChip(
+                            onClick = {},
+                            enabled = false,
+                            label = { Text("Ban") },
+                        )
+                    }
                 }
             }
-            IconButton(onClick = onToggleStatus) {
+            IconButton(
+                onClick = onToggleStatus,
+                enabled = !isCurrentAdmin,
+            ) {
                 Icon(
                     imageVector = if (isBanned) Icons.Default.CheckCircle else Icons.Default.Block,
-                    contentDescription = if (isBanned) "Mở khóa người dùng" else "Khóa người dùng",
+                    contentDescription = if (isBanned) "Mo khoa nguoi dung" else "Khoa nguoi dung",
                     tint = if (isBanned) Color(0xFF047857) else Color(0xFFB91C1C),
                 )
             }
