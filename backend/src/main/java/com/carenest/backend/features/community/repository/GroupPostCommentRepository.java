@@ -10,4 +10,5 @@ import org.springframework.stereotype.Repository;
 public interface GroupPostCommentRepository extends JpaRepository<GroupPostComment, Long> {
     Page<GroupPostComment> findByGroupPostIdOrderByCreatedAtDesc(Long groupPostId, Pageable pageable);
     long countByGroupPostId(Long groupPostId);
+    void deleteAllByGroupPostId(Long groupPostId);
 }

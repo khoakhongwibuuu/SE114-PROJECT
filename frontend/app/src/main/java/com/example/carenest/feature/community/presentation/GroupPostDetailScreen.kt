@@ -26,9 +26,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -78,11 +80,36 @@ fun GroupPostDetailScreen(
     
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var commentText by remember { mutableStateOf("") }
+    var deleteTarget by remember { mutableStateOf<com.example.carenest.feature.community.domain.model.GroupPost?>(null) }
 
     LaunchedEffect(state.isCommentSheetVisible) {
         if (!state.isCommentSheetVisible) {
             commentText = ""
         }
+    }
+
+    if (deleteTarget != null) {
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Gỡ bài viết") },
+            text = { Text("Bài viết này sẽ bị xóa khỏi thảo luận nhóm. Bạn có chắc muốn tiếp tục?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        deleteTarget?.let { viewModel.deletePost(it.id) }
+                        deleteTarget = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                ) {
+                    Text("Gỡ bài")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) {
+                    Text("Hủy")
+                }
+            }
+        )
     }
 
     Column(
@@ -150,10 +177,12 @@ fun GroupPostDetailScreen(
                     posts = state.approvedPosts,
                     isLoading = state.isLoading,
                     error = state.error,
+                    canRemovePosts = state.canRemovePosts,
                     onNavigateToCreatePost = { onNavigateToCreatePost(groupId) },
                     onLikeClick = { viewModel.toggleLike(it) },
                     onCommentClick = { viewModel.openCommentSheet(it) },
-                    onDoctorClick = onNavigateToDoctorProfile
+                    onDoctorClick = onNavigateToDoctorProfile,
+                    onDeleteClick = { post -> deleteTarget = post }
                 )
                 GroupPostTab.MY_POSTS -> MyGroupPostsPane(
                     posts = state.myPosts,

@@ -48,6 +48,8 @@ public interface CommunityKnowledgeService {
 
     GroupPostResponse createGroupPost(Long groupId, CreateGroupPostRequest request);
 
+    void deleteGroupPost(Long postId);
+
     void approveGroupPost(Long postId);
 
     void rejectGroupPost(Long postId, String reason);

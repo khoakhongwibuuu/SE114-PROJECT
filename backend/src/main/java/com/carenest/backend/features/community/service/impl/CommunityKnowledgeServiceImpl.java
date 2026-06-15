@@ -346,6 +346,21 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     @Override
     @Transactional
+    public void deleteGroupPost(Long postId) {
+        User currentUser = getCurrentUser();
+        GroupPost post = groupPostRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("GroupPost", postId));
+
+        ensureCanDeletePost(post, currentUser);
+        reportTicketRepository.deleteAllByReportedPostId(postId);
+        groupPostRepository.clearRepliesByPostId(postId);
+        groupPostLikeRepository.deleteAllByGroupPostId(postId);
+        groupPostCommentRepository.deleteAllByGroupPostId(postId);
+        groupPostRepository.delete(post);
+    }
+
+    @Override
+    @Transactional
     public void reportPost(Long postId, ReportPostRequest request) {
         User currentUser = getCurrentUser();
         GroupPost post = groupPostRepository.findById(postId)
@@ -528,6 +543,23 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         }
     }
 
+    private void ensureCanDeletePost(GroupPost post, User user) {
+        if (post.getAuthor() != null && post.getAuthor().getId().equals(user.getId())) {
+            ensureCanEnterGroup(post.getChatGroup().getId(), user);
+            return;
+        }
+        if (user.getRole() == Role.ADMIN) {
+            return;
+        }
+        UserGroupMembership membership = membershipRepository.findByGroupIdAndUserId(post.getChatGroup().getId(), user.getId())
+                .orElse(null);
+        boolean canDelete = membership != null
+                && (membership.getGroupRole() == GroupRole.HOST || membership.getGroupRole() == GroupRole.MODERATOR);
+        if (!canDelete) {
+            throw new AccessDeniedException("Chá»‰ Quáº£n trá»‹ viÃªn, Host vÃ  Moderator má»›i cÃ³ quyá»n gá»¡ bÃ i viáº¿t");
+        }
+    }
+
     private boolean isLeadDoctor(ChatGroup group, User user) {
         return group.getLeadDoctor() != null && group.getLeadDoctor().getId().equals(user.getId());
     }
@@ -700,6 +732,4 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
     }
 
 }
-
-
 

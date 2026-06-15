@@ -22,6 +22,7 @@ enum class GroupPostTab(val label: String) {
 data class GroupPostDetailState(
     val activeTab: GroupPostTab = GroupPostTab.APPROVED,
     val isModerator: Boolean = false,
+    val canRemovePosts: Boolean = false,
     val approvedPosts: List<GroupPost> = emptyList(),
     val myPosts: List<GroupPost> = emptyList(),
     val pendingPosts: List<GroupPost> = emptyList(),
@@ -63,9 +64,11 @@ class GroupPostDetailViewModel(
     private fun checkRole(myRoleInGroup: String?) {
         val role = secureSessionManager.getUserRole()
         val isModerator = role == "ADMIN" || myRoleInGroup == "HOST"
+        val canRemovePosts = role == "ADMIN" || myRoleInGroup == "HOST" || myRoleInGroup == "MODERATOR"
         _uiState.update { current ->
             current.copy(
                 isModerator = isModerator,
+                canRemovePosts = canRemovePosts,
                 activeTab = if (!isModerator && current.activeTab == GroupPostTab.PENDING) {
                     GroupPostTab.APPROVED
                 } else {
@@ -124,6 +127,17 @@ class GroupPostDetailViewModel(
                 loadPosts()
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message ?: "Không thể từ chối bài viết") }
+            }
+        }
+    }
+
+    fun deletePost(postId: Long) {
+        viewModelScope.launch {
+            try {
+                communityRepository.deleteGroupPost(postId)
+                loadPosts()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "KhÃ´ng thá»ƒ gá»¡ bÃ i viáº¿t") }
             }
         }
     }

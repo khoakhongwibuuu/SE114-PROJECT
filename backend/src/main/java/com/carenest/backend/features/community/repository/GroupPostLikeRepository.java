@@ -11,4 +11,5 @@ public interface GroupPostLikeRepository extends JpaRepository<GroupPostLike, Lo
     long countByGroupPostId(Long groupPostId);
     boolean existsByGroupPostIdAndUserId(Long groupPostId, Long userId);
     Optional<GroupPostLike> findByGroupPostIdAndUserId(Long groupPostId, Long userId);
+    void deleteAllByGroupPostId(Long groupPostId);
 }
