@@ -96,7 +96,7 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return isActive;
+        return Boolean.TRUE.equals(isActive);
     }
 
     @Override
@@ -106,6 +106,6 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActive;
+        return Boolean.TRUE.equals(isActive);
     }
 }

@@ -66,6 +66,10 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                 log.warn("[WS] CONNECT bá»‹ tá»« chá»‘i cho '{}': Token háº¿t háº¡n hoáº·c khÃ´ng há»£p lá»‡.", username);
                 throw new AccessDeniedException("Unauthorized WebSocket connection: Token expired or invalid.");
             }
+            if (!isAccountAllowed(userDetails)) {
+                log.warn("[WS] CONNECT bá»‹ tá»« chá»‘i cho '{}': TÃ i khoáº£n Ä‘Ã£ bá»‹ vÃ´ hiá»‡u hÃ³a hoáº·c khÃ³a.", username);
+                throw new AccessDeniedException("Unauthorized WebSocket connection: Account disabled or locked.");
+            }
 
             // BÆ°á»›c 5: GÃ¡n Authentication vÃ o STOMP session
             // Tá»« Ä‘Ã¢y @AuthenticationPrincipal trong @MessageMapping sáº½ hoáº¡t Ä‘á»™ng
@@ -79,5 +83,12 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         }
 
         return message;
+    }
+
+    private boolean isAccountAllowed(UserDetails userDetails) {
+        return userDetails.isEnabled()
+                && userDetails.isAccountNonLocked()
+                && userDetails.isAccountNonExpired()
+                && userDetails.isCredentialsNonExpired();
     }
 }
