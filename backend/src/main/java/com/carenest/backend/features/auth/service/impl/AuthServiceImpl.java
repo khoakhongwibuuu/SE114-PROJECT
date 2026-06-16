@@ -1,6 +1,7 @@
 package com.carenest.backend.features.auth.service.impl;
 
 import com.carenest.backend.config.security.JwtService;
+import com.carenest.backend.core.exception.BadRequestException;
 import com.carenest.backend.core.exception.DuplicateResourceException;
 import com.carenest.backend.core.exception.ResourceNotFoundException;
 import com.carenest.backend.features.auth.dto.request.LoginRequest;
@@ -20,6 +21,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -120,9 +123,9 @@ public class AuthServiceImpl implements AuthService {
 
         if (request.getGender() != null) {
             try {
-                user.setGender(Gender.valueOf(request.getGender()));
+                user.setGender(Gender.valueOf(request.getGender().trim().toUpperCase(Locale.ROOT)));
             } catch (IllegalArgumentException e) {
-                // ignore or log
+                throw new BadRequestException("Giới tính không hợp lệ");
             }
         }
 
