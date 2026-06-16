@@ -139,6 +139,11 @@ fun HomeDashboardScreen(
                         onNavigateToNotifications = onNavigateToNotifications
                     )
 
+                    state.warning?.let { warning ->
+                        Spacer(modifier = Modifier.height(AppSpacing.md))
+                        InlineDashboardWarning(message = warning)
+                    }
+
                     Spacer(modifier = Modifier.height(AppSpacing.x2))
 
                     GreetingSection(currentUser?.fullName ?: "bạn")
@@ -501,6 +506,34 @@ fun AiAdvisorCard(text: String) {
             }
             Spacer(modifier = Modifier.height(AppSpacing.md))
             Text("\"$text\"", style = CareNestTextStyles.bodyMd.copy(fontStyle = FontStyle.Italic, lineHeight = 22.sp), color = TextPrimary)
+        }
+    }
+}
+
+@Composable
+private fun InlineDashboardWarning(message: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AppRadius.xl),
+        color = Color(0xFFFFF7ED),
+        border = BorderStroke(1.dp, Color(0xFFFED7AA))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = AppSpacing.lg, vertical = AppSpacing.md),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Notifications,
+                contentDescription = null,
+                tint = Color(0xFFEA580C),
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(AppSpacing.sm))
+            Text(
+                text = message,
+                style = CareNestTextStyles.bodySm,
+                color = Color(0xFF9A3412)
+            )
         }
     }
 }

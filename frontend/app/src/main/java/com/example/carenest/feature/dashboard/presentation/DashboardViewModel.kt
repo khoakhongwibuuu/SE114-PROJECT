@@ -3,6 +3,7 @@ package com.example.carenest.feature.dashboard.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.feature.auth.domain.model.UserInfo
@@ -26,7 +27,8 @@ sealed class DashboardState {
         val data: DashboardResponse,
         val tasks: List<DashboardTask>,
         val unreadCount: Int,
-        val aiSummaryText: String
+        val aiSummaryText: String,
+        val warning: String? = null
     ) : DashboardState()
 
     data class Error(val error: String) : DashboardState()
@@ -80,11 +82,8 @@ class DashboardViewModel(
 
     fun fetchCurrentUser() {
         viewModelScope.launch(Dispatchers.IO) {
-            runCatching { authApi.getMe() }
+            runCatching { authApi.getMe().requireData("Không thể tải thông tin tài khoản") }
                 .getOrNull()
-                ?.takeIf { it.isSuccessful }
-                ?.body()
-                ?.data
                 ?.let { user ->
                     secureSessionManager.saveUserIdSync(user.id)
                     secureSessionManager.saveUserRoleSync(user.role)
@@ -160,14 +159,12 @@ class DashboardViewModel(
                 .firstOrNull { it.value == activeProfileId }
                 ?.key
 
-            val dashboardResponse = runCatching {
+            val dashboardResult = runCatching {
                 dashboardApi.getDashboard(activeFamilyId, activeProfileId)
-            }.getOrNull()
-
-            val backendData = dashboardResponse
-                ?.takeIf { it.isSuccessful }
-                ?.body()
-                ?.data
+                    .requireData("Không thể tải dữ liệu trang chủ")
+            }
+            val backendData = dashboardResult.getOrNull()
+            val dashboardWarning = dashboardResult.exceptionOrNull()?.message
 
             val mergedDashboard = (backendData ?: DashboardResponse()).copy(
                 families = mappedFamilies,
@@ -182,7 +179,8 @@ class DashboardViewModel(
                 data = mergedDashboard,
                 tasks = tasks,
                 unreadCount = mergedDashboard.unreadNotifications.toInt(),
-                aiSummaryText = buildAiSummary(tasks)
+                aiSummaryText = buildAiSummary(tasks),
+                warning = dashboardWarning
             )
         }
     }
