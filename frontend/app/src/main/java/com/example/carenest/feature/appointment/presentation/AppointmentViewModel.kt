@@ -3,6 +3,9 @@ package com.example.carenest.feature.appointment.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+import com.example.carenest.core.data.network.requireList
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.appointment.data.remote.AppointmentApi
 import com.example.carenest.feature.appointment.data.remote.CreateAppointmentRequest
@@ -12,9 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.util.Locale
 
 sealed class AppointmentState {
     object Loading : AppointmentState()
@@ -30,7 +30,7 @@ sealed class AppointmentItem {
     abstract val id: Long
     abstract val title: String
     abstract val doctorName: String?
-    abstract val appointmentDate: String // ISO string for sorting/filtering
+    abstract val appointmentDate: String
     abstract val status: String
 
     data class Upcoming(
@@ -71,9 +71,9 @@ class AppointmentViewModel(
             try {
                 val response = api.getAppointments(profileId)
                 val responses = if (response.isSuccessful) {
-                    response.body()?.data.orEmpty()
+                    response.requireList("Không thể tải lịch hẹn")
                 } else {
-                    throw IllegalStateException(response.body()?.message ?: "Không thể tải lịch hẹn")
+                    throw IllegalStateException(response.errorMessage("Không thể tải lịch hẹn"))
                 }
                 if (responses.isEmpty()) {
                     _appointmentState.value = AppointmentState.Empty
@@ -81,14 +81,13 @@ class AppointmentViewModel(
                 }
 
                 val now = ZonedDateTime.now()
-
                 val upcoming = mutableListOf<AppointmentItem.Upcoming>()
                 val history = mutableListOf<AppointmentItem.History>()
 
                 for (res in responses) {
                     val date = try {
                         ZonedDateTime.parse(res.appointmentDate)
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         null
                     }
 
@@ -119,20 +118,17 @@ class AppointmentViewModel(
                     }
                 }
 
-                // Sort upcoming ASC
                 upcoming.sortBy { it.appointmentDate }
-                // Sort history DESC
                 history.sortByDescending { it.appointmentDate }
 
-                if (upcoming.isEmpty() && history.isEmpty()) {
-                    _appointmentState.value = AppointmentState.Empty
+                _appointmentState.value = if (upcoming.isEmpty() && history.isEmpty()) {
+                    AppointmentState.Empty
                 } else {
-                    _appointmentState.value = AppointmentState.Success(
+                    AppointmentState.Success(
                         upcomingAppointments = upcoming,
                         appointmentHistory = history
                     )
                 }
-
             } catch (e: Exception) {
                 _appointmentState.value = AppointmentState.Error(e.message ?: "Không thể tải lịch hẹn")
             }
@@ -162,8 +158,9 @@ class AppointmentViewModel(
                         notes = notes
                     )
                 )
+                response.requireData("Không thể tạo lịch hẹn")
                 if (!response.isSuccessful) {
-                    onError(response.body()?.message ?: "Không thể tạo lịch hẹn")
+                    onError(response.errorMessage("Không thể tạo lịch hẹn"))
                     return@launch
                 }
                 onSuccess()
@@ -179,16 +176,23 @@ class AppointmentViewModel(
     fun cancelAppointment(appointmentId: Long, profileId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                api.cancelAppointment(appointmentId)
+                val response = api.cancelAppointment(appointmentId)
+                response.requireData("Không thể hủy lịch hẹn")
+                if (!response.isSuccessful) {
+                    _appointmentState.value = AppointmentState.Error(
+                        response.errorMessage("Không thể hủy lịch hẹn")
+                    )
+                    return@launch
+                }
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                // Ignore or handle
+                _appointmentState.value = AppointmentState.Error(e.message ?: "Không thể hủy lịch hẹn")
             }
         }
     }
 
     private fun mapDayOfWeek(dayValue: Int): String {
-        return when(dayValue) {
+        return when (dayValue) {
             1 -> "T2"
             2 -> "T3"
             3 -> "T4"
