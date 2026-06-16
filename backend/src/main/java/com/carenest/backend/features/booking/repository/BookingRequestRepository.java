@@ -1,6 +1,7 @@
 package com.carenest.backend.features.booking.repository;
 
 import com.carenest.backend.features.booking.entity.BookingRequest;
+import com.carenest.backend.features.appointment.entity.Appointment;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -42,4 +43,6 @@ public interface BookingRequestRepository extends JpaRepository<BookingRequest, 
     @Override
     @EntityGraph(attributePaths = {"patient", "doctor", "healthProfile", "appointment"})
     Optional<BookingRequest> findById(Long id);
+
+    Optional<BookingRequest> findByAppointment(Appointment appointment);
 }

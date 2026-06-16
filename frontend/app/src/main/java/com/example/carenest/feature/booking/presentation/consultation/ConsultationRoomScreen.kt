@@ -311,8 +311,22 @@ fun ConsultationRoomScreen(
                             }
 
                             item {
+                                val bannerTitle = when (thread.status) {
+                                    BookingStatus.COMPLETED -> "Phiên tư vấn đã kết thúc."
+                                    BookingStatus.RESTRICTED -> "Nhắn tin đã bị hạn chế."
+                                    else -> "Kết nối tư vấn thành công."
+                                }
+                                val bannerDesc = when (thread.status) {
+                                    BookingStatus.COMPLETED -> "Phiên chat này hiện chỉ ở chế độ đọc."
+                                    BookingStatus.RESTRICTED -> "Bạn hiện chỉ có thể xem lịch sử tư vấn và không thể gửi tin nhắn mới."
+                                    else -> "Bạn và bác sĩ đã có thể nhắn tin trực tiếp trong phòng chat này. Hãy giữ lịch sự và tôn trọng lẫn nhau."
+                                }
+                                val bannerBgColor = if (thread.status == BookingStatus.RESTRICTED) Color(0xFFFEF3C7) else Color(0xFFEFF6FF)
+                                val bannerTextColor = if (thread.status == BookingStatus.RESTRICTED) Color(0xFF92400E) else Color(0xFF1E3A8A)
+                                val bannerIconColor = if (thread.status == BookingStatus.RESTRICTED) Color(0xFFD97706) else Color(0xFF3B82F6)
+
                                 Card(
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+                                    colors = CardDefaults.cardColors(containerColor = bannerBgColor),
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -325,29 +339,21 @@ fun ConsultationRoomScreen(
                                         Icon(
                                             imageVector = Icons.Default.Info,
                                             contentDescription = "Info",
-                                            tint = Color(0xFF3B82F6),
+                                            tint = bannerIconColor,
                                             modifier = Modifier.size(24.dp)
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column {
                                             Text(
-                                                text = if (thread.status == BookingStatus.COMPLETED) {
-                                                    "Phiên tư vấn đã kết thúc."
-                                                } else {
-                                                    "Kết nối tư vấn thành công."
-                                                },
+                                                text = bannerTitle,
                                                 fontWeight = FontWeight.SemiBold,
-                                                color = Color(0xFF1E3A8A),
+                                                color = bannerTextColor,
                                                 fontSize = 14.sp
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = if (thread.status == BookingStatus.COMPLETED) {
-                                                    "Phiên chat này hiện chỉ ở chế độ đọc."
-                                                } else {
-                                                    "Bạn và bác sĩ đã có thể nhắn tin trực tiếp trong phòng chat này. Hãy giữ lịch sự và tôn trọng lẫn nhau."
-                                                },
-                                                color = Color(0xFF1E3A8A),
+                                                text = bannerDesc,
+                                                color = bannerTextColor,
                                                 fontSize = 13.sp,
                                                 lineHeight = 20.sp
                                             )
