@@ -1,9 +1,32 @@
 package com.carenest.backend.config.database;
 
+import com.carenest.backend.features.appointment.entity.Appointment;
+import com.carenest.backend.features.appointment.enums.AppointmentStatus;
+import com.carenest.backend.features.appointment.repository.AppointmentRepository;
 import com.carenest.backend.features.auth.entity.User;
-import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.enums.Gender;
+import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.repository.UserRepository;
+import com.carenest.backend.features.booking.entity.BookingRequest;
+import com.carenest.backend.features.booking.entity.ConsultationMessage;
+import com.carenest.backend.features.booking.entity.ConsultationThread;
+import com.carenest.backend.features.booking.enums.BookingRequestType;
+import com.carenest.backend.features.booking.enums.BookingStatus;
+import com.carenest.backend.features.booking.repository.BookingRequestRepository;
+import com.carenest.backend.features.booking.repository.ConsultationMessageRepository;
+import com.carenest.backend.features.booking.repository.ConsultationThreadRepository;
+import com.carenest.backend.features.community.entity.ChatGroup;
+import com.carenest.backend.features.community.entity.GroupPost;
+import com.carenest.backend.features.community.entity.GroupPostComment;
+import com.carenest.backend.features.community.entity.GroupPostLike;
+import com.carenest.backend.features.community.entity.UserGroupMembership;
+import com.carenest.backend.features.community.enums.GroupRole;
+import com.carenest.backend.features.community.enums.PostStatus;
+import com.carenest.backend.features.community.repository.ChatGroupRepository;
+import com.carenest.backend.features.community.repository.GroupPostCommentRepository;
+import com.carenest.backend.features.community.repository.GroupPostLikeRepository;
+import com.carenest.backend.features.community.repository.GroupPostRepository;
+import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
 import com.carenest.backend.features.doctorverification.entity.DoctorVerification;
 import com.carenest.backend.features.doctorverification.enums.VerificationStatus;
 import com.carenest.backend.features.doctorverification.repository.DoctorVerificationRepository;
@@ -18,66 +41,55 @@ import com.carenest.backend.features.healthprofile.repository.HealthProfileRepos
 import com.carenest.backend.features.medication.entity.Medication;
 import com.carenest.backend.features.medication.entity.MedicationLog;
 import com.carenest.backend.features.medication.enums.MedicationFrequency;
-import com.carenest.backend.features.medication.enums.MedicationStatus;
 import com.carenest.backend.features.medication.enums.MedicationLogStatus;
+import com.carenest.backend.features.medication.enums.MedicationStatus;
 import com.carenest.backend.features.medication.repository.MedicationLogRepository;
 import com.carenest.backend.features.medication.repository.MedicationRepository;
-import com.carenest.backend.features.vaccination.entity.VaccinationRecord;
 import com.carenest.backend.features.vaccination.entity.VaccinationDose;
+import com.carenest.backend.features.vaccination.entity.VaccinationRecord;
 import com.carenest.backend.features.vaccination.enums.DoseStatus;
-import com.carenest.backend.features.vaccination.repository.VaccinationRecordRepository;
 import com.carenest.backend.features.vaccination.repository.VaccinationDoseRepository;
-import com.carenest.backend.features.community.entity.ChatGroup;
-import com.carenest.backend.features.community.entity.UserGroupMembership;
-import com.carenest.backend.features.community.entity.GroupPost;
-import com.carenest.backend.features.community.entity.GroupPostComment;
-import com.carenest.backend.features.community.entity.GroupPostLike;
-import com.carenest.backend.features.community.enums.GroupRole;
-import com.carenest.backend.features.community.enums.PostStatus;
-import com.carenest.backend.features.community.repository.ChatGroupRepository;
-import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
-import com.carenest.backend.features.community.repository.GroupPostRepository;
-import com.carenest.backend.features.community.repository.GroupPostCommentRepository;
-import com.carenest.backend.features.community.repository.GroupPostLikeRepository;
-import com.carenest.backend.features.booking.entity.BookingRequest;
-import com.carenest.backend.features.booking.entity.ConsultationThread;
-import com.carenest.backend.features.booking.entity.ConsultationMessage;
-import com.carenest.backend.features.booking.enums.BookingRequestType;
-import com.carenest.backend.features.booking.enums.BookingStatus;
-import com.carenest.backend.features.booking.repository.BookingRequestRepository;
-import com.carenest.backend.features.booking.repository.ConsultationThreadRepository;
-import com.carenest.backend.features.booking.repository.ConsultationMessageRepository;
-import com.carenest.backend.features.appointment.entity.Appointment;
-import com.carenest.backend.features.appointment.enums.AppointmentStatus;
-import com.carenest.backend.features.appointment.repository.AppointmentRepository;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.carenest.backend.features.vaccination.repository.VaccinationRecordRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
+@Profile({"dev", "qa"})
 @RequiredArgsConstructor
 public class DatabaseSeeder implements CommandLineRunner {
 
+    private static final String ADMIN_EMAIL = "admin@gmail.com";
+    private static final String PATIENT_PRIMARY_EMAIL = "kiet@gmail.com";
+    private static final String PATIENT_SECONDARY_EMAIL = "doletuankiet06@gmail.com";
+    private static final String DOCTOR_PEDIATRIC_EMAIL = "bacsinhikhoa@gmail.com";
+    private static final String DOCTOR_GENERAL_EMAIL = "bacsidakhoa@gmail.com";
     private static final String QA_MODERATOR_EMAIL = "qa.moderator@gmail.com";
     private static final String QA_MODERATOR_PASSWORD = "QaModerator123!";
 
+    private static final String FAMILY_A_CODE = "FAMA1234";
+    private static final String FAMILY_B_CODE = "FAMB5678";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DoctorVerificationRepository verificationRepository;
     private final ChatGroupRepository chatGroupRepository;
     private final UserGroupMembershipRepository membershipRepository;
-    private final DoctorVerificationRepository verificationRepository;
-    
+    private final GroupPostRepository groupPostRepository;
+    private final GroupPostCommentRepository groupPostCommentRepository;
+    private final GroupPostLikeRepository groupPostLikeRepository;
     private final FamilyRepository familyRepository;
     private final FamilyMemberRepository familyMemberRepository;
     private final HealthProfileRepository healthProfileRepository;
@@ -85,9 +97,6 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final MedicationLogRepository medicationLogRepository;
     private final VaccinationRecordRepository vaccinationRecordRepository;
     private final VaccinationDoseRepository vaccinationDoseRepository;
-    private final GroupPostRepository groupPostRepository;
-    private final GroupPostCommentRepository groupPostCommentRepository;
-    private final GroupPostLikeRepository groupPostLikeRepository;
     private final BookingRequestRepository bookingRequestRepository;
     private final ConsultationThreadRepository consultationThreadRepository;
     private final ConsultationMessageRepository consultationMessageRepository;
@@ -96,30 +105,27 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        log.info("Starting QA Database Seeder...");
+        log.info("Starting QA database seeder for dev/qa profile...");
 
-        // 1. Seed Users
-        User admin = seedUser("admin@gmail.com", "Password123!", "Admin", Role.ADMIN);
-        User patient1 = seedUser("kiet@gmail.com", "Kiet13012006", "Kiet Tuan", Role.USER);
-        User patient2 = seedUser("doletuankiet06@gmail.com", "Kiet13012006", "Tuan Kiet", Role.USER);
-        User doctor1 = seedUser("bacsinhikhoa@gmail.com", "Bacsinhikhoa", "Bac si Nhi Khoa", Role.DOCTOR);
-        User doctor2 = seedUser("bacsidakhoa@gmail.com", "Bacsidakhoa", "Bac si Da Khoa", Role.DOCTOR);
+        User admin = seedUser(ADMIN_EMAIL, "Password123!", "Admin", Role.ADMIN);
+        User patient1 = seedUser(PATIENT_PRIMARY_EMAIL, "Kiet13012006", "Kiet Tuan", Role.USER);
+        User patient2 = seedUser(PATIENT_SECONDARY_EMAIL, "Kiet13012006", "Tuan Kiet", Role.USER);
+        User doctor1 = seedUser(DOCTOR_PEDIATRIC_EMAIL, "Bacsinhikhoa", "Bac si Nhi Khoa", Role.DOCTOR);
+        User doctor2 = seedUser(DOCTOR_GENERAL_EMAIL, "Bacsidakhoa", "Bac si Da Khoa", Role.DOCTOR);
         User qaModerator = seedUser(QA_MODERATOR_EMAIL, QA_MODERATOR_PASSWORD, "QA Moderator", Role.USER);
 
-        // 2. Seed Groups
-        seedGroupsAndMemberships(patient1, patient2, qaModerator);
+        ensureDoctorVerification(doctor1, "Nhi khoa", "VNC-123456");
+        ensureDoctorVerification(doctor2, "Da khoa", "VNC-789012");
 
-        // 3. Seed Families and Health Profiles
+        seedGroupsAndMemberships(patient1, patient2, doctor1, qaModerator);
         seedFamiliesAndProfiles(patient1, patient2);
-
-        // 4. Seed Booking and Consultation
         seedBookingAndConsultations(patient1, patient2, doctor1, doctor2);
 
-        log.info("QA Database Seeder completed successfully!");
+        log.info("QA database seeder completed successfully.");
     }
 
     private User seedUser(String email, String password, String fullName, Role role) {
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
+        return userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
             newUser.setEmail(email);
             newUser.setPasswordHash(passwordEncoder.encode(password));
@@ -131,484 +137,544 @@ public class DatabaseSeeder implements CommandLineRunner {
             log.info("Seeded account: {} ({})", email, role.name());
             return saved;
         });
-
-        if (role == Role.DOCTOR && verificationRepository.findByUserId(user.getId()).isEmpty()) {
-            DoctorVerification verification = new DoctorVerification();
-            verification.setUser(user);
-            verification.setSpecialty(email.equals("bacsinhikhoa@gmail.com") ? "Nhi khoa" : "Đa khoa");
-            verification.setHospitalName("Bệnh viện CareNest");
-            verification.setCertificationNumber(email.equals("bacsinhikhoa@gmail.com") ? "VNC-123456" : "VNC-789012");
-            verification.setDocumentUrl("https://example.com/document.jpg");
-            verification.setStatus(VerificationStatus.APPROVED);
-            verificationRepository.save(verification);
-            log.info("Seeded verification for doctor: {}", email);
-        }
-
-        return user;
     }
 
-    private void seedGroupsAndMemberships(User patient1, User patient2, User qaModerator) {
-        if (chatGroupRepository.count() > 0) {
-            log.info("Groups already seeded. Skipping group seed.");
-            ensureQaModeratorHostsAllGroups(qaModerator);
+    private void ensureDoctorVerification(User doctor, String specialty, String certificationNumber) {
+        if (verificationRepository.findByUserId(doctor.getId()).isPresent()) {
             return;
         }
 
-        ChatGroup group1 = chatGroupRepository.save(ChatGroup.builder()
-                .name("Hội Mẹ Bé CareNest")
-                .description("Hội nhóm chia sẻ kinh nghiệm nuôi dạy và chăm sóc trẻ sơ sinh, dinh dưỡng cho mẹ và bé.")
-                .category("Mẹ & Bé")
-                .tags("sơ sinh,dinh dưỡng,chăm con")
-                .isPrivate(false)
-                .build());
-
-        ChatGroup group2 = chatGroupRepository.save(ChatGroup.builder()
-                .name("Chia sẻ kinh nghiệm Nhi khoa")
-                .description("Hỏi đáp các bệnh thường gặp ở trẻ nhỏ cùng chuyên gia và bác sĩ Nhi khoa.")
-                .category("Nhi khoa")
-                .tags("nhi khoa,sốt,ho,tiêu hóa")
-                .isPrivate(false)
-                .build());
-
-        ChatGroup group3 = chatGroupRepository.save(ChatGroup.builder()
-                .name("Hỏi đáp Sức khỏe Gia đình")
-                .description("Cộng đồng tư vấn sức khỏe tổng quát cho mọi thành viên trong gia đình.")
-                .category("Sức khỏe chung")
-                .tags("sức khỏe,gia đình,tư vấn")
-                .isPrivate(false)
-                .build());
-
-        log.info("Seeded 3 community groups.");
-
-        // Add QA Moderator as HOST
-        membershipRepository.save(UserGroupMembership.builder().user(qaModerator).group(group1).groupRole(GroupRole.HOST).build());
-        membershipRepository.save(UserGroupMembership.builder().user(qaModerator).group(group2).groupRole(GroupRole.HOST).build());
-        membershipRepository.save(UserGroupMembership.builder().user(qaModerator).group(group3).groupRole(GroupRole.HOST).build());
-
-        // Add Patient 1
-        membershipRepository.save(UserGroupMembership.builder().user(patient1).group(group1).groupRole(GroupRole.MEMBER).build());
-        membershipRepository.save(UserGroupMembership.builder().user(patient1).group(group2).groupRole(GroupRole.MEMBER).build());
-
-        // Add Patient 2
-        membershipRepository.save(UserGroupMembership.builder().user(patient2).group(group1).groupRole(GroupRole.MEMBER).build());
-
-        log.info("Seeded group memberships.");
-
-        // Seed Posts
-        // Post 1 (APPROVED)
-        GroupPost post1 = groupPostRepository.save(GroupPost.builder()
-                .chatGroup(group1)
-                .author(patient1)
-                .title("Hỏi về lịch tiêm chủng cho bé 6 tháng tuổi")
-                .content("Bé nhà em được 6 tháng tuổi thì cần tiêm những mũi vắc-xin gì ạ? Em thấy có gói tiêm vắc-xin 6 trong 1 rất tiện lợi nhưng phân vân không biết có nên chọn không. Mong mọi người tư vấn giúp.")
-                .tags("tiêm chủng,vắc xin")
-                .status(PostStatus.APPROVED)
-                .build());
-
-        // Like for Post 1
-        groupPostLikeRepository.save(GroupPostLike.builder().groupPost(post1).user(patient2).build());
-
-        // Comment for Post 1
-        User doctor1 = userRepository.findByEmail("bacsinhikhoa@gmail.com").orElse(null);
-        if (doctor1 != null) {
-            groupPostCommentRepository.save(GroupPostComment.builder()
-                    .groupPost(post1)
-                    .author(doctor1)
-                    .content("Chào bạn, bé 6 tháng tuổi cần tiêm mũi vắc-xin 6 trong 1 nhắc lại và uống vắc-xin phòng tiêu chảy cấp do Rotavirus nhé. Bạn nên đưa bé đến trung tâm tiêm chủng gần nhất để bác sĩ khám và tư vấn chi tiết.")
-                    .build());
-        }
-
-        // Post 2 (PENDING_APPROVAL)
-        groupPostRepository.save(GroupPost.builder()
-                .chatGroup(group1)
-                .author(patient1)
-                .title("Bé bị sốt nhẹ sau khi tiêm phòng phải làm sao?")
-                .content("Bé nhà em mới tiêm phòng mũi 6 trong 1 về hôm qua, hôm nay hơi âm ấm sốt khoảng 38 độ C. Bé vẫn ăn ngủ bình thường thì em có cần cho bé uống thuốc hạ sốt không ạ? Hay chỉ cần chườm ấm thưa các mẹ?")
-                .tags("sốt,sau tiêm phòng")
-                .status(PostStatus.PENDING_APPROVAL)
-                .build());
-
-        // Post 3 (REJECTED)
-        groupPostRepository.save(GroupPost.builder()
-                .chatGroup(group1)
-                .author(patient2)
-                .title("Thần dược tăng chiều cao cho bé xách tay giá rẻ")
-                .content("Em có bán sữa ngoại nhập khẩu nguyên lon và thuốc bổ tăng chiều cao vượt trội cho bé cam kết hiệu quả sau 2 tuần sử dụng. Mẹ nào quan tâm ib em nhé, giá hạt dẻ giao hàng toàn quốc!")
-                .tags("quảng cáo,sữa")
-                .status(PostStatus.REJECTED)
-                .rejectionReason("Nội dung mang tính chất quảng cáo thương mại, spam, vi phạm quy tắc hội nhóm.")
-                .reviewer(qaModerator)
-                .build());
-
-        log.info("Seeded group posts, likes, and comments.");
+        DoctorVerification verification = new DoctorVerification();
+        verification.setUser(doctor);
+        verification.setSpecialty(specialty);
+        verification.setHospitalName("Benh vien CareNest");
+        verification.setCertificationNumber(certificationNumber);
+        verification.setDocumentUrl("https://example.com/document.jpg");
+        verification.setStatus(VerificationStatus.APPROVED);
+        verificationRepository.save(verification);
+        log.info("Seeded verification for doctor: {}", doctor.getEmail());
     }
 
-    private void ensureQaModeratorHostsAllGroups(User qaModerator) {
-        int assignments = 0;
-        for (var group : chatGroupRepository.findAllByOrderByNameAsc()) {
-            var existingMembership = membershipRepository.findByGroupIdAndUserId(group.getId(), qaModerator.getId());
-            if (existingMembership.isPresent()) {
-                UserGroupMembership membership = existingMembership.get();
-                if (membership.getGroupRole() != GroupRole.HOST) {
-                    membership.setGroupRole(GroupRole.HOST);
-                    membershipRepository.save(membership);
-                    assignments++;
-                }
-                continue;
+    private void seedGroupsAndMemberships(User patient1, User patient2, User doctor1, User qaModerator) {
+        ChatGroup group1 = getOrCreateGroup(
+            "Me va Be CareNest",
+            "Hoi nhom chia se kinh nghiem nuoi day va cham soc tre nho.",
+            "Me va Be",
+            "tre-nho,dinh-duong,cham-con"
+        );
+        ChatGroup group2 = getOrCreateGroup(
+            "Chia se kinh nghiem Nhi khoa",
+            "Hoi dap cac van de Nhi khoa thuong gap cung bac si.",
+            "Nhi khoa",
+            "nhi-khoa,sot,ho,tieu-hoa"
+        );
+        ChatGroup group3 = getOrCreateGroup(
+            "Suc khoe Gia dinh",
+            "Cong dong tu van suc khoe tong quat cho gia dinh.",
+            "Suc khoe chung",
+            "gia-dinh,tu-van,suc-khoe"
+        );
+
+        ensureMembership(qaModerator, group1, GroupRole.HOST);
+        ensureMembership(qaModerator, group2, GroupRole.HOST);
+        ensureMembership(qaModerator, group3, GroupRole.HOST);
+
+        ensureMembership(patient1, group1, GroupRole.MEMBER);
+        ensureMembership(patient1, group2, GroupRole.MEMBER);
+        ensureMembership(patient2, group1, GroupRole.MEMBER);
+        ensureMembership(doctor1, group2, GroupRole.MEMBER);
+
+        GroupPost approved = ensureGroupPost(
+            group1,
+            patient1,
+            "Hoi ve lich tiem chung cho be 6 thang tuoi",
+            "Be nha em duoc 6 thang tuoi thi can tiem nhung mui vac-xin gi? Mong moi nguoi tu van them.",
+            "tiem-chung,vac-xin",
+            PostStatus.APPROVED,
+            null,
+            null
+        );
+        ensureGroupPostLike(approved, patient2);
+        ensureGroupPostComment(
+            approved,
+            doctor1,
+            "Chao ban, be 6 thang tuoi can nhac lai mui 6 trong 1 va co the duoc tu van them ve Rotavirus."
+        );
+
+        ensureGroupPost(
+            group1,
+            patient1,
+            "Be bi sot nhe sau khi tiem phong phai lam sao",
+            "Be nha em vua tiem xong thi sot nhe 38 do C, van an ngu binh thuong. Em co can ha sot khong?",
+            "sot,sau-tiem",
+            PostStatus.PENDING_APPROVAL,
+            null,
+            null
+        );
+
+        ensureGroupPost(
+            group1,
+            patient2,
+            "Than duoc tang chieu cao cho be gia re",
+            "Noi dung quang cao san pham xach tay khong phu hop voi quy tac hoi nhom.",
+            "quang-cao,spam",
+            PostStatus.REJECTED,
+            "Noi dung mang tinh chat quang cao thuong mai, spam, vi pham quy tac hoi nhom.",
+            qaModerator
+        );
+
+        log.info("QA community groups and moderation seed ensured.");
+    }
+
+    private ChatGroup getOrCreateGroup(String name, String description, String category, String tags) {
+        return chatGroupRepository.findAll().stream()
+            .filter(group -> name.equals(group.getName()))
+            .findFirst()
+            .orElseGet(() -> chatGroupRepository.save(ChatGroup.builder()
+                .name(name)
+                .description(description)
+                .category(category)
+                .tags(tags)
+                .isPrivate(false)
+                .build()));
+    }
+
+    private void ensureMembership(User user, ChatGroup group, GroupRole role) {
+        var existingMembership = membershipRepository.findByGroupIdAndUserId(group.getId(), user.getId());
+        if (existingMembership.isPresent()) {
+            UserGroupMembership membership = existingMembership.get();
+            if (membership.getGroupRole() != role) {
+                membership.setGroupRole(role);
+                membershipRepository.save(membership);
             }
-            membershipRepository.save(UserGroupMembership.builder()
-                    .user(qaModerator)
-                    .group(group)
-                    .groupRole(GroupRole.HOST)
-                    .build());
-            assignments++;
+            return;
         }
-        log.info("QA moderator updated: HOST on {} groups", assignments);
+
+        membershipRepository.save(UserGroupMembership.builder()
+            .user(user)
+            .group(group)
+            .groupRole(role)
+            .build());
+    }
+
+    private GroupPost ensureGroupPost(
+        ChatGroup group,
+        User author,
+        String title,
+        String content,
+        String tags,
+        PostStatus status,
+        String rejectionReason,
+        User reviewer
+    ) {
+        return groupPostRepository.findAll().stream()
+            .filter(post -> Objects.equals(post.getTitle(), title))
+            .findFirst()
+            .orElseGet(() -> groupPostRepository.save(GroupPost.builder()
+                .chatGroup(group)
+                .author(author)
+                .title(title)
+                .content(content)
+                .tags(tags)
+                .status(status)
+                .rejectionReason(rejectionReason)
+                .reviewer(reviewer)
+                .build()));
+    }
+
+    private void ensureGroupPostLike(GroupPost post, User user) {
+        boolean exists = groupPostLikeRepository.findAll().stream()
+            .anyMatch(like -> like.getGroupPost().getId().equals(post.getId()) && like.getUser().getId().equals(user.getId()));
+        if (!exists) {
+            groupPostLikeRepository.save(GroupPostLike.builder().groupPost(post).user(user).build());
+        }
+    }
+
+    private void ensureGroupPostComment(GroupPost post, User author, String content) {
+        boolean exists = groupPostCommentRepository.findAll().stream()
+            .anyMatch(comment ->
+                comment.getGroupPost().getId().equals(post.getId()) &&
+                comment.getAuthor().getId().equals(author.getId()) &&
+                Objects.equals(comment.getContent(), content)
+            );
+        if (!exists) {
+            groupPostCommentRepository.save(GroupPostComment.builder()
+                .groupPost(post)
+                .author(author)
+                .content(content)
+                .build());
+        }
     }
 
     private void seedFamiliesAndProfiles(User patient1, User patient2) {
-        if (familyRepository.count() > 0) {
-            log.info("Families already seeded. Skipping family seed.");
+        Family familyA = getOrCreateFamily("Gia dinh A", patient1, FAMILY_A_CODE);
+        Family familyB = getOrCreateFamily("Gia dinh B", patient2, FAMILY_B_CODE);
+
+        ensureFamilyMembership(familyA, patient1, FamilyRole.OWNER);
+        ensureFamilyMembership(familyB, patient2, FamilyRole.OWNER);
+        ensureFamilyMembership(familyB, patient1, FamilyRole.MEMBER);
+
+        HealthProfile profileP1 = getOrCreateProfile(
+            patient1,
+            familyA,
+            "Kiet Tuan",
+            LocalDate.of(2000, 1, 1),
+            Gender.MALE,
+            "Ban than",
+            false
+        );
+
+        getOrCreateProfile(
+            patient2,
+            familyB,
+            "Tuan Kiet",
+            LocalDate.of(2006, 1, 13),
+            Gender.MALE,
+            "Ban than",
+            false
+        );
+
+        HealthProfile babyNa = getOrCreateProfile(
+            patient1,
+            familyA,
+            "Be Na",
+            LocalDate.now().minusYears(2),
+            Gender.FEMALE,
+            "Con gai",
+            true
+        );
+
+        ensureMedicationScenario(babyNa);
+        ensureVaccinationScenario(babyNa);
+        ensureManualAppointmentScenario(babyNa);
+
+        log.info("QA family and health-profile seed ensured.");
+    }
+
+    private Family getOrCreateFamily(String name, User owner, String joinCode) {
+        return familyRepository.findByJoinCode(joinCode).orElseGet(() -> familyRepository.save(Family.builder()
+            .name(name)
+            .owner(owner)
+            .joinCode(joinCode)
+            .joinCodeExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS))
+            .build()));
+    }
+
+    private void ensureFamilyMembership(Family family, User user, FamilyRole role) {
+        var existing = familyMemberRepository.findByFamilyIdAndUserId(family.getId(), user.getId());
+        if (existing.isPresent()) {
+            FamilyMember member = existing.get();
+            if (member.getRole() != role) {
+                member.setRole(role);
+                familyMemberRepository.save(member);
+            }
             return;
         }
 
-        // Family A (Owned by Patient 1)
-        Family familyA = familyRepository.save(Family.builder()
-                .name("Gia đình A")
-                .owner(patient1)
-                .joinCode("FAMA1234")
-                .joinCodeExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS))
-                .build());
-
         familyMemberRepository.save(FamilyMember.builder()
-                .family(familyA)
-                .user(patient1)
-                .role(FamilyRole.OWNER)
-                .build());
+            .family(family)
+            .user(user)
+            .role(role)
+            .build());
+    }
 
-        // Family B (Owned by Patient 2)
-        Family familyB = familyRepository.save(Family.builder()
-                .name("Gia đình B")
-                .owner(patient2)
-                .joinCode("FAMB5678")
-                .joinCodeExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS))
-                .build());
+    private HealthProfile getOrCreateProfile(
+        User user,
+        Family family,
+        String fullName,
+        LocalDate dob,
+        Gender gender,
+        String relationship,
+        boolean isChild
+    ) {
+        return healthProfileRepository.findAll().stream()
+            .filter(profile -> profile.getFamily().getId().equals(family.getId()) && fullName.equals(profile.getFullName()))
+            .findFirst()
+            .orElseGet(() -> healthProfileRepository.save(HealthProfile.builder()
+                .user(user)
+                .family(family)
+                .fullName(fullName)
+                .dateOfBirth(dob)
+                .gender(gender)
+                .relationship(relationship)
+                .bloodType(isChild ? BloodType.O_POSITIVE : BloodType.A_POSITIVE)
+                .allergies(isChild ? "Di ung hai san nhe" : "Khong co")
+                .chronicDiseases("Khong")
+                .notes(isChild ? "Can theo doi lich tiem va thuoc." : "QA seed profile")
+                .isChild(isChild)
+                .build()));
+    }
 
-        familyMemberRepository.save(FamilyMember.builder()
-                .family(familyB)
-                .user(patient2)
-                .role(FamilyRole.OWNER)
-                .build());
-
-        // Add Patient 1 to Family B as MEMBER
-        familyMemberRepository.save(FamilyMember.builder()
-                .family(familyB)
-                .user(patient1)
-                .role(FamilyRole.MEMBER)
-                .build());
-
-        log.info("Seeded 2 families and memberships.");
-
-        // Create HealthProfile for Patient 1 in Family A
-        HealthProfile profileP1 = healthProfileRepository.save(HealthProfile.builder()
-                .user(patient1)
-                .family(familyA)
-                .fullName(patient1.getFullName())
-                .dateOfBirth(LocalDate.of(2000, 1, 1))
-                .gender(Gender.MALE)
-                .relationship("Bản thân")
-                .bloodType(BloodType.A_POSITIVE)
-                .allergies("Không có")
-                .chronicDiseases("Không")
-                .notes("Tài khoản chính")
-                .isChild(false)
-                .build());
-
-        // Create HealthProfile for Patient 2 in Family B
-        healthProfileRepository.save(HealthProfile.builder()
-                .user(patient2)
-                .family(familyB)
-                .fullName(patient2.getFullName())
-                .dateOfBirth(LocalDate.of(2006, 1, 13))
-                .gender(Gender.MALE)
-                .relationship("Bản thân")
-                .bloodType(BloodType.B_POSITIVE)
-                .allergies("Dị ứng phấn hoa")
-                .chronicDiseases("Không")
-                .notes("Tài khoản phụ")
-                .isChild(false)
-                .build());
-
-        // Create Child Profile Bé Na in Family A
-        HealthProfile babyNa = healthProfileRepository.save(HealthProfile.builder()
-                .user(patient1)
-                .family(familyA)
-                .fullName("Bé Na")
-                .dateOfBirth(LocalDate.now().minusYears(2)) // 2 years old
-                .gender(Gender.FEMALE)
-                .relationship("Con gái")
-                .bloodType(BloodType.O_POSITIVE)
-                .allergies("Dị ứng hải sản nhẹ")
-                .chronicDiseases("Không")
-                .notes("Cần theo dõi sát lịch tiêm phòng và uống sữa ấm trước khi đi ngủ.")
-                .isChild(true)
-                .build());
-
-        log.info("Seeded health profiles (including dependent child profile Bé Na).");
-
-        // Seed Medication for Bé Na
-        Medication medication = medicationRepository.save(Medication.builder()
+    private void ensureMedicationScenario(HealthProfile babyNa) {
+        Medication medication = medicationRepository.findByHealthProfileId(babyNa.getId()).stream()
+            .filter(item -> "Siro ho Prospan".equals(item.getMedicineName()))
+            .findFirst()
+            .orElseGet(() -> medicationRepository.save(Medication.builder()
                 .healthProfile(babyNa)
                 .medicineName("Siro ho Prospan")
-                .dosage("5ml mỗi lần")
+                .dosage("5ml moi lan")
                 .frequency(MedicationFrequency.TWICE_DAILY)
                 .timesPerDay(2)
-                .timeSlots("08:00, 20:00")
+                .timeSlots("08:00,20:00")
                 .startDate(LocalDate.now().minusDays(2))
                 .endDate(LocalDate.now().plusDays(5))
                 .status(MedicationStatus.ACTIVE)
-                .notes("Uống sau khi ăn no. Lắc đều trước khi sử dụng.")
-                .build());
+                .notes("Uong sau khi an no.")
+                .build()));
 
-        // Seed MedicationLogs for today
         LocalDate today = LocalDate.now();
         ZoneId zoneId = ZoneId.systemDefault();
-        Instant time8AM = today.atTime(8, 0).atZone(zoneId).toInstant();
-        Instant time8PM = today.atTime(20, 0).atZone(zoneId).toInstant();
+        ensureMedicationLog(medication, today.atTime(8, 0).atZone(zoneId).toInstant());
+        ensureMedicationLog(medication, today.atTime(20, 0).atZone(zoneId).toInstant());
+    }
 
-        medicationLogRepository.save(MedicationLog.builder()
+    private void ensureMedicationLog(Medication medication, Instant scheduledTime) {
+        boolean exists = medicationLogRepository.findAll().stream()
+            .anyMatch(log -> log.getMedication().getId().equals(medication.getId()) && log.getScheduledTime().equals(scheduledTime));
+        if (!exists) {
+            medicationLogRepository.save(MedicationLog.builder()
                 .medication(medication)
-                .scheduledTime(time8AM)
+                .scheduledTime(scheduledTime)
                 .status(MedicationLogStatus.PENDING)
                 .build());
+        }
+    }
 
-        medicationLogRepository.save(MedicationLog.builder()
-                .medication(medication)
-                .scheduledTime(time8PM)
-                .status(MedicationLogStatus.PENDING)
-                .build());
-
-        log.info("Seeded medication and medication logs for Bé Na.");
-
-        // Seed Vaccination for Bé Na
-        VaccinationRecord vacRecord = vaccinationRecordRepository.save(VaccinationRecord.builder()
+    private void ensureVaccinationScenario(HealthProfile babyNa) {
+        VaccinationRecord record = vaccinationRecordRepository.findAll().stream()
+            .filter(item -> item.getHealthProfile().getId().equals(babyNa.getId()) && "Vac-xin 6 trong 1 (Infanrix Hexa)".equals(item.getVaccineName()))
+            .findFirst()
+            .orElseGet(() -> vaccinationRecordRepository.save(VaccinationRecord.builder()
                 .healthProfile(babyNa)
-                .vaccineName("Vắc-xin 6 trong 1 (Infanrix Hexa)")
+                .vaccineName("Vac-xin 6 trong 1 (Infanrix Hexa)")
                 .totalDoses(3)
                 .doseIntervalDays(30)
-                .notes("Ngừa 6 bệnh: Bạch hầu, Ho gà, Uốn ván, Bại liệt, Viêm gan B và Hib.")
+                .notes("Ngua 6 benh co ban cho tre nho.")
+                .build()));
+
+        ensureVaccinationDose(record, 1, LocalDate.now().minusDays(60), DoseStatus.COMPLETED, "VNVC", "Dieu duong Mai", "Be on dinh sau tiem.");
+        ensureVaccinationDose(record, 2, LocalDate.now().minusDays(30), DoseStatus.COMPLETED, "VNVC", "Dieu duong Hung", "Sung nhe tai vet tiem.");
+        ensureVaccinationDose(record, 3, LocalDate.now().plusDays(1), DoseStatus.PENDING, null, null, "Mui hen ngay mai.");
+    }
+
+    private void ensureVaccinationDose(
+        VaccinationRecord record,
+        int doseNumber,
+        LocalDate scheduledDate,
+        DoseStatus status,
+        String location,
+        String administeredBy,
+        String notes
+    ) {
+        boolean exists = vaccinationDoseRepository.findAll().stream()
+            .anyMatch(dose -> dose.getVaccinationRecord().getId().equals(record.getId()) && dose.getDoseNumber() == doseNumber);
+        if (!exists) {
+            vaccinationDoseRepository.save(VaccinationDose.builder()
+                .vaccinationRecord(record)
+                .doseNumber(doseNumber)
+                .scheduledDate(scheduledDate)
+                .dateAdministered(status == DoseStatus.COMPLETED ? scheduledDate : null)
+                .location(location)
+                .administeredBy(administeredBy)
+                .status(status)
+                .notes(notes)
                 .build());
+        }
+    }
 
-        // Dose 1 (Completed 60 days ago)
-        vaccinationDoseRepository.save(VaccinationDose.builder()
-                .vaccinationRecord(vacRecord)
-                .doseNumber(1)
-                .scheduledDate(LocalDate.now().minusDays(60))
-                .dateAdministered(LocalDate.now().minusDays(60))
-                .location("Trung tâm tiêm chủng VNVC")
-                .administeredBy("Điều dưỡng Nguyễn Thị Mai")
-                .status(DoseStatus.COMPLETED)
-                .notes("Bé khỏe mạnh sau tiêm, không sốt.")
-                .build());
-
-        // Dose 2 (Completed 30 days ago)
-        vaccinationDoseRepository.save(VaccinationDose.builder()
-                .vaccinationRecord(vacRecord)
-                .doseNumber(2)
-                .scheduledDate(LocalDate.now().minusDays(30))
-                .dateAdministered(LocalDate.now().minusDays(30))
-                .location("Trung tâm tiêm chủng VNVC")
-                .administeredBy("Điều dưỡng Trần Văn Hùng")
-                .status(DoseStatus.COMPLETED)
-                .notes("Hơi sưng nhẹ tại vết tiêm, chườm mát tự khỏi.")
-                .build());
-
-        // Dose 3 (Pending, scheduled for tomorrow)
-        vaccinationDoseRepository.save(VaccinationDose.builder()
-                .vaccinationRecord(vacRecord)
-                .doseNumber(3)
-                .scheduledDate(LocalDate.now().plusDays(1))
-                .status(DoseStatus.PENDING)
-                .notes("Chuẩn bị sức khỏe tốt cho bé trước ngày tiêm.")
-                .build());
-
-        log.info("Seeded vaccination record and doses for Bé Na.");
-
-        // Seed Appointment for Bé Na (Independent, manual creation)
-        appointmentRepository.save(Appointment.builder()
+    private void ensureManualAppointmentScenario(HealthProfile babyNa) {
+        boolean exists = appointmentRepository.findByHealthProfileIdOrderByAppointmentDateDesc(babyNa.getId()).stream()
+            .anyMatch(appointment ->
+                "Bac si Nguyen Van An".equals(appointment.getDoctorName()) &&
+                "Benh vien Nhi Trung Uong".equals(appointment.getHospitalName())
+            );
+        if (!exists) {
+            LocalDate today = LocalDate.now();
+            appointmentRepository.save(Appointment.builder()
                 .healthProfile(babyNa)
-                .doctorName("Bác sĩ Nguyễn Văn An")
-                .hospitalName("Bệnh viện Nhi Trung ương")
-                .address("18/879 La Thành, Đống Đa, Hà Nội")
-                .appointmentDate(today.atTime(14, 0).atZone(zoneId).toInstant()) // 14:00 today
+                .doctorName("Bac si Nguyen Van An")
+                .hospitalName("Benh vien Nhi Trung Uong")
+                .address("18/879 La Thanh, Dong Da, Ha Noi")
+                .appointmentDate(today.atTime(14, 0).atZone(ZoneId.systemDefault()).toInstant())
                 .status(AppointmentStatus.SCHEDULED)
-                .notes("Khám sức khỏe tổng quát và nội soi tai mũi họng.")
+                .notes("Kham tong quat va tai mui hong.")
                 .build());
-
-        log.info("Seeded manual independent appointment for Bé Na.");
+        }
     }
 
     private void seedBookingAndConsultations(User patient1, User patient2, User doctor1, User doctor2) {
-        if (bookingRequestRepository.count() > 0) {
-            log.info("Booking requests already seeded. Skipping booking seed.");
+        HealthProfile profileP1 = findPrimaryProfile(patient1);
+        HealthProfile profileP2 = findPrimaryProfile(patient2);
+
+        ConsultationThread thread1 = getOrCreateThread(patient1, doctor1);
+        ConsultationThread thread2 = getOrCreateThread(patient1, doctor2);
+        ConsultationThread thread3 = getOrCreateThread(patient2, doctor1);
+
+        ensureConsultationMessage(thread1, patient1, "Chao bac si, be nha em hay ho khan vao buoi toi.");
+        ensureConsultationMessage(thread1, doctor1, "Be co sot, kho tho, hay bo an khong?");
+        ensureConsultationMessage(thread1, patient1, "Be khong sot, van choi binh thuong nhung cu nam xuong la ho.");
+        ensureConsultationMessage(thread1, doctor1, "Ban giu am co hong va theo doi them 2 ngay nhe.");
+
+        ensureConsultationMessage(thread2, patient1, "Toi muon hoi ve che do an cho nguoi bi trao nguoc da day.");
+        ensureConsultationMessage(thread2, doctor2, "Can tranh do chua cay, nuoc co gas va khong nam ngay sau khi an.");
+        ensureConsultationMessage(thread2, patient1, "Cam on bac si, toi da ro.");
+
+        ensureConsultationMessage(thread3, patient2, "Be nha toi an hai san xong bi man ngua quanh mieng.");
+        ensureConsultationMessage(thread3, doctor1, "Ban theo doi xem be co sung moi, kho tho hay noi me day toan than khong.");
+
+        Appointment syncedCompletedAppointment = getOrCreateSyncedAppointment(profileP1, doctor2);
+
+        ensureBooking(
+            patient1, doctor1, profileP1, BookingRequestType.ONLINE_CHAT, BookingStatus.ACTIVE,
+            "Tu van be bi ho khan kho khe dem", null, null, null, null, null, thread1, null
+        );
+        ensureBooking(
+            patient1, doctor2, profileP1, BookingRequestType.ONLINE_CHAT, BookingStatus.COMPLETED,
+            "Tu van trao nguoc da day", null, null, null, null, null, thread2, syncedCompletedAppointment
+        );
+        ensureBooking(
+            patient2, doctor1, profileP2, BookingRequestType.ONLINE_CHAT, BookingStatus.RESTRICTED,
+            "Tu van be bi di ung hai san", null, null, null, null, null, thread3, null
+        );
+        ensureBooking(
+            patient2, doctor2, profileP2, BookingRequestType.ONLINE_CHAT, BookingStatus.PENDING,
+            "Can tu van che do dinh duong tang de khang", "Buoi toi 19:00 - 21:00", null, null, null, null, null, null
+        );
+        ensureBooking(
+            patient1, doctor1, profileP1, BookingRequestType.ONLINE_CHAT, BookingStatus.APPROVED,
+            "Tu van tiem chung vac-xin cho be 2 tuoi", null, null, Instant.now().plus(2, ChronoUnit.DAYS), null, null, thread1, null
+        );
+        ensureBooking(
+            patient1, doctor1, profileP1, BookingRequestType.ONLINE_CHAT, BookingStatus.REJECTED,
+            "Tu van sot phat ban o tre", null, "Lich lam viec cua bac si da kin, vui long chon ngay khac.", null, null, null, null, null
+        );
+        ensureBooking(
+            patient1, doctor1, profileP1, BookingRequestType.ONLINE_CHAT, BookingStatus.CANCELLED,
+            "Kham viem phe quan nhe", null, null, null, "Be da do va duoc kham tai co so y te gan nha.", null, null, null
+        );
+        ensureBooking(
+            patient1, doctor1, profileP1, BookingRequestType.OFFLINE_CLINIC, BookingStatus.APPROVED,
+            "Kham lam sang tai mui hong truc tiep", null, null, Instant.now().plus(3, ChronoUnit.DAYS),
+            null, "Ma dat lich CN-OF-9912. Vui long den truoc 10 phut.", null, null,
+            "Phong kham CareNest - Tang 1, Toa nha Y te Xanh, Cau Giay, Ha Noi"
+        );
+
+        log.info("QA booking and consultation seed ensured.");
+    }
+
+    private HealthProfile findPrimaryProfile(User user) {
+        return healthProfileRepository.findByUserIdAndDeletedAtIsNull(user.getId()).stream()
+            .filter(profile -> !Boolean.TRUE.equals(profile.getIsChild()))
+            .min(Comparator.comparing(HealthProfile::getId))
+            .orElse(null);
+    }
+
+    private ConsultationThread getOrCreateThread(User patient, User doctor) {
+        return consultationThreadRepository.findByPatientAndDoctor(patient, doctor)
+            .orElseGet(() -> consultationThreadRepository.save(ConsultationThread.builder()
+                .patient(patient)
+                .doctor(doctor)
+                .build()));
+    }
+
+    private void ensureConsultationMessage(ConsultationThread thread, User sender, String content) {
+        boolean exists = consultationMessageRepository.findAll().stream()
+            .anyMatch(message ->
+                message.getThread().getId().equals(thread.getId()) &&
+                message.getSender().getId().equals(sender.getId()) &&
+                Objects.equals(message.getContent(), content)
+            );
+        if (!exists) {
+            consultationMessageRepository.save(ConsultationMessage.builder()
+                .thread(thread)
+                .sender(sender)
+                .content(content)
+                .build());
+        }
+    }
+
+    private Appointment getOrCreateSyncedAppointment(HealthProfile profile, User doctor) {
+        return appointmentRepository.findByHealthProfileIdOrderByAppointmentDateDesc(profile.getId()).stream()
+            .filter(appointment ->
+                doctor.getFullName().equals(appointment.getDoctorName()) &&
+                appointment.getStatus() == AppointmentStatus.COMPLETED &&
+                "Trao nguoc da day nhe. Thuc hien dieu chinh che do an uong sinh hoat.".equals(appointment.getResultNotes())
+            )
+            .findFirst()
+            .orElseGet(() -> appointmentRepository.save(Appointment.builder()
+                .healthProfile(profile)
+                .doctorName(doctor.getFullName())
+                .hospitalName("Benh vien CareNest")
+                .address("Tu van truc tuyen qua CareNest App")
+                .appointmentDate(Instant.now().minus(5, ChronoUnit.DAYS))
+                .status(AppointmentStatus.COMPLETED)
+                .notes("Tu van trao nguoc da day truc tuyen.")
+                .resultNotes("Trao nguoc da day nhe. Thuc hien dieu chinh che do an uong sinh hoat.")
+                .build()));
+    }
+
+    private void ensureBooking(
+        User patient,
+        User doctor,
+        HealthProfile profile,
+        BookingRequestType requestType,
+        BookingStatus status,
+        String note,
+        String preferredTimeNote,
+        String rejectReason,
+        Instant scheduledAt,
+        String cancellationReason,
+        String confirmedNote,
+        ConsultationThread thread,
+        Appointment appointment
+    ) {
+        ensureBooking(patient, doctor, profile, requestType, status, note, preferredTimeNote, rejectReason, scheduledAt,
+            cancellationReason, confirmedNote, thread, appointment, null);
+    }
+
+    private void ensureBooking(
+        User patient,
+        User doctor,
+        HealthProfile profile,
+        BookingRequestType requestType,
+        BookingStatus status,
+        String note,
+        String preferredTimeNote,
+        String rejectReason,
+        Instant scheduledAt,
+        String cancellationReason,
+        String confirmedNote,
+        ConsultationThread thread,
+        Appointment appointment,
+        String confirmedLocation
+    ) {
+        boolean exists = bookingRequestRepository.findAllByOrderByCreatedAtDesc().stream()
+            .anyMatch(booking ->
+                booking.getPatient().getId().equals(patient.getId()) &&
+                booking.getDoctor().getId().equals(doctor.getId()) &&
+                booking.getRequestType() == requestType &&
+                booking.getStatus() == status &&
+                Objects.equals(booking.getNote(), note)
+            );
+        if (exists) {
             return;
         }
 
-        // Get patient profiles
-        HealthProfile profileP1 = healthProfileRepository.findAll().stream()
-                .filter(hp -> hp.getUser().getId().equals(patient1.getId()) && !hp.getIsChild())
-                .findFirst().orElse(null);
-
-        HealthProfile profileP2 = healthProfileRepository.findAll().stream()
-                .filter(hp -> hp.getUser().getId().equals(patient2.getId()) && !hp.getIsChild())
-                .findFirst().orElse(null);
-
-        // We create up to 4 consultation threads due to unique index (patient_id, doctor_id)
-        
-        // Thread 1: Patient 1 & Doctor 1 (Active Chat Room)
-        ConsultationThread thread1 = consultationThreadRepository.save(ConsultationThread.builder()
-                .patient(patient1)
-                .doctor(doctor1)
-                .build());
-
-        // Messages for Thread 1
-        consultationMessageRepository.save(ConsultationMessage.builder().thread(thread1).sender(patient1).content("Chào bác sĩ, bé nhà em dạo này ho nhiều về đêm và sáng sớm, có đờm khò khè ạ.").build());
-        consultationMessageRepository.save(ConsultationMessage.builder().thread(thread1).sender(doctor1).content("Chào bạn, bé có biểu hiện sốt, khó thở hay bỏ bú bỏ ăn không? Bạn đo nhiệt độ bé chưa?").build());
-        consultationMessageRepository.save(ConsultationMessage.builder().thread(thread1).sender(patient1).content("Dạ bé không sốt, nhiệt độ bình thường 36.8 độ C, bé vẫn chơi ngoan nhưng cứ nằm xuống là ho.").build());
-        consultationMessageRepository.save(ConsultationMessage.builder().thread(thread1).sender(doctor1).content("Đó có thể là biểu hiện của kích ứng hô hấp do thời tiết lạnh hoặc khô. Bạn giữ ấm cổ họng cho bé, nhỏ nước muối sinh lý làm sạch mũi, và cho bé uống nước ấm nhé. Theo dõi thêm 2 ngày, nếu bé ho tăng kèm sốt thì đưa đi khám ngay.").build());
-
-        // Booking 1 (ACTIVE) -> Thread 1
         bookingRequestRepository.save(BookingRequest.builder()
-                .patient(patient1)
-                .doctor(doctor1)
-                .healthProfile(profileP1)
-                .requestType(BookingRequestType.ONLINE_CHAT)
-                .status(BookingStatus.ACTIVE)
-                .note("Tư vấn bé bị ho khan khò khè đêm")
-                .scheduledAt(Instant.now().minus(2, ChronoUnit.HOURS))
-                .thread(thread1)
-                .build());
-
-        // Thread 2: Patient 1 & Doctor 2 (Completed Consultation Room -> history viewable)
-        ConsultationThread thread2 = consultationThreadRepository.save(ConsultationThread.builder()
-                .patient(patient1)
-                .doctor(doctor2)
-                .build());
-
-        // Messages for Thread 2
-        consultationMessageRepository.save(ConsultationMessage.builder().thread(thread2).sender(patient1).content("Chào bác sĩ, tôi muốn hỏi về chế độ ăn uống cho người bị trào ngược dạ dày.").build());
-        consultationMessageRepository.save(ConsultationMessage.builder().thread(thread2).sender(doctor2).content("Chào bạn, người trào ngược cần tránh đồ chua cay, đồ uống có gas, cồn. Không ăn quá no và không nằm ngay sau khi ăn.").build());
-        consultationMessageRepository.save(ConsultationMessage.builder().thread(thread2).sender(patient1).content("Vâng tôi đã rõ, xin cảm ơn bác sĩ.").build());
-
-        // Booking 2 (COMPLETED) -> Thread 2. It has a linked appointment.
-        Appointment appointmentSync = appointmentRepository.save(Appointment.builder()
-                .healthProfile(profileP1)
-                .doctorName(doctor2.getFullName())
-                .hospitalName("Bệnh viện CareNest")
-                .address("Tư vấn trực tuyến qua CareNest App")
-                .appointmentDate(Instant.now().minus(5, ChronoUnit.DAYS))
-                .status(AppointmentStatus.COMPLETED)
-                .notes("Tư vấn trào ngược dạ dày trực tuyến.")
-                .resultNotes("Trào ngược dạ dày nhẹ. Thực hiện điều chỉnh chế độ ăn uống sinh hoạt.")
-                .build());
-
-        bookingRequestRepository.save(BookingRequest.builder()
-                .patient(patient1)
-                .doctor(doctor2)
-                .healthProfile(profileP1)
-                .requestType(BookingRequestType.ONLINE_CHAT)
-                .status(BookingStatus.COMPLETED)
-                .note("Tư vấn trào ngược dạ dày")
-                .scheduledAt(Instant.now().minus(5, ChronoUnit.DAYS))
-                .thread(thread2)
-                .appointment(appointmentSync)
-                .build());
-
-        // Thread 3: Patient 2 & Doctor 1 (Restricted Consultation Room -> history viewable but chat input locked)
-        ConsultationThread thread3 = consultationThreadRepository.save(ConsultationThread.builder()
-                .patient(patient2)
-                .doctor(doctor1)
-                .build());
-
-        // Messages for Thread 3
-        consultationMessageRepository.save(ConsultationMessage.builder().thread(thread3).sender(patient2).content("Chào bác sĩ Nhi khoa, bé nhà tôi ăn hải sản xong bị mẩn ngứa quanh miệng.").build());
-        consultationMessageRepository.save(ConsultationMessage.builder().thread(thread3).sender(doctor1).content("Chào bạn, bé có bị sưng húp môi mắt, nổi mề đay toàn thân hay khó thở không?").build());
-
-        // Booking 3 (RESTRICTED) -> Thread 3
-        bookingRequestRepository.save(BookingRequest.builder()
-                .patient(patient2)
-                .doctor(doctor1)
-                .healthProfile(profileP2)
-                .requestType(BookingRequestType.ONLINE_CHAT)
-                .status(BookingStatus.RESTRICTED)
-                .note("Tư vấn bé bị dị ứng hải sản")
-                .scheduledAt(Instant.now().minus(1, ChronoUnit.DAYS))
-                .thread(thread3)
-                .build());
-
-        // Thread 4: Patient 2 & Doctor 2 (Pending/No thread chat room activity)
-        // Booking 4 (PENDING)
-        bookingRequestRepository.save(BookingRequest.builder()
-                .patient(patient2)
-                .doctor(doctor2)
-                .healthProfile(profileP2)
-                .requestType(BookingRequestType.ONLINE_CHAT)
-                .status(BookingStatus.PENDING)
-                .note("Cần tư vấn chế độ dinh dưỡng tăng đề kháng mùa dịch")
-                .preferredTimeNote("Buổi tối từ 19:00 - 21:00")
-                .scheduledAt(Instant.now().plus(1, ChronoUnit.DAYS))
-                .build());
-
-        // Extra bookings to test other statuses
-        // Booking 5 (APPROVED) -> ONLINE_CHAT
-        bookingRequestRepository.save(BookingRequest.builder()
-                .patient(patient1)
-                .doctor(doctor1)
-                .healthProfile(profileP1)
-                .requestType(BookingRequestType.ONLINE_CHAT)
-                .status(BookingStatus.APPROVED)
-                .note("Tư vấn tiêm chủng vắc-xin cho bé 2 tuổi")
-                .scheduledAt(Instant.now().plus(2, ChronoUnit.DAYS))
-                .thread(thread1) // Reuse thread1 since same patient-doctor pair
-                .build());
-
-        // Booking 6 (REJECTED) -> ONLINE_CHAT
-        bookingRequestRepository.save(BookingRequest.builder()
-                .patient(patient1)
-                .doctor(doctor1)
-                .healthProfile(profileP1)
-                .requestType(BookingRequestType.ONLINE_CHAT)
-                .status(BookingStatus.REJECTED)
-                .note("Tư vấn sốt phát ban ở trẻ")
-                .rejectReason("Lịch làm việc của bác sĩ đã kín ngày này, vui lòng chọn ngày khác.")
-                .scheduledAt(Instant.now().minus(3, ChronoUnit.DAYS))
-                .build());
-
-        // Booking 7 (CANCELLED) -> ONLINE_CHAT
-        bookingRequestRepository.save(BookingRequest.builder()
-                .patient(patient1)
-                .doctor(doctor1)
-                .healthProfile(profileP1)
-                .requestType(BookingRequestType.ONLINE_CHAT)
-                .status(BookingStatus.CANCELLED)
-                .note("Khám viêm phế quản nhẹ")
-                .cancellationReason("Bé đã đỡ và được khám tại cơ sở y tế gần nhà.")
-                .scheduledAt(Instant.now().minus(4, ChronoUnit.DAYS))
-                .build());
-
-        // Booking 8 (APPROVED) -> OFFLINE_CLINIC (Clinic visit - no chat room)
-        bookingRequestRepository.save(BookingRequest.builder()
-                .patient(patient1)
-                .doctor(doctor1)
-                .healthProfile(profileP1)
-                .requestType(BookingRequestType.OFFLINE_CLINIC)
-                .status(BookingStatus.APPROVED)
-                .note("Khám lâm sàng tai mũi họng trực tiếp tại phòng khám")
-                .confirmedLocation("Phòng khám CareNest - Tầng 1, Tòa nhà Y Tế Xanh, Cầu Giấy, Hà Nội")
-                .confirmedNote("Mã đặt lịch CN-OF-9912. Quý khách vui lòng đến trước 10 phút để tiếp đón.")
-                .scheduledAt(Instant.now().plus(3, ChronoUnit.DAYS))
-                .build());
-
-        log.info("Seeded 8 booking requests representing all 7 statuses, offline clinic type, and thread messages.");
+            .patient(patient)
+            .doctor(doctor)
+            .healthProfile(profile)
+            .requestType(requestType)
+            .status(status)
+            .note(note)
+            .preferredTimeNote(preferredTimeNote)
+            .rejectReason(rejectReason)
+            .scheduledAt(scheduledAt)
+            .cancellationReason(cancellationReason)
+            .confirmedNote(confirmedNote)
+            .confirmedLocation(confirmedLocation)
+            .thread(thread)
+            .appointment(appointment)
+            .build());
     }
 }
