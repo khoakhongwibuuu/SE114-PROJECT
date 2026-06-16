@@ -267,14 +267,24 @@ fun BookingRequestCard(
                         Text("Chấp nhận")
                     }
                 }
-            } else if (booking.status == BookingStatus.APPROVED || booking.status == BookingStatus.ACTIVE) {
+            } else if (booking.requestType == BookingRequestType.ONLINE_CHAT &&
+                (booking.status == BookingStatus.APPROVED ||
+                 booking.status == BookingStatus.ACTIVE ||
+                 booking.status == BookingStatus.RESTRICTED ||
+                 booking.status == BookingStatus.COMPLETED)
+            ) {
+                val buttonText = if (booking.status == BookingStatus.APPROVED || booking.status == BookingStatus.ACTIVE) {
+                    "Vào phòng tư vấn riêng tư"
+                } else {
+                    "Xem lịch sử tư vấn"
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onNavigateToConsultationRoom,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
                 ) {
-                    Text("Vào phòng tư vấn riêng tư")
+                    Text(buttonText)
                 }
             }
         }

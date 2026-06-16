@@ -15,6 +15,9 @@ import com.carenest.backend.features.appointment.service.AppointmentService;
 import com.carenest.backend.features.family.util.FamilySecurityUtil;
 import com.carenest.backend.features.healthprofile.entity.HealthProfile;
 import com.carenest.backend.features.healthprofile.repository.HealthProfileRepository;
+import com.carenest.backend.features.booking.entity.BookingRequest;
+import com.carenest.backend.features.booking.enums.BookingStatus;
+import com.carenest.backend.features.booking.repository.BookingRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final HealthProfileRepository healthProfileRepository;
     private final AppointmentMapper appointmentMapper;
     private final FamilySecurityUtil familySecurityUtil;
+    private final BookingRequestRepository bookingRequestRepository;
 
     @Override
     @Transactional
@@ -99,6 +103,24 @@ public class AppointmentServiceImpl implements AppointmentService {
         if (request.getNotes() != null) appointment.setNotes(request.getNotes());
 
         Appointment saved = appointmentRepository.save(appointment);
+
+        bookingRequestRepository.findByAppointment(saved).ifPresent(booking -> {
+            if (booking.getStatus() != BookingStatus.COMPLETED
+                    && booking.getStatus() != BookingStatus.REJECTED
+                    && booking.getStatus() != BookingStatus.CANCELLED) {
+                if (request.getAppointmentDate() != null) {
+                    booking.setScheduledAt(request.getAppointmentDate());
+                }
+                if (request.getAddress() != null) {
+                    booking.setConfirmedLocation(request.getAddress());
+                }
+                if (request.getNotes() != null) {
+                    booking.setConfirmedNote(request.getNotes());
+                }
+                bookingRequestRepository.save(booking);
+            }
+        });
+
         return appointmentMapper.toResponse(saved);
     }
 
@@ -111,6 +133,17 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         appointment.setStatus(AppointmentStatus.CANCELLED);
         Appointment saved = appointmentRepository.save(appointment);
+
+        bookingRequestRepository.findByAppointment(saved).ifPresent(booking -> {
+            if (booking.getStatus() != BookingStatus.COMPLETED
+                    && booking.getStatus() != BookingStatus.REJECTED
+                    && booking.getStatus() != BookingStatus.CANCELLED) {
+                booking.setStatus(BookingStatus.CANCELLED);
+                booking.setCancellationReason("Hủy thông qua lịch hẹn");
+                bookingRequestRepository.save(booking);
+            }
+        });
+
         return appointmentMapper.toResponse(saved);
     }
 
@@ -155,6 +188,19 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setResultNotes(request.getResultNotes());
         appointment.setStatus(AppointmentStatus.COMPLETED); // Assuming adding result notes means it's completed
         Appointment saved = appointmentRepository.save(appointment);
+
+        bookingRequestRepository.findByAppointment(saved).ifPresent(booking -> {
+            if (booking.getStatus() == BookingStatus.APPROVED
+                    || booking.getStatus() == BookingStatus.ACTIVE
+                    || booking.getStatus() == BookingStatus.RESTRICTED) {
+                booking.setStatus(BookingStatus.COMPLETED);
+            }
+            if (booking.getStatus() != BookingStatus.REJECTED && booking.getStatus() != BookingStatus.CANCELLED) {
+                booking.setConfirmedNote(request.getResultNotes());
+                bookingRequestRepository.save(booking);
+            }
+        });
+
         return appointmentMapper.toResponse(saved);
     }
 
