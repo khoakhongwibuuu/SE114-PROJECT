@@ -12,6 +12,7 @@ import com.example.carenest.feature.admin.data.AdminContentType
 import com.example.carenest.feature.admin.data.AdminReportPagingSource
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
 import com.example.carenest.feature.admin.data.repository.AdminRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,7 @@ data class AdminModerationUiState(
 
 class AdminModerationViewModel(
     private val repository: AdminRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AdminModerationUiState())
     val uiState: StateFlow<AdminModerationUiState> = _uiState.asStateFlow()
@@ -60,7 +62,7 @@ class AdminModerationViewModel(
 
         viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     when (action) {
                         ModerationAction.DELETE_CONTENT -> deleteReportedContent(report)
                         ModerationAction.DISMISS -> repository.dismissReport(report.id)

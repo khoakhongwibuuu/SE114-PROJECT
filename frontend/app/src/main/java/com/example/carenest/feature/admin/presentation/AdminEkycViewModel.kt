@@ -7,6 +7,7 @@ import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.ekyc.data.repository.EkycRepository
 import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import com.example.carenest.feature.ekyc.domain.model.DoctorVerificationResponse
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +27,7 @@ data class AdminEkycUiState(
 
 class AdminEkycViewModel(
     private val repository: EkycRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AdminEkycUiState())
     val uiState: StateFlow<AdminEkycUiState> = _uiState.asStateFlow()
@@ -39,7 +41,7 @@ class AdminEkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingPending = true, error = null) }
             runCatching {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     repository.getPendingVerifications()
                 }
             }.onSuccess { pending ->
@@ -59,7 +61,7 @@ class AdminEkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingDoctors = true, error = null) }
             runCatching {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     repository.getAllDoctors()
                 }
             }.onSuccess { doctors ->
@@ -80,7 +82,7 @@ class AdminEkycViewModel(
             val target = _uiState.value.pendingList.firstOrNull { it.id == id }
             _uiState.update { it.copy(error = null, message = "Đang phê duyệt hồ sơ...") }
             runCatching {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     repository.approveVerification(id)
                 }
             }.onSuccess {
@@ -112,7 +114,7 @@ class AdminEkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null, message = "Đang từ chối hồ sơ...") }
             runCatching {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     repository.rejectVerification(id, reason.trim())
                 }
             }.onSuccess {
@@ -137,7 +139,7 @@ class AdminEkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null, message = "Đang thu hồi quyền bác sĩ...") }
             runCatching {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     repository.revokeDoctor(userId)
                 }
             }.onSuccess {
