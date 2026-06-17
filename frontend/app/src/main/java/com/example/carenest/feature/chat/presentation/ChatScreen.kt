@@ -88,6 +88,14 @@ fun ChatScreen(
     val currentRole by application.secureSessionManager.userRoleFlow.collectAsState()
     val normalizedAppRole = currentRole?.removePrefix("ROLE_")?.uppercase()
     val normalizedGroupRole = state.myRole?.uppercase()
+    val hasExplicitMembership = normalizedGroupRole != null
+    val canLeaveGroup = hasExplicitMembership && (normalizedAppRole == "ADMIN" || normalizedGroupRole != "HOST")
+    val leaveGroupHint = if (hasExplicitMembership && !canLeaveGroup) {
+        "Bạn đang là trưởng nhóm. Hãy liên hệ admin hệ thống nếu cần rời nhóm hoặc chuyển quyền trưởng nhóm."
+    } else {
+        null
+    }
+    val canOpenOptions = canLeaveGroup || leaveGroupHint != null
     val canSend = state.inputText.isNotBlank() && state.slowCountdown == 0 && !state.isSending
     val canManageMembers = normalizedAppRole == "ADMIN" || normalizedGroupRole == "HOST"
     val isFallbackMode = !state.isConnected && state.error?.contains("Đã lưu", ignoreCase = true) == true
@@ -120,31 +128,50 @@ fun ChatScreen(
                     color = Color(0xFF64748B),
                 )
                 Spacer(modifier = Modifier.height(18.dp))
-                ChatOptionRow(
-                    icon = {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = null,
-                            tint = Color(0xFFDC2626),
+                if (canLeaveGroup) {
+                    ChatOptionRow(
+                        icon = {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = null,
+                                tint = Color(0xFFDC2626),
+                            )
+                        },
+                        title = "Rời nhóm",
+                        subtitle = "Rời khỏi phòng trò chuyện cộng đồng này.",
+                        titleColor = Color(0xFFDC2626),
+                        onClick = {
+                            showOptions = false
+                            viewModel.leaveGroup(
+                                onSuccess = {
+                                    Toast.makeText(context, "Đã rời nhóm thành công.", Toast.LENGTH_SHORT).show()
+                                    onBack()
+                                },
+                                onError = { err ->
+                                    Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                if (leaveGroupHint != null) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color(0xFFFFFBEB),
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Text(
+                            text = leaveGroupHint,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF92400E),
+                            lineHeight = 18.sp,
+                            fontWeight = FontWeight.Medium,
                         )
-                    },
-                    title = "Rời nhóm",
-                    subtitle = "Rời khỏi phòng trò chuyện cộng đồng này.",
-                    titleColor = Color(0xFFDC2626),
-                    onClick = {
-                        showOptions = false
-                        viewModel.leaveGroup(
-                            onSuccess = {
-                                Toast.makeText(context, "Đã rời nhóm thành công.", Toast.LENGTH_SHORT).show()
-                                onBack()
-                            },
-                            onError = { err ->
-                                Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
-                            }
-                        )
-                    },
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
     }
@@ -352,12 +379,16 @@ fun ChatScreen(
                 )
             }
 
-            IconButton(onClick = { showOptions = true }) {
-                Icon(
-                    Icons.Default.MoreVert,
-                    contentDescription = "Tùy chọn nhóm",
-                    tint = Color(0xFF0F172A),
-                )
+            if (canOpenOptions) {
+                IconButton(onClick = { showOptions = true }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = "Tùy chọn nhóm",
+                        tint = Color(0xFF0F172A),
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.size(48.dp))
             }
         }
 

@@ -24,7 +24,8 @@ data class GroupPostDetailState(
     val activeTab: GroupPostTab = GroupPostTab.APPROVED,
     val isModerator: Boolean = false,
     val canManageMembers: Boolean = false,
-    val canLeaveGroup: Boolean = true,
+    val canLeaveGroup: Boolean = false,
+    val leaveGroupHint: String? = null,
     val approvedPosts: List<GroupPost> = emptyList(),
     val myPosts: List<GroupPost> = emptyList(),
     val pendingPosts: List<GroupPost> = emptyList(),
@@ -77,11 +78,18 @@ class GroupPostDetailViewModel(
         val normalizedGroupRole = myRoleInGroup?.uppercase()
         val isModerator = normalizedAppRole == "ADMIN" || normalizedGroupRole == "HOST" || normalizedGroupRole == "MODERATOR"
         val canManageMembers = normalizedAppRole == "ADMIN" || normalizedGroupRole == "HOST"
+        val hasExplicitMembership = normalizedGroupRole != null
+        val canLeaveGroup = hasExplicitMembership && (normalizedAppRole == "ADMIN" || normalizedGroupRole != "HOST")
         _uiState.update { current ->
             current.copy(
                 isModerator = isModerator,
                 canManageMembers = canManageMembers,
-                canLeaveGroup = joined,
+                canLeaveGroup = canLeaveGroup,
+                leaveGroupHint = if (joined && hasExplicitMembership && !canLeaveGroup) {
+                    "Bạn đang là trưởng nhóm. Hãy liên hệ admin hệ thống nếu cần rời nhóm hoặc chuyển quyền trưởng nhóm."
+                } else {
+                    null
+                },
                 activeTab = if (!isModerator && current.activeTab == GroupPostTab.PENDING) {
                     GroupPostTab.APPROVED
                 } else {
