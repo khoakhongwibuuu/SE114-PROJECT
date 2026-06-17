@@ -55,7 +55,7 @@ public class VaccinationServiceImpl implements VaccinationService {
         HealthProfile profile = healthProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", profileId));
 
-        // 1. TÃƒÂ¬m hoÃ¡ÂºÂ·c tÃ¡ÂºÂ¡o mÃ¡Â»â€ºi VaccinationRecord theo vaccineName (khÃƒÂ´ng phÃƒÂ¢n biÃ¡Â»â€¡t hoa thÃ†Â°Ã¡Â»Âng)
+        // 1. Tìm hoặc tạo mới VaccinationRecord theo vaccineName (không phân biệt hoa thường)
         VaccinationRecord record = vaccinationRecordRepository
                 .findByHealthProfileIdAndVaccineNameIgnoreCase(profileId, request.getVaccineName())
                 .orElseGet(() -> {
@@ -68,13 +68,13 @@ public class VaccinationServiceImpl implements VaccinationService {
                     return vaccinationRecordRepository.save(newRecord);
                 });
 
-        // CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t lÃ¡ÂºÂ¡i totalDoses trong record nÃ¡ÂºÂ¿u doseNumber lÃ¡Â»â€ºn hÃ†Â¡n totalDoses hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i
+        // Cập nhật lại totalDoses trong record nếu doseNumber lớn hơn totalDoses hiện tại
         if (request.getDoseNumber() > record.getTotalDoses()) {
             record.setTotalDoses(request.getDoseNumber());
             vaccinationRecordRepository.save(record);
         }
 
-        // 2. TÃƒÂ¬m hoÃ¡ÂºÂ·c tÃ¡ÂºÂ¡o mÃ¡Â»â€ºi VaccinationDose cho doseNumber cÃ¡Â»Â§a record nÃƒÂ y
+        // 2. Tìm hoặc tạo mới VaccinationDose cho doseNumber của record này
         DoseStatus targetStatus = DoseStatus.valueOf(request.getStatus().toUpperCase());
         LocalDate dateAdministered = (targetStatus == DoseStatus.COMPLETED) ? request.getDate() : null;
         LocalDate scheduledDate = request.getDate();
@@ -96,7 +96,7 @@ public class VaccinationServiceImpl implements VaccinationService {
 
         evictDashboardCache(profile);
 
-        // 3. TrÃ¡ÂºÂ£ vÃ¡Â»Â toÃƒÂ n bÃ¡Â»â„¢ cÃƒÂ¡c mÃ…Â©i tiÃƒÂªm thuÃ¡Â»â„¢c record nÃƒÂ y Ã„â€˜Ã¡Â»Æ’ Ã„â€˜Ã¡Â»â€œng bÃ¡Â»â„¢ hÃƒÂ³a danh sÃƒÂ¡ch UI
+        // 3. Trả về toàn bộ các mũi tiêm thuộc record này để đồng bộ hóa danh sách UI
         List<VaccinationDose> doses = vaccinationDoseRepository.findAllByVaccinationRecordIdOrderByDoseNumberAsc(record.getId());
         return vaccinationMapper.toRecordResponseWithDoses(record, doses);
     }
@@ -155,7 +155,7 @@ public class VaccinationServiceImpl implements VaccinationService {
             }
         }
 
-        // TrÃ¡ÂºÂ£ vÃ¡Â»Â dÃ¡Â»Â¯ liÃ¡Â»â€¡u mÃ¡Â»â€ºi nhÃ¡ÂºÂ¥t
+        // Trả về dữ liệu mới nhất
         List<VaccinationDose> updatedDoses = vaccinationDoseRepository.findAllByVaccinationRecordIdOrderByDoseNumberAsc(record.getId());
 
         evictDashboardCache(record.getHealthProfile());

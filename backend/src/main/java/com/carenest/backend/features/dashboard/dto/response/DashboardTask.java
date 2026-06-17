@@ -11,24 +11,24 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DashboardTask {
-    @Schema(description = "Loáº¡i cÃ´ng viá»‡c", example = "MEDICATION")
+    @Schema(description = "Loại công việc", example = "MEDICATION")
     private String type; // "MEDICATION" or "VACCINATION"
 
-    @Schema(description = "TiÃªu Ä‘á» cÃ´ng viá»‡c", example = "Paracetamol 500mg")
+    @Schema(description = "Tiêu đề công việc", example = "Paracetamol 500mg")
     private String title;
 
-    @Schema(description = "Thá»i gian thá»±c hiá»‡n", example = "2023-10-27T08:00:00Z")
+    @Schema(description = "Thời gian thực hiện", example = "2023-10-27T08:00:00Z")
     private String time;
 
-    @Schema(description = "TÃªn thành viên gia Ä‘Ã¬nh", example = "BÃ© Na")
+    @Schema(description = "Tên thành viên gia đình", example = "Bé Na")
     private String memberName;
 
-    @Schema(description = "ID tham chiáº¿u cá»§a cÃ´ng viá»‡c (MedicationLog ID hoáº·c VaccinationDose ID)", example = "123")
+    @Schema(description = "ID tham chiếu của công việc (MedicationLog ID hoặc VaccinationDose ID)", example = "123")
     private Long referenceId;
 
-    @Schema(description = "ID há»“ sÆ¡ sá»©c khá»e cá»§a thành viên", example = "3")
+    @Schema(description = "ID hồ sơ sức khỏe của thành viên", example = "3")
     private Long profileId;
 
-    @Schema(description = "MÃ´ táº£ phá»¥ hoáº·c tháº» nháº¯c nhá»Ÿ", example = "â³ NgÃ y mai")
+    @Schema(description = "Mô tả phụ hoặc thẻ nhắc nhở", example = "⏳ Ngày mai")
     private String subtitle;
 }

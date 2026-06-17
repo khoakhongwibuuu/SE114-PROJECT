@@ -18,23 +18,23 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class HealthProfileUpdateRequest {
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p há» vÃ  tÃªn")
-    @Size(max = 100, message = "Há» vÃ  tÃªn khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 100 kÃ½ tá»±")
+    @NotBlank(message = "Vui lòng nhập họ và tên")
+    @Size(max = 100, message = "Họ và tên không được vượt quá 100 ký tự")
     private String fullName;
 
-    @NotNull(message = "Vui lÃ²ng nháº­p ngÃ y sinh")
-    @PastOrPresent(message = "NgÃ y sinh khÃ´ng Ä‘Æ°á»£c náº±m trong tÆ°Æ¡ng lai")
+    @NotNull(message = "Vui lòng nhập ngày sinh")
+    @PastOrPresent(message = "Ngày sinh không được nằm trong tương lai")
     private LocalDate dateOfBirth;
 
-    @NotNull(message = "Vui lÃ²ng chá»n giá»›i tÃ­nh")
+    @NotNull(message = "Vui lòng chọn giới tính")
     private Gender gender;
 
-    @Size(max = 50, message = "Quan há»‡ khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 50 kÃ½ tá»±")
+    @Size(max = 50, message = "Quan hệ không được vượt quá 50 ký tự")
     private String relationship;
 
     private String notes;
 
-    @Size(max = 500, message = "ÄÆ°á»ng dáº«n áº£nh Ä‘áº¡i diá»‡n khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 500 kÃ½ tá»±")
+    @Size(max = 500, message = "Đường dẫn ảnh đại diện không được vượt quá 500 ký tự")
     private String avatarUrl;
 
     private Boolean isChild;

@@ -27,7 +27,7 @@ public class GrowthRecordController {
             @Valid @RequestBody GrowthRecordCreateRequest request) {
 
         GrowthRecordResponse response = growthRecordService.addRecord(id, request);
-        return ApiResponse.success("ThÃªm chá»‰ sá»‘ tÄƒng trÆ°á»Ÿng thÃ nh cÃ´ng", response);
+        return ApiResponse.success("Thêm chỉ số tăng trưởng thành công", response);
     }
 
     @GetMapping("/growth-records")
@@ -35,7 +35,7 @@ public class GrowthRecordController {
             @PathVariable("id") Long id) {
 
         List<GrowthRecordResponse> response = growthRecordService.getGrowthRecords(id);
-        return ApiResponse.success("Láº¥y lá»‹ch sá»­ tÄƒng trÆ°á»Ÿng thÃ nh cÃ´ng", response);
+        return ApiResponse.success("Lấy lịch sử tăng trưởng thành công", response);
     }
 
     @GetMapping("/growth-chart")
@@ -43,6 +43,6 @@ public class GrowthRecordController {
             @PathVariable("id") Long id) {
 
         List<GrowthChartResponse> response = growthRecordService.getGrowthChartData(id);
-        return ApiResponse.success("Láº¥y dá»¯ liá»‡u biá»ƒu Ä‘á»“ tÄƒng trÆ°á»Ÿng thÃ nh cÃ´ng", response);
+        return ApiResponse.success("Lấy dữ liệu biểu đồ tăng trưởng thành công", response);
     }
 }

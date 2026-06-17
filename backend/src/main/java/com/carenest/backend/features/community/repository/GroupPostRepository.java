@@ -25,17 +25,17 @@ public interface GroupPostRepository extends JpaRepository<GroupPost, Long> {
     @Query("""
             UPDATE GroupPost post
             SET post.replyToPost = NULL
-            WHERE post.replyToPost.id = :postId
+            WHERE post.chatGroup.id = :chatGroupId
             """)
-    void clearRepliesByPostId(@Param("postId") Long postId);
+    void clearRepliesByChatGroupId(@Param("chatGroupId") Long chatGroupId);
 
     @Modifying
     @Query("""
             UPDATE GroupPost post
             SET post.replyToPost = NULL
-            WHERE post.chatGroup.id = :chatGroupId
+            WHERE post.replyToPost.id = :postId
             """)
-    void clearRepliesByChatGroupId(@Param("chatGroupId") Long chatGroupId);
+    void clearRepliesByPostId(@Param("postId") Long postId);
 
     @Modifying
     @Query("DELETE FROM GroupPost post WHERE post.chatGroup.id = :chatGroupId")

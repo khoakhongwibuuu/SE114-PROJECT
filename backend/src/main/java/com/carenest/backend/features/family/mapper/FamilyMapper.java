@@ -17,7 +17,7 @@ public interface FamilyMapper {
     FamilyResponse toFamilyResponse(Family family);
 
     @Mapping(source = "owner.id", target = "ownerId")
-    @Mapping(target = "members", ignore = true) // Sáº½ Ä‘Æ°á»£c map thá»§ cÃ´ng trong Service
+    @Mapping(target = "members", ignore = true) // Sẽ được map thủ công trong Service
     FamilyDetailResponse toFamilyDetailResponse(Family family);
 
     @Mapping(source = "user.fullName", target = "fullName")

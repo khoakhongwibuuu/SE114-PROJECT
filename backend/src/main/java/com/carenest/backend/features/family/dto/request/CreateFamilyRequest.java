@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateFamilyRequest {
 
-    @NotBlank(message = "TÃªn gia Ä‘Ã¬nh khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @Size(min = 2, max = 100, message = "TÃªn gia Ä‘Ã¬nh pháº£i tá»« 2 Ä‘áº¿n 100 kÃ½ tá»±")
+    @NotBlank(message = "Tên gia đình không được để trống")
+    @Size(min = 2, max = 100, message = "Tên gia đình phải từ 2 đến 100 ký tự")
     private String name;
 }

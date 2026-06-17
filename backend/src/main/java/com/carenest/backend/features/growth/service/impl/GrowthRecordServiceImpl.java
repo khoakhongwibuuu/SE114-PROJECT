@@ -1,5 +1,6 @@
 package com.carenest.backend.features.growth.service.impl;
 
+import com.carenest.backend.core.exception.BadRequestException;
 import com.carenest.backend.core.exception.ResourceNotFoundException;
 import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.family.entity.Family;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.Period;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,6 +51,16 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
 
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
+
+        if (request.getRecordDate() == null) {
+            throw new BadRequestException("Vui lòng nhập ngày ghi nhận");
+        }
+        if (request.getRecordDate().isAfter(LocalDate.now())) {
+            throw new BadRequestException("Ngày ghi nhận không được ở tương lai");
+        }
+        if (request.getRecordDate().isBefore(profile.getDateOfBirth())) {
+            throw new BadRequestException("Ngày ghi nhận không được trước ngày sinh");
+        }
 
         // Calculate BMI
         BigDecimal bmi = null;
@@ -167,17 +179,17 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
     }
 
     private void sendAnomalyNotification(HealthProfile profile, Long recordId, GrowthRecordResponse response) {
-        String title = "Cáº£nh bÃ¡o chá»‰ sá»‘ tÄƒng trÆ°á»Ÿng";
-        StringBuilder message = new StringBuilder(String.format("Chá»‰ sá»‘ tÄƒng trÆ°á»Ÿng cá»§a %s cáº§n lÆ°u Ã½:", profile.getFullName()));
+        String title = "Cảnh báo chỉ số tăng trưởng";
+        StringBuilder message = new StringBuilder(String.format("Chỉ số tăng trưởng của %s cần lưu ý:", profile.getFullName()));
 
         if (response.getWeightPercentile() != null) {
-            if (response.getWeightPercentile() < 3.0) message.append(" CÃ¢n náº·ng/BMI quÃ¡ tháº¥p (<3%).");
-            else if (response.getWeightPercentile() > 97.0) message.append(" CÃ¢n náº·ng/BMI quÃ¡ cao (>97%).");
+            if (response.getWeightPercentile() < 3.0) message.append(" Cân nặng/BMI quá thấp (<3%).");
+            else if (response.getWeightPercentile() > 97.0) message.append(" Cân nặng/BMI quá cao (>97%).");
         }
 
         if (response.getHeightPercentile() != null) {
-            if (response.getHeightPercentile() < 3.0) message.append(" Chiá»u cao quÃ¡ tháº¥p (<3%).");
-            else if (response.getHeightPercentile() > 97.0) message.append(" Chiá»u cao quÃ¡ cao (>97%).");
+            if (response.getHeightPercentile() < 3.0) message.append(" Chiều cao quá thấp (<3%).");
+            else if (response.getHeightPercentile() > 97.0) message.append(" Chiều cao quá cao (>97%).");
         }
 
         Family family = profile.getFamily();

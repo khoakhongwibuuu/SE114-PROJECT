@@ -18,5 +18,7 @@ public interface NotificationService {
 
     com.carenest.backend.features.notification.dto.response.NotificationResponse markAsRead(Long notificationId, Long userId);
 
+    com.carenest.backend.features.notification.dto.response.UnreadCountResponse markAllAsRead(Long userId);
+
     com.carenest.backend.features.notification.dto.response.UnreadCountResponse getUnreadCount(Long userId);
 }

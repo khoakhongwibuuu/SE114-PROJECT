@@ -90,13 +90,15 @@ services:
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
 
       # ── JWT Security ─────────────────────────────────────────
-      APP_JWT_SECRET: ${JWT_SECRET}
-      APP_JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-900000}
-      APP_JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-900000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
 
       # ── AI / Gemini API ──────────────────────────────────────
       # ⚠️ QUAN TRỌNG: Giá trị này PHẢI được set trong file .env, KHÔNG bao giờ hardcode!
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      APP_FEATURE_AI_CHAT_ENABLED: ${APP_FEATURE_AI_CHAT_ENABLED:-false}
+      APP_FEATURE_OCR_ENABLED: ${APP_FEATURE_OCR_ENABLED:-false}
 
       # ── Mail SMTP ────────────────────────────────────────────
       SPRING_MAIL_USERNAME: ${MAIL_USERNAME}

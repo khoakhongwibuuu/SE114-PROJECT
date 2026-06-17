@@ -22,6 +22,8 @@ import com.carenest.backend.features.doctorverification.enums.VerificationStatus
 import com.carenest.backend.features.doctorverification.repository.DoctorVerificationRepository;
 import com.carenest.backend.features.doctorverification.service.DoctorVerificationService;
 import com.carenest.backend.features.family.util.FamilySecurityUtil;
+import com.carenest.backend.features.notification.enums.NotificationType;
+import com.carenest.backend.features.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,7 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
     private final GroupPostRepository groupPostRepository;
     private final UserGroupMembershipRepository membershipRepository;
     private final SocialGroupRepository socialGroupRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -112,7 +115,13 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
 
         createCommunityChannelsForDoctor(verification, user);
 
-        return toResponse(doctorVerificationRepository.save(verification));
+        DoctorVerification saved = doctorVerificationRepository.save(verification);
+        notifyDoctorVerificationUser(
+                saved,
+                "Hồ sơ bác sĩ đã được duyệt",
+                "Bạn đã được cấp quyền bác sĩ trên CareNest."
+        );
+        return toResponse(saved);
     }
 
     @Override
@@ -128,7 +137,13 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
         verification.setStatus(VerificationStatus.REJECTED);
         verification.setRejectionReason(request.getRejectionReason().trim());
 
-        return toResponse(doctorVerificationRepository.save(verification));
+        DoctorVerification saved = doctorVerificationRepository.save(verification);
+        notifyDoctorVerificationUser(
+                saved,
+                "Hồ sơ bác sĩ bị từ chối",
+                "Hồ sơ xác thực bác sĩ của bạn bị từ chối: " + saved.getRejectionReason()
+        );
+        return toResponse(saved);
     }
 
     @Override
@@ -168,7 +183,12 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
         doctorVerificationRepository.findByUserId(userId).ifPresent(verification -> {
             verification.setStatus(VerificationStatus.REJECTED);
             verification.setRejectionReason("Quyền bác sĩ đã bị thu hồi bởi Admin");
-            doctorVerificationRepository.save(verification);
+            DoctorVerification saved = doctorVerificationRepository.save(verification);
+            notifyDoctorVerificationUser(
+                    saved,
+                    "Quyền bác sĩ đã bị thu hồi",
+                    "Quyền bác sĩ của bạn đã bị thu hồi bởi quản trị viên."
+            );
         });
 
         chatGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(userId).ifPresent(privateGroup -> {
@@ -219,6 +239,17 @@ public class DoctorVerificationServiceImpl implements DoctorVerificationService 
                         .user(user)
                         .groupRole(GroupRole.HOST)
                         .build()));
+    }
+
+    private void notifyDoctorVerificationUser(DoctorVerification verification, String title, String message) {
+        notificationService.createNotificationForUser(
+                verification.getUser(),
+                title,
+                message,
+                NotificationType.SYSTEM,
+                "DOCTOR_VERIFICATION",
+                verification.getId()
+        );
     }
 
     private String normalizeSpecialty(String specialty) {

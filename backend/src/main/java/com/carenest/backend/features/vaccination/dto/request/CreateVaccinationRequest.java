@@ -16,25 +16,25 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @AllArgsConstructor
 public class CreateVaccinationRequest {
 
-    @NotBlank(message = "TÃªn váº¯c xin khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @Schema(description = "TÃªn váº¯c xin", example = "Váº¯c-xin 6 trong 1 Hexaxim")
+    @NotBlank(message = "Tên vắc xin không được để trống")
+    @Schema(description = "Tên vắc xin", example = "Vắc-xin 6 trong 1 Hexaxim")
     private String vaccineName;
 
-    @NotNull(message = "Sá»‘ thá»© tá»± mÅ©i tiÃªm khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @Schema(description = "MÅ©i thá»© máº¥y (vÃ­ dá»¥: 1, 2, 99 cho mÅ©i nháº¯c láº¡i)", example = "1")
+    @NotNull(message = "Số thứ tự mũi tiêm không được để trống")
+    @Schema(description = "Mũi thứ mấy (ví dụ: 1, 2, 99 cho mũi nhắc lại)", example = "1")
     private Integer doseNumber;
 
-    @NotBlank(message = "Tráº¡ng thÃ¡i khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @Schema(description = "Tráº¡ng thÃ¡i mÅ©i tiÃªm (COMPLETED hoáº·c PENDING)", example = "COMPLETED")
+    @NotBlank(message = "Trạng thái không được để trống")
+    @Schema(description = "Trạng thái mũi tiêm (COMPLETED hoặc PENDING)", example = "COMPLETED")
     private String status;
 
-    @NotNull(message = "NgÃ y tiÃªm/dá»± kiáº¿n khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @Schema(description = "NgÃ y tiÃªm thá»±c táº¿ hoáº·c ngÃ y háº¹n dá»± kiáº¿n", example = "2026-05-18")
+    @NotNull(message = "Ngày tiêm/dự kiến không được để trống")
+    @Schema(description = "Ngày tiêm thực tế hoặc ngày hẹn dự kiến", example = "2026-05-18")
     private LocalDate date;
 
-    @Schema(description = "Äá»‹a Ä‘iá»ƒm tiÃªm", example = "VNVC HoÃ ng VÄƒn Thá»¥")
+    @Schema(description = "Địa điểm tiêm", example = "VNVC Hoàng Văn Thụ")
     private String location;
 
-    @Schema(description = "Ghi chÃº", example = "Sau khi tiÃªm nhá»› theo dÃµi nhiá»‡t Ä‘á»™")
+    @Schema(description = "Ghi chú", example = "Sau khi tiêm nhớ theo dõi nhiệt độ")
     private String notes;
 }

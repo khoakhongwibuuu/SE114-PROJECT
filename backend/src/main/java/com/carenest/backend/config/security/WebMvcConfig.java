@@ -15,7 +15,7 @@ import java.nio.file.Path;
  *
  * FamilyContextInterceptor is applied to all /families/** routes that need
  * the X-Family-Id header validated. Routes that don't send that header (e.g.
- * GET /families/my-list, POST /families) are unaffected â€” the interceptor is
+ * GET /families/my-list, POST /families) are unaffected — the interceptor is
  * a no-op when the header is absent.
  */
 @Configuration

@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Core user entity â€” implements UserDetails for Spring Security integration.
+ * Core user entity — implements UserDetails for Spring Security integration.
  */
 @Entity
 @Table(name = "users", indexes = {
@@ -72,7 +72,7 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "reset_password_expiry")
     private Instant resetPasswordExpiry;
 
-    // â”€â”€ Spring Security UserDetails â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Spring Security UserDetails ──────────────────
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

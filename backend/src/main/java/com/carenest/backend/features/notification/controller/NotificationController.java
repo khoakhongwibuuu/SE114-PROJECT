@@ -1,6 +1,7 @@
 package com.carenest.backend.features.notification.controller;
 
 import com.carenest.backend.core.api.ApiResponse;
+import com.carenest.backend.core.api.PageResponse;
 import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.notification.dto.response.NotificationResponse;
 import com.carenest.backend.features.notification.dto.response.UnreadCountResponse;
@@ -11,25 +12,31 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/notifications")
 @RequiredArgsConstructor
-@org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
+@PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class NotificationController {
 
     private final NotificationService notificationService;
 
     @GetMapping
-    public ApiResponse<Page<NotificationResponse>> getNotifications(
+    public ApiResponse<PageResponse<NotificationResponse>> getNotifications(
             @AuthenticationPrincipal User user,
             @RequestParam(required = false) NotificationType type,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<NotificationResponse> page = notificationService.getUserNotifications(user.getId(), type, pageable);
-        return ApiResponse.success("Láº¥y danh sÃ¡ch thÃ´ng bÃ¡o thÃ nh cÃ´ng", page);
+        return ApiResponse.success("Lấy danh sách thông báo thành công", PageResponse.of(page));
     }
 
     @PatchMapping("/{id}/read")
@@ -38,7 +45,15 @@ public class NotificationController {
             @AuthenticationPrincipal User user) {
 
         NotificationResponse response = notificationService.markAsRead(id, user.getId());
-        return ApiResponse.success("ÄÃ£ Ä‘Ã¡nh dáº¥u thÃ´ng bÃ¡o lÃ  Ä‘Ã£ Ä‘á»c", response);
+        return ApiResponse.success("Đã đánh dấu thông báo là đã đọc", response);
+    }
+
+    @PatchMapping("/read-all")
+    public ApiResponse<UnreadCountResponse> markAllAsRead(
+            @AuthenticationPrincipal User user) {
+
+        UnreadCountResponse response = notificationService.markAllAsRead(user.getId());
+        return ApiResponse.success("Đã đánh dấu tất cả thông báo là đã đọc", response);
     }
 
     @GetMapping("/unread-count")
@@ -46,6 +61,6 @@ public class NotificationController {
             @AuthenticationPrincipal User user) {
 
         UnreadCountResponse response = notificationService.getUnreadCount(user.getId());
-        return ApiResponse.success("Láº¥y sá»‘ thÃ´ng bÃ¡o chÆ°a Ä‘á»c thÃ nh cÃ´ng", response);
+        return ApiResponse.success("Lấy số thông báo chưa đọc thành công", response);
     }
 }

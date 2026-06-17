@@ -223,7 +223,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
                     .heightCm(lastHeight)
                     .weightKg(lastWeight)
                     .bmi(bmi)
-                    .notes("Cáº­p nháº­t tá»« há»“ sÆ¡")
+                    .notes("Cập nhật từ hồ sơ")
                     .build();
         } else {
             if (height != null) record.setHeightCm(height);

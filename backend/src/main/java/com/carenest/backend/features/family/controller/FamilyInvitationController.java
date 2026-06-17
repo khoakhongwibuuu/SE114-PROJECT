@@ -41,6 +41,6 @@ public class FamilyInvitationController {
             @PathVariable("id") Long id,
             @Valid @RequestBody UpdateInvitationRequest request) {
         familyService.handleInvitation(id, request);
-        return ApiResponse.success("ÄÃ£ xá»­ lÃ½ lá»i má»i gia Ä‘Ã¬nh", null);
+        return ApiResponse.success("Đã xử lý lời mời gia đình", null);
     }
 }

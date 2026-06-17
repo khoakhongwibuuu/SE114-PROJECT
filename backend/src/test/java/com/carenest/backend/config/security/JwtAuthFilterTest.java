@@ -34,7 +34,7 @@ class JwtAuthFilterTest {
     }
 
     @Test
-    void doFilterInternal_doesNotAuthenticateDisabledUserWithValidToken() throws ServletException, IOException {
+    void doFilterInternal_doesNotAuthenticateDisabledUserWithStillValidToken() throws ServletException, IOException {
         JwtAuthFilter filter = new JwtAuthFilter(jwtService, userDetailsService);
         UserDetails disabledUser = User.withUsername("locked@example.com")
                 .password("hashed")

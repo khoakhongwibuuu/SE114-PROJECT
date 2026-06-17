@@ -20,23 +20,23 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/families")
 @RequiredArgsConstructor
-@Tag(name = "Chat", description = "Chat box gia Ä‘Ã¬nh real-time")
+@Tag(name = "Chat", description = "Chat box gia đình real-time")
 @SecurityRequirement(name = "bearerAuth")
 @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('USER', 'DOCTOR', 'ADMIN')")
 public class ChatController {
 
     private final ChatService chatService;
 
-    // â”€â”€â”€ REST: Láº¥y lá»‹ch sá»­ tin nháº¯n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── REST: Lấy lịch sử tin nhắn ──────────────────────────────────────────
 
     @GetMapping("/{familyId}/messages")
-    @Operation(summary = "Láº¥y lá»‹ch sá»­ chat cá»§a gia Ä‘Ã¬nh (cÃ³ phÃ¢n trang)")
+    @Operation(summary = "Lấy lịch sử chat của gia đình (có phân trang)")
     public ApiResponse<Page<ChatMessageResponse>> getMessages(
             @PathVariable("familyId") Long familyId,
             @AuthenticationPrincipal User user,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<ChatMessageResponse> page = chatService.getFamilyMessages(familyId, user.getId(), pageable);
-        return ApiResponse.success("Láº¥y lá»‹ch sá»­ tin nháº¯n thÃ nh cÃ´ng", page);
+        return ApiResponse.success("Lấy lịch sử tin nhắn thành công", page);
     }
 }

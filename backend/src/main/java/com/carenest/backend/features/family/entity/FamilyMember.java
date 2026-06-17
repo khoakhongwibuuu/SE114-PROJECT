@@ -15,7 +15,7 @@ import java.time.Instant;
            @Index(name = "idx_family_members_family", columnList = "family_id")
        },
        uniqueConstraints = {
-           // A user may only join the SAME family once â€” but can join multiple families
+           // A user may only join the SAME family once — but can join multiple families
            @UniqueConstraint(name = "uk_family_member_family_user", columnNames = {"family_id", "user_id"})
        })
 @Getter

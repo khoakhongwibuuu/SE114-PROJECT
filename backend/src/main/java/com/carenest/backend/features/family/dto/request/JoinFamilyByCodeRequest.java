@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class JoinFamilyByCodeRequest {
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p mÃ£ gia Ä‘Ã¬nh")
+    @NotBlank(message = "Vui lòng nhập mã gia đình")
     private String joinCode;
 
     private FamilyRole role;

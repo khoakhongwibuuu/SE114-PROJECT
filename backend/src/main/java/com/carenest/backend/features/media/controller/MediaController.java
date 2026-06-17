@@ -27,6 +27,6 @@ public class MediaController {
     public ApiResponse<MediaUploadResponse> uploadImage(
             @RequestPart("file") MultipartFile file,
             @RequestParam(value = "category", required = false) String category) {
-        return ApiResponse.success("Táº£i áº£nh lÃªn thÃ nh cÃ´ng", mediaService.uploadImage(file, category));
+        return ApiResponse.success("Tải ảnh lên thành công", mediaService.uploadImage(file, category));
     }
 }

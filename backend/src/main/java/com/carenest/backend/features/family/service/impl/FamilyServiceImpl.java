@@ -30,6 +30,8 @@ import com.carenest.backend.features.family.repository.FamilyRepository;
 import com.carenest.backend.features.family.service.FamilyService;
 import com.carenest.backend.features.healthprofile.entity.HealthProfile;
 import com.carenest.backend.features.healthprofile.repository.HealthProfileRepository;
+import com.carenest.backend.features.notification.enums.NotificationType;
+import com.carenest.backend.features.notification.service.NotificationService;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.MultiFormatReader;
@@ -39,6 +41,7 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.common.HybridBinarizer;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,11 +78,12 @@ public class FamilyServiceImpl implements FamilyService {
     private final UserRepository userRepository;
     private final FamilyMapper familyMapper;
     private final HealthProfileRepository healthProfileRepository;
+    private final NotificationService notificationService;
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Vui lÃ²ng Ä‘Äƒng nháº­p"));
+                .orElseThrow(() -> new UnauthorizedException("Vui lòng đăng nhập"));
     }
 
     @Override
@@ -141,7 +145,7 @@ public class FamilyServiceImpl implements FamilyService {
     public FamilyDetailResponse getFamilyById(Long id) {
         User currentUser = getCurrentUser();
         if (!familyMemberRepository.existsByFamilyIdAndUserId(id, currentUser.getId())) {
-            throw new UnauthorizedException("You are not in this family");
+            throw new AccessDeniedException("Bạn không thuộc gia đình này");
         }
 
         Family family = familyRepository.findById(id)
@@ -185,14 +189,14 @@ public class FamilyServiceImpl implements FamilyService {
         String email = request.getEmail().trim().toLowerCase(Locale.ROOT);
         User recipient = userRepository.findByEmail(email).orElse(null);
         if (recipient != null && familyMemberRepository.existsByFamilyIdAndUserId(familyId, recipient.getId())) {
-            throw new DuplicateResourceException("ThÃ nh viÃªn Ä‘Ã£ tá»“n táº¡i trong gia Ä‘Ã¬nh nÃ y");
+            throw new DuplicateResourceException("Thành viên đã tồn tại trong gia đình này");
         }
         if (familyInvitationRepository.existsByFamily_IdAndRecipientEmailIgnoreCaseAndStatus(
                 familyId,
                 email,
                 InvitationStatus.PENDING
         )) {
-            throw new DuplicateResourceException("Email nÃ y Ä‘Ã£ cÃ³ lá»i má»i Ä‘ang chá» xá»­ lÃ½");
+            throw new DuplicateResourceException("Email này đã có lời mời đang chờ xử lý");
         }
 
         FamilyInvitation invitation = FamilyInvitation.builder()
@@ -204,7 +208,8 @@ public class FamilyServiceImpl implements FamilyService {
                 .status(InvitationStatus.PENDING)
                 .build();
 
-        familyInvitationRepository.save(invitation);
+        FamilyInvitation savedInvitation = familyInvitationRepository.save(invitation);
+        notifyInvitationCreated(savedInvitation);
     }
 
     @Override
@@ -238,18 +243,22 @@ public class FamilyServiceImpl implements FamilyService {
                 && invitation.getRecipientEmail().equalsIgnoreCase(currentUser.getEmail());
 
         if (!belongsToCurrentUser && !invitedByEmail) {
-            throw new UnauthorizedException("Báº¡n khÃ´ng cÃ³ quyá»n xá»­ lÃ½ lá»i má»i nÃ y");
+            throw new AccessDeniedException("Bạn không có quyền xử lý lời mời này");
         }
 
         if (invitation.getStatus() != InvitationStatus.PENDING) {
-            throw new BadRequestException("Lá»i má»i nÃ y Ä‘Ã£ Ä‘Æ°á»£c xá»­ lÃ½");
+            throw new BadRequestException("Lời mời này đã được xử lý");
+        }
+
+        if (request.getStatus() == InvitationStatus.PENDING) {
+            throw new BadRequestException("Trạng thái xử lý lời mời không hợp lệ");
         }
 
         invitation.setStatus(request.getStatus());
 
         if (request.getStatus() == InvitationStatus.ACCEPTED) {
             if (familyMemberRepository.existsByFamilyIdAndUserId(invitation.getFamily().getId(), currentUser.getId())) {
-                throw new DuplicateResourceException("ThÃ nh viÃªn Ä‘Ã£ tá»“n táº¡i trong gia Ä‘Ã¬nh nÃ y");
+                throw new DuplicateResourceException("Thành viên đã tồn tại trong gia đình này");
             }
             addMemberIfMissing(invitation.getFamily(), currentUser, invitation.getRole());
             if (invitation.getRecipient() == null) {
@@ -257,7 +266,8 @@ public class FamilyServiceImpl implements FamilyService {
             }
         }
 
-        familyInvitationRepository.save(invitation);
+        FamilyInvitation savedInvitation = familyInvitationRepository.save(invitation);
+        notifyInvitationHandled(savedInvitation, currentUser);
     }
 
     @Override
@@ -298,10 +308,14 @@ public class FamilyServiceImpl implements FamilyService {
                 .orElseThrow(() -> new ResourceNotFoundException("Family", "joinCode", joinCode));
 
         if (family.getJoinCodeExpiresAt() != null && family.getJoinCodeExpiresAt().isBefore(Instant.now())) {
-            throw new BadRequestException("Join code has expired");
+            throw new BadRequestException("Mã gia đình đã hết hạn");
         }
 
+        boolean wasMember = familyMemberRepository.existsByFamilyIdAndUserId(family.getId(), currentUser.getId());
         addMemberIfMissing(family, currentUser, normalizeJoinRole(request.getRole()));
+        if (!wasMember) {
+            notifyFamilyManagersMemberJoined(family, currentUser);
+        }
         return getFamilyById(family.getId());
     }
 
@@ -322,22 +336,25 @@ public class FamilyServiceImpl implements FamilyService {
         User currentUser = getCurrentUser();
 
         FamilyMember requester = familyMemberRepository.findByFamilyIdAndUserId(familyId, currentUser.getId())
-                .orElseThrow(() -> new UnauthorizedException("You are not in this family"));
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc gia đình này"));
 
         if (requester.getRole() != FamilyRole.OWNER && requester.getRole() != FamilyRole.ADMIN) {
-            throw new UnauthorizedException("Only owners and admins can update roles");
+            throw new AccessDeniedException("Chỉ chủ gia đình và quản trị viên mới có quyền cập nhật vai trò");
+        }
+
+        if (request.getRole() == null) {
+            throw new BadRequestException("Vai trò không hợp lệ");
         }
 
         FamilyMember targetMember = familyMemberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("FamilyMember", memberId));
 
         if (!targetMember.getFamily().getId().equals(familyId)) {
-            throw new BadRequestException("Member does not belong to this family");
+            throw new BadRequestException("Thành viên không thuộc gia đình này");
         }
 
-        if ((request.getRole() == FamilyRole.OWNER || targetMember.getRole() == FamilyRole.OWNER)
-                && requester.getRole() != FamilyRole.OWNER) {
-            throw new UnauthorizedException("Only owners can change owner role");
+        if (request.getRole() == FamilyRole.OWNER || targetMember.getRole() == FamilyRole.OWNER) {
+            throw new BadRequestException("Không thể thay đổi vai trò chủ gia đình bằng chức năng này");
         }
 
         targetMember.setRole(request.getRole());
@@ -356,17 +373,17 @@ public class FamilyServiceImpl implements FamilyService {
         Long activeFamilyId = FamilyRequestContext.getFamilyId();
         if (activeFamilyId != null) {
             return familyMemberRepository.findByFamilyIdAndUserId(activeFamilyId, currentUser.getId())
-                    .orElseThrow(() -> new UnauthorizedException("You are not in this family"));
+                    .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc gia đình này"));
         }
         return getCurrentFamilyMember(currentUser);
     }
 
     private void assertCanManageFamily(Long familyId, Long userId) {
         FamilyMember member = familyMemberRepository.findByFamilyIdAndUserId(familyId, userId)
-                .orElseThrow(() -> new UnauthorizedException("You are not in this family"));
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc gia đình này"));
 
         if (member.getRole() != FamilyRole.OWNER && member.getRole() != FamilyRole.ADMIN) {
-            throw new UnauthorizedException("Only owners and admins can manage invitations");
+            throw new AccessDeniedException("Chỉ chủ gia đình và quản trị viên mới có quyền quản lý lời mời");
         }
     }
 
@@ -458,19 +475,19 @@ public class FamilyServiceImpl implements FamilyService {
             MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
             return Base64.getEncoder().encodeToString(outputStream.toByteArray());
         } catch (Exception e) {
-            throw new BadRequestException("Could not generate family QR code");
+            throw new BadRequestException("Không thể tạo mã QR gia đình");
         }
     }
 
     private String decodeQrPayload(MultipartFile image) {
         if (image == null || image.isEmpty()) {
-            throw new BadRequestException("Vui lÃ²ng táº£i lÃªn áº£nh QR");
+            throw new BadRequestException("Vui lòng tải lên ảnh QR");
         }
 
         try {
             BufferedImage bufferedImage = ImageIO.read(image.getInputStream());
             if (bufferedImage == null) {
-                throw new BadRequestException("áº¢nh QR khÃ´ng há»£p lá»‡");
+                throw new BadRequestException("Ảnh QR không hợp lệ");
             }
             BinaryBitmap bitmap = new BinaryBitmap(
                     new HybridBinarizer(new BufferedImageLuminanceSource(bufferedImage)));
@@ -478,13 +495,13 @@ public class FamilyServiceImpl implements FamilyService {
         } catch (BadRequestException e) {
             throw e;
         } catch (Exception e) {
-            throw new BadRequestException("Could not read family QR code");
+            throw new BadRequestException("Không thể đọc mã QR gia đình");
         }
     }
 
     private String extractJoinCode(String payload) {
         if (payload == null || payload.isBlank()) {
-            throw new BadRequestException("QR code does not contain a join code");
+            throw new BadRequestException("Mã QR không chứa mã gia đình");
         }
 
         String trimmed = payload.trim();
@@ -504,6 +521,57 @@ public class FamilyServiceImpl implements FamilyService {
         }
 
         return trimmed;
+    }
+
+    private void notifyInvitationCreated(FamilyInvitation invitation) {
+        if (invitation.getRecipient() == null) {
+            return;
+        }
+
+        notificationService.createNotificationForUser(
+                invitation.getRecipient(),
+                "Bạn có lời mời gia đình mới",
+                displayName(invitation.getSender()) + " đã mời bạn tham gia gia đình " + invitation.getFamily().getName() + ".",
+                NotificationType.FAMILY,
+                "FAMILY_INVITATION",
+                invitation.getId()
+        );
+    }
+
+    private void notifyInvitationHandled(FamilyInvitation invitation, User actor) {
+        String action = invitation.getStatus() == InvitationStatus.ACCEPTED ? "chấp nhận" : "từ chối";
+        notificationService.createNotificationForUser(
+                invitation.getSender(),
+                "Lời mời gia đình đã được " + action,
+                displayName(actor) + " đã " + action + " lời mời tham gia gia đình " + invitation.getFamily().getName() + ".",
+                NotificationType.FAMILY,
+                "FAMILY_INVITATION",
+                invitation.getId()
+        );
+    }
+
+    private void notifyFamilyManagersMemberJoined(Family family, User newMember) {
+        List<User> managers = familyMemberRepository.findAllByFamilyId(family.getId()).stream()
+                .filter(member -> member.getRole() == FamilyRole.OWNER || member.getRole() == FamilyRole.ADMIN)
+                .map(FamilyMember::getUser)
+                .filter(user -> !user.getId().equals(newMember.getId()))
+                .toList();
+
+        notificationService.createNotificationForUsers(
+                managers,
+                "Có thành viên mới trong gia đình",
+                displayName(newMember) + " vừa tham gia gia đình " + family.getName() + ".",
+                NotificationType.FAMILY,
+                "FAMILY",
+                family.getId()
+        );
+    }
+
+    private String displayName(User user) {
+        if (user.getFullName() != null && !user.getFullName().isBlank()) {
+            return user.getFullName().trim();
+        }
+        return user.getEmail();
     }
 
     private FamilyInvitationResponse toInvitationResponse(FamilyInvitation invitation) {
