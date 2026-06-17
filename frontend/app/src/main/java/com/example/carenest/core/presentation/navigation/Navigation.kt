@@ -108,124 +108,50 @@ fun MainNavigation() {
     }
   }
 
-  fun openBookingAreaForRole(role: AppRole?): NotificationOpenResult {
-    closeNotificationsCenterIfVisible()
-    return when (role) {
-      AppRole.DOCTOR -> {
+  val openNotificationTarget: (NotificationItem) -> NotificationOpenResult = { notification ->
+    val role = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
+    val handled = when (val plan = resolveNotificationNavigationPlan(notification, role)) {
+      is NotificationNavigationPlan.OpenMainTab -> {
+        routeToMainTab(plan.target)
+        NotificationOpenResult.OPENED
+      }
+      NotificationNavigationPlan.OpenDoctorWorkspace -> {
+        closeNotificationsCenterIfVisible()
         backStack.add(DoctorWorkspace)
         NotificationOpenResult.OPENED
       }
-      AppRole.USER -> {
+      NotificationNavigationPlan.OpenPatientBookingCenter -> {
+        closeNotificationsCenterIfVisible()
         backStack.add(PatientBookingCenter)
         NotificationOpenResult.OPENED
       }
-      else -> NotificationOpenResult.UNHANDLED
-    }
-  }
-
-  fun openConsultationRoomForRole(role: AppRole?, bookingId: Long?): NotificationOpenResult {
-    if (bookingId == null || bookingId <= 0L) {
-      return NotificationOpenResult.UNHANDLED
-    }
-    closeNotificationsCenterIfVisible()
-    return when (role) {
-      AppRole.USER, AppRole.DOCTOR -> {
-        backStack.add(ConsultationRoom(bookingId))
-        NotificationOpenResult.OPENED
-      }
-      else -> NotificationOpenResult.UNHANDLED
-    }
-  }
-
-  fun openByNotificationType(type: String?, role: AppRole?): NotificationOpenResult {
-    return when (type?.uppercase()) {
-      "FAMILY" -> {
-        routeToMainTab(MainTabTarget.FAMILY)
-        NotificationOpenResult.OPENED
-      }
-      "MEDICATION" -> {
+      NotificationNavigationPlan.OpenMedicineSchedule -> {
         closeNotificationsCenterIfVisible()
         backStack.add(MedicineSchedule)
         NotificationOpenResult.OPENED
       }
-      "APPOINTMENT" -> {
-        routeToMainTab(MainTabTarget.HOME)
+      is NotificationNavigationPlan.OpenConsultationRoom -> {
+        closeNotificationsCenterIfVisible()
+        backStack.add(ConsultationRoom(plan.bookingId))
         NotificationOpenResult.OPENED
       }
-      "GROWTH" -> {
-        routeToMainTab(MainTabTarget.PROFILE)
-        NotificationOpenResult.OPENED
-      }
-      else -> NotificationOpenResult.UNHANDLED
-    }
-  }
-
-  val openNotificationTarget: (NotificationItem) -> NotificationOpenResult = { notification ->
-    val referenceType = notification.referenceType?.uppercase()
-    val role = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
-
-    val handled = when (referenceType) {
-      "BOOKING_WORKSPACE" -> {
-        if (role == AppRole.DOCTOR) {
-          closeNotificationsCenterIfVisible()
-          backStack.add(DoctorWorkspace)
-          NotificationOpenResult.OPENED
-        } else {
-          NotificationOpenResult.UNHANDLED
-        }
-      }
-      "BOOKING_HISTORY" -> {
-        if (role == AppRole.USER || role == AppRole.DOCTOR) {
-          closeNotificationsCenterIfVisible()
-          backStack.add(PatientBookingCenter)
-          NotificationOpenResult.OPENED
-        } else {
-          NotificationOpenResult.UNHANDLED
-        }
-      }
-      "CONSULTATION_ROOM" -> openConsultationRoomForRole(role, notification.referenceId)
-      "BOOKING_REQUEST" -> openBookingAreaForRole(role)
-      "DOCTOR_VERIFICATION" -> {
+      NotificationNavigationPlan.OpenDoctorVerification -> {
         authViewModel.refreshCurrentUser()
         closeNotificationsCenterIfVisible()
         backStack.add(DoctorVerification)
         NotificationOpenResult.OPENED
       }
-      "ADMIN_USER_ROLE", "ADMIN_USER_STATUS" -> {
+      NotificationNavigationPlan.ConsumeAdminAccountUpdate -> {
         authViewModel.refreshCurrentUser()
         Toast.makeText(context, "Đã cập nhật trạng thái tài khoản", Toast.LENGTH_SHORT).show()
         NotificationOpenResult.CONSUMED
       }
-      "FAMILY", "FAMILY_INVITATION", "FAMILY_CHAT" -> {
-        routeToMainTab(MainTabTarget.FAMILY)
-        NotificationOpenResult.OPENED
-      }
-      "MEDICATION_LOG" -> {
-        closeNotificationsCenterIfVisible()
-        backStack.add(MedicineSchedule)
-        NotificationOpenResult.OPENED
-      }
-      "APPOINTMENT" -> {
-        routeToMainTab(MainTabTarget.HOME)
-        NotificationOpenResult.OPENED
-      }
-      "GROWTH_RECORD" -> {
-        routeToMainTab(MainTabTarget.PROFILE)
-        NotificationOpenResult.OPENED
-      }
-      else -> {
-        val fallback = openByNotificationType(notification.type, role)
-        if (fallback == NotificationOpenResult.UNHANDLED) {
-          Toast.makeText(context, "Chưa hỗ trợ mở đích cho thông báo này", Toast.LENGTH_SHORT).show()
-        }
-        fallback
+      NotificationNavigationPlan.Unhandled -> {
+        Toast.makeText(context, "Chưa hỗ trợ mở đích cho thông báo này", Toast.LENGTH_SHORT).show()
+        NotificationOpenResult.UNHANDLED
       }
     }
-    if (handled == NotificationOpenResult.UNHANDLED
-      && (referenceType == "BOOKING_REQUEST"
-        || referenceType == "BOOKING_WORKSPACE"
-        || referenceType == "BOOKING_HISTORY"
-        || referenceType == "CONSULTATION_ROOM")) {
+    if (handled == NotificationOpenResult.UNHANDLED && isBookingScopedNotification(notification.referenceType)) {
       Toast.makeText(context, "Thông báo đặt lịch này không áp dụng cho tài khoản hiện tại.", Toast.LENGTH_SHORT).show()
     }
     if (handled == NotificationOpenResult.OPENED) {
