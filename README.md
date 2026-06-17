@@ -1,6 +1,6 @@
 # 🏠 CareNest - Family Health Management System
 
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.5-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.5-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Latest-4285F4?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.x-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
@@ -90,6 +90,20 @@ Kiến trúc AI/OCR vẫn được giữ sẵn dưới dạng feature flag và e
 *   **Docker & Docker Compose** (cho PostgreSQL + Redis nếu chạy runtime local)
 *   **Android Studio** (để chạy `frontend/app`)
 
+### 1.1. Code-level verification đã được dùng cho MVP hiện tại
+Các lệnh dưới đây là baseline verification đang được dùng để khóa regression:
+```bash
+# Backend
+cd backend
+./mvnw test
+
+# Frontend Android
+cd frontend
+./gradlew app:assembleDebug
+```
+
+Trên Windows, nếu Maven wrapper báo không tìm thấy Java, hãy đảm bảo `JAVA_HOME` trỏ tới JDK 17 trước khi chạy `.\mvnw.cmd`.
+
 ### 2. Clone Repo
 ```bash
 git clone https://github.com/khoakhongwibuuu/SE114-PROJECT.git
@@ -150,9 +164,16 @@ Nếu bạn không muốn mở Android Studio, chỉ cần cắm điện thoại
 ```
 
 ### 5. Ghi chú AI/OCR
-*   `AI_ENABLED`, `OCR_ENABLED`, `APP_FEATURE_AI_CHAT_ENABLED`, `APP_FEATURE_OCR_ENABLED` đều có trong `.env.example`.
+*   `AI_ENABLED`, `OCR_ENABLED`, `AI_API_KEY`, `APP_FEATURE_AI_CHAT_ENABLED`, `APP_FEATURE_OCR_ENABLED` đều có trong `.env.example`.
 *   Chỉ bật các cờ này khi đã có provider thật, model thật và kế hoạch xác minh dữ liệu đầu ra.
 *   Nếu chỉ muốn chạy MVP, để toàn bộ cờ AI/OCR ở `false`.
+
+### 6. CI guardrail
+Repo hiện có workflow `.github/workflows/ci.yml` để chạy:
+*   `backend`: `./mvnw test`
+*   `frontend`: `./gradlew app:assembleDebug`
+
+Workflow này chỉ kiểm tra build/test ở mức code-level, không claim runtime PASS cho PostgreSQL, Redis, Android device/emulator, AI hay OCR.
 
 ---
 
