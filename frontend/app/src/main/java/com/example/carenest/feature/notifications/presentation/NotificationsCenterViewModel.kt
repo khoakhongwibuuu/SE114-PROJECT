@@ -9,6 +9,7 @@ import com.example.carenest.core.data.network.requireSuccess
 import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.notifications.data.remote.NotificationApi
 import com.example.carenest.feature.notifications.domain.model.NotificationItem
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +36,7 @@ data class NotificationsUiState(
 
 class NotificationsCenterViewModel(
     private val notificationApi: NotificationApi,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationsUiState())
@@ -48,7 +50,7 @@ class NotificationsCenterViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, message = null) }
             try {
-                val (listResponse, countResponse) = withContext(Dispatchers.IO) {
+                val (listResponse, countResponse) = withContext(ioDispatcher) {
                     notificationApi.getNotifications() to notificationApi.getUnreadCount()
                 }
                 if (listResponse.isSuccessful) {
@@ -107,12 +109,12 @@ class NotificationsCenterViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isActionLoading = true, error = null, message = null) }
             try {
-                val response = withContext(Dispatchers.IO) {
+                val response = withContext(ioDispatcher) {
                     notificationApi.markAsRead(notificationId)
                 }
                 if (response.isSuccessful) {
                     response.requireData("Không thể đánh dấu thông báo đã đọc")
-                    val countResponse = withContext(Dispatchers.IO) {
+                    val countResponse = withContext(ioDispatcher) {
                         notificationApi.getUnreadCount()
                     }
                     val fallbackCount = (_uiState.value.unreadCount - 1).coerceAtLeast(0)
@@ -167,7 +169,7 @@ class NotificationsCenterViewModel(
             )
 
             try {
-                val response = withContext(Dispatchers.IO) {
+                val response = withContext(ioDispatcher) {
                     notificationApi.markAllAsRead()
                 }
                 if (response.isSuccessful) {
