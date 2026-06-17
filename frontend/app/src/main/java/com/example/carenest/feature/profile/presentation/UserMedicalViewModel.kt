@@ -7,11 +7,11 @@ import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
 import com.example.carenest.core.data.network.userMessage
-import com.example.carenest.feature.family.data.repository.FamilyRepository
 import com.example.carenest.feature.health.data.remote.GrowthApi
 import com.example.carenest.feature.health.domain.model.GrowthChartPointResponse
 import com.example.carenest.feature.health.domain.model.GrowthRecordCreateRequest
 import com.example.carenest.feature.health.domain.model.GrowthRecordResponse
+import com.example.carenest.feature.profile.domain.port.MedicalProfileDataSource
 import com.example.carenest.model.HealthProfile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,16 +50,22 @@ data class UserMedicalUiState(
 )
 
 class UserMedicalViewModel(
-    private val repository: FamilyRepository,
+    private val repository: MedicalProfileDataSource,
     private val growthApi: GrowthApi,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UserMedicalUiState())
     val uiState: StateFlow<UserMedicalUiState> = _uiState.asStateFlow()
 
-    fun loadProfile(profileId: Long) {
+    fun loadProfile(profileId: Long, clearSuccessMessage: Boolean = true) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, successMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    error = null,
+                    successMessage = if (clearSuccessMessage) null else it.successMessage,
+                )
+            }
             val result = repository.getFamilyProfile(profileId)
             result.onSuccess { profile ->
                 _uiState.update {
@@ -90,9 +96,15 @@ class UserMedicalViewModel(
         }
     }
 
-    fun loadGrowthData(profileId: Long) {
+    fun loadGrowthData(profileId: Long, clearSuccessMessage: Boolean = true) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isGrowthLoading = true, growthError = null) }
+            _uiState.update {
+                it.copy(
+                    isGrowthLoading = true,
+                    growthError = null,
+                    successMessage = if (clearSuccessMessage) null else it.successMessage,
+                )
+            }
             try {
                 val recordsResponse = growthApi.getGrowthRecords(profileId)
                 val chartResponse = growthApi.getGrowthChart(profileId)
@@ -226,8 +238,8 @@ class UserMedicalViewModel(
                             growthError = null,
                         )
                     }
-                    loadGrowthData(profileId)
-                    loadProfile(profileId)
+                    loadGrowthData(profileId, clearSuccessMessage = false)
+                    loadProfile(profileId, clearSuccessMessage = false)
                 } else {
                     _uiState.update {
                         it.copy(
@@ -285,7 +297,7 @@ class UserMedicalViewModel(
                         successMessage = "Cập nhật hồ sơ sức khỏe thành công.",
                     )
                 }
-                loadProfile(profileId)
+                loadProfile(profileId, clearSuccessMessage = false)
             }.onFailure { e ->
                 _uiState.update {
                     it.copy(
@@ -303,7 +315,7 @@ class UserMedicalViewModel(
 }
 
 class UserMedicalViewModelFactory(
-    private val repository: FamilyRepository,
+    private val repository: MedicalProfileDataSource,
     private val growthApi: GrowthApi,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
