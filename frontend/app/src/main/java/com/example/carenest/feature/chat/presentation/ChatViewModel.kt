@@ -167,7 +167,14 @@ class ChatViewModel(
                 when (event) {
                     ChatRepositoryEvent.Connected -> {
                         reconnectAttempt = 0
-                        _uiState.update { it.copy(isConnected = true, error = null) }
+                        reconnectJob?.cancel()
+                        _uiState.update {
+                            it.copy(
+                                isConnected = true,
+                                error = null,
+                                connectionStatusHint = null,
+                            )
+                        }
                     }
 
                     is ChatRepositoryEvent.Disconnected -> {
@@ -177,6 +184,7 @@ class ChatViewModel(
                             _uiState.update {
                                 it.copy(
                                     isConnected = false,
+                                    error = null,
                                     connectionStatusHint = msg,
                                 )
                             }
@@ -216,7 +224,7 @@ class ChatViewModel(
                 it.copy(
                     isConnected = false,
                     connectionStatusHint = null,
-                    error = "Không thể kết nối lại sau nhiều lần thử. Vui lòng kiểm tra mạng."
+                    error = "Không thể kết nối lại sau nhiều lần thử. Vui lòng kiểm tra mạng.",
                 )
             }
             return
