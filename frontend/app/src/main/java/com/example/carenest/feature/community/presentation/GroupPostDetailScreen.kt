@@ -1,6 +1,5 @@
 package com.example.carenest.feature.community.presentation
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,9 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material3.AlertDialog
@@ -592,7 +589,6 @@ fun GroupPostDetailScreen(
                         viewModel.leaveGroup(
                             onSuccess = {
                                 viewModel.closeMembersSheet()
-                                Toast.makeText(context, "Đã rời nhóm thành công.", Toast.LENGTH_SHORT).show()
                                 onBack()
                             }
                         )
