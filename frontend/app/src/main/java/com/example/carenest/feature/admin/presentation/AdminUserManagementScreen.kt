@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.carenest.CareNestApplication
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.admin.data.AdminUserSummaryResponse
 import com.example.carenest.feature.admin.presentation.components.AdminErrorState
 import com.example.carenest.feature.admin.presentation.components.AdminTransientBanner
@@ -120,7 +121,7 @@ fun AdminUserManagementScreen() {
             users.loadState.refresh is LoadState.Error -> {
                 val error = (users.loadState.refresh as LoadState.Error).error
                 AdminErrorState(
-                    message = error.message ?: "Không thể tải danh sách người dùng",
+                    message = error.userMessage("Không thể tải danh sách người dùng"),
                     onRetry = { users.retry() },
                 )
             }
