@@ -3,6 +3,7 @@ package com.example.carenest.feature.chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.booking.domain.model.ConsultationThreadInboxResponse
 import com.example.carenest.feature.booking.data.repository.BookingRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +32,7 @@ class ConsultationInboxViewModel(
             result.onSuccess { threads ->
                 _uiState.update { it.copy(isLoading = false, threads = threads) }
             }.onFailure { error ->
-                _uiState.update { it.copy(isLoading = false, error = error.message) }
+                _uiState.update { it.copy(isLoading = false, error = error.userMessage("Không thể tải danh sách tư vấn")) }
             }
         }
     }
