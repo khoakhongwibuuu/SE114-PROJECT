@@ -7,6 +7,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.admin.data.AdminContentType
 import com.example.carenest.feature.admin.data.AdminReportPagingSource
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
@@ -79,7 +80,7 @@ class AdminModerationViewModel(
                 _uiState.update {
                     it.copy(
                         hiddenReportIds = it.hiddenReportIds - report.id,
-                        error = error.localizedMessage ?: "Không thể xử lý báo cáo",
+                        error = error.userMessage("Không thể xử lý báo cáo"),
                         message = null,
                     )
                 }

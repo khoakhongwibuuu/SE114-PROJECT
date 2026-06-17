@@ -7,6 +7,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.admin.data.AdminUserPagingSource
 import com.example.carenest.feature.admin.data.AdminUserSummaryResponse
 import com.example.carenest.feature.admin.data.repository.AdminRepository
@@ -96,7 +97,7 @@ class AdminUserManagementViewModel(
                     it.copy(
                         optimisticStatuses = it.optimisticStatuses - user.id,
                         pendingUserIds = it.pendingUserIds - user.id,
-                        error = error.localizedMessage ?: "Không thể cập nhật trạng thái người dùng",
+                        error = error.userMessage("Không thể cập nhật trạng thái người dùng"),
                         message = null,
                     )
                 }
@@ -148,7 +149,7 @@ class AdminUserManagementViewModel(
                     it.copy(
                         optimisticRoles = it.optimisticRoles - user.id,
                         pendingUserIds = it.pendingUserIds - user.id,
-                        error = error.localizedMessage ?: "Không thể cập nhật quyền người dùng",
+                        error = error.userMessage("Không thể cập nhật quyền người dùng"),
                         message = null,
                     )
                 }

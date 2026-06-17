@@ -1,6 +1,5 @@
 package com.example.carenest.feature.admin.presentation
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,10 +35,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,30 +52,20 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.carenest.CareNestApplication
 import com.example.carenest.feature.admin.data.AdminUserSummaryResponse
+import com.example.carenest.feature.admin.presentation.components.AdminErrorState
+import com.example.carenest.feature.admin.presentation.components.AdminTransientBanner
 
 @Composable
 fun AdminUserManagementScreen() {
-    val context = LocalContext.current
-    val application = context.applicationContext as CareNestApplication
+    val application = LocalContext.current.applicationContext as CareNestApplication
     val viewModel: AdminUserManagementViewModel = viewModel(
         factory = AdminUserManagementViewModelFactory(application.adminRepository),
     )
     val state by viewModel.uiState.collectAsState()
     val users = viewModel.users.collectAsLazyPagingItems()
-    val roleTarget = androidx.compose.runtime.remember { mutableStateOf<AdminUserSummaryResponse?>(null) }
-    val statusTarget = androidx.compose.runtime.remember { mutableStateOf<AdminUserSummaryResponse?>(null) }
+    val roleTarget = remember { mutableStateOf<AdminUserSummaryResponse?>(null) }
+    val statusTarget = remember { mutableStateOf<AdminUserSummaryResponse?>(null) }
     val currentUserId = application.secureSessionManager.getUserId()
-
-    LaunchedEffect(state.error, state.message) {
-        state.error?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearTransientMessage()
-        }
-        state.message?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearTransientMessage()
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -85,6 +74,22 @@ fun AdminUserManagementScreen() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        state.message?.let { message ->
+            AdminTransientBanner(
+                message = message,
+                isError = false,
+                onDismiss = viewModel::clearTransientMessage,
+            )
+        }
+
+        state.error?.let { error ->
+            AdminTransientBanner(
+                message = error,
+                isError = true,
+                onDismiss = viewModel::clearTransientMessage,
+            )
+        }
+
         OutlinedTextField(
             value = state.search,
             onValueChange = viewModel::onSearchChange,
@@ -114,9 +119,9 @@ fun AdminUserManagementScreen() {
 
             users.loadState.refresh is LoadState.Error -> {
                 val error = (users.loadState.refresh as LoadState.Error).error
-                com.example.carenest.feature.admin.presentation.components.AdminErrorState(
-                    message = error.localizedMessage ?: "Không thể tải danh sách người dùng",
-                    onRetry = { users.retry() }
+                AdminErrorState(
+                    message = error.message ?: "Không thể tải danh sách người dùng",
+                    onRetry = { users.retry() },
                 )
             }
 
@@ -307,7 +312,7 @@ private fun AdminUserRow(
                     AssistChip(
                         onClick = onToggleAdminRole,
                         enabled = !isBusy && !isBanned && !isCurrentAdmin,
-                        label = { Text(role) },
+                        label = { Text(if (role.equals("ADMIN", true)) "Admin" else "User") },
                         colors = AssistChipDefaults.assistChipColors(
                             containerColor = if (role.equals("ADMIN", ignoreCase = true)) Color(0xFFFFF7ED) else Color(0xFFEEF2FF),
                             labelColor = if (role.equals("ADMIN", ignoreCase = true)) Color(0xFFC2410C) else Color(0xFF3730A3),
@@ -317,14 +322,14 @@ private fun AdminUserRow(
                         modifier = Modifier
                             .background(
                                 color = if (isBanned) Color(0xFFFEF2F2) else Color(0xFFECFDF5),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp),
                             )
-                            .padding(horizontal = 12.dp, vertical = 7.dp)
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
                     ) {
                         Text(
                             text = if (isBanned) "Đã khóa" else "Hoạt động",
                             color = if (isBanned) Color(0xFFB91C1C) else Color(0xFF047857),
-                            fontSize = 14.sp
+                            fontSize = 14.sp,
                         )
                     }
                     if (isCurrentAdmin) {

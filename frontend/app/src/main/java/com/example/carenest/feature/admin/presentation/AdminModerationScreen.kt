@@ -1,6 +1,5 @@
 package com.example.carenest.feature.admin.presentation
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +31,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,11 +52,12 @@ import coil.compose.AsyncImage
 import com.example.carenest.CareNestApplication
 import com.example.carenest.feature.admin.data.AdminContentType
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
+import com.example.carenest.feature.admin.presentation.components.AdminErrorState
+import com.example.carenest.feature.admin.presentation.components.AdminTransientBanner
 
 @Composable
 fun AdminModerationScreen() {
-    val context = LocalContext.current
-    val application = context.applicationContext as CareNestApplication
+    val application = LocalContext.current.applicationContext as CareNestApplication
     val viewModel: AdminModerationViewModel = viewModel(
         factory = AdminModerationViewModelFactory(application.adminRepository),
     )
@@ -67,17 +66,6 @@ fun AdminModerationScreen() {
     var deleteTarget by remember { mutableStateOf<AdminReportSummaryResponse?>(null) }
     val visibleReportCount = (0 until reports.itemCount).count { index ->
         reports.peek(index)?.id !in state.hiddenReportIds
-    }
-
-    LaunchedEffect(state.error, state.message) {
-        state.error?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearTransientMessage()
-        }
-        state.message?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearTransientMessage()
-        }
     }
 
     when {
@@ -89,45 +77,68 @@ fun AdminModerationScreen() {
 
         reports.loadState.refresh is LoadState.Error -> {
             val error = (reports.loadState.refresh as LoadState.Error).error
-            com.example.carenest.feature.admin.presentation.components.AdminErrorState(
-                message = error.localizedMessage ?: "Không thể tải danh sách báo cáo",
-                onRetry = { reports.retry() }
+            AdminErrorState(
+                message = error.message ?: "Không thể tải danh sách báo cáo",
+                onRetry = { reports.retry() },
             )
         }
 
         else -> {
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFFF8FAFC)),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(reports.itemCount) { index ->
-                    val report = reports[index] ?: return@items
-                    if (report.id in state.hiddenReportIds) return@items
-                    ReportCard(
-                        report = report,
-                        onDelete = { deleteTarget = report },
-                        onDismiss = { viewModel.resolveReport(report, ModerationAction.DISMISS) },
+                state.message?.let { message ->
+                    AdminTransientBanner(
+                        message = message,
+                        isError = false,
+                        onDismiss = viewModel::clearTransientMessage,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
 
-                if (visibleReportCount == 0 && reports.loadState.append !is LoadState.Loading) {
-                    item {
-                        EmptyModerationState()
-                    }
+                state.error?.let { error ->
+                    AdminTransientBanner(
+                        message = error,
+                        isError = true,
+                        onDismiss = viewModel::clearTransientMessage,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
                 }
 
-                if (reports.loadState.append is LoadState.Loading) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    items(reports.itemCount) { index ->
+                        val report = reports[index] ?: return@items
+                        if (report.id in state.hiddenReportIds) return@items
+                        ReportCard(
+                            report = report,
+                            onDelete = { deleteTarget = report },
+                            onDismiss = { viewModel.resolveReport(report, ModerationAction.DISMISS) },
+                        )
+                    }
+
+                    if (visibleReportCount == 0 && reports.loadState.append !is LoadState.Loading) {
+                        item {
+                            EmptyModerationState()
+                        }
+                    }
+
+                    if (reports.loadState.append is LoadState.Loading) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
                         }
                     }
                 }
@@ -304,12 +315,8 @@ private fun EmptyModerationState() {
 
 private fun AdminContentType.moderationLabel(): String {
     return when (this) {
-        AdminContentType.COMMENT -> "binh luan"
-        AdminContentType.MESSAGE -> "tin nhan"
-        AdminContentType.POST -> "bai viet"
+        AdminContentType.COMMENT -> "bình luận"
+        AdminContentType.MESSAGE -> "tin nhắn"
+        AdminContentType.POST -> "bài viết"
     }
-}
-
-private fun AdminContentType.label(): String {
-    return if (this == AdminContentType.COMMENT) "bình luận" else "bài viết"
 }
