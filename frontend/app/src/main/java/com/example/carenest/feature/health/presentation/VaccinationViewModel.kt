@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.health.data.remote.VaccinationApi
 import com.example.carenest.feature.health.domain.model.AdministerDoseRequest
 import com.example.carenest.feature.health.domain.model.CreateVaccinationRequest
@@ -24,13 +25,13 @@ data class VaccinationDoseUiModel(
     val plannedDate: String?,
     val clinicName: String?,
     val notes: String?,
-    val status: String
+    val status: String,
 )
 
 data class VaccinationTrackerGroup(
     val stageLabel: String,
     val description: String,
-    val vaccinations: List<VaccinationDoseUiModel>
+    val vaccinations: List<VaccinationDoseUiModel>,
 )
 
 data class VaccinationUiState(
@@ -38,11 +39,11 @@ data class VaccinationUiState(
     val error: String? = null,
     val vaccinationGroups: List<VaccinationTrackerGroup> = emptyList(),
     val isSubmitting: Boolean = false,
-    val submitSuccess: Boolean = false
+    val submitSuccess: Boolean = false,
 )
 
 class VaccinationViewModel(
-    private val vaccinationApi: VaccinationApi
+    private val vaccinationApi: VaccinationApi,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VaccinationUiState())
@@ -65,7 +66,7 @@ class VaccinationViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.localizedMessage ?: "Lỗi kết nối mạng")
+                    it.copy(isLoading = false, error = e.userMessage("Không thể tải dữ liệu tiêm chủng"))
                 }
             }
         }
@@ -82,7 +83,7 @@ class VaccinationViewModel(
                         it.copy(
                             isSubmitting = false,
                             submitSuccess = true,
-                            vaccinationGroups = it.vaccinationGroups.upsert(record)
+                            vaccinationGroups = it.vaccinationGroups.upsert(record),
                         )
                     }
                     onSuccess()
@@ -93,7 +94,7 @@ class VaccinationViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isSubmitting = false, error = e.localizedMessage ?: "Lỗi kết nối mạng")
+                    it.copy(isSubmitting = false, error = e.userMessage("Không thể tạo lịch tiêm"))
                 }
             }
         }
@@ -110,7 +111,7 @@ class VaccinationViewModel(
                         it.copy(
                             isSubmitting = false,
                             submitSuccess = true,
-                            vaccinationGroups = it.vaccinationGroups.upsert(record)
+                            vaccinationGroups = it.vaccinationGroups.upsert(record),
                         )
                     }
                     onSuccess()
@@ -121,7 +122,7 @@ class VaccinationViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isSubmitting = false, error = e.localizedMessage ?: "Lỗi kết nối mạng")
+                    it.copy(isSubmitting = false, error = e.userMessage("Không thể cập nhật mũi tiêm"))
                 }
             }
         }
@@ -148,9 +149,9 @@ class VaccinationViewModel(
                     plannedDate = dose.scheduledDate,
                     clinicName = dose.location,
                     notes = dose.notes,
-                    status = dose.status
+                    status = dose.status,
                 )
-            }
+            },
         )
     }
 
@@ -167,11 +168,10 @@ class VaccinationViewModel(
         }
         return current
     }
-
 }
 
 class VaccinationViewModelFactory(
-    private val vaccinationApi: VaccinationApi
+    private val vaccinationApi: VaccinationApi,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(VaccinationViewModel::class.java)) {
