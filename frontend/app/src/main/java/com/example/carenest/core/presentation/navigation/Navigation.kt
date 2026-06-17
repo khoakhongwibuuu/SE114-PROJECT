@@ -549,17 +549,25 @@ fun MainNavigation() {
             }
         }
         entry<ConsultationRoom> { args ->
-            val viewModel: com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModel = viewModel(
-                factory = com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModelFactory(
-                    repository = application.bookingRepository,
-                    webSocketClient = com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient(application.secureSessionManager)
+            val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
+            if (resolvedRole != AppRole.USER && resolvedRole != AppRole.DOCTOR) {
+                LaunchedEffect(resolvedRole) {
+                    Toast.makeText(context, "Phòng tư vấn riêng không áp dụng cho tài khoản quản trị.", Toast.LENGTH_SHORT).show()
+                    backStack.removeLastOrNull()
+                }
+            } else {
+                val viewModel: com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModel = viewModel(
+                    factory = com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModelFactory(
+                        repository = application.bookingRepository,
+                        webSocketClient = com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient(application.secureSessionManager)
+                    )
                 )
-            )
-            com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomScreen(
-                bookingId = args.bookingId,
-                viewModel = viewModel,
-                onBack = { backStack.removeLastOrNull() }
-            )
+                com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomScreen(
+                    bookingId = args.bookingId,
+                    viewModel = viewModel,
+                    onBack = { backStack.removeLastOrNull() }
+                )
+            }
         }
       },
   )
