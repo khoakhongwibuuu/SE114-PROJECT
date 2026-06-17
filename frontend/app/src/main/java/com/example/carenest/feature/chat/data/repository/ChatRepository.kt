@@ -1,5 +1,7 @@
 package com.example.carenest.feature.chat.data.repository
 
+import com.example.carenest.core.data.network.requireData
+import com.example.carenest.core.data.network.requireSuccess
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.chat.data.remote.ChatSocketEvent
 import com.example.carenest.feature.chat.data.remote.ChatWebSocketClient
@@ -26,32 +28,18 @@ class ChatRepository(
     private val gson: Gson = Gson(),
 ) {
     suspend fun loadHistory(groupId: Long): List<ChatMessage> {
-        val response = api.posts(groupId)
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể tải lịch sử tin nhắn")
-        }
-
+        val pageData = api.posts(groupId).requireData("Không thể tải lịch sử tin nhắn")
         val currentUserId = secureSessionManager.getUserId()
-        return response.body()?.data?.content.orEmpty().map { it.toChatMessage(currentUserId) }
+        return pageData.content.map { it.toChatMessage(currentUserId) }
     }
 
     suspend fun loadGroupPreview(groupId: Long): ChatGroupPreview {
-        val response = api.preview(groupId)
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể tải thông tin nhóm")
-        }
-        return response.body()?.data
-            ?: throw IllegalStateException("Không nhận được thông tin nhóm")
+        return api.preview(groupId).requireData("Không thể tải thông tin nhóm")
     }
 
     suspend fun sendViaRest(groupId: Long, content: String): ChatMessage {
-        val response = api.sendPost(groupId, CreateGroupPostRequest(content = content))
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể gửi tin nhắn")
-        }
-
-        val post = response.body()?.data
-            ?: throw IllegalStateException("Không nhận được tin nhắn mới")
+        val post = api.sendPost(groupId, CreateGroupPostRequest(content = content))
+            .requireData("Không thể gửi tin nhắn")
         return post.toChatMessage(secureSessionManager.getUserId())
     }
 
@@ -75,24 +63,15 @@ class ChatRepository(
     fun disconnect() = webSocketClient.disconnect()
 
     suspend fun leaveGroup(groupId: Long) {
-        val response = api.leave(groupId)
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể rời nhóm")
-        }
+        api.leave(groupId).requireSuccess("Không thể rời nhóm")
     }
 
     suspend fun kickMember(groupId: Long, userId: Long) {
-        val response = api.kickMember(groupId, userId)
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể mời thành viên rời nhóm")
-        }
+        api.kickMember(groupId, userId).requireSuccess("Không thể mời thành viên rời nhóm")
     }
 
     suspend fun reportPost(postId: Long, reason: String) {
-        val response = api.reportPost(postId, ReportPostRequest(reason))
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể báo cáo tin nhắn")
-        }
+        api.reportPost(postId, ReportPostRequest(reason)).requireSuccess("Không thể báo cáo tin nhắn")
     }
 
     private fun parseIncomingMessage(payload: String): ChatMessage {

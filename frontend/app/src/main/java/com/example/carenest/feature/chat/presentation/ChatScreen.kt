@@ -400,6 +400,39 @@ fun ChatScreen(
                 }
             }
 
+            !state.error.isNullOrBlank() && state.messages.isEmpty() -> {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Chat,
+                        contentDescription = null,
+                        tint = Color(0xFFDC2626),
+                        modifier = Modifier.size(42.dp),
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Không thể tải tin nhắn",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A),
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = state.error.orEmpty(),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0xFF64748B),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+
             state.messages.isEmpty() -> {
                 Column(
                     modifier = Modifier

@@ -27,5 +27,6 @@ data class ChatGroupPreview(
     val memberCount: Long = 0,
     val joined: Boolean = false,
     val myRole: String? = null,
-    val rules: String? = null
+    val rules: String? = null,
+    val isFrozen: Boolean = false
 )
