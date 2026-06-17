@@ -2,6 +2,7 @@ package com.example.carenest.feature.family.data.repository
 
 import com.example.carenest.feature.family.domain.model.*
 import com.example.carenest.feature.family.domain.port.FamilyDataSource
+import com.example.carenest.feature.profile.domain.port.MedicalProfileDataSource
 import com.example.carenest.feature.family.data.remote.FamilyApi
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
@@ -20,7 +21,7 @@ import java.io.File
 class FamilyRepository(
     private val familyApi: FamilyApi,
     private val dataStoreManager: SecureSessionManager
-) : FamilyDataSource {
+) : FamilyDataSource, MedicalProfileDataSource {
     override suspend fun getMyFamilyList(): Result<List<FamilySummary>> {
         return try {
             val response = familyApi.getMyFamilyList()
@@ -39,7 +40,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun getFamilyProfile(profileId: Long): Result<HealthProfile> {
+    override suspend fun getFamilyProfile(profileId: Long): Result<HealthProfile> {
         return try {
             val response = familyApi.getFamilyProfile(profileId)
             val raw = response.requireData("Không thể tải hồ sơ sức khỏe")
@@ -201,7 +202,7 @@ class FamilyRepository(
         return dataStoreManager.familyIdFlow.first()
     }
 
-    suspend fun updateProfile(
+    override suspend fun updateProfile(
         profileId: Long,
         fullName: String,
         birthday: String?,
