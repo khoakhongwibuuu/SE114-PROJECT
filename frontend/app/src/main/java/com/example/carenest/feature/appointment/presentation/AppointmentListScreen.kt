@@ -1,7 +1,5 @@
 package com.example.carenest.feature.appointment.presentation
 
-import android.widget.Toast
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +31,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import kotlinx.coroutines.launch
 
 private enum class FilterKey(val label: String) {
     ALL("Tất cả"),
@@ -69,6 +71,8 @@ fun AppointmentListScreen(
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val vm: AppointmentViewModel = viewModel ?: viewModel(
         factory = AppointmentViewModelFactory(application.appointmentApi, application.secureSessionManager)
@@ -284,7 +288,9 @@ fun AppointmentListScreen(
                 if (hasProfile) {
                     onAddAppointment()
                 } else {
-                    Toast.makeText(context, "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước", Toast.LENGTH_SHORT).show()
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước")
+                    }
                 }
             },
             modifier = Modifier
@@ -297,5 +303,13 @@ fun AppointmentListScreen(
         ) {
             Icon(Icons.Default.Add, contentDescription = "Thêm lịch hẹn")
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(16.dp)
+        )
     }
 }
