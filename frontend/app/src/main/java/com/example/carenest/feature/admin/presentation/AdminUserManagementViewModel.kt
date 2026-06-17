@@ -11,6 +11,7 @@ import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.admin.data.AdminUserPagingSource
 import com.example.carenest.feature.admin.data.AdminUserSummaryResponse
 import com.example.carenest.feature.admin.data.repository.AdminRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -37,6 +38,7 @@ data class AdminUserManagementUiState(
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class AdminUserManagementViewModel(
     private val repository: AdminRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AdminUserManagementUiState())
     val uiState: StateFlow<AdminUserManagementUiState> = _uiState.asStateFlow()
@@ -76,7 +78,7 @@ class AdminUserManagementViewModel(
 
         viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     repository.updateUserStatus(user.id, targetStatus)
                 }
             }.onSuccess { updated ->
@@ -128,7 +130,7 @@ class AdminUserManagementViewModel(
 
         viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     repository.updateUserRole(user.id, targetRole)
                 }
             }.onSuccess { updated ->
