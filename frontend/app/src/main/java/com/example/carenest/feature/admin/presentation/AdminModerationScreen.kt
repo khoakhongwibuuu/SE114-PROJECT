@@ -50,6 +50,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.example.carenest.CareNestApplication
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.admin.data.AdminContentType
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
 import com.example.carenest.feature.admin.presentation.components.AdminErrorState
@@ -78,7 +79,7 @@ fun AdminModerationScreen() {
         reports.loadState.refresh is LoadState.Error -> {
             val error = (reports.loadState.refresh as LoadState.Error).error
             AdminErrorState(
-                message = error.message ?: "Không thể tải danh sách báo cáo",
+                message = error.userMessage("Không thể tải danh sách báo cáo"),
                 onRetry = { reports.retry() },
             )
         }
