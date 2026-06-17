@@ -3,6 +3,7 @@ package com.example.carenest.feature.chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.chat.data.repository.ChatRepository
 import com.example.carenest.feature.chat.data.repository.ChatRepositoryEvent
 import com.example.carenest.feature.chat.domain.model.ChatMessage
@@ -122,7 +123,7 @@ class ChatViewModel(
                 it.copy(
                     isSending = false,
                     inputText = content,
-                    error = error.localizedMessage ?: "Không thể gửi tin nhắn. Vui lòng thử lại.",
+                    error = error.userMessage("Không thể gửi tin nhắn. Vui lòng thử lại."),
                 )
             }
         }
@@ -141,7 +142,7 @@ class ChatViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = error.localizedMessage ?: "Không thể tải lịch sử tin nhắn",
+                        error = error.userMessage("Không thể tải lịch sử tin nhắn."),
                     )
                 }
             }
@@ -247,7 +248,7 @@ class ChatViewModel(
             }.onSuccess {
                 onSuccess()
             }.onFailure {
-                onError(it.localizedMessage ?: "Không thể rời nhóm")
+                onError(it.userMessage("Không thể rời nhóm"))
             }
         }
     }
@@ -261,7 +262,7 @@ class ChatViewModel(
             }.onSuccess {
                 onSuccess()
             }.onFailure {
-                onError(it.localizedMessage ?: "Không thể mời thành viên rời nhóm")
+                onError(it.userMessage("Không thể mời thành viên rời nhóm"))
             }
         }
     }
@@ -275,7 +276,7 @@ class ChatViewModel(
             }.onSuccess {
                 onSuccess()
             }.onFailure {
-                onError(it.localizedMessage ?: "Không thể báo cáo tin nhắn")
+                onError(it.userMessage("Không thể báo cáo tin nhắn"))
             }
         }
     }

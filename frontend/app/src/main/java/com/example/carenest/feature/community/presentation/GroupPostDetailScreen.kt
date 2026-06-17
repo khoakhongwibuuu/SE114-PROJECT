@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExitToApp
@@ -124,17 +126,6 @@ fun GroupPostDetailScreen(
         }
     }
 
-    LaunchedEffect(state.error, state.message) {
-        state.error?.let { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            viewModel.clearTransientMessage()
-        }
-        state.message?.let { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            viewModel.clearTransientMessage()
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -150,7 +141,7 @@ fun GroupPostDetailScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Trở về")
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Trở về")
             }
             Text(
                 text = groupName,
@@ -196,6 +187,24 @@ fun GroupPostDetailScreen(
                     )
                 }
             }
+        }
+
+        state.message?.let { message ->
+            PostDetailBanner(
+                text = message,
+                containerColor = Color(0xFFDCFCE7),
+                textColor = Color(0xFF166534),
+                onDismiss = viewModel::clearTransientMessage
+            )
+        }
+
+        state.error?.let { error ->
+            PostDetailBanner(
+                text = error,
+                containerColor = Color(0xFFFEE2E2),
+                textColor = Color(0xFFB91C1C),
+                onDismiss = viewModel::clearTransientMessage
+            )
         }
 
         // Content
@@ -267,7 +276,13 @@ fun GroupPostDetailScreen(
                         CircularProgressIndicator(color = PrimaryBlue)
                     }
                 } else if (!state.commentError.isNullOrBlank()) {
-                    Text(state.commentError ?: "", color = Color.Red)
+                    PostDetailBanner(
+                        text = state.commentError ?: "",
+                        containerColor = Color(0xFFFEE2E2),
+                        textColor = Color(0xFFB91C1C),
+                        actionLabel = "Thử lại",
+                        onAction = viewModel::reloadComments
+                    )
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f, fill = false).height(300.dp)
@@ -415,7 +430,7 @@ fun GroupPostDetailScreen(
                                 )
                             } else {
                                 Icon(
-                                    imageVector = Icons.Default.ExitToApp,
+                                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                                     contentDescription = null,
                                     tint = Color(0xFFDC2626),
                                     modifier = Modifier.size(18.dp)
@@ -594,6 +609,51 @@ fun GroupPostDetailScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun PostDetailBanner(
+    text: String,
+    containerColor: Color,
+    textColor: Color,
+    onDismiss: (() -> Unit)? = null,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Text(
+                text = text,
+                color = textColor,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+            if (onDismiss != null || (actionLabel != null && onAction != null)) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    if (actionLabel != null && onAction != null) {
+                        TextButton(onClick = onAction) {
+                            Text(actionLabel, color = textColor, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    if (onDismiss != null) {
+                        TextButton(onClick = onDismiss) {
+                            Text("Đóng", color = textColor)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

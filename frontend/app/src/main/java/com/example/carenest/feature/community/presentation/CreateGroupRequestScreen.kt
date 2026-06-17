@@ -55,6 +55,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.community.data.repository.CommunityRepository
 import com.example.carenest.feature.community.domain.model.CreateGroupCreationRequest
@@ -91,7 +92,7 @@ class CreateGroupRequestViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = e.localizedMessage ?: "Không thể tải trạng thái yêu cầu"
+                    error = e.userMessage("Không thể tải trạng thái yêu cầu")
                 )
             }
         }
@@ -112,7 +113,7 @@ class CreateGroupRequestViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSubmitting = false,
-                    error = e.localizedMessage ?: "Không thể gửi yêu cầu tạo nhóm"
+                    error = e.userMessage("Không thể gửi yêu cầu tạo nhóm")
                 )
             }
         }
