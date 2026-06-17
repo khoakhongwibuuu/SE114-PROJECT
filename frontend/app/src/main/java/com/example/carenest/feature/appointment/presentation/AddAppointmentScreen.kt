@@ -2,7 +2,6 @@ package com.example.carenest.feature.appointment.presentation
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,12 +36,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +60,7 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,6 +71,8 @@ fun AddAppointmentScreen(
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val vm: AppointmentViewModel = viewModel ?: viewModel(
         factory = AppointmentViewModelFactory(application.appointmentApi, application.secureSessionManager)
@@ -109,57 +114,73 @@ fun AddAppointmentScreen(
         true
     )
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF8FAFC))
-            .statusBarsPadding()
     ) {
-        // App Bar
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
         ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = PrimaryBlue)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = PrimaryBlue)
+                }
+                Text(text = "Lịch hẹn mới", color = Color(0xFF0F172A), fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
             }
-            Text(text = "Lịch hẹn mới", color = Color(0xFF0F172A), fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+
+            ScrollViewContent(
+                facility = facility,
+                onFacilityChange = { facility = it },
+                doctor = doctor,
+                onDoctorChange = { doctor = it },
+                address = address,
+                onAddressChange = { address = it },
+                notes = notes,
+                onNotesChange = { notes = it },
+                selectedDateTime = selectedDateTime,
+                onDateClick = { datePickerDialog.show() },
+                onTimeClick = { timePickerDialog.show() },
+                canSubmit = canSubmit,
+                hasActiveProfile = hasActiveProfile,
+                isActionLoading = isActionLoading,
+                onSubmit = {
+                    val targetProfileId = activeProfileId ?: return@ScrollViewContent
+                    val isoDate = selectedDateTime.atZone(ZoneId.systemDefault()).toInstant().toString()
+                    vm.createAppointment(
+                        profileId = targetProfileId,
+                        hospitalName = facility,
+                        doctorName = doctor,
+                        isoDate = isoDate,
+                        address = address.takeIf { it.isNotBlank() },
+                        notes = notes.takeIf { it.isNotBlank() },
+                        onSuccess = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Đã lưu lịch hẹn")
+                                onBack()
+                            }
+                        },
+                        onError = { message ->
+                            scope.launch {
+                                snackbarHostState.showSnackbar(message)
+                            }
+                        }
+                    )
+                }
+            )
         }
 
-        ScrollViewContent(
-            facility = facility,
-            onFacilityChange = { facility = it },
-            doctor = doctor,
-            onDoctorChange = { doctor = it },
-            address = address,
-            onAddressChange = { address = it },
-            notes = notes,
-            onNotesChange = { notes = it },
-            selectedDateTime = selectedDateTime,
-            onDateClick = { datePickerDialog.show() },
-            onTimeClick = { timePickerDialog.show() },
-            canSubmit = canSubmit,
-            hasActiveProfile = hasActiveProfile,
-            isActionLoading = isActionLoading,
-            onSubmit = {
-                val targetProfileId = activeProfileId ?: return@ScrollViewContent
-                val isoDate = selectedDateTime.atZone(ZoneId.systemDefault()).toInstant().toString()
-                vm.createAppointment(
-                    profileId = targetProfileId,
-                    hospitalName = facility,
-                    doctorName = doctor,
-                    isoDate = isoDate,
-                    address = address.takeIf { it.isNotBlank() },
-                    notes = notes.takeIf { it.isNotBlank() },
-                    onSuccess = {
-                        Toast.makeText(context, "Đã lưu lịch hẹn", Toast.LENGTH_SHORT).show()
-                        onBack()
-                    },
-                    onError = {
-                        Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-                    }
-                )
-            }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(16.dp)
         )
     }
 }

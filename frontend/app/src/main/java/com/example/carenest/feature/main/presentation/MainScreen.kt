@@ -11,6 +11,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -19,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -26,7 +29,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -51,6 +53,7 @@ import com.example.carenest.feature.medical.presentation.MedicineViewModel
 import com.example.carenest.feature.profile.presentation.ProfileScreen
 import com.example.carenest.feature.profile.presentation.ProfileViewModel
 import com.example.carenest.feature.profile.presentation.ProfileViewModelFactory
+import kotlinx.coroutines.launch
 
 private const val TAB_HOME = 0
 private const val TAB_FAMILY = 1
@@ -98,6 +101,8 @@ fun MainScreen(
     var profileRefreshTrigger by rememberSaveable { mutableIntStateOf(0) }
 
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     val application = context.applicationContext as CareNestApplication
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
@@ -165,7 +170,9 @@ fun MainScreen(
     fun resolveActiveProfileIdOrNotify(): Long? {
         val profileId = currentProfileId ?: application.secureSessionManager.getActiveProfileId()
         if (!profileId.isValidHealthProfileId()) {
-            Toast.makeText(context, "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước", Toast.LENGTH_SHORT).show()
+            scope.launch {
+                snackbarHostState.showSnackbar("Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước")
+            }
             selectedTab = TAB_FAMILY
             return null
         }
@@ -186,6 +193,7 @@ fun MainScreen(
             .fillMaxSize()
             .background(PageBackground),
         containerColor = PageBackground,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             NavigationBar(
                 containerColor = SurfaceLowest,
