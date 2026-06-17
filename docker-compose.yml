@@ -94,9 +94,9 @@ services:
       JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-900000}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
 
-      # ── AI / Gemini API ──────────────────────────────────────
+      # ── AI Provider API ──────────────────────────────────────
       # ⚠️ QUAN TRỌNG: Giá trị này PHẢI được set trong file .env, KHÔNG bao giờ hardcode!
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      AI_API_KEY: ${AI_API_KEY}
       APP_FEATURE_AI_CHAT_ENABLED: ${APP_FEATURE_AI_CHAT_ENABLED:-false}
       APP_FEATURE_OCR_ENABLED: ${APP_FEATURE_OCR_ENABLED:-false}
 
