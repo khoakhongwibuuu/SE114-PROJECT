@@ -53,7 +53,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import com.example.carenest.feature.admin.presentation.components.AdminTransientBanner
 import com.example.carenest.feature.community.data.repository.CommunityRepository
 import com.example.carenest.feature.community.domain.model.GroupCreationRequest
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,7 +67,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 class AdminGroupRequestsViewModel(
-    private val repository: CommunityRepository
+    private val repository: CommunityRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminGroupRequestsUiState())
@@ -82,12 +84,12 @@ class AdminGroupRequestsViewModel(
                 val requests = repository.getAdminGroupRequests()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    requests = requests
+                    requests = requests,
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = e.localizedMessage ?: "Không thể tải danh sách yêu cầu"
+                    error = e.userMessage("Không thể tải danh sách yêu cầu"),
                 )
             }
         }
@@ -102,12 +104,12 @@ class AdminGroupRequestsViewModel(
                 _uiState.value = _uiState.value.copy(
                     actingRequestId = null,
                     requests = requests,
-                    message = "Yêu cầu đã được duyệt."
+                    message = "Yêu cầu đã được duyệt.",
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     actingRequestId = null,
-                    error = e.localizedMessage ?: "Không thể duyệt yêu cầu"
+                    error = e.userMessage("Không thể duyệt yêu cầu"),
                 )
             }
         }
@@ -122,12 +124,12 @@ class AdminGroupRequestsViewModel(
                 _uiState.value = _uiState.value.copy(
                     actingRequestId = null,
                     requests = requests,
-                    message = "Yêu cầu đã bị từ chối."
+                    message = "Yêu cầu đã bị từ chối.",
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     actingRequestId = null,
-                    error = e.localizedMessage ?: "Không thể từ chối yêu cầu"
+                    error = e.userMessage("Không thể từ chối yêu cầu"),
                 )
             }
         }
@@ -147,11 +149,11 @@ data class AdminGroupRequestsUiState(
     val requests: List<GroupCreationRequest> = emptyList(),
     val error: String? = null,
     val message: String? = null,
-    val actingRequestId: Long? = null
+    val actingRequestId: Long? = null,
 )
 
 class AdminGroupRequestsViewModelFactory(
-    private val repository: CommunityRepository
+    private val repository: CommunityRepository,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AdminGroupRequestsViewModel::class.java)) {
@@ -165,12 +167,12 @@ class AdminGroupRequestsViewModelFactory(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminGroupRequestsScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val app = context.applicationContext as CareNestApplication
     val viewModel: AdminGroupRequestsViewModel = viewModel(
-        factory = AdminGroupRequestsViewModelFactory(app.communityRepository)
+        factory = AdminGroupRequestsViewModelFactory(app.communityRepository),
     )
     val state by viewModel.uiState.collectAsState()
     var rejectTarget by remember { mutableStateOf<GroupCreationRequest?>(null) }
@@ -190,31 +192,31 @@ fun AdminGroupRequestsScreen(
                         Icon(Icons.Default.Refresh, contentDescription = "Làm mới")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF8FAFC))
-                .padding(padding)
+                .padding(padding),
         ) {
             state.message?.let { message ->
-                BannerCard(
-                    text = message,
-                    containerColor = Color(0xFFDCFCE7),
-                    textColor = Color(0xFF166534),
-                    onDismiss = viewModel::clearMessage
+                AdminTransientBanner(
+                    message = message,
+                    isError = false,
+                    onDismiss = viewModel::clearMessage,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
 
             state.error?.let { error ->
-                BannerCard(
-                    text = error,
-                    containerColor = Color(0xFFFEE2E2),
-                    textColor = Color(0xFFB91C1C),
-                    onDismiss = viewModel::clearError
+                AdminTransientBanner(
+                    message = error,
+                    isError = true,
+                    onDismiss = viewModel::clearError,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
 
@@ -229,7 +231,7 @@ fun AdminGroupRequestsScreen(
                     EmptyRequestState(
                         title = "Không thể tải danh sách yêu cầu",
                         message = state.error!!,
-                        onRetry = viewModel::loadRequests
+                        onRetry = viewModel::loadRequests,
                     )
                 }
 
@@ -237,14 +239,14 @@ fun AdminGroupRequestsScreen(
                     EmptyRequestState(
                         title = "Không có yêu cầu nào",
                         message = "Khi bác sĩ gửi yêu cầu tạo nhóm mới, danh sách sẽ xuất hiện ở đây.",
-                        onRetry = viewModel::loadRequests
+                        onRetry = viewModel::loadRequests,
                     )
                 }
 
                 else -> {
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(state.requests, key = { it.id }) { request ->
                             AdminGroupRequestCard(
@@ -254,7 +256,7 @@ fun AdminGroupRequestsScreen(
                                 onReject = {
                                     rejectTarget = request
                                     rejectReason = request.rejectionReason.orEmpty()
-                                }
+                                },
                             )
                         }
                     }
@@ -275,14 +277,14 @@ fun AdminGroupRequestsScreen(
                     Text(
                         text = "Nhập lý do để bác sĩ có thể chỉnh sửa và gửi lại chính xác hơn.",
                         color = Color(0xFF475569),
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
                     )
                     OutlinedTextField(
                         value = rejectReason,
                         onValueChange = { rejectReason = it },
                         label = { Text("Lý do từ chối") },
                         minLines = 3,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             },
@@ -294,7 +296,7 @@ fun AdminGroupRequestsScreen(
                         rejectReason = ""
                     },
                     enabled = rejectReason.isNotBlank() && state.actingRequestId == null,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                 ) {
                     Text("Xác nhận")
                 }
@@ -306,41 +308,8 @@ fun AdminGroupRequestsScreen(
                 }) {
                     Text("Hủy")
                 }
-            }
+            },
         )
-    }
-}
-
-@Composable
-private fun BannerCard(
-    text: String,
-    containerColor: Color,
-    textColor: Color,
-    onDismiss: () -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = text,
-                color = textColor,
-                modifier = Modifier.weight(1f),
-                lineHeight = 20.sp
-            )
-            TextButton(onClick = onDismiss) {
-                Text("Đóng", color = textColor)
-            }
-        }
     }
 }
 
@@ -352,38 +321,38 @@ private fun EmptyRequestState(
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = Color.White),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = Color(0xFF0F172A)
+                    color = Color(0xFF0F172A),
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = message,
                     color = Color(0xFF64748B),
                     fontSize = 14.sp,
-                    lineHeight = 20.sp
+                    lineHeight = 20.sp,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onRetry,
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                 ) {
                     Text("Làm mới", color = Color.White)
                 }
@@ -403,30 +372,30 @@ private fun AdminGroupRequestCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = 8.dp)
+                        .padding(end = 8.dp),
                 ) {
                     Text(
                         text = request.name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = Color(0xFF0F172A)
+                        color = Color(0xFF0F172A),
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = request.shortDescription,
                         fontSize = 14.sp,
-                        color = Color(0xFF475569)
+                        color = Color(0xFF475569),
                     )
                 }
 
@@ -438,14 +407,14 @@ private fun AdminGroupRequestCard(
                 }
                 Surface(
                     color = statusBg,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 ) {
                     Text(
                         text = statusText,
                         color = statusColor,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                 }
             }
@@ -453,7 +422,7 @@ private fun AdminGroupRequestCard(
             Spacer(modifier = Modifier.height(12.dp))
             RequestMetaRow(
                 label = "Loại nhóm",
-                value = if (request.groupType == "SPECIALTY_PUBLIC") "Cộng đồng chuyên khoa" else "Phòng khám số"
+                value = if (request.groupType == "SPECIALTY_PUBLIC") "Cộng đồng chuyên khoa" else "Phòng khám số",
             )
             RequestMetaRow(label = "Chuyên khoa", value = request.category)
             request.createdAt?.let { RequestMetaRow(label = "Gửi lúc", value = formatAdminRequestTime(it)) }
@@ -463,14 +432,14 @@ private fun AdminGroupRequestCard(
                 text = "Mục đích hoạt động",
                 fontSize = 13.sp,
                 color = Color(0xFF64748B),
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = request.detailedPurpose,
                 fontSize = 14.sp,
                 color = Color(0xFF334155),
-                lineHeight = 20.sp
+                lineHeight = 20.sp,
             )
 
             if (!request.rejectionReason.isNullOrBlank()) {
@@ -479,14 +448,14 @@ private fun AdminGroupRequestCard(
                     text = "Lý do từ chối",
                     fontSize = 13.sp,
                     color = Color(0xFFB91C1C),
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = request.rejectionReason,
                     fontSize = 14.sp,
                     color = Color(0xFF7F1D1D),
-                    lineHeight = 20.sp
+                    lineHeight = 20.sp,
                 )
             }
 
@@ -496,7 +465,7 @@ private fun AdminGroupRequestCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     OutlinedButton(
                         onClick = onReject,
@@ -506,7 +475,7 @@ private fun AdminGroupRequestCard(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp)
+                            .height(44.dp),
                     ) {
                         Text("Từ chối", fontWeight = FontWeight.Bold)
                     }
@@ -517,13 +486,13 @@ private fun AdminGroupRequestCard(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp)
+                            .height(44.dp),
                     ) {
                         if (isActing) {
                             CircularProgressIndicator(
                                 modifier = Modifier.height(18.dp),
                                 color = Color.White,
-                                strokeWidth = 2.dp
+                                strokeWidth = 2.dp,
                             )
                         } else {
                             Text("Duyệt ngay", fontWeight = FontWeight.Bold)
@@ -542,18 +511,18 @@ private fun RequestMetaRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = "$label:",
             fontSize = 13.sp,
             color = Color(0xFF64748B),
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
         Text(
             text = value,
             fontSize = 13.sp,
-            color = Color(0xFF334155)
+            color = Color(0xFF334155),
         )
     }
 }
