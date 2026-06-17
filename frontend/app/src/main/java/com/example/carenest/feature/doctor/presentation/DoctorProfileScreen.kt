@@ -354,7 +354,7 @@ fun DoctorProfileScreen(
             },
             text = {
                 Text(
-                    text = ex.message ?: "Bạn đang có phiên làm việc với bác sĩ này.",
+                    text = ex.userMessage("Bạn đang có phiên làm việc với bác sĩ này."),
                     fontSize = 16.sp,
                     color = Color(0xFF475569)
                 )
