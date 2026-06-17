@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatResponse {
-    private String reply;
-    private StructuredChatPayloadResponse structured;
+public class StructuredAiActionResponse {
+    private String type;
+    private String label;
 }
