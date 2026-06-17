@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.family.data.repository.FamilyRepository
 import com.example.carenest.feature.health.data.remote.GrowthApi
 import com.example.carenest.feature.health.domain.model.GrowthChartPointResponse
@@ -45,12 +46,12 @@ data class UserMedicalUiState(
     val emergencyName: String = "",
     val emergencyPhone: String = "",
     val error: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
 )
 
 class UserMedicalViewModel(
     private val repository: FamilyRepository,
-    private val growthApi: GrowthApi
+    private val growthApi: GrowthApi,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UserMedicalUiState())
@@ -75,14 +76,14 @@ class UserMedicalViewModel(
                         weight = profile.weight?.toString() ?: "",
                         chronicDiseases = profile.medicalHistory.joinToString("; ") { cond -> cond.name },
                         emergencyName = profile.emergencyContact?.name ?: "",
-                        emergencyPhone = profile.emergencyContact?.phone ?: ""
+                        emergencyPhone = profile.emergencyContact?.phone ?: "",
                     )
                 }
             }.onFailure { e ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.localizedMessage ?: "Không thể tải hồ sơ sức khỏe"
+                        error = e.userMessage("Không thể tải hồ sơ sức khỏe"),
                     )
                 }
             }
@@ -104,14 +105,14 @@ class UserMedicalViewModel(
                             isGrowthLoading = false,
                             growthRecords = records,
                             growthChart = chart,
-                            growthError = null
+                            growthError = null,
                         )
                     }
                 } else {
                     _uiState.update {
                         it.copy(
                             isGrowthLoading = false,
-                            growthError = recordsResponse.errorMessage("Không thể tải dữ liệu tăng trưởng")
+                            growthError = recordsResponse.errorMessage("Không thể tải dữ liệu tăng trưởng"),
                         )
                     }
                 }
@@ -119,7 +120,7 @@ class UserMedicalViewModel(
                 _uiState.update {
                     it.copy(
                         isGrowthLoading = false,
-                        growthError = e.localizedMessage ?: "Lỗi kết nối khi tải dữ liệu tăng trưởng"
+                        growthError = e.userMessage("Không thể tải dữ liệu tăng trưởng"),
                     )
                 }
             }
@@ -208,8 +209,8 @@ class UserMedicalViewModel(
                         weightKg = weight!!,
                         heightCm = height!!,
                         headCircumferenceCm = headCircumference,
-                        notes = state.growthNotes.trim().ifBlank { null }
-                    )
+                        notes = state.growthNotes.trim().ifBlank { null },
+                    ),
                 )
                 if (response.isSuccessful) {
                     response.requireData("Không thể lưu chỉ số tăng trưởng")
@@ -222,7 +223,7 @@ class UserMedicalViewModel(
                             growthHeadCircumference = "",
                             growthNotes = "",
                             growthRecordDate = LocalDate.now().toString(),
-                            growthError = null
+                            growthError = null,
                         )
                     }
                     loadGrowthData(profileId)
@@ -231,7 +232,7 @@ class UserMedicalViewModel(
                     _uiState.update {
                         it.copy(
                             isGrowthSaving = false,
-                            growthError = response.errorMessage("Không thể lưu chỉ số tăng trưởng")
+                            growthError = response.errorMessage("Không thể lưu chỉ số tăng trưởng"),
                         )
                     }
                 }
@@ -239,7 +240,7 @@ class UserMedicalViewModel(
                 _uiState.update {
                     it.copy(
                         isGrowthSaving = false,
-                        growthError = e.localizedMessage ?: "Lỗi kết nối khi lưu chỉ số tăng trưởng"
+                        growthError = e.userMessage("Không thể lưu chỉ số tăng trưởng"),
                     )
                 }
             }
@@ -257,7 +258,7 @@ class UserMedicalViewModel(
 
         if (fullName.isEmpty() || birthday.isEmpty() || gender.isEmpty()) {
             _uiState.update {
-                it.copy(error = "Vui long nhap day du ho ten, ngay sinh va gioi tinh")
+                it.copy(error = "Vui lòng nhập đầy đủ họ tên, ngày sinh và giới tính")
             }
             return
         }
@@ -274,14 +275,14 @@ class UserMedicalViewModel(
                 weight = weightD,
                 bloodType = state.bloodType,
                 allergy = state.allergies,
-                medicalHistory = state.chronicDiseases
+                medicalHistory = state.chronicDiseases,
             )
 
             result.onSuccess {
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        successMessage = "Cap nhat ho so suc khoe thanh cong."
+                        successMessage = "Cập nhật hồ sơ sức khỏe thành công.",
                     )
                 }
                 loadProfile(profileId)
@@ -289,7 +290,7 @@ class UserMedicalViewModel(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        error = e.localizedMessage ?: "Cap nhat that bai"
+                        error = e.userMessage("Cập nhật hồ sơ sức khỏe thất bại"),
                     )
                 }
             }
@@ -303,7 +304,7 @@ class UserMedicalViewModel(
 
 class UserMedicalViewModelFactory(
     private val repository: FamilyRepository,
-    private val growthApi: GrowthApi
+    private val growthApi: GrowthApi,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(UserMedicalViewModel::class.java)) {
