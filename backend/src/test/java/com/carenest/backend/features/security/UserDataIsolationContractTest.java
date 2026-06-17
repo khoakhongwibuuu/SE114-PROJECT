@@ -67,7 +67,7 @@ class UserDataIsolationContractTest {
         HealthProfile profile = profile(99L, otherFamily, currentUser);
         FamilyRequestContext.set(activeFamily.getId(), FamilyRole.MEMBER);
 
-        when(healthProfileRepository.findById(99L)).thenReturn(Optional.of(profile));
+        when(healthProfileRepository.findByIdAndDeletedAtIsNull(99L)).thenReturn(Optional.of(profile));
 
         assertThrows(
                 AccessDeniedException.class,
@@ -84,7 +84,7 @@ class UserDataIsolationContractTest {
                 .thenReturn(Optional.of(member(requestedFamily, currentUser)));
         when(familyMemberRepository.findByFamilyIdAndUserId(20L, 1L))
                 .thenReturn(Optional.of(member(profileFamily, currentUser)));
-        when(healthProfileRepository.findById(99L)).thenReturn(Optional.of(profile));
+        when(healthProfileRepository.findByIdAndDeletedAtIsNull(99L)).thenReturn(Optional.of(profile));
 
         assertThrows(
                 AccessDeniedException.class,
