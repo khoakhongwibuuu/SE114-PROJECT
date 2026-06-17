@@ -35,14 +35,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,15 +59,12 @@ import androidx.compose.ui.unit.sp
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.dashboard.presentation.DashboardState
-import com.example.carenest.feature.medical.presentation.MedicineViewModel
 import com.example.carenest.feature.medical.presentation.CabinetState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
-import androidx.compose.material3.CircularProgressIndicator
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
 
 @Composable
 fun AddMedicineScheduleScreen(
@@ -71,6 +73,8 @@ fun AddMedicineScheduleScreen(
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
     val cabinetState by medicineViewModel.cabinetState.collectAsState()
     val isActionLoading by medicineViewModel.isActionLoading.collectAsState()
@@ -111,13 +115,17 @@ fun AddMedicineScheduleScreen(
     )
     val canSubmit = validationError == null && !isActionLoading
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC))
-            .statusBarsPadding()
-            .windowInsetsPadding(WindowInsets.ime),
+            .background(Color(0xFFF8FAFC)),
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .windowInsetsPadding(WindowInsets.ime),
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -302,50 +310,62 @@ fun AddMedicineScheduleScreen(
             }
         }
 
-        Button(
-            onClick = {
-                val chosenMemberId = selectedMemberId.toLongOrNull()
-                val chosenMedicine = medicines.find { it.id == selectedMedicineId }
-                if (validationError != null) {
-                    Toast.makeText(context, validationError, Toast.LENGTH_SHORT).show()
-                    return@Button
-                }
-                if (chosenMemberId == null || chosenMedicine == null) {
-                    Toast.makeText(context, "Vui lòng chọn thành viên và thuốc", Toast.LENGTH_SHORT).show()
-                    return@Button
-                }
-                medicineViewModel.createSchedule(
-                    profileId = chosenMemberId,
-                    medicineName = chosenMedicine.medicineName,
-                    dosage = dosage.ifBlank { "1 viên" },
-                    timesPerDay = parsedFrequency ?: 1,
-                    startDate = startDate,
-                    endDate = endDate,
-                    notes = notes,
-                    onSuccess = {
-                        Toast.makeText(context, "Lưu lịch nhắc uống thuốc thành công!", Toast.LENGTH_SHORT).show()
-                        onBack()
-                    },
-                    onError = { error ->
-                        Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+            Button(
+                onClick = {
+                    val chosenMemberId = selectedMemberId.toLongOrNull()
+                    val chosenMedicine = medicines.find { it.id == selectedMedicineId }
+                    if (validationError != null) {
+                        scope.launch { snackbarHostState.showSnackbar(validationError) }
+                        return@Button
                     }
-                )
-            },
-            enabled = canSubmit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-                .height(56.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-        ) {
-            if (isActionLoading) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-            } else {
-                Text("Lưu lịch", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                    if (chosenMemberId == null || chosenMedicine == null) {
+                        scope.launch { snackbarHostState.showSnackbar("Vui lòng chọn thành viên và thuốc") }
+                        return@Button
+                    }
+                    medicineViewModel.createSchedule(
+                        profileId = chosenMemberId,
+                        medicineName = chosenMedicine.medicineName,
+                        dosage = dosage.ifBlank { "1 viên" },
+                        timesPerDay = parsedFrequency ?: 1,
+                        startDate = startDate,
+                        endDate = endDate,
+                        notes = notes,
+                        onSuccess = {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Lưu lịch nhắc uống thuốc thành công")
+                                onBack()
+                            }
+                        },
+                        onError = { error ->
+                            scope.launch { snackbarHostState.showSnackbar(error) }
+                        }
+                    )
+                },
+                enabled = canSubmit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+            ) {
+                if (isActionLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Lưu lịch", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                }
             }
+
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(16.dp)
+        )
     }
 }
 
