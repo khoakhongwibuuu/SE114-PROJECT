@@ -2,7 +2,6 @@ package com.example.carenest.feature.profile.presentation
 
 import android.app.DatePickerDialog
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -57,19 +56,19 @@ fun ProfileScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(refreshTrigger) {
         viewModel.loadCurrentUser()
     }
 
-    // Observe messages
     LaunchedEffect(state.successMessage, state.error) {
         if (state.successMessage != null) {
-            Toast.makeText(context, state.successMessage, Toast.LENGTH_SHORT).show()
+            snackbarHostState.showSnackbar(state.successMessage ?: "Cập nhật thành công")
             viewModel.onEvent(ProfileEvent.ClearMessage)
         }
         if (state.error != null) {
-            Toast.makeText(context, state.error, Toast.LENGTH_LONG).show()
+            snackbarHostState.showSnackbar(state.error ?: "Không thể cập nhật thông tin tài khoản")
             viewModel.onEvent(ProfileEvent.ClearMessage)
         }
     }
@@ -97,55 +96,55 @@ fun ProfileScreen(
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF8FAFC))
-            .statusBarsPadding()
-    ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF1E293B))
-            }
-            Text(
-                text = "Thông tin tài khoản",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF1E3A8A)
-            )
-            TextButton(
-                onClick = {
-                    if (!state.isEditing) {
-                        viewModel.onEvent(ProfileEvent.EditClicked)
-                    } else {
-                        viewModel.onEvent(ProfileEvent.SaveClicked)
-                    }
-                },
-                enabled = !state.isSaving
-            ) {
-                Text(
-                    text = if (state.isSaving) "Đang lưu" else if (state.isEditing) "Lưu" else "Sửa",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryBlue
-                )
-            }
-        }
-
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = Color(0xFFF8FAFC)
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
+                .background(Color(0xFFF8FAFC))
+                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 100.dp)
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF1E293B))
+                }
+                Text(
+                    text = "Thông tin tài khoản",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF1E3A8A)
+                )
+                TextButton(
+                    onClick = {
+                        if (!state.isEditing) {
+                            viewModel.onEvent(ProfileEvent.EditClicked)
+                        } else {
+                            viewModel.onEvent(ProfileEvent.SaveClicked)
+                        }
+                    },
+                    enabled = !state.isSaving
+                ) {
+                    Text(
+                        text = if (state.isSaving) "Đang lưu" else if (state.isEditing) "Lưu" else "Sửa",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryBlue
+                    )
+                }
+            }
+
             // Avatar Section
             Column(
                 modifier = Modifier

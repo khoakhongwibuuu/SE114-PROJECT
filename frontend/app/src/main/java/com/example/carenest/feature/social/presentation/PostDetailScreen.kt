@@ -33,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -73,9 +72,9 @@ fun PostDetailScreen(
 
     var inputText by remember { mutableStateOf("") }
     var replyingToComment by remember { mutableStateOf<Comment?>(null) }
-    var localLikeCount by remember(post.id) { mutableIntStateOf(post.likeCount) }
+    var localLikeCount by remember(post.id) { mutableStateOf(post.likeCount) }
     var localIsLiked by remember(post.id) { mutableStateOf(post.likedByMe) }
-    var localCommentCount by remember(post.id) { mutableIntStateOf(post.commentCount) }
+    var localCommentCount by remember(post.id) { mutableStateOf(post.commentCount) }
 
     val mutationState by viewModel.mutationState.collectAsState()
 
