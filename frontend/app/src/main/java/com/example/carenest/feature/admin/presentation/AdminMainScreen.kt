@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -18,14 +20,17 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 
 private val AdminNavy = Color(0xFF1E293B)
 
@@ -60,28 +65,21 @@ private enum class AdminTab(
 @Composable
 fun AdminMainScreen(
     onLogout: () -> Unit = {},
-    onNavigateToGroupRequests: () -> Unit = {},
+    onNavigateToGroupRequests: () -> Unit = {}
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-    val currentTab = AdminTab.entries[selectedTab]
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    val currentTab = AdminTab.entries.getOrNull(selectedTab) ?: AdminTab.DASHBOARD
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = currentTab.title,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
-                },
+            TopAppBar(
+                title = { Text("CareNest Admin", fontWeight = FontWeight.Black) },
                 actions = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateToGroupRequests) {
-                        Icon(Icons.Default.Group, contentDescription = "Yêu cầu nhóm", tint = Color.White)
+                    IconButton(onClick = onNavigateToGroupRequests) {
+                        Icon(Icons.Default.Groups, contentDescription = "Duyệt nhóm")
                     }
-                    androidx.compose.material3.TextButton(onClick = onLogout) {
-                        Text(text = "Đăng xuất", color = Color.White)
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Đăng xuất")
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -121,7 +119,11 @@ fun AdminMainScreen(
                 .padding(paddingValues),
         ) {
             when (currentTab) {
-                AdminTab.DASHBOARD -> AdminDashboardScreen()
+                AdminTab.DASHBOARD -> AdminDashboardScreen(
+                    onOpenUsers = { selectedTab = AdminTab.USERS.ordinal },
+                    onOpenEkyc = { selectedTab = AdminTab.EKYC.ordinal },
+                    onOpenModeration = { selectedTab = AdminTab.MODERATION.ordinal },
+                )
                 AdminTab.USERS -> AdminUserManagementScreen()
                 AdminTab.EKYC -> AdminEkycScreen()
                 AdminTab.MODERATION -> AdminModerationScreen()

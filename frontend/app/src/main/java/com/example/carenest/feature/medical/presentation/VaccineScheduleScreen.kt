@@ -33,7 +33,7 @@ import com.example.carenest.feature.medical.domain.model.VaccinationItem
 @Composable
 fun VaccineScheduleScreen(
     viewModel: VaccineScheduleViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
-    memberId: Long? = 1L,
+    memberId: Long? = null,
     onBack: () -> Unit,
     onAddVaccine: (Long, Long?) -> Unit // profileId, editVaccineId
 ) {
@@ -89,7 +89,7 @@ fun VaccineScheduleScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onAddVaccine(uiState.currentMemberId ?: 1L, null) },
+                onClick = { uiState.currentMemberId?.let { onAddVaccine(it, null) } },
                 containerColor = PrimaryBlue,
                 shape = CircleShape
             ) {
@@ -183,7 +183,7 @@ fun VaccineScheduleScreen(
                                     VaccineDoseRow(
                                         vaccine = vaccine,
                                         isLast = isLast,
-                                        onClick = { onAddVaccine(uiState.currentMemberId ?: 1L, vaccine.id) }
+                                        onClick = { uiState.currentMemberId?.let { onAddVaccine(it, vaccine.id) } }
                                     )
                                 }
                             }

@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -253,6 +253,11 @@ private fun PatientBookingComposer(
     onPatientNoteChanged: (String) -> Unit,
     onSubmit: () -> Unit
 ) {
+    val canSubmit = !isSubmitting &&
+        currentProfileId != null &&
+        selectedDoctorId != null &&
+        patientNote.isNotBlank()
+
     Card(
         colors = CardDefaults.cardColors(containerColor = PageBackground),
         shape = RoundedCornerShape(AppRadius.lg)
@@ -319,15 +324,22 @@ private fun PatientBookingComposer(
             OutlinedTextField(
                 value = patientNote,
                 onValueChange = onPatientNoteChanged,
-                label = { Text("Nhu cầu / triệu chứng") },
+                label = { Text("Nhu cầu / triệu chứng *") },
                 placeholder = { Text("Mô tả ngắn để bác sĩ sắp lịch phù hợp") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3
             )
+            if (patientNote.isBlank()) {
+                Text(
+                    text = "Vui lòng mô tả ngắn nhu cầu hoặc triệu chứng trước khi gửi.",
+                    style = CareNestTextStyles.bodySm,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
 
             Button(
                 onClick = onSubmit,
-                enabled = !isSubmitting && currentProfileId != null && selectedDoctorId != null,
+                enabled = canSubmit,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (isSubmitting) {
@@ -392,9 +404,11 @@ private fun PatientBookingCard(
             horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
         ) {
             if (booking.status == BookingStatus.APPROVED && booking.appointmentId != null) {
+                val targetProfileId = booking.healthProfileId?.takeIf { it > 0L }
                 Button(
-                    onClick = { onOpenAppointments(booking.healthProfileId ?: 0L) },
-                    modifier = Modifier.weight(1f)
+                    onClick = { targetProfileId?.let(onOpenAppointments) },
+                    modifier = Modifier.weight(1f),
+                    enabled = targetProfileId != null
                 ) {
                     Text("Mở Lịch tái khám")
                 }
@@ -478,15 +492,25 @@ private fun BookingCardShell(
                         color = TextPrimary
                     )
                     Text(
-                        text = "BS. ${booking.doctorFullName}",
+                        text = booking.doctorFullName
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { "BS. $it" }
+                            ?: "BS. Chưa cập nhật",
                         style = CareNestTextStyles.bodyMd,
                         color = TextSecondary
                     )
                 }
-                AssistChip(
-                    onClick = {},
-                    label = { Text(statusLabel(booking.status)) }
-                )
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFEFF6FF), RoundedCornerShape(AppRadius.sm))
+                        .padding(horizontal = AppSpacing.sm, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = statusLabel(booking.status),
+                        style = CareNestTextStyles.labelSm,
+                        color = PrimaryBlue
+                    )
+                }
             }
 
             booking.healthProfileName?.takeIf { it.isNotBlank() }?.let { MetaRow("Hồ sơ", it) }

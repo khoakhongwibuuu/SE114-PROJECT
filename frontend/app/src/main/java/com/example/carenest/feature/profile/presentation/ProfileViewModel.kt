@@ -1,5 +1,8 @@
 package com.example.carenest.feature.profile.presentation
 
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -49,7 +52,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             sessionManager.userRoleFlow.collect { role ->
                 _state.update { current ->
-                    current.copy(role = role ?: current.role)
+                    current.copy(role = role?.normalizedRole() ?: current.role)
                 }
             }
         }
@@ -101,12 +104,19 @@ class ProfileViewModel(
             runCatching {
                 withContext(Dispatchers.IO) { authApi.getMe() }
             }.onSuccess { response ->
-                val user = response.body()?.data
-                if (response.isSuccessful && user != null) {
-                    applyUserInfo(user)
+                if (response.isSuccessful) {
+                    runCatching {
+                        response.requireData("Không thể tải thông tin tài khoản")
+                    }.onSuccess { user ->
+                        applyUserInfo(user)
+                    }.onFailure { error ->
+                        _state.update {
+                            it.copy(error = error.localizedMessage ?: "Không thể tải thông tin tài khoản")
+                        }
+                    }
                 } else {
                     _state.update {
-                        it.copy(error = response.body()?.message ?: "Không thể tải thông tin tài khoản")
+                        it.copy(error = response.errorMessage("Không thể tải thông tin tài khoản"))
                     }
                 }
             }.onFailure { error ->
@@ -134,21 +144,34 @@ class ProfileViewModel(
                 )
             }
         }.onSuccess { response ->
-            val user = response.body()?.data
-            if (response.isSuccessful && user != null) {
-                applyUserInfo(user)
-                _state.update {
-                    it.copy(
-                        isSaving = false,
-                        isEditing = false,
-                        successMessage = "Thông tin của bạn đã được cập nhật."
+            if (response.isSuccessful) {
+                runCatching {
+                    response.requireData(
+                        fallback = "Không thể cập nhật thông tin tài khoản",
+                        missingDataMessage = "Không nhận được thông tin tài khoản đã cập nhật"
                     )
+                }.onSuccess { user ->
+                    applyUserInfo(user)
+                    _state.update {
+                        it.copy(
+                            isSaving = false,
+                            isEditing = false,
+                            successMessage = "Thông tin của bạn đã được cập nhật."
+                        )
+                    }
+                }.onFailure { error ->
+                    _state.update {
+                        it.copy(
+                            isSaving = false,
+                            error = error.localizedMessage ?: "Không thể cập nhật thông tin tài khoản"
+                        )
+                    }
                 }
             } else {
                 _state.update {
                     it.copy(
                         isSaving = false,
-                        error = response.body()?.message ?: "Không thể cập nhật thông tin tài khoản"
+                        error = response.errorMessage("Không thể cập nhật thông tin tài khoản")
                     )
                 }
             }
@@ -164,7 +187,7 @@ class ProfileViewModel(
 
     private fun applyUserInfo(user: UserInfo) {
         sessionManager.saveUserIdSync(user.id)
-        sessionManager.saveUserRoleSync(user.role)
+        sessionManager.saveUserRoleSync(user.role.normalizedRole())
         _state.update {
             it.copy(
                 fullName = user.fullName ?: "",
@@ -174,7 +197,7 @@ class ProfileViewModel(
                 age = user.dateOfBirth?.extractAge().orEmpty(),
                 gender = user.gender ?: "OTHER",
                 avatarUri = user.avatarUrl?.let(Uri::parse),
-                role = user.role
+                role = user.role.normalizedRole()
             )
         }
     }
@@ -202,6 +225,8 @@ class ProfileViewModel(
         return (2026 - year).coerceAtLeast(0).toString()
     }
 }
+
+private fun String.normalizedRole(): String = removePrefix("ROLE_").uppercase()
 
 sealed interface ProfileEvent {
     data object EditClicked : ProfileEvent

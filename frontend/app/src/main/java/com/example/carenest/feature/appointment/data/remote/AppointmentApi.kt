@@ -12,8 +12,8 @@ import retrofit2.http.Path
 data class AppointmentResponse(
     @SerializedName("id") val id: Long,
     @SerializedName("healthProfileId") val healthProfileId: Long,
-    @SerializedName("doctorName") val doctorName: String,
-    @SerializedName("hospitalName") val hospitalName: String,
+    @SerializedName("doctorName") val doctorName: String?,
+    @SerializedName("hospitalName") val hospitalName: String?,
     @SerializedName("address") val address: String?,
     @SerializedName("appointmentDate") val appointmentDate: String,
     @SerializedName("status") val status: String,

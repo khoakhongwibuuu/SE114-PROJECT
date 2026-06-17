@@ -122,7 +122,6 @@ fun AdminEkycScreen() {
                                         rejectionReason = ""
                                         showRejectDialog = true
                                     },
-                                    onImageClick = {},
                                 )
                             }
                         }

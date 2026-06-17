@@ -1,5 +1,6 @@
 package com.example.carenest.feature.medical.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +44,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -59,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -86,6 +87,8 @@ fun MedicineScreen(
 ) {
     val cabinetState by viewModel.cabinetState.collectAsState()
     val isActionLoading by viewModel.isActionLoading.collectAsState()
+    val actionMessage by viewModel.actionMessage.collectAsState()
+    val context = LocalContext.current
     var selectedFilter by remember { mutableStateOf(CabinetFilter.ALL) }
     var selectedMedicine by remember { mutableStateOf<CabinetMedicineResponse?>(null) }
     var sheetVisible by remember { mutableStateOf(false) }
@@ -95,6 +98,13 @@ fun MedicineScreen(
 
     LaunchedEffect(refreshTrigger) {
         viewModel.fetchCabinet()
+    }
+
+    LaunchedEffect(actionMessage) {
+        actionMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            viewModel.clearActionMessage()
+        }
     }
 
     // Apply filter on top of cabinet state
@@ -127,7 +137,7 @@ fun MedicineScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item { MedicineHeader() }
+            item { MedicineHeader(alertCount = alertCount) }
 
             if (alertCount > 0) {
                 item {
@@ -157,8 +167,7 @@ fun MedicineScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFCFE5FF))
-                        .clickable(onClick = onOcrClick)
+                        .background(Color(0xFFF1F5F9))
                         .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -173,8 +182,8 @@ fun MedicineScreen(
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Quét toa thuốc", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        Text(text = "Dùng AI để thêm thuốc và lịch uống nhanh hơn", color = PrimaryBlue.copy(alpha = 0.8f), fontSize = 12.sp)
+                        Text(text = "Quét toa thuốc", color = Color(0xFF64748B), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "OCR đang tạm tắt trong MVP, sẽ hoàn thiện ở phase cuối", color = Color(0xFF64748B), fontSize = 12.sp)
                     }
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFBFC7D3))
                 }
@@ -385,16 +394,24 @@ private fun QuickMedicalAction(
 }
 
 @Composable
-private fun MedicineHeader() {
+private fun MedicineHeader(alertCount: Int) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Text(text = "Tủ thuốc gia đình", color = Color(0xFF181C1F), fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Box {
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = Color(0xFF404751))
-            }
             Box(
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 10.dp, end = 10.dp).size(8.dp).clip(CircleShape).background(Color(0xFFBA1A1A))
-            )
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF5F8FC)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Notifications, contentDescription = "Cảnh báo tủ thuốc", tint = Color(0xFF404751))
+            }
+            if (alertCount > 0) {
+                Box(
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp).size(8.dp).clip(CircleShape).background(Color(0xFFBA1A1A))
+                )
+            }
         }
     }
 }

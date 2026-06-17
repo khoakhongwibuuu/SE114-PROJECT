@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -84,7 +83,6 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
-    var googleDialog by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
     val isLoading = authState is AuthState.Loading
@@ -94,19 +92,6 @@ fun LoginScreen(
             onLoginSuccess()
             viewModel.resetState()
         }
-    }
-
-    if (googleDialog) {
-        AlertDialog(
-            onDismissRequest = { googleDialog = false },
-            confirmButton = {
-                TextButton(onClick = { googleDialog = false }) {
-                    Text("Đóng")
-                }
-            },
-            title = { Text("Sắp ra mắt") },
-            text = { Text("Đăng nhập bằng Google sẽ được bổ sung trong phiên bản tiếp theo.") }
-        )
     }
 
     Scaffold(containerColor = LegacyBackground) { paddingValues ->
@@ -233,8 +218,9 @@ fun LoginScreen(
                         DividerRow()
 
                         OutlinePillButton(
-                            text = "Tiếp tục với Google",
-                            onClick = { googleDialog = true },
+                            text = "Google chưa hỗ trợ",
+                            enabled = false,
+                            onClick = {},
                             leading = {
                                 Text(
                                     text = "G",
@@ -384,11 +370,13 @@ internal fun DividerRow() {
 @Composable
 internal fun OutlinePillButton(
     text: String,
+    enabled: Boolean = true,
     onClick: () -> Unit,
     leading: @Composable (() -> Unit)? = null
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         shape = RoundedCornerShape(999.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,

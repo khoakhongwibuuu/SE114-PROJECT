@@ -1,5 +1,7 @@
 package com.example.carenest.feature.family.presentation
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -9,11 +11,13 @@ import com.example.carenest.feature.family.domain.model.FamilyInvitationItem
 import com.example.carenest.feature.family.domain.model.FamilyJoinCodeResponse
 import com.example.carenest.feature.family.domain.model.FamilySummary
 import java.io.File
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class FamilyUiState(
     val isLoading: Boolean = false,
@@ -84,12 +88,26 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
     }
 
     fun createFamily(name: String) {
+        val trimmedName = name.trim()
+        if (trimmedName.length < 2) {
+            _uiState.update { it.copy(error = "Vui lòng nhập tên gia đình tối thiểu 2 ký tự") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, error = null) }
-            val result = repository.createFamily(name)
-            result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "Tạo gia đình thành công") }
+            val result = repository.createFamily(trimmedName)
+            result.onSuccess { family ->
+                repository.saveActiveFamilyId(family.id.toString())
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        activeFamilyId = family.id,
+                        message = "Tạo gia đình thành công"
+                    )
+                }
                 loadFamilies()
+                loadActiveFamilyDetail(family.id)
             }.onFailure { e ->
                 _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
@@ -111,10 +129,21 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
     }
 
     fun inviteMember(email: String, role: String) {
-        val activeFamilyId = _uiState.value.activeFamilyId ?: return
+        val activeFamilyId = _uiState.value.activeFamilyId
+        if (activeFamilyId == null) {
+            _uiState.update { it.copy(error = "Vui lòng chọn gia đình trước khi gửi lời mời") }
+            return
+        }
+
+        val trimmedEmail = email.trim()
+        if (!trimmedEmail.contains("@") || !trimmedEmail.contains(".")) {
+            _uiState.update { it.copy(error = "Email không đúng định dạng") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, error = null) }
-            val result = repository.inviteMember(activeFamilyId, email, role)
+            val result = repository.inviteMember(activeFamilyId, trimmedEmail, role)
             result.onSuccess {
                 _uiState.update { it.copy(isBusy = false, message = "Đã gửi lời mời") }
                 repository.getSentInvitations().onSuccess { list ->
@@ -126,7 +155,7 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
         }
     }
 
-    fun handleInvitation(inviteId: Int, accept: Boolean) {
+    fun handleInvitation(inviteId: Long, accept: Boolean) {
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = if (accept) {
@@ -136,7 +165,12 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             }
 
             result.onSuccess {
-                _uiState.update { it.copy(isBusy = false) }
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        message = if (accept) "Đã chấp nhận lời mời" else "Đã từ chối lời mời"
+                    )
+                }
                 loadInvitations()
                 if (accept) {
                     loadFamilies()
@@ -148,12 +182,27 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
     }
 
     fun joinFamilyByCode(code: String, role: String) {
+        val normalizedCode = code.trim().uppercase()
+        if (normalizedCode.isBlank()) {
+            _uiState.update { it.copy(error = "Vui lòng nhập mã gia đình") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, error = null) }
-            val result = repository.joinFamilyByCode(code, role)
-            result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "Tham gia thành công") }
+            val result = repository.joinFamilyByCode(normalizedCode, role)
+            result.onSuccess { family ->
+                repository.saveActiveFamilyId(family.id.toString())
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        activeFamilyId = family.id,
+                        activeFamily = family,
+                        message = "Tham gia thành công"
+                    )
+                }
                 loadFamilies()
+                loadJoinCode()
             }.onFailure { e ->
                 _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
@@ -164,16 +213,69 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.joinFamilyByQr(file, role)
-            result.onSuccess {
-                _uiState.update { it.copy(isBusy = false, message = "Tham gia bằng QR thành công") }
+            result.onSuccess { family ->
+                repository.saveActiveFamilyId(family.id.toString())
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        activeFamilyId = family.id,
+                        activeFamily = family,
+                        message = "Tham gia bằng QR thành công"
+                    )
+                }
                 loadFamilies()
+                loadJoinCode()
             }.onFailure { e ->
                 _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
         }
     }
 
+    fun joinFamilyByQr(context: Context, uri: Uri, role: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true, error = null) }
+            var tempFile: File? = null
+            try {
+                tempFile = withContext(Dispatchers.IO) {
+                    copyQrImageToCache(context.applicationContext, uri)
+                }
+                val result = repository.joinFamilyByQr(tempFile, role)
+                result.onSuccess { family ->
+                    repository.saveActiveFamilyId(family.id.toString())
+                    _uiState.update {
+                        it.copy(
+                            isBusy = false,
+                            activeFamilyId = family.id,
+                            activeFamily = family,
+                            message = "Tham gia bằng QR thành công"
+                        )
+                    }
+                    loadFamilies()
+                    loadJoinCode()
+                }.onFailure { e ->
+                    _uiState.update { it.copy(isBusy = false, error = e.message) }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        error = e.message ?: "Không thể đọc ảnh QR"
+                    )
+                }
+            } finally {
+                withContext(Dispatchers.IO) {
+                    tempFile?.delete()
+                }
+            }
+        }
+    }
+
     fun loadJoinCode() {
+        if (_uiState.value.activeFamilyId == null) {
+            _uiState.update { it.copy(joinCodeInfo = null) }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.getFamilyJoinCode()
@@ -190,12 +292,28 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
             _uiState.update { it.copy(isBusy = true, error = null) }
             val result = repository.rotateFamilyJoinCode()
             result.onSuccess { codeInfo ->
-                _uiState.update { it.copy(isBusy = false, joinCodeInfo = codeInfo) }
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        joinCodeInfo = codeInfo,
+                        message = "Đã tạo lại mã gia đình"
+                    )
+                }
             }.onFailure { e ->
                 _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
         }
     }
+}
+
+private fun copyQrImageToCache(context: Context, uri: Uri): File {
+    val tempFile = File.createTempFile("family-join-qr-", ".img", context.cacheDir)
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        tempFile.outputStream().use { output ->
+            input.copyTo(output)
+        }
+    } ?: throw IllegalStateException("Không thể đọc ảnh QR")
+    return tempFile
 }
 
 class FamilyViewModelFactory(

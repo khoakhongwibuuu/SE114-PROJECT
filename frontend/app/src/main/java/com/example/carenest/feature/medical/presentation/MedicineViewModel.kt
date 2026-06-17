@@ -1,5 +1,10 @@
 package com.example.carenest.feature.medical.presentation
 
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+import com.example.carenest.core.data.network.requireList
+import com.example.carenest.core.data.network.requireSuccess
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -55,12 +60,6 @@ sealed class ScheduleState {
     object Empty : ScheduleState()
 }
 
-data class ParsedMedicine(
-    val name: String,
-    val dosage: String,
-    val frequency: String,
-    val note: String = ""
-)
 
 // ── MedicineViewModel ──────────────────────────────────────────────────────
 class MedicineViewModel(
@@ -89,6 +88,9 @@ class MedicineViewModel(
     private val _isActionLoading = MutableStateFlow(false)
     val isActionLoading: StateFlow<Boolean> = _isActionLoading.asStateFlow()
 
+    private val _actionMessage = MutableStateFlow<String?>(null)
+    val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
+
     // ── Init ─────────────────────────────────────────────────────────────────
     init {
         viewModelScope.launch {
@@ -112,19 +114,15 @@ class MedicineViewModel(
                 }
                 val response = medicineApi.getCabinet(fid)
                 if (response.isSuccessful) {
-                    val cabinet = response.body()?.data
-                    if (cabinet != null) {
-                        _cabinetState.value = CabinetState.Success(
-                            cabinetId = cabinet.id,
-                            medicines = cabinet.medicines
-                        )
-                    } else {
-                        _cabinetState.value = CabinetState.Success(cabinetId = 0, medicines = emptyList())
-                    }
+                    val cabinet = response.requireData("Không thể tải tủ thuốc")
+                    _cabinetState.value = CabinetState.Success(
+                        cabinetId = cabinet.id,
+                        medicines = cabinet.medicines
+                    )
                 } else if (response.code() == 404) {
                     _cabinetState.value = CabinetState.Success(cabinetId = 0, medicines = emptyList())
                 } else {
-                    _cabinetState.value = CabinetState.Error("Khong the tai tu thuoc")
+                    _cabinetState.value = CabinetState.Error("Không thể tải tủ thuốc")
                 }
             } catch (e: Exception) {
                 _cabinetState.value = CabinetState.Error(e.localizedMessage ?: "Lỗi kết nối")
@@ -163,20 +161,17 @@ class MedicineViewModel(
                     val familyIdLong = fid.toLongOrNull() ?: run {
                         _isActionLoading.value = false
                         withContext(Dispatchers.Main) {
-                            onError("Ma gia dinh khong hop le")
+                            onError("Mã gia đình không hợp lệ")
                         }
                         return@launch
                     }
                     val createResponse = medicineApi.createCabinet(
-                        CreateCabinetRequest(familyId = familyIdLong, name = "Tu thuoc gia dinh")
+                        CreateCabinetRequest(familyId = familyIdLong, name = "Tủ thuốc gia đình")
                     )
-                    cabinetId = createResponse.body()?.data?.id ?: run {
-                        _isActionLoading.value = false
-                        withContext(Dispatchers.Main) {
-                            onError("Không thể tạo tủ thuốc mới")
-                        }
-                        return@launch
-                    }
+                    cabinetId = createResponse.requireData(
+                        fallback = "Không thể tạo tủ thuốc mới",
+                        missingDataMessage = "Không thể tạo tủ thuốc mới"
+                    ).id
                 }
                 val response = medicineApi.addMedicineToCabinet(
                     cabinetId,
@@ -188,12 +183,13 @@ class MedicineViewModel(
                     )
                 )
                 if (response.isSuccessful) {
+                    response.requireData("Thêm thuốc thất bại", "Không nhận được thuốc đã thêm")
                     fetchCabinet()
                     withContext(Dispatchers.Main) {
                         onSuccess()
                     }
                 } else {
-                    val errorMsg = response.body()?.message ?: "Thêm thuốc thất bại"
+                    val errorMsg = response.errorMessage("Thêm thuốc thất bại")
                     withContext(Dispatchers.Main) {
                         onError(errorMsg)
                     }
@@ -214,13 +210,14 @@ class MedicineViewModel(
             _isActionLoading.value = true
             try {
                 val cabinetId = (cabinetState.value as? CabinetState.Success)?.cabinetId ?: return@launch
-                medicineApi.updateCabinetMedicine(
+                val response = medicineApi.updateCabinetMedicine(
                     cabinetId, medicineId,
                     UpdateCabinetMedicineRequest(quantity = newQuantity)
                 )
+                response.requireData("Không thể cập nhật số lượng thuốc")
                 fetchCabinet()
             } catch (e: Exception) {
-                // ignore
+                _actionMessage.value = e.localizedMessage ?: "Không thể cập nhật số lượng thuốc"
             } finally {
                 _isActionLoading.value = false
             }
@@ -231,122 +228,20 @@ class MedicineViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val cabinetId = (cabinetState.value as? CabinetState.Success)?.cabinetId ?: return@launch
-                medicineApi.deleteCabinetMedicine(cabinetId, medicineId)
+                val response = medicineApi.deleteCabinetMedicine(cabinetId, medicineId)
+                response.requireSuccess("Không thể xóa thuốc")
                 fetchCabinet()
             } catch (e: Exception) {
-                // ignore
+                _actionMessage.value = e.localizedMessage ?: "Không thể xóa thuốc"
             }
         }
     }
 
-    fun confirmOcrPrescription(
-        profileId: Long,
-        clinicName: String,
-        doctorName: String,
-        prescriptionDate: String,
-        medicines: List<ParsedMedicine>,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-        viewModelScope.launch(Dispatchers.IO) {
-            _isActionLoading.value = true
-            try {
-                val currentState = _cabinetState.value as? CabinetState.Success ?: run {
-                    _isActionLoading.value = false
-                    withContext(Dispatchers.Main) {
-                        onError("Không thể lấy thông tin tủ thuốc hiện tại")
-                    }
-                    return@launch
-                }
-                var cabinetId = currentState.cabinetId
-                // If cabinet doesn't exist yet, create one
-                if (cabinetId == 0L) {
-                    val fid = secureSessionManager.familyIdFlow.value ?: run {
-                        _isActionLoading.value = false
-                        withContext(Dispatchers.Main) {
-                            onError("Chưa chọn gia đình")
-                        }
-                        return@launch
-                    }
-                    val familyIdLong = fid.toLongOrNull() ?: run {
-                        _isActionLoading.value = false
-                        withContext(Dispatchers.Main) {
-                            onError("Ma gia dinh khong hop le")
-                        }
-                        return@launch
-                    }
-                    val createResponse = medicineApi.createCabinet(
-                        CreateCabinetRequest(familyId = familyIdLong, name = "Tu thuoc gia dinh")
-                    )
-                    cabinetId = createResponse.body()?.data?.id ?: run {
-                        _isActionLoading.value = false
-                        withContext(Dispatchers.Main) {
-                            onError("Không thể tạo tủ thuốc mới")
-                        }
-                        return@launch
-                    }
-                }
-
-                // Add each medicine to the cabinet and create a medication schedule
-                for (med in medicines) {
-                    // 1. Add to cabinet
-                    val qty = 20 // Default value matching RN
-                    medicineApi.addMedicineToCabinet(
-                        cabinetId,
-                        CreateCabinetMedicineRequest(
-                            medicineName = med.name,
-                            quantity = qty,
-                            unit = "viên",
-                            expiryDate = java.time.LocalDate.now().plusMonths(6).toString()
-                        )
-                    )
-
-                    // 2. Create medication schedule
-                    val frequencyVal = med.frequency.toIntOrNull() ?: 2
-                    val startDate = java.time.LocalDate.now().toString()
-                    val endDate = java.time.LocalDate.now().plusDays(6).toString()
-                    
-                    val timeSlots = when (frequencyVal) {
-                        1 -> listOf("08:00")
-                        2 -> listOf("08:00", "20:00")
-                        else -> listOf("08:00", "13:00", "20:00")
-                    }
-
-                    medicineApi.createMedicationSchedule(
-                        profileId,
-                        CreateMedicationScheduleRequest(
-                            medicineName = med.name,
-                            dosage = med.dosage.ifBlank { "1 viên" },
-                            timesPerDay = frequencyVal,
-                            timeSlots = timeSlots,
-                            startDate = startDate,
-                            endDate = endDate,
-                            notes = med.note.ifBlank { "Sau ăn" }
-                        )
-                    )
-                }
-
-                // Refresh states
-                fetchCabinet()
-                fetchTodaySchedule(profileId)
-
-                withContext(Dispatchers.Main) {
-                    onSuccess()
-                }
-            } catch (e: Exception) {
-                val errorMsg = e.localizedMessage ?: "Lỗi kết nối mạng"
-                withContext(Dispatchers.Main) {
-                    onError(errorMsg)
-                }
-            } finally {
-                _isActionLoading.value = false
-            }
-        }
-    }
 
     // ── Filter ────────────────────────────────────────────────────────────────
     fun onSearchQueryChanged(query: String) { _searchQuery.value = query }
     fun onFilterSelected(filter: String) { _selectedFilter.value = filter }
+    fun clearActionMessage() { _actionMessage.value = null }
 
     fun filteredMedicines(): List<CabinetMedicineResponse> {
         val all = (cabinetState.value as? CabinetState.Success)?.medicines ?: return emptyList()
@@ -369,7 +264,7 @@ class MedicineViewModel(
             try {
                 val response = medicineApi.getTodayLogs(profileId)
                 if (response.isSuccessful) {
-                    val logs = response.body()?.data ?: emptyList()
+                    val logs = response.requireList("Không thể tải lịch thuốc")
                     if (logs.isEmpty()) {
                         _scheduleState.value = ScheduleState.Empty
                         return@launch
@@ -409,7 +304,7 @@ class MedicineViewModel(
             if (morning.isNotEmpty()) add(DoseSection("MORNING", "Buổi sáng", morning))
             if (noon.isNotEmpty()) add(DoseSection("NOON", "Buổi trưa", noon))
             if (evening.isNotEmpty()) add(DoseSection("EVENING", "Buổi tối", evening))
-            if (unscheduled.isNotEmpty()) add(DoseSection("UNSCHEDULED", "Chua xac dinh", unscheduled))
+            if (unscheduled.isNotEmpty()) add(DoseSection("UNSCHEDULED", "Chưa xác định", unscheduled))
         }
     }
 
@@ -447,9 +342,10 @@ class MedicineViewModel(
                 takenCount = if (!currentTaken) current.takenCount + 1 else current.takenCount - 1
             )
             try {
-                medicineApi.checkInDose(logId, CheckInRequest(
+                val response = medicineApi.checkInDose(logId, CheckInRequest(
                     status = if (!currentTaken) "TAKEN" else "PENDING"
                 ))
+                response.requireSuccess("Không thể cập nhật trạng thái uống thuốc")
             } catch (e: Exception) {
                 // Revert on failure — re-fetch with the correct active profile id
                 val profileId = secureSessionManager.getActiveProfileId() ?: return@launch
@@ -465,10 +361,10 @@ class MedicineViewModel(
             try {
                 val response = medicineApi.getMedicationSchedules(profileId)
                 if (response.isSuccessful) {
-                    _schedules.value = response.body()?.data?.content ?: emptyList()
+                    _schedules.value = response.requireData("Không thể tải lịch thuốc").content
                 }
             } catch (e: Exception) {
-                // ignore — form data fallback is empty list
+                _actionMessage.value = e.localizedMessage ?: "Không thể tải danh sách lịch thuốc"
             }
         }
     }
@@ -505,13 +401,14 @@ class MedicineViewModel(
                     )
                 )
                 if (response.isSuccessful) {
+                    response.requireData("Không thể tạo lịch thuốc", "Không nhận được lịch thuốc đã tạo")
                     fetchTodaySchedule(profileId)
                     fetchSchedules(profileId)
                     withContext(Dispatchers.Main) {
                         onSuccess()
                     }
                 } else {
-                    val errorMsg = response.body()?.message ?: "Không thể tạo lịch thuốc"
+                    val errorMsg = response.errorMessage("Không thể tạo lịch thuốc")
                     withContext(Dispatchers.Main) {
                         onError(errorMsg)
                     }
@@ -530,7 +427,8 @@ class MedicineViewModel(
     fun deleteSchedule(scheduleId: Long, profileId: Long? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                medicineApi.deleteMedicationSchedule(scheduleId)
+                val deleteResponse = medicineApi.deleteMedicationSchedule(scheduleId)
+                deleteResponse.requireSuccess("Không thể xóa lịch thuốc")
                 val resolvedProfileId = profileId
                     ?: secureSessionManager.getActiveProfileId()
                     ?: secureSessionManager.getProfileId()
@@ -539,7 +437,7 @@ class MedicineViewModel(
                     fetchSchedules(resolvedProfileId)
                 }
             } catch (e: Exception) {
-                // ignore
+                _actionMessage.value = e.localizedMessage ?: "Không thể xóa lịch thuốc"
             }
         }
     }

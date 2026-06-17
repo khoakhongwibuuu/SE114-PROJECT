@@ -1,5 +1,7 @@
 package com.example.carenest.feature.appointment.presentation
 
+import android.widget.Toast
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -74,13 +76,14 @@ fun AppointmentListScreen(
 
     val state by vm.appointmentState.collectAsState()
     var selectedFilter by remember { mutableStateOf(FilterKey.ALL) }
+    val resolvedProfileId = remember(profileId) {
+        profileId.takeIf { it > 0L }
+    }
+    val hasProfile = resolvedProfileId != null && resolvedProfileId > 0L
 
-    LaunchedEffect(profileId) {
-        if (profileId > 0L) {
-            vm.fetchAppointments(profileId)
-        } else {
-            val pid = application.secureSessionManager.getProfileId()
-            if (pid != null) vm.fetchAppointments(pid)
+    LaunchedEffect(resolvedProfileId) {
+        if (hasProfile) {
+            vm.fetchAppointments(resolvedProfileId)
         }
     }
 
@@ -134,7 +137,19 @@ fun AppointmentListScreen(
                 }
             }
 
-            when (val currentState = state) {
+            if (!hasProfile) {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 64.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(56.dp), tint = Color(0xFFCBD5E1))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Chưa chọn hồ sơ sức khỏe", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                        Text("Vui lòng chọn hoặc tạo hồ sơ trước khi xem lịch tái khám.", fontSize = 13.sp, color = Color(0xFF64748B))
+                    }
+                }
+            } else when (val currentState = state) {
                 is AppointmentState.Loading -> item {
                     Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = PrimaryBlue)
@@ -197,7 +212,7 @@ fun AppointmentListScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            val day = if (isUpcoming) (item as AppointmentItem.Upcoming).dayOfMonth else "--"
+                                            val day = if (isUpcoming) item.dayOfMonth else "--"
                                             val month = if (isUpcoming) {
                                                 val m = try {
                                                     java.time.ZonedDateTime.parse(item.appointmentDate).monthValue
@@ -265,8 +280,18 @@ fun AppointmentListScreen(
         }
 
         FloatingActionButton(
-            onClick = onAddAppointment,
-            modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 20.dp),
+            onClick = {
+                if (hasProfile) {
+                    onAddAppointment()
+                } else {
+                    Toast.makeText(context, "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 20.dp, bottom = 20.dp)
+                .then(if (hasProfile) Modifier else Modifier.alpha(0.55f)),
             containerColor = PrimaryBlue,
             contentColor = Color.White,
         ) {

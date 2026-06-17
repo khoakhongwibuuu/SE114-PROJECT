@@ -17,17 +17,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Vaccines
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -54,13 +55,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.notifications.domain.model.NotificationItem
+import java.text.SimpleDateFormat
+import java.util.Locale
+
+enum class NotificationOpenResult {
+    OPENED,
+    CONSUMED,
+    UNHANDLED
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsCenterScreen(
     profileId: Long?,
     viewModel: NotificationsCenterViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenNotification: (NotificationItem) -> NotificationOpenResult = { NotificationOpenResult.UNHANDLED }
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -82,14 +92,27 @@ fun NotificationsCenterScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF1E293B))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Quay lại",
+                            tint = Color(0xFF1E293B)
+                        )
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { viewModel.loadNotifications(profileId) },
+                        enabled = !state.isActionLoading
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Tải lại", tint = PrimaryBlue)
+                    }
                     if (state.unreadCount > 0) {
-                        TextButton(onClick = { viewModel.markAllAsRead() }) {
+                        TextButton(
+                            onClick = { viewModel.markAllAsRead() },
+                            enabled = !state.isActionLoading
+                        ) {
                             Text(
-                                "Đọc tất cả",
+                                if (state.isActionLoading) "Đang xử lý" else "Đọc tất cả",
                                 color = PrimaryBlue,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
@@ -106,101 +129,151 @@ fun NotificationsCenterScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (state.isLoading && state.notifications.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = PrimaryBlue)
+            when {
+                state.isLoading && state.notifications.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = PrimaryBlue)
+                    }
                 }
-            } else if (state.notifications.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        Icons.Default.NotificationsNone,
-                        contentDescription = null,
-                        modifier = Modifier.size(80.dp),
-                        tint = Color(0xFF94A3B8)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Không có thông báo nào",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Chúng tôi sẽ cập nhật khi có tin tức mới cho bạn.",
-                        fontSize = 14.sp,
-                        color = Color(0xFF94A3B8),
-                        textAlign = TextAlign.Center
+
+                state.notifications.isEmpty() -> {
+                    EmptyNotificationState(
+                        error = state.error,
+                        onRetry = { viewModel.loadNotifications(profileId) }
                     )
                 }
-            } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    if (state.unreadCount > 0) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFEFF6FF))
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = null,
-                                tint = PrimaryBlue,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Bạn có ${state.unreadCount} thông báo chưa đọc",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1E40AF)
-                            )
-                        }
-                    }
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 24.dp)
-                    ) {
-                        state.groupedNotifications.forEach { (groupKey, groupItems) ->
-                            val headerTitle = when (groupKey) {
-                                "today" -> "HÔM NAY"
-                                "yesterday" -> "HÔM QUA"
-                                "this_week" -> "TUẦN NÀY"
-                                "older" -> "CŨ HƠN"
-                                else -> groupKey.uppercase()
-                            }
-
-                            item {
-                                Text(
-                                    text = headerTitle,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF64748B),
-                                    letterSpacing = 0.8.sp,
-                                    modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp)
-                                )
-                            }
-
-                            items(groupItems, key = { it.notificationId }) { item ->
-                                NotificationRow(
-                                    item = item,
-                                    onClick = { viewModel.markAsRead(item.notificationId) }
-                                )
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                else -> {
+                    NotificationsList(
+                        state = state,
+                        onNotificationClick = { notification ->
+                            if (!state.isActionLoading) {
+                                val openResult = onOpenNotification(notification)
+                                if (
+                                    openResult != NotificationOpenResult.UNHANDLED &&
+                                    !notification.isRead &&
+                                    notification.id > 0L
+                                ) {
+                                    viewModel.markAsRead(notification.id)
+                                }
                             }
                         }
-                    }
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyNotificationState(
+    error: String?,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = if (error == null) Icons.Default.NotificationsNone else Icons.Default.Info,
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = Color(0xFF94A3B8)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = if (error == null) "Không có thông báo nào" else "Không thể tải thông báo",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF64748B),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = error ?: "CareNest sẽ cập nhật khi có lịch hẹn, lời mời gia đình hoặc nhắc nhở mới.",
+            fontSize = 14.sp,
+            color = Color(0xFF94A3B8),
+            textAlign = TextAlign.Center
+        )
+        if (error != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(onClick = onRetry) {
+                Text("Thử lại", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotificationsList(
+    state: NotificationsUiState,
+    onNotificationClick: (NotificationItem) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        state.error?.let { error ->
+            InlineStatusBanner(message = error, isError = true)
+        }
+        if (state.unreadCount > 0) {
+            InlineStatusBanner(message = "Bạn có ${state.unreadCount} thông báo chưa đọc")
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp)
+        ) {
+            state.groupedNotifications.forEach { (groupKey, groupItems) ->
+                item {
+                    Text(
+                        text = groupTitle(groupKey),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF64748B),
+                        letterSpacing = 0.sp,
+                        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp)
+                    )
+                }
+
+                items(groupItems, key = { it.id }) { item ->
+                    NotificationRow(
+                        item = item,
+                        onClick = { onNotificationClick(item) }
+                    )
+                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InlineStatusBanner(
+    message: String,
+    isError: Boolean = false
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (isError) Color(0xFFFFF1F2) else Color(0xFFEFF6FF))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Default.Info,
+            contentDescription = null,
+            tint = if (isError) Color(0xFFE11D48) else PrimaryBlue,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = message,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (isError) Color(0xFFBE123C) else Color(0xFF1E40AF),
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -265,7 +338,7 @@ fun NotificationRow(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = item.content,
+                text = item.message,
                 fontSize = 13.sp,
                 color = if (item.isRead) Color(0xFF64748B) else Color(0xFF475569),
                 lineHeight = 18.sp,
@@ -274,9 +347,8 @@ fun NotificationRow(
 
             item.createdAt?.let {
                 Spacer(modifier = Modifier.height(6.dp))
-                val displayTime = formatIsoTime(it)
                 Text(
-                    text = displayTime,
+                    text = formatIsoTime(it),
                     fontSize = 11.sp,
                     color = Color(0xFF94A3B8)
                 )
@@ -285,25 +357,29 @@ fun NotificationRow(
     }
 }
 
+private fun groupTitle(groupKey: String): String {
+    return when (groupKey) {
+        "today" -> "HÔM NAY"
+        "yesterday" -> "HÔM QUA"
+        "this_week" -> "TUẦN NÀY"
+        "older" -> "CŨ HƠN"
+        else -> groupKey.uppercase()
+    }
+}
+
 private fun getNotificationStyle(type: String): Triple<ImageVector, Color, Color> {
-    return when (type) {
-        "medicine" -> Triple(Icons.Default.Medication, Color(0xFFE0F2FE), Color(0xFF0EA5E9))
-        "appointment" -> Triple(Icons.Default.CalendarMonth, Color(0xFFD1FAE5), Color(0xFF10B981))
-        "vaccine" -> Triple(Icons.Default.MedicalServices, Color(0xFFF3E8FF), Color(0xFF8B5CF6))
-        "warning" -> Triple(Icons.Default.Warning, Color(0xFFFEE2E2), Color(0xFFEF4444))
-        "ai_insight" -> Triple(Icons.Default.AutoAwesome, Color(0xFFFCE7F3), Color(0xFFEC4899))
+    return when (type.uppercase()) {
+        "MEDICATION" -> Triple(Icons.Default.Medication, Color(0xFFE0F2FE), Color(0xFF0EA5E9))
+        "APPOINTMENT" -> Triple(Icons.Default.CalendarMonth, Color(0xFFD1FAE5), Color(0xFF10B981))
+        "VACCINATION" -> Triple(Icons.Default.Vaccines, Color(0xFFF3E8FF), Color(0xFF8B5CF6))
+        "FAMILY" -> Triple(Icons.Default.Groups, Color(0xFFFFEDD5), Color(0xFFF97316))
+        "CHAT" -> Triple(Icons.AutoMirrored.Filled.Chat, Color(0xFFE0E7FF), Color(0xFF4F46E5))
+        "GROWTH" -> Triple(Icons.Default.MonitorHeart, Color(0xFFFCE7F3), Color(0xFFEC4899))
         else -> Triple(Icons.Default.Notifications, Color(0xFFF1F5F9), Color(0xFF64748B))
     }
 }
 
 private fun formatIsoTime(isoStr: String): String {
-    return try {
-        val inputSdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
-        inputSdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
-        val date = inputSdf.parse(isoStr) ?: return isoStr
-        val outputSdf = java.text.SimpleDateFormat("HH:mm - dd/MM/yyyy", java.util.Locale.getDefault())
-        outputSdf.format(date)
-    } catch (e: Exception) {
-        isoStr
-    }
+    val date = parseIsoDate(isoStr) ?: return isoStr
+    return SimpleDateFormat("HH:mm - dd/MM/yyyy", Locale.getDefault()).format(date)
 }

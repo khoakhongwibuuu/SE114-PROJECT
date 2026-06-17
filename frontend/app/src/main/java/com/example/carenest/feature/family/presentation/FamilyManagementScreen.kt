@@ -2,6 +2,9 @@ package com.example.carenest.feature.family.presentation
 
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.QrCode
@@ -41,6 +45,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -55,6 +60,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -74,6 +82,7 @@ import com.example.carenest.core.presentation.theme.TextSecondary
 import com.example.carenest.feature.family.domain.model.FamilyMemberSummary
 
 val JOIN_ROLE_OPTIONS = listOf(
+    "Thành viên" to "MEMBER",
     "Bố" to "FATHER",
     "Mẹ" to "MOTHER",
     "Anh" to "OLDER_BROTHER",
@@ -93,9 +102,11 @@ fun FamilyManagementScreen(
     val scrollState = rememberScrollState()
     var currentMode by remember { mutableStateOf(mode) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(currentMode, uiState.activeFamilyId) {
         viewModel.loadInvitations()
-        viewModel.loadJoinCode()
+        if (currentMode == null && uiState.activeFamilyId != null) {
+            viewModel.loadJoinCode()
+        }
     }
 
     Scaffold(
@@ -136,6 +147,12 @@ fun FamilyManagementScreen(
                 .verticalScroll(scrollState)
                 .padding(AppSpacing.lg)
         ) {
+            FamilyFeedback(
+                error = uiState.error,
+                message = uiState.message,
+                onDismissError = viewModel::clearError,
+                onDismissMessage = viewModel::clearMessage
+            )
             when (currentMode) {
                 "create" -> CreateFamilyContent(viewModel, onDone = { currentMode = null })
                 "join" -> JoinFamilyContent(viewModel, onDone = { currentMode = null })
@@ -146,8 +163,55 @@ fun FamilyManagementScreen(
 }
 
 @Composable
+private fun FamilyFeedback(
+    error: String?,
+    message: String?,
+    onDismissError: () -> Unit,
+    onDismissMessage: () -> Unit
+) {
+    val text = error ?: message ?: return
+    val isError = error != null
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = AppSpacing.md),
+        shape = RoundedCornerShape(AppRadius.lg),
+        color = if (isError) Color(0xFFFFF1F2) else Color(0xFFF0FDF4)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = AppSpacing.lg, vertical = AppSpacing.md),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = text,
+                style = CareNestTextStyles.bodyMd,
+                color = if (isError) Color(0xFFBE123C) else Color(0xFF15803D),
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = if (isError) onDismissError else onDismissMessage) {
+                Text("Ẩn")
+            }
+        }
+    }
+}
+
+@Composable
 fun CreateFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
+    val uiState by viewModel.uiState.collectAsState()
     var familyName by remember { mutableStateOf("") }
+    val canSubmit = familyName.trim().length >= 2 && !uiState.isBusy
+
+    LaunchedEffect(Unit) {
+        viewModel.clearError()
+        viewModel.clearMessage()
+    }
+
+    LaunchedEffect(uiState.message) {
+        if (uiState.message == "Tạo gia đình thành công") {
+            onDone()
+        }
+    }
 
     Column {
         Text("Tên gia đình", style = CareNestTextStyles.labelMd, color = TextPrimary)
@@ -159,25 +223,54 @@ fun CreateFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
             placeholder = { Text("Ví dụ: Tổ ấm thân thương", style = CareNestTextStyles.bodyMd) },
             shape = RoundedCornerShape(AppRadius.lg)
         )
+        if (familyName.isNotBlank() && familyName.trim().length < 2) {
+            Text(
+                text = "Tên gia đình cần tối thiểu 2 ký tự",
+                style = CareNestTextStyles.bodySm,
+                color = Color(0xFFBE123C),
+                modifier = Modifier.padding(top = AppSpacing.xs)
+            )
+        }
         Spacer(modifier = Modifier.height(AppSpacing.x2))
         Button(
-            onClick = {
-                viewModel.createFamily(familyName)
-                onDone()
-            },
+            onClick = { viewModel.createFamily(familyName) },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-            shape = RoundedCornerShape(AppRadius.lg)
+            shape = RoundedCornerShape(AppRadius.lg),
+            enabled = canSubmit
         ) {
-            Text("Tạo gia đình", style = CareNestTextStyles.labelLg, color = Color.White)
+            Text(
+                if (uiState.isBusy) "Đang tạo..." else "Tạo gia đình",
+                style = CareNestTextStyles.labelLg,
+                color = Color.White
+            )
         }
     }
 }
 
 @Composable
 fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
     var joinCode by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf("MEMBER") }
+    val canSubmit = joinCode.isNotBlank() && !uiState.isBusy
+    val qrPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            viewModel.joinFamilyByQr(context.applicationContext, uri, selectedRole)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.clearError()
+        viewModel.clearMessage()
+    }
+
+    LaunchedEffect(uiState.message) {
+        if (uiState.message == "Tham gia thành công" || uiState.message == "Tham gia bằng QR thành công") {
+            onDone()
+        }
+    }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = PrimaryBlue)
@@ -187,7 +280,7 @@ fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
 
         OutlinedTextField(
             value = joinCode,
-            onValueChange = { joinCode = it },
+            onValueChange = { joinCode = it.filterNot(Char::isWhitespace).uppercase().take(12) },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Nhập mã gia đình", style = CareNestTextStyles.bodyMd) },
             leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
@@ -218,15 +311,17 @@ fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
 
         Spacer(modifier = Modifier.height(AppSpacing.x2))
         Button(
-            onClick = {
-                viewModel.joinFamilyByCode(joinCode, selectedRole)
-                onDone()
-            },
+            onClick = { viewModel.joinFamilyByCode(joinCode, selectedRole) },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-            shape = RoundedCornerShape(AppRadius.lg)
+            shape = RoundedCornerShape(AppRadius.lg),
+            enabled = canSubmit
         ) {
-            Text("Tham gia", style = CareNestTextStyles.labelLg, color = Color.White)
+            Text(
+                if (uiState.isBusy) "Đang tham gia..." else "Tham gia",
+                style = CareNestTextStyles.labelLg,
+                color = Color.White
+            )
         }
 
         Spacer(modifier = Modifier.height(AppSpacing.lg))
@@ -234,22 +329,48 @@ fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
         Spacer(modifier = Modifier.height(AppSpacing.lg))
 
         OutlinedButton(
-            onClick = { },
+            onClick = { qrPicker.launch("image/*") },
+            enabled = !uiState.isBusy,
             modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(AppRadius.lg)
+            shape = RoundedCornerShape(AppRadius.lg),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
         ) {
-            Icon(Icons.Default.QrCode, contentDescription = null, tint = PrimaryBlue)
-            Spacer(modifier = Modifier.width(AppSpacing.sm))
-            Text("Quét mã QR", style = CareNestTextStyles.labelMd, color = PrimaryBlue)
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.QrCode, contentDescription = null)
+                Spacer(modifier = Modifier.width(AppSpacing.sm))
+                Text(
+                    if (uiState.isBusy) "Đang xử lý..." else "Chọn ảnh QR để tham gia",
+                    style = CareNestTextStyles.labelMd
+                )
+            }
         }
     }
 }
 
 @Composable
 fun ManagementContent(viewModel: FamilyViewModel) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val uiState by viewModel.uiState.collectAsState()
     var inviteEmail by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf("MEMBER") }
+    val trimmedInviteEmail = inviteEmail.trim()
+    val inviteEmailInvalid = trimmedInviteEmail.isNotBlank() &&
+            (!trimmedInviteEmail.contains("@") || !trimmedInviteEmail.contains("."))
+    val canInvite = uiState.activeFamilyId != null &&
+            trimmedInviteEmail.isNotBlank() &&
+            !inviteEmailInvalid &&
+            !uiState.isBusy
+
+    LaunchedEffect(uiState.message) {
+        if (uiState.message == "Đã gửi lời mời") {
+            inviteEmail = ""
+        }
+    }
 
     uiState.activeFamily?.let { familyDetail ->
         Text("Thành viên gia đình", style = CareNestTextStyles.titleMd, color = TextPrimary, modifier = Modifier.padding(bottom = AppSpacing.sm))
@@ -257,6 +378,21 @@ fun ManagementContent(viewModel: FamilyViewModel) {
             FamilyMemberRow(member)
         }
         Spacer(modifier = Modifier.height(AppSpacing.x2))
+    } ?: run {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = AppSpacing.x2),
+            shape = RoundedCornerShape(AppRadius.lg),
+            color = SurfaceHigh
+        ) {
+            Text(
+                text = "Chọn hoặc tạo gia đình để quản lý thành viên và mã mời.",
+                style = CareNestTextStyles.bodyMd,
+                color = TextSecondary,
+                modifier = Modifier.padding(AppSpacing.lg)
+            )
+        }
     }
 
     if (uiState.receivedInvitations.isNotEmpty()) {
@@ -305,7 +441,14 @@ fun ManagementContent(viewModel: FamilyViewModel) {
                 placeholder = { Text("vidu@email.com", style = CareNestTextStyles.bodyMd) },
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                shape = RoundedCornerShape(AppRadius.lg)
+                shape = RoundedCornerShape(AppRadius.lg),
+                isError = inviteEmailInvalid,
+                supportingText = {
+                    if (inviteEmailInvalid) {
+                        Text("Email không đúng định dạng")
+                    }
+                },
+                enabled = uiState.activeFamilyId != null && !uiState.isBusy
             )
 
             Spacer(modifier = Modifier.height(AppSpacing.md))
@@ -330,15 +473,17 @@ fun ManagementContent(viewModel: FamilyViewModel) {
 
             Spacer(modifier = Modifier.height(AppSpacing.lg))
             Button(
-                onClick = {
-                    viewModel.inviteMember(inviteEmail, selectedRole)
-                    inviteEmail = ""
-                },
+                onClick = { viewModel.inviteMember(inviteEmail, selectedRole) },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                shape = RoundedCornerShape(AppRadius.lg)
+                shape = RoundedCornerShape(AppRadius.lg),
+                enabled = canInvite
             ) {
-                Text("Gửi lời mời", style = CareNestTextStyles.labelLg, color = Color.White)
+                Text(
+                    if (uiState.isBusy) "Đang gửi..." else "Gửi lời mời",
+                    style = CareNestTextStyles.labelLg,
+                    color = Color.White
+                )
                 Spacer(modifier = Modifier.width(AppSpacing.sm))
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
             }
@@ -372,6 +517,31 @@ fun ManagementContent(viewModel: FamilyViewModel) {
                 ) {
                     Text(codeInfo.joinCode, style = CareNestTextStyles.headlineMd.copy(letterSpacing = 2.sp), color = PrimaryBlue)
                 }
+                OutlinedButton(
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(codeInfo.joinCode))
+                        Toast.makeText(context, "Đã sao chép mã mời", Toast.LENGTH_SHORT).show()
+                    },
+                    enabled = !uiState.isBusy,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = AppSpacing.sm),
+                    shape = RoundedCornerShape(AppRadius.lg)
+                ) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(AppSpacing.sm))
+                    Text("Sao chép mã mời")
+                }
+                OutlinedButton(
+                    onClick = { viewModel.rotateJoinCode() },
+                    enabled = !uiState.isBusy,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = AppSpacing.sm),
+                    shape = RoundedCornerShape(AppRadius.lg)
+                ) {
+                    Text(if (uiState.isBusy) "Đang tạo lại..." else "Tạo lại mã mời")
+                }
             }
         }
     }
@@ -397,7 +567,7 @@ fun ManagementContent(viewModel: FamilyViewModel) {
                 Column {
                     Text(invite.receiverEmail ?: "Người thân", style = CareNestTextStyles.labelMd, color = TextPrimary)
                     Text(
-                        if (invite.status == "PENDING") "Đang chờ xác nhận" else "Đã xử lý",
+                        invitationStatusLabel(invite.status),
                         style = CareNestTextStyles.bodySm,
                         color = TextSecondary
                     )
@@ -423,13 +593,42 @@ fun FamilyMemberRow(member: FamilyMemberSummary) {
                 modifier = Modifier.size(48.dp).clip(CircleShape).background(SurfaceHigh),
                 contentAlignment = Alignment.Center
             ) {
-                Text(member.fullName.take(1).uppercase(), style = CareNestTextStyles.titleLg, color = TextSecondary)
+                Text(
+                    member.fullName.take(1).uppercase().ifBlank { "?" },
+                    style = CareNestTextStyles.titleLg,
+                    color = TextSecondary
+                )
             }
             Spacer(modifier = Modifier.width(AppSpacing.md))
             Column {
                 Text(member.fullName, style = CareNestTextStyles.labelLg.copy(fontSize = 15.sp), color = TextPrimary)
-                Text(member.role, style = CareNestTextStyles.bodySm.copy(fontSize = 13.sp), color = TextSecondary)
+                Text(familyRoleLabel(member.role), style = CareNestTextStyles.bodySm.copy(fontSize = 13.sp), color = TextSecondary)
             }
         }
+    }
+}
+
+private fun familyRoleLabel(role: String?): String {
+    return when (role) {
+        "OWNER" -> "Chủ hộ"
+        "ADMIN" -> "Quản trị viên"
+        "FATHER" -> "Bố"
+        "MOTHER" -> "Mẹ"
+        "OLDER_BROTHER" -> "Anh"
+        "OLDER_SISTER" -> "Chị"
+        "YOUNGER" -> "Em"
+        "OTHER" -> "Khác"
+        "MEMBER" -> "Thành viên"
+        else -> "Thành viên"
+    }
+}
+
+private fun invitationStatusLabel(status: String?): String {
+    return when (status) {
+        "PENDING" -> "Đang chờ xác nhận"
+        "ACCEPTED" -> "Đã chấp nhận"
+        "REJECTED" -> "Đã từ chối"
+        "EXPIRED" -> "Đã hết hạn"
+        else -> "Đã xử lý"
     }
 }

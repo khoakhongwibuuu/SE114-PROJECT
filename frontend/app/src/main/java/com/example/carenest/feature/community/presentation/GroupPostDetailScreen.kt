@@ -196,11 +196,15 @@ fun GroupPostDetailScreen(
                     posts = state.approvedPosts,
                     isLoading = state.isLoading,
                     error = state.error,
-                    canRemovePosts = state.isModerator,
+                    canModerate = state.isModerator,
                     onNavigateToCreatePost = { onNavigateToCreatePost(groupId) },
                     onLikeClick = { viewModel.toggleLike(it) },
                     onCommentClick = { viewModel.openCommentSheet(it) },
                     onDoctorClick = onNavigateToDoctorProfile,
+                    onReportClick = { post ->
+                        reportTarget = post
+                        reportReason = ""
+                    },
                     onDeleteClick = { post -> deleteTarget = post }
                 )
                 GroupPostTab.MY_POSTS -> MyGroupPostsPane(
@@ -210,7 +214,14 @@ fun GroupPostDetailScreen(
                     onNavigateToCreatePost = { onNavigateToCreatePost(groupId) },
                     onLikeClick = { viewModel.toggleLike(it) },
                     onCommentClick = { viewModel.openCommentSheet(it) },
-                    onDoctorClick = onNavigateToDoctorProfile
+                    onDoctorClick = onNavigateToDoctorProfile,
+                    onEditClick = { post ->
+                        editTarget = post
+                        editTitle = post.title ?: post.content.lineSequence().firstOrNull { it.isNotBlank() }.orEmpty()
+                        editContent = post.content
+                        editTags = post.tags.orEmpty()
+                    },
+                    onDeleteClick = { post -> deleteTarget = post }
                 )
                 GroupPostTab.PENDING -> ModerationQueuePane(
                     posts = state.pendingPosts,

@@ -184,9 +184,9 @@ fun CreateGroupPostScreen(
             )
 
             // Error
-            if (error != null) {
+            error?.let { message ->
                 Spacer(modifier = Modifier.height(10.dp))
-                Text(text = error!!, color = Color(0xFFEF4444), fontSize = 13.sp)
+                Text(text = message, color = Color(0xFFEF4444), fontSize = 13.sp)
             }
 
             Spacer(modifier = Modifier.height(28.dp))

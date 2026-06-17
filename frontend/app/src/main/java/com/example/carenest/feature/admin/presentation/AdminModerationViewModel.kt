@@ -100,6 +100,12 @@ class AdminModerationViewModel(
                     ?: throw IllegalStateException("Báo cáo bài viết đang thiếu postId")
                 repository.deletePost(postId)
             }
+
+            AdminContentType.MESSAGE -> {
+                val messageId = report.messageId
+                    ?: throw IllegalStateException("Báo cáo tin nhắn đang thiếu messageId")
+                repository.deleteMessage(messageId)
+            }
         }
     }
 
@@ -108,7 +114,11 @@ class AdminModerationViewModel(
     }
 
     private fun AdminContentType.label(): String {
-        return if (this == AdminContentType.COMMENT) "bình luận" else "bài viết"
+        return when (this) {
+            AdminContentType.COMMENT -> "bình luận"
+            AdminContentType.MESSAGE -> "tin nhắn"
+            AdminContentType.POST -> "bài viết"
+        }
     }
 }
 

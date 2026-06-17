@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,7 +38,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -78,7 +76,6 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var agreed by remember { mutableStateOf(false) }
-    var googleDialog by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
     val isLoading = authState is AuthState.Loading
@@ -88,19 +85,6 @@ fun RegisterScreen(
             onNavigateToLogin()
             viewModel.resetState()
         }
-    }
-
-    if (googleDialog) {
-        AlertDialog(
-            onDismissRequest = { googleDialog = false },
-            confirmButton = {
-                TextButton(onClick = { googleDialog = false }) {
-                    Text("Đóng")
-                }
-            },
-            title = { Text("Sắp ra mắt") },
-            text = { Text("Đăng ký bằng Google sẽ được bổ sung trong phiên bản tiếp theo.") }
-        )
     }
 
     Scaffold(containerColor = LegacyBackground) { paddingValues ->
@@ -258,8 +242,9 @@ fun RegisterScreen(
                     DividerRow()
 
                     OutlinePillButton(
-                        text = "Tiếp tục với Google",
-                        onClick = { googleDialog = true },
+                        text = "Google chưa hỗ trợ",
+                        enabled = false,
+                        onClick = {},
                         leading = {
                             Text(
                                 text = "G",

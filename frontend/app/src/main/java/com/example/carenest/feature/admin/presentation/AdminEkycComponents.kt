@@ -54,8 +54,9 @@ fun PendingVerificationCard(
     item: DoctorVerificationResponse,
     onApprove: () -> Unit,
     onReject: () -> Unit,
-    onImageClick: () -> Unit,
 ) {
+    var showDocumentPreview by remember { mutableStateOf(false) }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(24.dp),
@@ -117,7 +118,9 @@ fun PendingVerificationCard(
                     .height(160.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0xFFF1F5F9))
-                    .clickable { onImageClick() },
+                    .clickable(enabled = !item.documentUrl.isNullOrBlank()) {
+                        showDocumentPreview = true
+                    },
             ) {
                 AsyncImage(
                     model = item.documentUrl,
@@ -173,6 +176,30 @@ fun PendingVerificationCard(
                 }
             }
         }
+    }
+
+    if (showDocumentPreview) {
+        AlertDialog(
+            onDismissRequest = { showDocumentPreview = false },
+            title = { Text("Ảnh chứng chỉ", fontWeight = FontWeight.Bold) },
+            text = {
+                AsyncImage(
+                    model = item.documentUrl,
+                    contentDescription = "Ảnh chứng chỉ bác sĩ",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(420.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFFF8FAFC)),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showDocumentPreview = false }) {
+                    Text("Đóng")
+                }
+            },
+        )
     }
 }
 

@@ -41,6 +41,10 @@ class FamilyChatViewModel(
     private var reconnectAttempt = 0
     private var loadedFamilyId: Long? = null
 
+    companion object {
+        private const val MAX_MESSAGE_LENGTH = 2000
+    }
+
     fun bindFamily(familyId: Long) {
         if (boundFamilyId == familyId && loadedFamilyId == familyId) {
             reconnectAttempt = 0
@@ -74,7 +78,17 @@ class FamilyChatViewModel(
     }
 
     fun onInputChange(value: String) {
-        _uiState.update { it.copy(inputText = value) }
+        val normalized = value.take(MAX_MESSAGE_LENGTH)
+        _uiState.update {
+            it.copy(
+                inputText = normalized,
+                error = if (value.length > MAX_MESSAGE_LENGTH) {
+                    "Tin nhắn không được vượt quá $MAX_MESSAGE_LENGTH ký tự"
+                } else {
+                    null
+                }
+            )
+        }
     }
 
     fun sendMessage() {

@@ -1,5 +1,6 @@
 package com.example.carenest.feature.profile.presentation
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -28,6 +29,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import com.example.carenest.feature.health.domain.model.GrowthChartPointResponse
+import com.example.carenest.feature.health.domain.model.GrowthRecordResponse
+import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +54,7 @@ fun UserMedicalScreen(
 
     LaunchedEffect(profileId) {
         viewModel.loadProfile(profileId)
+        viewModel.loadGrowthData(profileId)
     }
 
     LaunchedEffect(state.successMessage, state.error) {
@@ -118,11 +128,16 @@ fun UserMedicalScreen(
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text("Khẩn cấp", fontWeight = FontWeight.Bold) }
+                        text = { Text("Tăng trưởng", fontWeight = FontWeight.Bold) }
                     )
                     Tab(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
+                        text = { Text("Khẩn cấp", fontWeight = FontWeight.Bold) }
+                    )
+                    Tab(
+                        selected = selectedTab == 3,
+                        onClick = { selectedTab = 3 },
                         text = { Text("Lịch", fontWeight = FontWeight.Bold) }
                     )
                 }
@@ -138,7 +153,12 @@ fun UserMedicalScreen(
                             viewModel = viewModel,
                             profileId = profileId
                         )
-                        1 -> EmergencyTabContent(
+                        1 -> GrowthTabContent(
+                            state = state,
+                            viewModel = viewModel,
+                            profileId = profileId
+                        )
+                        2 -> EmergencyTabContent(
                             state = state,
                             viewModel = viewModel,
                             onDial = { phone ->
@@ -150,7 +170,7 @@ fun UserMedicalScreen(
                                 }
                             }
                         )
-                        2 -> SchedulesTabContent(
+                        3 -> SchedulesTabContent(
                             onNavigateToMedicineSchedule = onNavigateToMedicineSchedule,
                             onNavigateToAppointmentList = onNavigateToAppointmentList,
                             onNavigateToVaccinationTracker = onNavigateToVaccinationTracker
@@ -338,6 +358,374 @@ private fun InfoTabContent(
                 Text("Lưu thông tin hồ sơ", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GrowthTabContent(
+    state: UserMedicalUiState,
+    viewModel: UserMedicalViewModel,
+    profileId: Long
+) {
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
+    val displayFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+
+    fun showDatePicker() {
+        val currentDate = parseIsoDateToDate(state.growthRecordDate) ?: Date()
+        val calendar = Calendar.getInstance().apply { time = currentDate }
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val selectedCalendar = Calendar.getInstance()
+                selectedCalendar.set(year, month, dayOfMonth)
+                viewModel.onGrowthRecordDateChange(selectedCalendar.time.toIsoDateString())
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).apply {
+            datePicker.maxDate = LocalDate.now().toDateAtStartOfDay().time
+        }.show()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(horizontal = 20.dp, vertical = 16.dp)
+    ) {
+        UserMedicalSectionLabel("Ghi nhận chỉ số mới")
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = "Ngày ghi nhận",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF64748B),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFF1F5F9))
+                        .clickable { showDatePicker() }
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = PrimaryBlue)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = parseIsoDateToDate(state.growthRecordDate)?.let(displayFormat::format) ?: "Chọn ngày",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF1E293B)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = state.growthWeight,
+                        onValueChange = { viewModel.onGrowthWeightChange(it) },
+                        label = { Text("Cân nặng (kg)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        leadingIcon = { Icon(Icons.Default.Scale, contentDescription = null, tint = PrimaryBlue) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    OutlinedTextField(
+                        value = state.growthHeight,
+                        onValueChange = { viewModel.onGrowthHeightChange(it) },
+                        label = { Text("Chiều cao (cm)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        leadingIcon = { Icon(Icons.Default.Height, contentDescription = null, tint = PrimaryBlue) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = state.growthHeadCircumference,
+                    onValueChange = { viewModel.onGrowthHeadCircumferenceChange(it) },
+                    label = { Text("Vòng đầu (cm, tùy chọn)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    leadingIcon = { Icon(Icons.Default.MonitorHeart, contentDescription = null, tint = PrimaryBlue) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = state.growthNotes,
+                    onValueChange = { viewModel.onGrowthNotesChange(it) },
+                    label = { Text("Ghi chú") },
+                    placeholder = { Text("Ví dụ: đo buổi sáng, sau ăn 2 giờ...") },
+                    leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null, tint = PrimaryBlue) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    minLines = 2
+                )
+
+                if (state.growthError != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = state.growthError,
+                        color = Color(0xFFB91C1C),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                Button(
+                    onClick = { viewModel.saveGrowthRecord(profileId) },
+                    enabled = !state.isGrowthSaving,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                ) {
+                    if (state.isGrowthSaving) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
+                    } else {
+                        Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Lưu chỉ số", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        UserMedicalSectionLabel("Theo dõi tăng trưởng")
+        when {
+            state.isGrowthLoading -> {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = PrimaryBlue)
+                }
+            }
+            state.growthRecords.isEmpty() -> {
+                GrowthEmptyState(
+                    error = state.growthError,
+                    onRetry = { viewModel.loadGrowthData(profileId) }
+                )
+            }
+            else -> {
+                GrowthTrendPanel(points = state.growthChart)
+                Spacer(modifier = Modifier.height(12.dp))
+                state.growthRecords.forEach { record ->
+                    GrowthRecordCard(record)
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+@Composable
+private fun GrowthEmptyState(
+    error: String?,
+    onRetry: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = if (error == null) Icons.Default.TrendingUp else Icons.Default.ErrorOutline,
+                contentDescription = null,
+                tint = if (error == null) PrimaryBlue else Color(0xFFB91C1C),
+                modifier = Modifier.size(42.dp)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = error ?: "Chưa có chỉ số tăng trưởng",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (error == null) Color(0xFF1E293B) else Color(0xFFB91C1C),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = if (error == null) {
+                    "Thêm lần đo đầu tiên để xem lịch sử cân nặng, chiều cao và BMI."
+                } else {
+                    "Kiểm tra kết nối hoặc thử tải lại dữ liệu."
+                },
+                fontSize = 13.sp,
+                color = Color(0xFF64748B),
+                textAlign = TextAlign.Center
+            )
+            if (error != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(onClick = onRetry, shape = RoundedCornerShape(14.dp)) {
+                    Text("Thử lại", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GrowthTrendPanel(points: List<GrowthChartPointResponse>) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.TrendingUp, contentDescription = null, tint = PrimaryBlue)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Xu hướng", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (points.size < 2) {
+                Text(
+                    "Cần ít nhất 2 lần đo để hiển thị xu hướng thay đổi.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF475569)
+                )
+                return@Column
+            }
+
+            val first = points.first()
+            val latest = points.last()
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                GrowthDeltaTile(
+                    label = "Cân nặng",
+                    value = "${formatSigned(latest.weightKg - first.weightKg)} kg"
+                )
+                GrowthDeltaTile(
+                    label = "Chiều cao",
+                    value = "${formatSigned(latest.heightCm - first.heightCm)} cm"
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                "Từ ${formatDateForDisplay(first.recordDate)} đến ${formatDateForDisplay(latest.recordDate)}",
+                fontSize = 12.sp,
+                color = Color(0xFF64748B)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.GrowthDeltaTile(label: String, value: String) {
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .padding(14.dp)
+    ) {
+        Text(label, fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(value, fontSize = 18.sp, color = Color(0xFF1E293B), fontWeight = FontWeight.ExtraBold)
+    }
+}
+
+@Composable
+private fun GrowthRecordCard(record: GrowthRecordResponse) {
+    val alertColor = if (record.isAnomalous == true) Color(0xFFDC2626) else Color(0xFF16A34A)
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(alertColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (record.isAnomalous == true) Icons.Default.Warning else Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = alertColor
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        formatDateForDisplay(record.recordDate),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B)
+                    )
+                    Text(
+                        if (record.isAnomalous == true) "Cần theo dõi thêm" else "Trong vùng theo dõi ổn định",
+                        fontSize = 12.sp,
+                        color = alertColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                GrowthMetric("Cân nặng", "${record.weightKg.formatOne()} kg")
+                GrowthMetric("Chiều cao", "${record.heightCm.formatOne()} cm")
+                GrowthMetric("BMI", record.bmi?.formatOne() ?: "--")
+            }
+
+            if (record.weightPercentile != null || record.heightPercentile != null || record.notes != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    listOfNotNull(
+                        record.weightPercentile?.let { "Cân nặng/BMI: ${it.formatOne()}%" },
+                        record.heightPercentile?.let { "Chiều cao: ${it.formatOne()}%" },
+                        record.notes?.takeIf { it.isNotBlank() }
+                    ).joinToString(" • "),
+                    fontSize = 12.sp,
+                    color = Color(0xFF64748B)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.GrowthMetric(label: String, value: String) {
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xFFF8FAFC))
+            .padding(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(label, fontSize = 11.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(value, fontSize = 14.sp, color = Color(0xFF1E293B), fontWeight = FontWeight.ExtraBold)
     }
 }
 
@@ -618,3 +1006,22 @@ private fun UserMedicalSectionLabel(text: String) {
         modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
     )
 }
+
+private fun parseIsoDateToDate(value: String?): Date? =
+    value?.let { runCatching { LocalDate.parse(it).toDateAtStartOfDay() }.getOrNull() }
+
+private fun Date.toIsoDateString(): String =
+    toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString()
+
+private fun LocalDate.toDateAtStartOfDay(): Date =
+    Date.from(atStartOfDay(ZoneId.systemDefault()).toInstant())
+
+private fun formatDateForDisplay(value: String): String =
+    runCatching {
+        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(LocalDate.parse(value).toDateAtStartOfDay())
+    }.getOrDefault(value)
+
+private fun Double.formatOne(): String = String.format(Locale.getDefault(), "%.1f", this)
+
+private fun formatSigned(value: Double): String =
+    "${if (value >= 0) "+" else ""}${value.formatOne()}"

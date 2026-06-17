@@ -19,6 +19,7 @@ import kotlinx.coroutines.withContext
 data class ChatUiState(
     val isLoading: Boolean = true,
     val memberCount: Long? = null,
+    val myRole: String? = null,
     val messages: List<ChatMessage> = emptyList(),
     val inputText: String = "",
     val isConnected: Boolean = false,
@@ -154,7 +155,7 @@ class ChatViewModel(
                     repository.loadGroupPreview(groupId)
                 }
             }.onSuccess { preview ->
-                _uiState.update { it.copy(memberCount = preview.memberCount) }
+                _uiState.update { it.copy(memberCount = preview.memberCount, myRole = preview.myRole) }
             }
         }
     }
@@ -265,11 +266,11 @@ class ChatViewModel(
         }
     }
 
-    fun reportPost(postId: Long, reason: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun reportMessage(messageId: Long, reason: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             runCatching {
                 withContext(Dispatchers.IO) {
-                    repository.reportPost(postId, reason)
+                    repository.reportMessage(messageId, reason)
                 }
             }.onSuccess {
                 onSuccess()

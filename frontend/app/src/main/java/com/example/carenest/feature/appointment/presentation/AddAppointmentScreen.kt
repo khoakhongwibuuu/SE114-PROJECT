@@ -83,10 +83,11 @@ fun AddAppointmentScreen(
     var selectedDateTime by remember { mutableStateOf(LocalDateTime.now()) }
 
     val activeProfileId = remember(profileId) {
-        if (profileId > 0L) profileId else application.secureSessionManager.getProfileId() ?: 0L
+        profileId.takeIf { it > 0L }
     }
 
-    val canSubmit = facility.isNotBlank() && doctor.isNotBlank() && !isActionLoading && activeProfileId > 0L
+    val hasActiveProfile = activeProfileId != null && activeProfileId > 0L
+    val canSubmit = facility.isNotBlank() && doctor.isNotBlank() && !isActionLoading && hasActiveProfile
 
     val datePickerDialog = DatePickerDialog(
         context,
@@ -138,11 +139,13 @@ fun AddAppointmentScreen(
             onDateClick = { datePickerDialog.show() },
             onTimeClick = { timePickerDialog.show() },
             canSubmit = canSubmit,
+            hasActiveProfile = hasActiveProfile,
             isActionLoading = isActionLoading,
             onSubmit = {
+                val targetProfileId = activeProfileId ?: return@ScrollViewContent
                 val isoDate = selectedDateTime.atZone(ZoneId.systemDefault()).toInstant().toString()
                 vm.createAppointment(
-                    profileId = activeProfileId,
+                    profileId = targetProfileId,
                     hospitalName = facility,
                     doctorName = doctor,
                     isoDate = isoDate,
@@ -171,6 +174,7 @@ private fun ColumnScope.ScrollViewContent(
     onDateClick: () -> Unit,
     onTimeClick: () -> Unit,
     canSubmit: Boolean,
+    hasActiveProfile: Boolean,
     isActionLoading: Boolean,
     onSubmit: () -> Unit
 ) {
@@ -304,6 +308,15 @@ private fun ColumnScope.ScrollViewContent(
                     focusedBorderColor = PrimaryBlue
                 ),
                 maxLines = 4
+            )
+        }
+
+        if (!hasActiveProfile) {
+            Text(
+                text = "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước khi lưu lịch hẹn.",
+                color = Color(0xFFC62828),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
 

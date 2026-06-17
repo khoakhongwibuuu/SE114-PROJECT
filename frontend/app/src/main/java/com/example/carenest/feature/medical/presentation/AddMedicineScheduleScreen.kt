@@ -41,7 +41,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -61,6 +60,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import androidx.compose.material3.CircularProgressIndicator
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun AddMedicineScheduleScreen(
@@ -93,9 +95,21 @@ fun AddMedicineScheduleScreen(
     }
     var dosage by remember { mutableStateOf("") }
     var frequency by remember { mutableStateOf("2") }
-    var startDate by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
-    var endDate by remember { mutableStateOf(java.time.LocalDate.now().plusDays(6).toString()) }
+    var startDate by remember { mutableStateOf(LocalDate.now().toString()) }
+    var endDate by remember { mutableStateOf(LocalDate.now().plusDays(6).toString()) }
     var notes by remember { mutableStateOf("") }
+    val parsedFrequency = frequency.toIntOrNull()
+    val parsedStartDate = remember(startDate) { runCatching { LocalDate.parse(startDate) }.getOrNull() }
+    val parsedEndDate = remember(endDate) { runCatching { LocalDate.parse(endDate) }.getOrNull() }
+    val validationError = validateMedicationScheduleInput(
+        selectedMemberId = selectedMemberId,
+        selectedMedicineId = selectedMedicineId,
+        dosage = dosage,
+        frequencyValue = parsedFrequency,
+        startDate = parsedStartDate,
+        endDate = parsedEndDate,
+    )
+    val canSubmit = validationError == null && !isActionLoading
 
     Column(
         modifier = Modifier
@@ -226,20 +240,23 @@ fun AddMedicineScheduleScreen(
                 }
             }
 
-            val showDatePicker: (String, (String) -> Unit) -> Unit = { initialDateStr, onDateSelected ->
-                val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                val initialDate = runCatching { java.time.LocalDate.parse(initialDateStr, formatter) }
-                    .getOrElse { java.time.LocalDate.now() }
+            val showDatePicker: (String, LocalDate?, (String) -> Unit) -> Unit = { initialDateStr, minDate, onDateSelected ->
+                val formatter = DateTimeFormatter.ISO_LOCAL_DATE
+                val initialDate = runCatching { LocalDate.parse(initialDateStr, formatter) }
+                    .getOrElse { minDate ?: LocalDate.now() }
                 android.app.DatePickerDialog(
                     context,
                     { _, year, month, dayOfMonth ->
-                        val selected = java.time.LocalDate.of(year, month + 1, dayOfMonth)
+                        val selected = LocalDate.of(year, month + 1, dayOfMonth)
                         onDateSelected(selected.format(formatter))
                     },
                     initialDate.year,
                     initialDate.monthValue - 1,
                     initialDate.dayOfMonth
-                ).show()
+                ).apply {
+                    val minimumDate = minDate ?: LocalDate.now()
+                    datePicker.minDate = minimumDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                }.show()
             }
 
             Card(
@@ -254,17 +271,34 @@ fun AddMedicineScheduleScreen(
                         value = startDate,
                         onValueChange = { startDate = it },
                         leadingIcon = Icons.Default.CalendarToday,
-                        onClick = { showDatePicker(startDate) { startDate = it } }
+                        onClick = {
+                            showDatePicker(startDate, LocalDate.now()) { selected ->
+                                startDate = selected
+                                val selectedDate = LocalDate.parse(selected)
+                                if (parsedEndDate != null && parsedEndDate.isBefore(selectedDate)) {
+                                    endDate = selected
+                                }
+                            }
+                        }
                     )
                     ScheduleInput(
                         label = "NGÀY KẾT THÚC",
                         value = endDate,
                         onValueChange = { endDate = it },
                         leadingIcon = Icons.Default.AccessTime,
-                        onClick = { showDatePicker(endDate) { endDate = it } }
+                        onClick = { showDatePicker(endDate, parsedStartDate ?: LocalDate.now()) { endDate = it } }
                     )
                     ScheduleInput(label = "GHI CHÚ", value = notes, onValueChange = { notes = it }, placeholder = "VD: Uống sau ăn", leadingIcon = Icons.Default.LocalHospital)
                 }
+            }
+            validationError?.let { message ->
+                Text(
+                    text = message,
+                    color = Color(0xFFC62828),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
             }
         }
 
@@ -272,6 +306,10 @@ fun AddMedicineScheduleScreen(
             onClick = {
                 val chosenMemberId = selectedMemberId.toLongOrNull()
                 val chosenMedicine = medicines.find { it.id == selectedMedicineId }
+                if (validationError != null) {
+                    Toast.makeText(context, validationError, Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
                 if (chosenMemberId == null || chosenMedicine == null) {
                     Toast.makeText(context, "Vui lòng chọn thành viên và thuốc", Toast.LENGTH_SHORT).show()
                     return@Button
@@ -280,7 +318,7 @@ fun AddMedicineScheduleScreen(
                     profileId = chosenMemberId,
                     medicineName = chosenMedicine.medicineName,
                     dosage = dosage.ifBlank { "1 viên" },
-                    timesPerDay = frequency.toIntOrNull() ?: 1,
+                    timesPerDay = parsedFrequency ?: 1,
                     startDate = startDate,
                     endDate = endDate,
                     notes = notes,
@@ -293,7 +331,7 @@ fun AddMedicineScheduleScreen(
                     }
                 )
             },
-            enabled = !isActionLoading && selectedMemberId.isNotEmpty() && selectedMedicineId != -1L,
+            enabled = canSubmit,
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
@@ -309,6 +347,39 @@ fun AddMedicineScheduleScreen(
             }
         }
     }
+}
+
+internal fun validateMedicationScheduleInput(
+    selectedMemberId: String,
+    selectedMedicineId: Long,
+    dosage: String,
+    frequencyValue: Int?,
+    startDate: LocalDate?,
+    endDate: LocalDate?,
+    today: LocalDate = LocalDate.now(),
+): String? {
+    if (selectedMemberId.toLongOrNull() == null) {
+        return "Vui lòng chọn thành viên cần uống thuốc."
+    }
+    if (selectedMedicineId <= 0L) {
+        return "Vui lòng chọn thuốc từ tủ thuốc."
+    }
+    if (dosage.isBlank()) {
+        return "Vui lòng nhập liều dùng."
+    }
+    if (frequencyValue == null || frequencyValue !in 1..3) {
+        return "Số lần uống mỗi ngày chỉ hỗ trợ từ 1 đến 3 lần."
+    }
+    if (startDate == null || endDate == null) {
+        return "Ngày bắt đầu và kết thúc phải đúng định dạng."
+    }
+    if (startDate.isBefore(today)) {
+        return "Ngày bắt đầu không được nằm trong quá khứ."
+    }
+    if (endDate.isBefore(startDate)) {
+        return "Ngày kết thúc không được trước ngày bắt đầu."
+    }
+    return null
 }
 
 @Composable

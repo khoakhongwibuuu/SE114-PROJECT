@@ -1,5 +1,8 @@
 package com.example.carenest.feature.social.data.paging
 
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.example.carenest.feature.social.data.remote.SocialApi
@@ -23,11 +26,13 @@ class CommentPagingSource(
                 limit = limit
             )
             if (!response.isSuccessful) {
-                throw IllegalStateException(response.body()?.message ?: "Khong the tai binh luan bai viet")
+                throw IllegalStateException(response.errorMessage("Không thể tải bình luận bài viết"))
             }
 
-            val payload = response.body()?.data
-                ?: throw IllegalStateException("Khong nhan duoc du lieu binh luan bai viet")
+            val payload = response.requireData(
+                fallback = "Không thể tải bình luận bài viết",
+                missingDataMessage = "Không nhận được dữ liệu bình luận bài viết"
+            )
 
             LoadResult.Page(
                 data = payload.items,

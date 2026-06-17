@@ -67,12 +67,13 @@ private val SESSION_CONFIGS = mapOf(
     "EVENING" to SessionConfig(Icons.Default.Bedtime, Color(0xFFEDE7F6), Color(0xFF7B1FA2)),
     "UNSCHEDULED" to SessionConfig(Icons.Default.AccessTime, Color(0xFFF1F5F9), Color(0xFF64748B)),
 )
+private val DEFAULT_SESSION_CONFIG = SessionConfig(Icons.Default.AccessTime, Color(0xFFF1F5F9), Color(0xFF64748B))
 
 private val SESSION_LABELS = mapOf(
     "MORNING" to "Buổi sáng",
     "NOON" to "Buổi trưa",
     "EVENING" to "Buổi tối",
-    "UNSCHEDULED" to "Chua xac dinh",
+    "UNSCHEDULED" to "Chưa xác định",
 )
 
 @Composable
@@ -177,7 +178,7 @@ fun MedicineScheduleScreen(
 
                     // Dose sections
                     state.sections.forEach { section ->
-                        val config = SESSION_CONFIGS[section.session] ?: SESSION_CONFIGS["UNSCHEDULED"]!!
+                        val config = SESSION_CONFIGS[section.session] ?: DEFAULT_SESSION_CONFIG
                         val label = SESSION_LABELS[section.session] ?: section.session
 
                         item {
