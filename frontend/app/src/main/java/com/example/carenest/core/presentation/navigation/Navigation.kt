@@ -584,7 +584,8 @@ fun MainNavigation() {
             } else {
                 com.example.carenest.feature.booking.presentation.patient.PatientBookingCenterScreen(
                     onBack = { backStack.removeLastOrNull() },
-                    onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) }
+                    onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) },
+                    onNavigateToDoctorProfile = { doctorId -> backStack.add(DoctorProfile(doctorId)) }
                 )
             }
         }

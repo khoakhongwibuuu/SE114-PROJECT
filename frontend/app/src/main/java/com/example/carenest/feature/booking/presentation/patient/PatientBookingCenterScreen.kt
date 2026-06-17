@@ -1,8 +1,10 @@
 package com.example.carenest.feature.booking.presentation.patient
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import com.example.carenest.feature.booking.domain.model.BookingRequestType
 import com.example.carenest.feature.booking.domain.model.BookingResponse
 import com.example.carenest.feature.booking.domain.model.BookingStatus
@@ -32,7 +35,8 @@ import com.example.carenest.feature.booking.domain.model.BookingStatus
 @Composable
 fun PatientBookingCenterScreen(
     onBack: () -> Unit,
-    onNavigateToConsultationRoom: (Long) -> Unit
+    onNavigateToConsultationRoom: (Long) -> Unit,
+    onNavigateToDoctorProfile: (Long) -> Unit
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
@@ -85,7 +89,14 @@ fun PatientBookingCenterScreen(
                 uiState.bookings.isEmpty() -> {
                     EmptyBookingHistoryState(
                         modifier = Modifier.align(Alignment.Center),
-                        onFindDoctor = onBack
+                        doctors = uiState.doctors,
+                        onFindDoctor = { doctorId ->
+                            if (doctorId != null) {
+                                onNavigateToDoctorProfile(doctorId)
+                            } else {
+                                onBack()
+                            }
+                        }
                     )
                 }
                 else -> {
@@ -109,7 +120,8 @@ fun PatientBookingCenterScreen(
 @Composable
 private fun EmptyBookingHistoryState(
     modifier: Modifier = Modifier,
-    onFindDoctor: () -> Unit
+    doctors: List<DoctorSummary>,
+    onFindDoctor: (Long?) -> Unit
 ) {
     Column(
         modifier = modifier.padding(horizontal = 24.dp),
@@ -129,11 +141,82 @@ private fun EmptyBookingHistoryState(
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = onFindDoctor,
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+        if (doctors.isNotEmpty()) {
+            Text(
+                text = "Bác sĩ đã xác thực",
+                color = Color(0xFF0F172A),
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                items(doctors.take(5), key = { it.id }) { doctor ->
+                    RecommendedDoctorCard(
+                        doctor = doctor,
+                        onClick = { onFindDoctor(doctor.id) }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedButton(onClick = { onFindDoctor(null) }) {
+                Text("Quay lại")
+            }
+        } else {
+            Button(
+                onClick = { onFindDoctor(null) },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            ) {
+                Text("Quay lại")
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecommendedDoctorCard(
+    doctor: DoctorSummary,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(220.dp)
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Quay lại")
+            Text(
+                text = doctor.fullName,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = Color(0xFF0F172A),
+                maxLines = 1
+            )
+            Text(
+                text = doctor.specialty ?: "Chưa cập nhật chuyên khoa",
+                fontSize = 13.sp,
+                color = PrimaryBlue,
+                maxLines = 1
+            )
+            Text(
+                text = doctor.hospitalName ?: "Chưa cập nhật cơ sở",
+                fontSize = 12.sp,
+                color = Color(0xFF64748B),
+                maxLines = 2
+            )
+            Text(
+                text = "Mở hồ sơ bác sĩ",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF2563EB)
+            )
         }
     }
 }

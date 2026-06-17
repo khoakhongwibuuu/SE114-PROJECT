@@ -3,6 +3,7 @@ package com.example.carenest.feature.booking.presentation.doctorworkspace
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.example.carenest.feature.booking.domain.model.BookingResponse
 import com.example.carenest.feature.booking.domain.model.BookingStatus
@@ -38,7 +39,7 @@ class DoctorWorkspaceViewModel(
                 val deduped = prioritizeDoctorWorkspaceBookings(bookings)
                 _uiState.update { it.copy(isLoading = false, bookings = deduped) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.userMessage("Không thể tải phòng khám số")) }
             }
         }
     }
@@ -92,7 +93,7 @@ class DoctorWorkspaceViewModel(
                 _uiState.update { it.copy(bookings = updatedBookings, busyBookingIds = it.busyBookingIds - id, error = null) }
                 onSuccess()
             } catch (e: Exception) {
-                val message = e.message ?: "Không thể xác nhận lịch"
+                val message = e.userMessage("Không thể xác nhận lịch")
                 _uiState.update { it.copy(error = message, busyBookingIds = it.busyBookingIds - id) }
                 onError(message)
             }
@@ -111,7 +112,7 @@ class DoctorWorkspaceViewModel(
                 _uiState.update { it.copy(bookings = updatedBookings, busyBookingIds = it.busyBookingIds - id, error = null) }
                 onSuccess()
             } catch (e: Exception) {
-                val message = e.message ?: "Có lỗi xảy ra"
+                val message = e.userMessage("Không thể từ chối yêu cầu")
                 _uiState.update { it.copy(error = message, busyBookingIds = it.busyBookingIds - id) }
                 onError(message)
             }
