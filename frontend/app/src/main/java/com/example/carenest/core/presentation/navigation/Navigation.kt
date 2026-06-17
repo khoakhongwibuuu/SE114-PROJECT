@@ -420,9 +420,17 @@ fun MainNavigation() {
           )
         }
         entry<CreateGroupRequest> {
-            com.example.carenest.feature.community.presentation.CreateGroupRequestScreen(
-                onNavigateBack = { backStack.removeLastOrNull() }
-            )
+            val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
+            if (resolvedRole != AppRole.DOCTOR) {
+                LaunchedEffect(resolvedRole) {
+                    Toast.makeText(context, "Chỉ bác sĩ mới có thể gửi yêu cầu tạo hội nhóm.", Toast.LENGTH_SHORT).show()
+                    backStack.removeLastOrNull()
+                }
+            } else {
+                com.example.carenest.feature.community.presentation.CreateGroupRequestScreen(
+                    onNavigateBack = { backStack.removeLastOrNull() }
+                )
+            }
         }
         entry<GroupGovernance> {
             val key = it as GroupGovernance
@@ -433,9 +441,17 @@ fun MainNavigation() {
             )
         }
         entry<AdminGroupRequests> {
-            com.example.carenest.feature.admin.presentation.AdminGroupRequestsScreen(
-                onNavigateBack = { backStack.removeLastOrNull() }
-            )
+            val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
+            if (resolvedRole != AppRole.ADMIN) {
+                LaunchedEffect(resolvedRole) {
+                    Toast.makeText(context, "Chỉ quản trị viên mới có thể duyệt yêu cầu hội nhóm.", Toast.LENGTH_SHORT).show()
+                    backStack.removeLastOrNull()
+                }
+            } else {
+                com.example.carenest.feature.admin.presentation.AdminGroupRequestsScreen(
+                    onNavigateBack = { backStack.removeLastOrNull() }
+                )
+            }
         }
         entry<FamilyChatRoom> {
           val key = it as FamilyChatRoom
@@ -504,10 +520,18 @@ fun MainNavigation() {
             )
         }
         entry<DoctorWorkspace> {
-            com.example.carenest.feature.booking.presentation.doctorworkspace.DoctorWorkspaceScreen(
-                onBack = { backStack.removeLastOrNull() },
-                onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) }
-            )
+            val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
+            if (resolvedRole != AppRole.DOCTOR) {
+                LaunchedEffect(resolvedRole) {
+                    Toast.makeText(context, "Chỉ bác sĩ đã được cấp quyền mới có thể vào phòng khám số.", Toast.LENGTH_SHORT).show()
+                    backStack.removeLastOrNull()
+                }
+            } else {
+                com.example.carenest.feature.booking.presentation.doctorworkspace.DoctorWorkspaceScreen(
+                    onBack = { backStack.removeLastOrNull() },
+                    onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) }
+                )
+            }
         }
         entry<PatientBookingCenter> {
             com.example.carenest.feature.booking.presentation.patient.PatientBookingCenterScreen(
