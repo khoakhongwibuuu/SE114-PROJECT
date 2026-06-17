@@ -351,7 +351,20 @@ fun GroupGovernanceScreen(
                             isLoading = state.memberOperationUserId == member.userId,
                             onPromoteModerator = { viewModel.updateRole(member.userId, "MODERATOR") },
                             onDemoteToMember = { viewModel.updateRole(member.userId, "MEMBER") },
-                            onPromoteHost = { viewModel.updateRole(member.userId, "HOST") },
+                            onPromoteHost = {
+                                val isHostTransfer = state.currentGroupRole == "HOST" && !state.isAdmin
+                                pendingAction = GovernanceAction(
+                                    title = if (isHostTransfer) "Chuyển quyền trưởng nhóm" else "Đặt làm trưởng nhóm",
+                                    body = if (isHostTransfer) {
+                                        "Sau khi xác nhận, ${member.name} sẽ trở thành trưởng nhóm mới và bạn sẽ trở về vai trò thành viên."
+                                    } else {
+                                        "${member.name} sẽ trở thành trưởng nhóm của hội nhóm này."
+                                    },
+                                    confirmLabel = if (isHostTransfer) "Chuyển quyền" else "Xác nhận",
+                                    confirmColor = PrimaryBlue,
+                                    onConfirm = { viewModel.updateRole(member.userId, "HOST") }
+                                )
+                            },
                             onKick = {
                                 pendingAction = GovernanceAction(
                                     title = "Mời rời nhóm",
@@ -652,6 +665,15 @@ private fun MemberItem(
                                 }
                             )
                         } else if (canHostManage) {
+                            if (member.role != "HOST") {
+                                DropdownMenuItem(
+                                    text = { Text("Chuyển quyền trưởng nhóm") },
+                                    onClick = {
+                                        showMenu = false
+                                        onPromoteHost()
+                                    }
+                                )
+                            }
                             if (member.role == "MEMBER") {
                                 DropdownMenuItem(
                                     text = { Text("Bổ nhiệm điều phối viên") },

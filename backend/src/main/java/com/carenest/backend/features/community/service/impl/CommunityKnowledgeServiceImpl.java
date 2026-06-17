@@ -550,16 +550,26 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         ChatGroup group = getChatGroupOrThrow(groupId);
         ensureCanManageGroupMembers(group, currentUser);
 
+        UserGroupMembership actorMembership = membershipRepository.findByGroupIdAndUserId(groupId, currentUser.getId())
+                .orElse(null);
         UserGroupMembership targetMembership = membershipRepository.findByGroupIdAndUserId(groupId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("UserGroupMembership", "targetUserId", targetUserId.toString()));
         GroupRole previousRole = targetMembership.getGroupRole();
         GroupRole targetRole = parseGroupRole(request.getRole());
         boolean isSystemAdmin = currentUser.getRole() == Role.ADMIN;
+        boolean isActorHost = actorMembership != null && actorMembership.getGroupRole() == GroupRole.HOST;
+        boolean isHostTransferByHost = !isSystemAdmin
+                && isActorHost
+                && !currentUser.getId().equals(targetUserId)
+                && targetRole == GroupRole.HOST
+                && previousRole != GroupRole.HOST;
 
         if (currentUser.getId().equals(targetUserId) && targetMembership.getGroupRole() == GroupRole.HOST && targetRole != GroupRole.HOST) {
             throw new BadRequestException("Host không thể tự hạ quyền của chính mình");
         }
-        if ((targetMembership.getGroupRole() == GroupRole.HOST || targetRole == GroupRole.HOST) && !isSystemAdmin) {
+        if ((targetMembership.getGroupRole() == GroupRole.HOST || targetRole == GroupRole.HOST)
+                && !isSystemAdmin
+                && !isHostTransferByHost) {
             throw new AccessDeniedException("Chỉ Admin hệ thống mới có quyền thay đổi vai trò Host");
         }
 
@@ -570,6 +580,10 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
         targetMembership.setGroupRole(targetRole);
         UserGroupMembership savedMembership = membershipRepository.save(targetMembership);
+        if (isHostTransferByHost && actorMembership != null) {
+            actorMembership.setGroupRole(GroupRole.MEMBER);
+            membershipRepository.save(actorMembership);
+        }
         if (isSystemAdmin && previousRole != targetRole) {
             saveGovernanceAudit(group, currentUser, targetMembership.getUser(), GroupGovernanceAuditAction.ADMIN_ROLE_OVERRIDE, previousRole, targetRole, null);
         }
