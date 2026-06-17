@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.ekyc.data.repository.EkycRepository
 import com.example.carenest.feature.ekyc.domain.model.DoctorVerificationResponse
 import com.example.carenest.feature.ekyc.domain.model.VerificationStatus
@@ -26,7 +27,7 @@ data class EkycUiState(
     val selectedCertificateUri: Uri? = null,
     val uploadedDocumentUrl: String? = null,
     val error: String? = null,
-    val message: String? = null
+    val message: String? = null,
 ) {
     val status: VerificationStatus? = verification?.status
     val isLocked: Boolean = status == VerificationStatus.PENDING || status == VerificationStatus.APPROVED || isSubmitting
@@ -39,7 +40,7 @@ data class EkycUiState(
 }
 
 class EkycViewModel(
-    private val repository: EkycRepository
+    private val repository: EkycRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EkycUiState())
     val uiState: StateFlow<EkycUiState> = _uiState.asStateFlow()
@@ -62,12 +63,12 @@ class EkycViewModel(
                         certificationNumber = verification?.certificationNumber.orEmpty(),
                         specialty = verification?.specialty.orEmpty(),
                         hospitalName = verification?.hospitalName.orEmpty(),
-                        uploadedDocumentUrl = verification?.documentUrl
+                        uploadedDocumentUrl = verification?.documentUrl,
                     )
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.localizedMessage ?: "Không thể tải trạng thái hồ sơ")
+                    it.copy(isLoading = false, error = e.userMessage("Không thể tải trạng thái hồ sơ"))
                 }
             }
         }
@@ -91,7 +92,7 @@ class EkycViewModel(
                 selectedCertificateUri = uri,
                 uploadedDocumentUrl = if (uri == null) it.uploadedDocumentUrl else null,
                 error = null,
-                message = null
+                message = null,
             )
         }
     }
@@ -119,7 +120,7 @@ class EkycViewModel(
                         certificationNumber = snapshot.certificationNumber.trim(),
                         specialty = snapshot.specialty.trim(),
                         hospitalName = snapshot.hospitalName.trim(),
-                        documentUrl = documentUrl
+                        documentUrl = documentUrl,
                     )
                 }
 
@@ -129,7 +130,7 @@ class EkycViewModel(
                         verification = verification,
                         selectedCertificateUri = null,
                         uploadedDocumentUrl = verification.documentUrl,
-                        message = "Hồ sơ của bạn đã được gửi và đang chờ Admin duyệt"
+                        message = "Hồ sơ của bạn đã được gửi và đang chờ admin duyệt",
                     )
                 }
             } catch (e: Exception) {
@@ -137,7 +138,7 @@ class EkycViewModel(
                     it.copy(
                         isSubmitting = false,
                         message = null,
-                        error = e.localizedMessage ?: "Không thể gửi hồ sơ xác thực bác sĩ"
+                        error = e.userMessage("Không thể gửi hồ sơ xác thực bác sĩ"),
                     )
                 }
             }
@@ -146,7 +147,7 @@ class EkycViewModel(
 }
 
 class EkycViewModelFactory(
-    private val repository: EkycRepository
+    private val repository: EkycRepository,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(EkycViewModel::class.java)) {
