@@ -56,6 +56,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.community.data.repository.CommunityRepository
@@ -126,7 +127,7 @@ class GroupGovernanceViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.localizedMessage ?: "Không thể tải dữ liệu quản trị nhóm"
+                        error = e.userMessage("Không thể tải dữ liệu quản trị nhóm")
                     )
                 }
             }
@@ -144,7 +145,7 @@ class GroupGovernanceViewModel(
                 _uiState.update {
                     it.copy(
                         memberOperationUserId = null,
-                        error = e.localizedMessage ?: "Không thể cập nhật vai trò thành viên"
+                        error = e.userMessage("Không thể cập nhật vai trò thành viên")
                     )
                 }
             }
@@ -176,7 +177,7 @@ class GroupGovernanceViewModel(
                 _uiState.update {
                     it.copy(
                         isFreezeUpdating = false,
-                        error = e.localizedMessage ?: "Không thể thay đổi trạng thái nhóm"
+                        error = e.userMessage("Không thể thay đổi trạng thái nhóm")
                     )
                 }
             }
@@ -194,7 +195,7 @@ class GroupGovernanceViewModel(
                 _uiState.update {
                     it.copy(
                         memberOperationUserId = null,
-                        error = e.localizedMessage ?: "Không thể mời thành viên rời nhóm"
+                        error = e.userMessage("Không thể mời thành viên rời nhóm")
                     )
                 }
             }

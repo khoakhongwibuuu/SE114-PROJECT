@@ -3,6 +3,7 @@ package com.example.carenest.feature.chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.chat.domain.model.ChatGroup
 import com.example.carenest.feature.chat.domain.model.ChatGroupPreview
 import com.example.carenest.feature.community.data.repository.CommunityRepository
@@ -24,12 +25,12 @@ data class ChatGroupDirectoryUiState(
     val hasBlockingError: Boolean = false,
     val joiningGroupId: Long? = null,
     val previewGroup: ChatGroupPreview? = null,
-    val isPreviewLoading: Boolean = false
+    val isPreviewLoading: Boolean = false,
 )
 
 @OptIn(FlowPreview::class)
 class ChatGroupDirectoryViewModel(
-    private val repository: CommunityRepository
+    private val repository: CommunityRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatGroupDirectoryUiState())
     val uiState: StateFlow<ChatGroupDirectoryUiState> = _uiState.asStateFlow()
@@ -58,7 +59,7 @@ class ChatGroupDirectoryViewModel(
                 isPreviewLoading = true,
                 error = null,
                 hasBlockingError = false,
-                previewGroup = null
+                previewGroup = null,
             )
             try {
                 val preview = withContext(Dispatchers.IO) {
@@ -66,12 +67,12 @@ class ChatGroupDirectoryViewModel(
                 }
                 _uiState.value = _uiState.value.copy(
                     isPreviewLoading = false,
-                    previewGroup = preview
+                    previewGroup = preview,
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isPreviewLoading = false,
-                    error = e.localizedMessage ?: "Không thể tải chi tiết nhóm"
+                    error = e.userMessage("Không thể tải chi tiết nhóm"),
                 )
             }
         }
@@ -95,12 +96,12 @@ class ChatGroupDirectoryViewModel(
                 val joinedGroup = group.copy(
                     joined = true,
                     memberCount = preview.memberCount,
-                    latestMessage = group.latestMessage ?: "Nhóm vừa được tạo"
+                    latestMessage = group.latestMessage ?: "Nhóm vừa được tạo",
                 )
                 _uiState.value = _uiState.value.copy(
                     joiningGroupId = null,
                     myGroups = listOf(joinedGroup) + _uiState.value.myGroups.filterNot { it.id == group.id },
-                    discoverGroups = _uiState.value.discoverGroups.filterNot { it.id == group.id }
+                    discoverGroups = _uiState.value.discoverGroups.filterNot { it.id == group.id },
                 )
                 onSuccess(joinedGroup)
                 if (!preview.joined) {
@@ -109,7 +110,7 @@ class ChatGroupDirectoryViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     joiningGroupId = null,
-                    error = e.localizedMessage ?: "Không thể tham gia nhóm"
+                    error = e.userMessage("Không thể tham gia nhóm"),
                 )
             }
         }
@@ -133,19 +134,19 @@ class ChatGroupDirectoryViewModel(
                     leadDoctorName = preview.leadDoctorName,
                     joined = true,
                     latestMessage = "Nhóm vừa được tạo",
-                    latestActivityAt = null
+                    latestActivityAt = null,
                 )
                 _uiState.value = _uiState.value.copy(
                     joiningGroupId = null,
                     previewGroup = updatedPreview,
                     myGroups = listOf(joinedGroup) + _uiState.value.myGroups.filterNot { it.id == preview.id },
-                    discoverGroups = discoverList
+                    discoverGroups = discoverList,
                 )
                 onSuccess(joinedGroup)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     joiningGroupId = null,
-                    error = e.localizedMessage ?: "Không thể tham gia nhóm"
+                    error = e.userMessage("Không thể tham gia nhóm"),
                 )
             }
         }
@@ -156,7 +157,7 @@ class ChatGroupDirectoryViewModel(
         _uiState.value = currentState.copy(
             isLoading = true,
             error = null,
-            hasBlockingError = false
+            hasBlockingError = false,
         )
         try {
             val query = search.ifBlank { null }
@@ -171,21 +172,21 @@ class ChatGroupDirectoryViewModel(
                 myGroups = mine,
                 discoverGroups = discover,
                 error = null,
-                hasBlockingError = false
+                hasBlockingError = false,
             )
         } catch (e: Exception) {
             val hadPreviousData = currentState.myGroups.isNotEmpty() || currentState.discoverGroups.isNotEmpty()
             _uiState.value = currentState.copy(
                 isLoading = false,
-                error = e.localizedMessage ?: "Không thể tải danh sách hội nhóm",
-                hasBlockingError = !hadPreviousData
+                error = e.userMessage("Không thể tải danh sách hội nhóm"),
+                hasBlockingError = !hadPreviousData,
             )
         }
     }
 }
 
 class ChatGroupDirectoryViewModelFactory(
-    private val repository: CommunityRepository
+    private val repository: CommunityRepository,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ChatGroupDirectoryViewModel::class.java)) {

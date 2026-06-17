@@ -189,11 +189,11 @@ fun MyGroupPostsPane(
                                 horizontalArrangement = Arrangement.End
                             ) {
                                 TextButton(onClick = { onEditClick(post) }) {
-                                    Text("Chinh sua", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                                    Text("Chỉnh sửa", color = PrimaryBlue, fontWeight = FontWeight.Bold)
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 TextButton(onClick = { onDeleteClick(post) }) {
-                                    Text("Xoa", color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
+                                    Text("Xóa", color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

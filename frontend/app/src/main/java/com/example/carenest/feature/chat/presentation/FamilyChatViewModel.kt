@@ -3,6 +3,7 @@ package com.example.carenest.feature.chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.chat.data.repository.ChatRepositoryEvent
 import com.example.carenest.feature.chat.data.repository.FamilyChatRepository
 import com.example.carenest.feature.chat.domain.model.ChatMessage
@@ -119,8 +120,7 @@ class FamilyChatViewModel(
                     isSending = false,
                     messages = current.messages.filterNot { it.id == optimistic.id },
                     inputText = content,
-                    error = throwable.localizedMessage
-                        ?: "Kh\u00f4ng th\u1ec3 g\u1eedi tin nh\u1eafn gia \u0111\u00ecnh. Vui l\u00f2ng th\u1eed l\u1ea1i.",
+                    error = throwable.userMessage("Kh\u00f4ng th\u1ec3 g\u1eedi tin nh\u1eafn gia \u0111\u00ecnh. Vui l\u00f2ng th\u1eed l\u1ea1i."),
                 )
             }
         }
@@ -176,8 +176,7 @@ class FamilyChatViewModel(
                     current.copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        error = throwable.localizedMessage
-                            ?: "Kh\u00f4ng th\u1ec3 t\u1ea3i l\u1ecbch s\u1eed tr\u00f2 chuy\u1ec7n gia \u0111\u00ecnh.",
+                        error = throwable.userMessage("Kh\u00f4ng th\u1ec3 t\u1ea3i l\u1ecbch s\u1eed tr\u00f2 chuy\u1ec7n gia \u0111\u00ecnh."),
                     )
                 }
             }
