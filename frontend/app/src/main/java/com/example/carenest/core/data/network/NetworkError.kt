@@ -6,7 +6,7 @@ import retrofit2.Response
 
 fun <T> Response<ApiResponse<T>>.requireData(
     fallback: String,
-    missingDataMessage: String = "Thiếu dữ liệu phản hồi"
+    missingDataMessage: String = "Thiếu dữ liệu phản hồi",
 ): T {
     if (!isSuccessful) {
         throw IllegalStateException(errorMessage(fallback))
@@ -30,7 +30,7 @@ fun <T> Response<ApiResponse<T>>.requireSuccess(fallback: String) {
 
 fun <T> ApiResponse<T>?.requireData(
     fallback: String,
-    missingDataMessage: String = "Thiếu dữ liệu phản hồi"
+    missingDataMessage: String = "Thiếu dữ liệu phản hồi",
 ): T {
     val envelope = this ?: throw IllegalStateException(fallback)
     if (!envelope.success) {
@@ -100,7 +100,7 @@ private fun parseErrorMessage(rawError: String?): String? {
         sequenceOf(
             json.optString("message"),
             json.optString("error"),
-            json.optString("detail")
+            json.optString("detail"),
         ).firstOrNull { it.isNotBlank() }
     }.getOrNull()
 }

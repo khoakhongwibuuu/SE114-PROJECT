@@ -1,12 +1,12 @@
 package com.example.carenest.feature.profile.presentation
 
-import com.example.carenest.core.data.network.errorMessage
-import com.example.carenest.core.data.network.requireData
-
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.feature.auth.domain.model.UpdateCurrentUserRequest
@@ -37,13 +37,13 @@ data class ProfileState(
     val role: String = "USER",
     val memberRole: String = "Chủ gia đình",
     val error: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
 )
 
 class ProfileViewModel(
     private val authApi: AuthApi,
     private val sessionManager: SecureSessionManager,
-    private val repository: FamilyRepository
+    private val repository: FamilyRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProfileState())
     val state = _state.asStateFlow()
@@ -90,7 +90,7 @@ class ProfileViewModel(
                     it.copy(
                         isUploadingAvatar = false,
                         avatarUri = event.uri,
-                        successMessage = "Ảnh đại diện đã được cập nhật."
+                        successMessage = "Ảnh đại diện đã được cập nhật.",
                     )
                 }
             }
@@ -111,7 +111,7 @@ class ProfileViewModel(
                         applyUserInfo(user)
                     }.onFailure { error ->
                         _state.update {
-                            it.copy(error = error.localizedMessage ?: "Không thể tải thông tin tài khoản")
+                            it.copy(error = error.userMessage("Không thể tải thông tin tài khoản"))
                         }
                     }
                 } else {
@@ -121,7 +121,7 @@ class ProfileViewModel(
                 }
             }.onFailure { error ->
                 _state.update {
-                    it.copy(error = error.localizedMessage ?: "Không thể tải thông tin tài khoản")
+                    it.copy(error = error.userMessage("Không thể tải thông tin tài khoản"))
                 }
             }
         }
@@ -139,8 +139,8 @@ class ProfileViewModel(
                         phone = current.phone.ifBlank { null },
                         dateOfBirth = current.birthday.toApiDateOrNull(),
                         gender = current.gender.takeIf { it.isNotBlank() },
-                        avatarUrl = current.avatarUri?.toString()
-                    )
+                        avatarUrl = current.avatarUri?.toString(),
+                    ),
                 )
             }
         }.onSuccess { response ->
@@ -148,7 +148,7 @@ class ProfileViewModel(
                 runCatching {
                     response.requireData(
                         fallback = "Không thể cập nhật thông tin tài khoản",
-                        missingDataMessage = "Không nhận được thông tin tài khoản đã cập nhật"
+                        missingDataMessage = "Không nhận được thông tin tài khoản đã cập nhật",
                     )
                 }.onSuccess { user ->
                     applyUserInfo(user)
@@ -156,14 +156,14 @@ class ProfileViewModel(
                         it.copy(
                             isSaving = false,
                             isEditing = false,
-                            successMessage = "Thông tin của bạn đã được cập nhật."
+                            successMessage = "Thông tin của bạn đã được cập nhật.",
                         )
                     }
                 }.onFailure { error ->
                     _state.update {
                         it.copy(
                             isSaving = false,
-                            error = error.localizedMessage ?: "Không thể cập nhật thông tin tài khoản"
+                            error = error.userMessage("Không thể cập nhật thông tin tài khoản"),
                         )
                     }
                 }
@@ -171,7 +171,7 @@ class ProfileViewModel(
                 _state.update {
                     it.copy(
                         isSaving = false,
-                        error = response.errorMessage("Không thể cập nhật thông tin tài khoản")
+                        error = response.errorMessage("Không thể cập nhật thông tin tài khoản"),
                     )
                 }
             }
@@ -179,7 +179,7 @@ class ProfileViewModel(
             _state.update {
                 it.copy(
                     isSaving = false,
-                    error = error.localizedMessage ?: "Không thể cập nhật thông tin tài khoản"
+                    error = error.userMessage("Không thể cập nhật thông tin tài khoản"),
                 )
             }
         }
@@ -197,7 +197,7 @@ class ProfileViewModel(
                 age = user.dateOfBirth?.extractAge().orEmpty(),
                 gender = user.gender ?: "OTHER",
                 avatarUri = user.avatarUrl?.let(Uri::parse),
-                role = user.role.normalizedRole()
+                role = user.role.normalizedRole(),
             )
         }
     }
@@ -247,7 +247,7 @@ sealed interface ProfileEvent {
 class ProfileViewModelFactory(
     private val authApi: AuthApi,
     private val sessionManager: SecureSessionManager,
-    private val repository: FamilyRepository
+    private val repository: FamilyRepository,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {

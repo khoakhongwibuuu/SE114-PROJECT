@@ -6,9 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireSuccess
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.data.storage.SecureSessionManager
-import com.example.carenest.feature.auth.domain.model.AppRole
 import com.example.carenest.feature.auth.data.remote.AuthApi
+import com.example.carenest.feature.auth.domain.model.AppRole
 import com.example.carenest.feature.auth.domain.model.ForgotPasswordRequest
 import com.example.carenest.feature.auth.domain.model.LoginRequest
 import com.example.carenest.feature.auth.domain.model.RegisterRequest
@@ -38,7 +39,7 @@ sealed class ForgotPasswordState {
 
 class AuthViewModel(
     private val authApi: AuthApi,
-    private val secureSessionManager: SecureSessionManager
+    private val secureSessionManager: SecureSessionManager,
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -73,7 +74,7 @@ class AuthViewModel(
                     runCatching {
                         val auth = envelope.requireData(
                             fallback = "Đăng nhập thất bại",
-                            missingDataMessage = "Không nhận được dữ liệu đăng nhập"
+                            missingDataMessage = "Không nhận được dữ liệu đăng nhập",
                         )
                         withContext(Dispatchers.IO) {
                             secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
@@ -82,13 +83,13 @@ class AuthViewModel(
                         }
                         _authState.value = AuthState.Success(envelope?.message ?: "Đăng nhập thành công")
                     }.onFailure { error ->
-                        _authState.value = AuthState.Error(error.localizedMessage ?: "Đăng nhập thất bại")
+                        _authState.value = AuthState.Error(error.userMessage("Đăng nhập thất bại"))
                     }
                 } else {
                     _authState.value = AuthState.Error(response.errorMessage("Đăng nhập thất bại"))
                 }
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
+                _authState.value = AuthState.Error(e.userMessage("Lỗi kết nối"))
             }
         }
     }
@@ -105,7 +106,7 @@ class AuthViewModel(
                 if (response.isSuccessful) {
                     runCatching { envelope.requireSuccess("Đăng ký thất bại") }
                         .onFailure { error ->
-                            _authState.value = AuthState.Error(error.localizedMessage ?: "Đăng ký thất bại")
+                            _authState.value = AuthState.Error(error.userMessage("Đăng ký thất bại"))
                             return@launch
                         }
                     if (auth != null) {
@@ -120,7 +121,7 @@ class AuthViewModel(
                     _authState.value = AuthState.Error(response.errorMessage("Đăng ký thất bại"))
                 }
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
+                _authState.value = AuthState.Error(e.userMessage("Lỗi kết nối"))
             }
         }
     }
@@ -137,11 +138,11 @@ class AuthViewModel(
                     _forgotPasswordState.value = ForgotPasswordState.OtpSent()
                 } else {
                     _forgotPasswordState.value = ForgotPasswordState.EmailError(
-                        response.errorMessage("Gửi mã thất bại")
+                        response.errorMessage("Gửi mã thất bại"),
                     )
                 }
             } catch (e: Exception) {
-                _forgotPasswordState.value = ForgotPasswordState.EmailError(e.localizedMessage ?: "Lỗi kết nối")
+                _forgotPasswordState.value = ForgotPasswordState.EmailError(e.userMessage("Lỗi kết nối"))
             }
         }
     }
@@ -158,11 +159,11 @@ class AuthViewModel(
                     _forgotPasswordState.value = ForgotPasswordState.ResetSuccess
                 } else {
                     _forgotPasswordState.value = ForgotPasswordState.OtpSent(
-                        error = response.errorMessage("Đặt lại mật khẩu thất bại")
+                        error = response.errorMessage("Đặt lại mật khẩu thất bại"),
                     )
                 }
             } catch (e: Exception) {
-                _forgotPasswordState.value = ForgotPasswordState.OtpSent(error = e.localizedMessage ?: "Lỗi kết nối")
+                _forgotPasswordState.value = ForgotPasswordState.OtpSent(error = e.userMessage("Lỗi kết nối"))
             }
         }
     }
@@ -209,7 +210,7 @@ class AuthViewModel(
 
 class AuthViewModelFactory(
     private val authApi: AuthApi,
-    private val secureSessionManager: SecureSessionManager
+    private val secureSessionManager: SecureSessionManager,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
