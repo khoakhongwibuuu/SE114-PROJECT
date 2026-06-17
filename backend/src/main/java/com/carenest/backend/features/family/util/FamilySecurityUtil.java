@@ -1,5 +1,6 @@
 package com.carenest.backend.features.family.util;
 
+import com.carenest.backend.core.exception.ResourceNotFoundException;
 import com.carenest.backend.core.exception.UnauthorizedException;
 import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.auth.repository.UserRepository;
@@ -48,8 +49,8 @@ public class FamilySecurityUtil {
 
     public void checkUserBelongsToHealthProfile(Long profileId) {
         User currentUser = getCurrentUser();
-        HealthProfile profile = healthProfileRepository.findById(profileId)
-                .orElseThrow(() -> new IllegalArgumentException("Hồ sơ sức khỏe không tồn tại"));
+        HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
 
         Long activeFamilyId = FamilyRequestContext.getFamilyId();
         if (activeFamilyId != null
@@ -81,8 +82,8 @@ public class FamilySecurityUtil {
         checkUserBelongsToFamily(familyId);
         checkUserBelongsToHealthProfile(profileId);
 
-        HealthProfile profile = healthProfileRepository.findById(profileId)
-                .orElseThrow(() -> new IllegalArgumentException("Hồ sơ sức khỏe không tồn tại"));
+        HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
 
         if (profile.getFamily() == null || !profile.getFamily().getId().equals(familyId)) {
             throw new AccessDeniedException("Hồ sơ sức khỏe không thuộc gia đình này");
@@ -106,3 +107,4 @@ public class FamilySecurityUtil {
         return familyIds;
     }
 }
+
