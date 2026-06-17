@@ -3,6 +3,7 @@ package com.example.carenest.feature.admin.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.ekyc.data.repository.EkycRepository
 import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import com.example.carenest.feature.ekyc.domain.model.DoctorVerificationResponse
@@ -47,7 +48,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         isLoadingPending = false,
-                        error = error.localizedMessage ?: "Không thể tải danh sách chờ duyệt",
+                        error = error.userMessage("Không thể tải danh sách chờ duyệt"),
                     )
                 }
             }
@@ -67,7 +68,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         isLoadingDoctors = false,
-                        error = error.localizedMessage ?: "Không thể tải danh sách bác sĩ",
+                        error = error.userMessage("Không thể tải danh sách bác sĩ"),
                     )
                 }
             }
@@ -96,7 +97,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         message = null,
-                        error = error.localizedMessage ?: "Phê duyệt hồ sơ thất bại",
+                        error = error.userMessage("Phê duyệt hồ sơ thất bại"),
                     )
                 }
             }
@@ -125,7 +126,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         message = null,
-                        error = error.localizedMessage ?: "Từ chối hồ sơ thất bại",
+                        error = error.userMessage("Từ chối hồ sơ thất bại"),
                     )
                 }
             }
@@ -150,7 +151,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         message = null,
-                        error = error.localizedMessage ?: "Thu hồi quyền bác sĩ thất bại",
+                        error = error.userMessage("Thu hồi quyền bác sĩ thất bại"),
                     )
                 }
             }
