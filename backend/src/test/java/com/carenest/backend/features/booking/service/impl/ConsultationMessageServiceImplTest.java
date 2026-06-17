@@ -118,7 +118,7 @@ class ConsultationMessageServiceImplTest {
                 eq("Tin nhắn tư vấn mới"),
                 contains("Patient: Xin chào bác sĩ"),
                 eq(NotificationType.CHAT),
-                eq("BOOKING_REQUEST"),
+                eq("CONSULTATION_ROOM"),
                 eq(501L)
         );
     }
