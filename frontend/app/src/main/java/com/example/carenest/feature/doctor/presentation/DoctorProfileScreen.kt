@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.carenest.CareNestApplication
+import com.example.carenest.core.data.network.userMessage
 import androidx.compose.ui.platform.LocalContext
 import com.example.carenest.core.presentation.navigation.isValidHealthProfileId
 import kotlinx.coroutines.launch
@@ -61,7 +63,7 @@ fun DoctorProfileScreen(
                 title = { Text("Hồ sơ bác sĩ") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Trở về")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Trở về")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -314,7 +316,13 @@ fun DoctorProfileScreen(
                             )
                             bookingLoading = false
                             showBookingSheet = false
-                            snackbarHostState.showSnackbar("Đã gửi yêu cầu tư vấn thành công")
+                            snackbarHostState.showSnackbar(
+                                if (requestType == com.example.carenest.feature.booking.domain.model.BookingRequestType.ONLINE_CHAT) {
+                                    "Đã gửi yêu cầu tư vấn trực tuyến"
+                                } else {
+                                    "Đã gửi yêu cầu đặt lịch khám trực tiếp"
+                                }
+                            )
                             onNavigateToPatientBookingCenter()
                         } catch (e: Exception) {
                             bookingLoading = false
@@ -322,7 +330,7 @@ fun DoctorProfileScreen(
                             if (e is DuplicateActiveConsultationException) {
                                 duplicateException = e
                             } else {
-                                snackbarHostState.showSnackbar("Lỗi: ${e.message}")
+                                snackbarHostState.showSnackbar(e.userMessage("Không thể gửi yêu cầu đặt lịch"))
                             }
                         }
                     }
@@ -364,7 +372,7 @@ fun DoctorProfileScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(if (isPending) "Lịch sử đặt khám" else "Đến phòng tư vấn")
+                    Text(if (isPending) "Mở lịch sử đặt khám" else "Mở phòng tư vấn")
                 }
             },
             dismissButton = {
