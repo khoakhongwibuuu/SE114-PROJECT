@@ -87,7 +87,7 @@ class FamilyChatViewModel(
                     "Tin nhắn không được vượt quá $MAX_MESSAGE_LENGTH ký tự"
                 } else {
                     null
-                }
+                },
             )
         }
     }
@@ -99,7 +99,7 @@ class FamilyChatViewModel(
 
         if (!_uiState.value.isConnected) {
             _uiState.update {
-                it.copy(error = "\u0110ang m\u1ea5t k\u1ebft n\u1ed1i ph\u00f2ng chat gia \u0111\u00ecnh. Vui l\u00f2ng th\u1eed l\u1ea1i sau.")
+                it.copy(error = "Đang mất kết nối phòng chat gia đình. Vui lòng thử lại sau.")
             }
             return
         }
@@ -109,7 +109,7 @@ class FamilyChatViewModel(
             id = "local-${System.currentTimeMillis()}",
             text = content,
             isMe = true,
-            senderName = "T\u00f4i",
+            senderName = "Tôi",
             timestamp = System.currentTimeMillis(),
         )
         _uiState.update { it.copy(messages = listOf(optimistic) + it.messages) }
@@ -120,7 +120,7 @@ class FamilyChatViewModel(
                     isSending = false,
                     messages = current.messages.filterNot { it.id == optimistic.id },
                     inputText = content,
-                    error = throwable.userMessage("Kh\u00f4ng th\u1ec3 g\u1eedi tin nh\u1eafn gia \u0111\u00ecnh. Vui l\u00f2ng th\u1eed l\u1ea1i."),
+                    error = throwable.userMessage("Không thể gửi tin nhắn gia đình. Vui lòng thử lại."),
                 )
             }
         }
@@ -133,7 +133,7 @@ class FamilyChatViewModel(
                     isSending = false,
                     messages = current.messages.filterNot { it.id == optimistic.id },
                     inputText = content,
-                    error = "Kh\u00f4ng th\u1ec3 g\u1eedi tin nh\u1eafn gia \u0111\u00ecnh. Vui l\u00f2ng th\u1eed l\u1ea1i.",
+                    error = "Không thể gửi tin nhắn gia đình. Vui lòng thử lại.",
                 )
             }
         }
@@ -176,7 +176,7 @@ class FamilyChatViewModel(
                     current.copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        error = throwable.userMessage("Kh\u00f4ng th\u1ec3 t\u1ea3i l\u1ecbch s\u1eed tr\u00f2 chuy\u1ec7n gia \u0111\u00ecnh."),
+                        error = throwable.userMessage("Không thể tải lịch sử trò chuyện gia đình."),
                     )
                 }
             }
@@ -192,17 +192,19 @@ class FamilyChatViewModel(
                     _uiState.update {
                         it.copy(
                             isConnected = true,
-                            connectionHint = "\u0110ang tr\u00f2 chuy\u1ec7n c\u00f9ng gia \u0111\u00ecnh",
+                            connectionHint = null,
                             error = null,
                         )
                     }
                 }
 
                 is ChatRepositoryEvent.Disconnected -> {
+                    val isReconnecting = event.message.contains("Đang kết nối lại", ignoreCase = true)
                     _uiState.update {
                         it.copy(
                             isConnected = false,
-                            connectionHint = event.message,
+                            connectionHint = if (isReconnecting) event.message else null,
+                            error = if (isReconnecting) null else event.message,
                         )
                     }
                     reconnect(familyId)
@@ -231,7 +233,7 @@ class FamilyChatViewModel(
                 it.copy(
                     isConnected = false,
                     connectionHint = null,
-                    error = "Không thể kết nối lại gia đình sau nhiều lần thử."
+                    error = "Không thể kết nối lại phòng chat gia đình sau nhiều lần thử.",
                 )
             }
             return
