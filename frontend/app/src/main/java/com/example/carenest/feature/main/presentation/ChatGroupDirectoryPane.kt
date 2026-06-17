@@ -104,6 +104,8 @@ fun ChatGroupDirectoryPane(
     var showPreview by remember { mutableStateOf(false) }
     var selectedGroupForPreview by remember { mutableStateOf<ChatGroup?>(null) }
     val previewSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isMineTab = activeTab == GroupTab.MINE
+    val searchText = if (isMineTab) state.searchMine else state.searchDiscover
 
     LaunchedEffect(refreshTrigger) {
         viewModel.refresh()
@@ -123,8 +125,8 @@ fun ChatGroupDirectoryPane(
             .background(Color(0xFFF8FAFC)),
     ) {
         OutlinedTextField(
-            value = state.search,
-            onValueChange = viewModel::onSearchChange,
+            value = searchText,
+            onValueChange = { viewModel.onSearchChange(it, isMineTab) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -138,9 +140,9 @@ fun ChatGroupDirectoryPane(
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B))
             },
-            trailingIcon = if (state.search.isNotBlank()) {
+            trailingIcon = if (searchText.isNotBlank()) {
                 {
-                    IconButton(onClick = { viewModel.onSearchChange("") }) {
+                    IconButton(onClick = { viewModel.onSearchChange("", isMineTab) }) {
                         Icon(Icons.Default.Close, contentDescription = "Xóa", tint = Color(0xFF94A3B8))
                     }
                 }
@@ -165,7 +167,10 @@ fun ChatGroupDirectoryPane(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { activeTab = tab }
+                        .clickable {
+                            activeTab = tab
+                            viewModel.onTabChanged(tab == GroupTab.MINE)
+                        }
                         .padding(bottom = 11.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -757,17 +762,24 @@ private fun DiscoverGroupItem(
             }
             Spacer(modifier = Modifier.width(10.dp))
             Button(
-                onClick = onJoin,
+                onClick = if (group.joined) onPreview else onJoin,
                 enabled = !joining,
                 modifier = Modifier.height(34.dp),
                 shape = RoundedCornerShape(999.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (group.joined) Color(0xFF16A34A) else PrimaryBlue
+                ),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
             ) {
                 if (joining) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text("Tham gia", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color.White)
+                    Text(
+                        if (group.joined) "Xem" else "Tham gia",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
                 }
             }
         }
