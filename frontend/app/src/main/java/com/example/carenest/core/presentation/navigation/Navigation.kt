@@ -352,7 +352,6 @@ fun MainNavigation() {
               onNavigateToAddMedicine = { backStack.add(AddMedicine) },
               onNavigateToMedicineSchedule = { backStack.add(MedicineSchedule) },
               onNavigateToAddMedicineSchedule = { backStack.add(AddMedicineSchedule) },
-              onNavigateToOcrScanner = { backStack.add(OcrScanner) },
               onNavigateToAppointments = { profileId -> backStack.add(MedicalAppointment(profileId)) },
               onNavigateToVaccinations = { profileId -> backStack.add(VaccinationTracker(profileId)) },
               onNavigateToNotifications = { backStack.add(NotificationsCenter) },
@@ -407,8 +406,7 @@ fun MainNavigation() {
         entry<AddMedicine> {
           AddMedicineScreen(
             viewModel = medicineViewModel,
-            onBack = { backStack.removeLastOrNull() },
-            onOpenOcrScanner = { backStack.add(OcrScanner) }
+            onBack = { backStack.removeLastOrNull() }
           )
         }
         entry<MedicineSchedule> {

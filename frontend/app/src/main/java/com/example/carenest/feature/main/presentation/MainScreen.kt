@@ -72,7 +72,6 @@ fun MainScreen(
     onNavigateToAddMedicine: () -> Unit = {},
     onNavigateToMedicineSchedule: () -> Unit = {},
     onNavigateToAddMedicineSchedule: () -> Unit = {},
-    onNavigateToOcrScanner: () -> Unit = {},
     onNavigateToAppointments: (Long) -> Unit = {},
     onNavigateToVaccinations: (Long) -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
@@ -273,7 +272,6 @@ fun MainScreen(
                     onNavigateToAddMedicine = onNavigateToAddMedicine,
                     onNavigateToMedicineSchedule = onNavigateToMedicineSchedule,
                     onNavigateToAddSchedule = onNavigateToAddMedicineSchedule,
-                    onNavigateToOcrScanner = onNavigateToOcrScanner,
                     onOpenFamilyChat = { family ->
                         onNavigateToFamilyChat(family.id, family.name, family.memberCount)
                     },
