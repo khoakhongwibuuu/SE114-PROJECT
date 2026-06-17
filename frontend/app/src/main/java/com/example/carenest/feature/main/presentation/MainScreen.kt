@@ -44,8 +44,6 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.PrimaryFixed
 import com.example.carenest.core.presentation.theme.SurfaceLowest
 import com.example.carenest.feature.auth.presentation.AuthViewModel
-import com.example.carenest.feature.booking.presentation.BookingCenterViewModel
-import com.example.carenest.feature.booking.presentation.BookingCenterViewModelFactory
 import com.example.carenest.feature.community.presentation.CommunityScreen
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.family.presentation.FamilyFlowScreen
@@ -102,12 +100,6 @@ fun MainScreen(
 
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
-    val bookingCenterViewModel: BookingCenterViewModel = viewModel(
-        factory = BookingCenterViewModelFactory(
-            application.bookingRepository,
-            application.secureSessionManager
-        )
-    )
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
             application.authApi,
