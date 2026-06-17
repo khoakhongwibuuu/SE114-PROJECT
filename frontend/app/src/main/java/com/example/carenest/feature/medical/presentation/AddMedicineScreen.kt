@@ -282,7 +282,7 @@ fun AddMedicineScreen(
                             onBack()
                         },
                         onError = { error ->
-                            Toast.makeText(context, "Lỗi: $error", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                         }
                     )
                 },

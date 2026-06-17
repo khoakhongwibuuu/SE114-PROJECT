@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.appointment.data.remote.AppointmentApi
 import com.example.carenest.feature.appointment.data.remote.CreateAppointmentRequest
@@ -135,7 +136,7 @@ class AppointmentViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _appointmentState.value = AppointmentState.Error(e.message ?: "Không thể tải lịch hẹn")
+                _appointmentState.value = AppointmentState.Error(e.userMessage("Không thể tải lịch hẹn"))
             }
         }
     }
@@ -169,14 +170,10 @@ class AppointmentViewModel(
                     )
                 )
                 response.requireData("Không thể tạo lịch hẹn")
-                if (!response.isSuccessful) {
-                    onError(response.errorMessage("Không thể tạo lịch hẹn"))
-                    return@launch
-                }
                 onSuccess()
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                onError(e.message ?: "Không thể tạo lịch hẹn")
+                onError(e.userMessage("Không thể tạo lịch hẹn"))
             } finally {
                 _isActionLoading.value = false
             }
@@ -201,7 +198,7 @@ class AppointmentViewModel(
                 }
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                _appointmentState.value = AppointmentState.Error(e.message ?: "Không thể hủy lịch hẹn")
+                _appointmentState.value = AppointmentState.Error(e.userMessage("Không thể hủy lịch hẹn"))
             }
         }
     }
