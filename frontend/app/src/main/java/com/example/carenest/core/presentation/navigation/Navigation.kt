@@ -108,25 +108,46 @@ fun MainNavigation() {
     }
   }
 
+  fun routeToBookingWorkspace(role: AppRole?) {
+    closeNotificationsCenterIfVisible()
+    if (role == AppRole.DOCTOR) {
+      backStack.add(DoctorWorkspace)
+    } else {
+      backStack.add(PatientBookingCenter)
+    }
+  }
+
+  fun openByNotificationType(type: String?, role: AppRole?): NotificationOpenResult {
+    return when (type?.uppercase()) {
+      "FAMILY" -> {
+        routeToMainTab(MainTabTarget.FAMILY)
+        NotificationOpenResult.OPENED
+      }
+      "MEDICATION" -> {
+        closeNotificationsCenterIfVisible()
+        backStack.add(MedicineSchedule)
+        NotificationOpenResult.OPENED
+      }
+      "APPOINTMENT" -> {
+        routeToBookingWorkspace(role)
+        NotificationOpenResult.OPENED
+      }
+      "GROWTH" -> {
+        routeToMainTab(MainTabTarget.PROFILE)
+        NotificationOpenResult.OPENED
+      }
+      else -> NotificationOpenResult.UNHANDLED
+    }
+  }
+
   val openNotificationTarget: (NotificationItem) -> NotificationOpenResult = { notification ->
     val referenceType = notification.referenceType?.uppercase()
-    val referenceId = notification.referenceId
     val role = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
 
     val handled = when (referenceType) {
       "BOOKING_REQUEST" -> {
-        if (referenceId != null && referenceId > 0L && role != AppRole.DOCTOR) {
-          closeNotificationsCenterIfVisible()
-          backStack.add(PatientBookingCenter)
-          NotificationOpenResult.OPENED
-        } else if (role == AppRole.DOCTOR) {
-          closeNotificationsCenterIfVisible()
-          backStack.add(DoctorWorkspace)
-          NotificationOpenResult.OPENED
-        } else {
-          Toast.makeText(context, "Không thể mở thông báo đặt lịch này", Toast.LENGTH_SHORT).show()
-          NotificationOpenResult.UNHANDLED
-        }
+        routeToBookingWorkspace(role)
+        NotificationOpenResult.OPENED
       }
       "DOCTOR_VERIFICATION" -> {
         authViewModel.refreshCurrentUser()
@@ -149,7 +170,7 @@ fun MainNavigation() {
         NotificationOpenResult.OPENED
       }
       "APPOINTMENT" -> {
-        routeToMainTab(MainTabTarget.HOME)
+        routeToBookingWorkspace(role)
         NotificationOpenResult.OPENED
       }
       "GROWTH_RECORD" -> {
@@ -157,8 +178,11 @@ fun MainNavigation() {
         NotificationOpenResult.OPENED
       }
       else -> {
-        Toast.makeText(context, "Chưa hỗ trợ mở đích cho thông báo này", Toast.LENGTH_SHORT).show()
-        NotificationOpenResult.UNHANDLED
+        val fallback = openByNotificationType(notification.type, role)
+        if (fallback == NotificationOpenResult.UNHANDLED) {
+          Toast.makeText(context, "Chưa hỗ trợ mở đích cho thông báo này", Toast.LENGTH_SHORT).show()
+        }
+        fallback
       }
     }
     if (handled == NotificationOpenResult.OPENED) {
