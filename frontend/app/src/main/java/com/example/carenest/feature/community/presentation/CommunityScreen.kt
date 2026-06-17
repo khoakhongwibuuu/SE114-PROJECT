@@ -28,6 +28,7 @@ import com.example.carenest.core.presentation.theme.Outline
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.chat.domain.model.ChatGroup
+import com.example.carenest.feature.main.presentation.ChatGroupDirectoryPane
 
 private enum class CommunityTopTab(val label: String) {
     WIKI("Cẩm nang"),
@@ -37,9 +38,11 @@ private enum class CommunityTopTab(val label: String) {
 @Composable
 fun CommunityScreen(
     canCreateArticle: Boolean = false,
+    canCreateGroupRequest: Boolean = false,
     refreshTrigger: Int = 0,
     onOpenGroup: (ChatGroup) -> Unit = {},
     onOpenGroupPosts: (ChatGroup) -> Unit = {},
+    onNavigateToCreateGroupRequest: () -> Unit = {},
     onNavigateToDoctorProfile: (Long) -> Unit = {}
 ) {
     var activeTabName by rememberSaveable { mutableStateOf(CommunityTopTab.WIKI.name) }
@@ -95,31 +98,12 @@ fun CommunityScreen(
                 onNavigateToDoctorProfile = onNavigateToDoctorProfile
             )
 
-            CommunityTopTab.GROUPS -> SocialGroupsPane(
-                onOpenGroup = { socialGroup ->
-                    onOpenGroup(
-                        ChatGroup(
-                            id = socialGroup.id,
-                            name = socialGroup.name,
-                            description = socialGroup.description ?: "",
-                            category = socialGroup.category ?: "",
-                            tags = "",
-                            private = false,
-                        )
-                    )
-                },
-                onOpenGroupPosts = { socialGroup ->
-                    onOpenGroupPosts(
-                        ChatGroup(
-                            id = socialGroup.id,
-                            name = socialGroup.name,
-                            description = socialGroup.description ?: "",
-                            category = socialGroup.category ?: "",
-                            tags = "",
-                            private = false,
-                        )
-                    )
-                }
+            CommunityTopTab.GROUPS -> ChatGroupDirectoryPane(
+                canCreateGroupRequest = canCreateGroupRequest,
+                refreshTrigger = refreshTrigger,
+                onOpenGroup = onOpenGroup,
+                onOpenGroupPosts = onOpenGroupPosts,
+                onNavigateToCreateGroupRequest = onNavigateToCreateGroupRequest
             )
         }
     }

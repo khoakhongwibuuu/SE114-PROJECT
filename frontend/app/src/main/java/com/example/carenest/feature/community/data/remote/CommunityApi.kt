@@ -1,4 +1,4 @@
-package com.example.carenest.feature.community.data.remote
+﻿package com.example.carenest.feature.community.data.remote
 
 import com.example.carenest.core.data.network.ApiResponse
 import com.example.carenest.feature.chat.domain.model.ChatGroup
@@ -18,6 +18,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -77,11 +78,6 @@ interface CommunityApi {
         @Body request: CreateGroupPostRequest
     ): Response<ApiResponse<GroupPost>>
 
-    @DELETE("/api/v1/communities/posts/{id}")
-    suspend fun deleteGroupPost(
-        @Path("id") id: Long
-    ): Response<ApiResponse<Unit>>
-
     @POST("/api/v1/communities/posts/{id}/like")
     suspend fun likeGroupPost(
         @Path("id") id: Long
@@ -135,5 +131,71 @@ interface CommunityApi {
     suspend fun reportPost(
         @Path("id") id: Long,
         @Body request: ReportPostRequest
+    ): Response<ApiResponse<Unit>>
+
+    @POST("/api/v1/group-requests")
+    suspend fun createGroupRequest(
+        @Body request: com.example.carenest.feature.community.domain.model.CreateGroupCreationRequest
+    ): Response<ApiResponse<com.example.carenest.feature.community.domain.model.GroupCreationRequest>>
+
+    @GET("/api/v1/group-requests/mine")
+    suspend fun getMyGroupRequests(): Response<ApiResponse<List<com.example.carenest.feature.community.domain.model.GroupCreationRequest>>>
+
+    @GET("/api/v1/admin/group-requests")
+    suspend fun getAdminGroupRequests(): Response<ApiResponse<List<com.example.carenest.feature.community.domain.model.GroupCreationRequest>>>
+
+    @POST("/api/v1/admin/group-requests/{id}/approve")
+    suspend fun approveGroupRequest(@Path("id") id: Long): Response<ApiResponse<Unit>>
+
+    @POST("/api/v1/admin/group-requests/{id}/reject")
+    suspend fun rejectGroupRequest(
+        @Path("id") id: Long,
+        @Query("reason") reason: String
+    ): Response<ApiResponse<Unit>>
+
+    @GET("/api/v1/communities/{id}/members")
+    suspend fun getMembers(@Path("id") id: Long): Response<ApiResponse<List<com.example.carenest.feature.community.domain.model.GroupMember>>>
+
+    @POST("/api/v1/admin/groups/{id}/freeze")
+    suspend fun freezeGroup(@Path("id") id: Long): Response<ApiResponse<Unit>>
+
+    @POST("/api/v1/admin/groups/{id}/unfreeze")
+    suspend fun unfreezeGroup(@Path("id") id: Long): Response<ApiResponse<Unit>>
+
+    @PATCH("/api/v1/communities/{id}/members/{userId}/role")
+    suspend fun updateMemberRole(
+        @Path("id") id: Long,
+        @Path("userId") userId: Long,
+        @Body request: com.example.carenest.feature.community.domain.model.UpdateGroupRoleRequest
+    ): Response<ApiResponse<Unit>>
+
+    @GET("/api/v1/chat/groups/{id}/messages")
+    suspend fun groupMessages(
+        @Path("id") id: Long,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 50
+    ): Response<ApiResponse<com.example.carenest.feature.community.domain.model.PageResponse<com.example.carenest.feature.community.data.remote.ChatMessageResponseDto>>>
+
+    @POST("/api/v1/chat/groups/{id}/messages")
+    suspend fun sendGroupMessage(
+        @Path("id") id: Long,
+        @Body request: com.example.carenest.feature.community.data.remote.SendGroupMessageRequest
+    ): Response<ApiResponse<com.example.carenest.feature.community.data.remote.ChatMessageResponseDto>>
+
+    @POST("/api/v1/chat/messages/{id}/report")
+    suspend fun reportGroupMessage(
+        @Path("id") id: Long,
+        @Body request: com.example.carenest.feature.community.data.remote.ReportPostRequest
+    ): Response<ApiResponse<Unit>>
+
+    @POST("/api/v1/communities/posts/{id}/update")
+    suspend fun updatePost(
+        @Path("id") id: Long,
+        @Body request: com.example.carenest.feature.community.domain.model.CreateGroupPostRequest
+    ): Response<ApiResponse<com.example.carenest.feature.community.domain.model.GroupPost>>
+
+    @DELETE("/api/v1/communities/posts/{id}")
+    suspend fun deletePost(
+        @Path("id") id: Long
     ): Response<ApiResponse<Unit>>
 }

@@ -3,9 +3,9 @@ package com.example.carenest.feature.chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.feature.community.data.repository.CommunityRepository
 import com.example.carenest.feature.chat.domain.model.ChatGroup
 import com.example.carenest.feature.chat.domain.model.ChatGroupPreview
+import com.example.carenest.feature.community.data.repository.CommunityRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +21,7 @@ data class ChatGroupDirectoryUiState(
     val myGroups: List<ChatGroup> = emptyList(),
     val discoverGroups: List<ChatGroup> = emptyList(),
     val error: String? = null,
+    val hasBlockingError: Boolean = false,
     val joiningGroupId: Long? = null,
     val previewGroup: ChatGroupPreview? = null,
     val isPreviewLoading: Boolean = false
@@ -53,7 +54,12 @@ class ChatGroupDirectoryViewModel(
 
     fun loadGroupPreview(groupId: Long) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isPreviewLoading = true, error = null, previewGroup = null)
+            _uiState.value = _uiState.value.copy(
+                isPreviewLoading = true,
+                error = null,
+                hasBlockingError = false,
+                previewGroup = null
+            )
             try {
                 val preview = withContext(Dispatchers.IO) {
                     repository.preview(groupId)
@@ -72,11 +78,11 @@ class ChatGroupDirectoryViewModel(
     }
 
     fun clearPreview() {
-        _uiState.value = _uiState.value.copy(previewGroup = null, error = null)
+        _uiState.value = _uiState.value.copy(previewGroup = null)
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
+        _uiState.value = _uiState.value.copy(error = null, hasBlockingError = false)
     }
 
     fun join(group: ChatGroup, onSuccess: (ChatGroup) -> Unit = {}) {
@@ -146,7 +152,12 @@ class ChatGroupDirectoryViewModel(
     }
 
     private suspend fun loadGroups(search: String) {
-        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        val currentState = _uiState.value
+        _uiState.value = currentState.copy(
+            isLoading = true,
+            error = null,
+            hasBlockingError = false
+        )
         try {
             val query = search.ifBlank { null }
             val mine = withContext(Dispatchers.IO) {
@@ -158,14 +169,16 @@ class ChatGroupDirectoryViewModel(
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 myGroups = mine,
-                discoverGroups = discover
+                discoverGroups = discover,
+                error = null,
+                hasBlockingError = false
             )
         } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
+            val hadPreviousData = currentState.myGroups.isNotEmpty() || currentState.discoverGroups.isNotEmpty()
+            _uiState.value = currentState.copy(
                 isLoading = false,
-                myGroups = emptyList(),
-                discoverGroups = emptyList(),
-                error = e.localizedMessage ?: "Không thể tải danh sách hội nhóm"
+                error = e.localizedMessage ?: "Không thể tải danh sách hội nhóm",
+                hasBlockingError = !hadPreviousData
             )
         }
     }
