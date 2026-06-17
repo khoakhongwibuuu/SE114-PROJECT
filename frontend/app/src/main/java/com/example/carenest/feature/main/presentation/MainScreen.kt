@@ -35,6 +35,7 @@ import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.components.CareNestIcon
 import com.example.carenest.core.presentation.navigation.ChatRoom
 import com.example.carenest.core.presentation.navigation.GroupPostDetail
+import com.example.carenest.core.presentation.navigation.isValidHealthProfileId
 import com.example.carenest.core.presentation.theme.AppRadius
 import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
@@ -173,13 +174,16 @@ fun MainScreen(
 
     fun resolveActiveProfileIdOrNotify(): Long? {
         val profileId = currentProfileId ?: application.secureSessionManager.getActiveProfileId()
-        if (profileId == null || profileId <= 0L) {
+        if (!profileId.isValidHealthProfileId()) {
             Toast.makeText(context, "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước", Toast.LENGTH_SHORT).show()
             selectedTab = TAB_FAMILY
             return null
         }
         return profileId
     }
+
+    val hasActiveHealthProfile = (currentProfileId ?: application.secureSessionManager.getActiveProfileId())
+        .isValidHealthProfileId()
 
     // When user is on a non-home tab and presses Android system back, return to Home tab
     // instead of propagating to NavDisplay (which would pop MainDashboard off the stack).
@@ -302,9 +306,14 @@ fun MainScreen(
                 TAB_PROFILE -> ProfileScreen(
                     viewModel = profileViewModel,
                     refreshTrigger = profileRefreshTrigger,
+                    hasActiveHealthProfile = hasActiveHealthProfile,
                     onLogout = onLogout,
                     onNavigateToMedicalRecord = {
                         resolveActiveProfileIdOrNotify()?.let(onNavigateToMedicalRecord)
+                    },
+                    onNavigateToFamilySetup = {
+                        selectedTab = TAB_FAMILY
+                        familyRefreshTrigger++
                     },
                     onNavigateToDoctorVerification = onNavigateToDoctorVerification,
                     onNavigateToDoctorWorkspace = onNavigateToDoctorWorkspace,

@@ -45,8 +45,10 @@ import java.util.*
 fun ProfileScreen(
     viewModel: ProfileViewModel,
     refreshTrigger: Int = 0,
+    hasActiveHealthProfile: Boolean = true,
     onNavigateBack: () -> Unit = {},
     onNavigateToMedicalRecord: () -> Unit = {},
+    onNavigateToFamilySetup: () -> Unit = {},
     onNavigateToDoctorVerification: () -> Unit = {},
     onNavigateToDoctorWorkspace: () -> Unit = {},
     onNavigateToPatientBookingCenter: () -> Unit = {},
@@ -219,13 +221,20 @@ fun ProfileScreen(
             }
 
             // Medical Record Button
+            if (!hasActiveHealthProfile) {
+                MissingHealthProfileCard(
+                    onNavigateToFamilySetup = onNavigateToFamilySetup,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
             Box(modifier = Modifier.padding(bottom = 24.dp)) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .shadow(2.dp, RoundedCornerShape(24.dp))
                         .background(Color.White, RoundedCornerShape(24.dp))
-                        .clickable { onNavigateToMedicalRecord() }
+                        .clickable(enabled = hasActiveHealthProfile) { onNavigateToMedicalRecord() }
                         .padding(20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -405,6 +414,38 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Text("Đăng xuất tài khoản", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEF4444))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MissingHealthProfileCard(
+    onNavigateToFamilySetup: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB)),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = "Chưa có hồ sơ sức khỏe đang hoạt động",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF92400E)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Cần chọn hoặc tạo hồ sơ trong phần Gia đình trước khi xem hồ sơ y tế, lịch khám hoặc tiêm chủng.",
+                fontSize = 13.sp,
+                color = Color(0xFF92400E)
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            TextButton(onClick = onNavigateToFamilySetup, contentPadding = PaddingValues(0.dp)) {
+                Text("Mở Gia đình", fontWeight = FontWeight.Bold, color = PrimaryBlue)
             }
         }
     }

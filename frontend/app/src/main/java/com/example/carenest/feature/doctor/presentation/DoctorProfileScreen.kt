@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.carenest.CareNestApplication
 import androidx.compose.ui.platform.LocalContext
+import com.example.carenest.core.presentation.navigation.isValidHealthProfileId
 import kotlinx.coroutines.launch
 import com.example.carenest.feature.booking.presentation.BookingRequestSheet
 import com.example.carenest.feature.booking.domain.model.DuplicateActiveConsultationException
@@ -45,11 +46,13 @@ fun DoctorProfileScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     val bookingRepository = application.bookingRepository
+    val activeProfileId by application.secureSessionManager.activeProfileIdFlow.collectAsState()
     var showBookingSheet by remember { mutableStateOf(false) }
     var bookingLoading by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var duplicateException by remember { mutableStateOf<DuplicateActiveConsultationException?>(null) }
+    val canCreateBooking = uiState.profile != null && !bookingLoading && activeProfileId.isValidHealthProfileId()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -81,13 +84,21 @@ fun DoctorProfileScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        enabled = uiState.profile != null && !bookingLoading,
+                        enabled = canCreateBooking,
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             "Đặt lịch khám",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
+                        )
+                    }
+                    if (!activeProfileId.isValidHealthProfileId()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Hãy chọn hoặc tạo hồ sơ sức khỏe trước khi đặt lịch với bác sĩ này.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }

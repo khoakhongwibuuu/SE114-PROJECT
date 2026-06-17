@@ -1,5 +1,6 @@
 package com.example.carenest.feature.family.presentation
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -92,6 +93,21 @@ fun FamilyFlowScreen(
     val activeFamilyId = familyUiState.activeFamily?.id ?: familyUiState.activeFamilyId
     val activeFamilySummary = familyUiState.myFamilies.firstOrNull { it.id == activeFamilyId }
 
+    fun openTab(tab: FamilyTab) {
+        val requiresFamily = tab == FamilyTab.MEDICINE || tab == FamilyTab.CHAT
+        if (requiresFamily && familyUiState.myFamilies.isEmpty()) {
+            Toast.makeText(
+                context,
+                "Hãy tạo hoặc tham gia gia đình trước khi dùng tính năng này.",
+                Toast.LENGTH_SHORT
+            ).show()
+            activeTabName = FamilyTab.MEMBERS.name
+            currentScreen = "picker"
+            return
+        }
+        activeTabName = tab.name
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -107,7 +123,7 @@ fun FamilyFlowScreen(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { activeTabName = tab.name }
+                        .clickable { openTab(tab) }
                         .padding(top = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
