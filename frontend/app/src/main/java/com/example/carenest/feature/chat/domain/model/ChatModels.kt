@@ -12,7 +12,8 @@ data class ChatGroup(
     val memberCount: Long = 0,
     val joined: Boolean = false,
     val latestMessage: String? = null,
-    val latestActivityAt: String? = null
+    val latestActivityAt: String? = null,
+    val isFrozen: Boolean = false
 )
 
 data class ChatGroupPreview(

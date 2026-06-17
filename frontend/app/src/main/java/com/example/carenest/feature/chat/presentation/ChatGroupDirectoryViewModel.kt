@@ -17,7 +17,8 @@ import kotlinx.coroutines.withContext
 
 data class ChatGroupDirectoryUiState(
     val isLoading: Boolean = true,
-    val search: String = "",
+    val searchMine: String = "",
+    val searchDiscover: String = "",
     val myGroups: List<ChatGroup> = emptyList(),
     val discoverGroups: List<ChatGroup> = emptyList(),
     val error: String? = null,
@@ -33,22 +34,44 @@ class ChatGroupDirectoryViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatGroupDirectoryUiState())
     val uiState: StateFlow<ChatGroupDirectoryUiState> = _uiState.asStateFlow()
-    private val searchFlow = MutableStateFlow("")
+    private val searchMineFlow = MutableStateFlow("")
+    private val searchDiscoverFlow = MutableStateFlow("")
 
     init {
         viewModelScope.launch {
-            searchFlow.debounce(300).collect { loadGroups(it) }
+            searchMineFlow.debounce(300).collect { loadMyGroups(it) }
+        }
+        viewModelScope.launch {
+            searchDiscoverFlow.debounce(300).collect { loadDiscoverGroups(it) }
         }
     }
 
-    fun onSearchChange(value: String) {
-        _uiState.value = _uiState.value.copy(search = value)
-        searchFlow.value = value.trim()
+    fun onSearchChange(value: String, isMine: Boolean) {
+        _uiState.value = if (isMine) {
+            _uiState.value.copy(searchMine = value)
+        } else {
+            _uiState.value.copy(searchDiscover = value)
+        }
+        if (isMine) {
+            searchMineFlow.value = value.trim()
+        } else {
+            searchDiscoverFlow.value = value.trim()
+        }
+    }
+
+    fun onTabChanged(isMine: Boolean) {
+        val query = if (isMine) _uiState.value.searchMine else _uiState.value.searchDiscover
+        if (isMine && _uiState.value.myGroups.isEmpty()) {
+            viewModelScope.launch { loadMyGroups(query.trim()) }
+        } else if (!isMine && _uiState.value.discoverGroups.isEmpty()) {
+            viewModelScope.launch { loadDiscoverGroups(query.trim()) }
+        }
     }
 
     fun refresh() {
         viewModelScope.launch {
-            loadGroups(_uiState.value.search.trim())
+            loadMyGroups(_uiState.value.searchMine.trim())
+            loadDiscoverGroups(_uiState.value.searchDiscover.trim())
         }
     }
 
@@ -100,7 +123,9 @@ class ChatGroupDirectoryViewModel(
                 _uiState.value = _uiState.value.copy(
                     joiningGroupId = null,
                     myGroups = listOf(joinedGroup) + _uiState.value.myGroups.filterNot { it.id == group.id },
-                    discoverGroups = _uiState.value.discoverGroups.filterNot { it.id == group.id }
+                    discoverGroups = _uiState.value.discoverGroups.map {
+                        if (it.id == group.id) it.copy(joined = true, memberCount = preview.memberCount) else it
+                    }
                 )
                 onSuccess(joinedGroup)
                 if (!preview.joined) {
@@ -122,7 +147,6 @@ class ChatGroupDirectoryViewModel(
                 val updatedPreview = withContext(Dispatchers.IO) {
                     repository.join(preview.id)
                 }
-                val discoverList = _uiState.value.discoverGroups.filterNot { it.id == preview.id }
                 val joinedGroup = ChatGroup(
                     id = preview.id,
                     name = preview.name,
@@ -139,7 +163,9 @@ class ChatGroupDirectoryViewModel(
                     joiningGroupId = null,
                     previewGroup = updatedPreview,
                     myGroups = listOf(joinedGroup) + _uiState.value.myGroups.filterNot { it.id == preview.id },
-                    discoverGroups = discoverList
+                    discoverGroups = _uiState.value.discoverGroups.map {
+                        if (it.id == preview.id) it.copy(joined = true, memberCount = updatedPreview.memberCount) else it
+                    }
                 )
                 onSuccess(joinedGroup)
             } catch (e: Exception) {
@@ -151,7 +177,7 @@ class ChatGroupDirectoryViewModel(
         }
     }
 
-    private suspend fun loadGroups(search: String) {
+    private suspend fun loadMyGroups(search: String) {
         val currentState = _uiState.value
         _uiState.value = currentState.copy(
             isLoading = true,
@@ -163,12 +189,36 @@ class ChatGroupDirectoryViewModel(
             val mine = withContext(Dispatchers.IO) {
                 repository.myGroups(query)
             }
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                myGroups = mine,
+                error = null,
+                hasBlockingError = false
+            )
+        } catch (e: Exception) {
+            val hadPreviousData = currentState.myGroups.isNotEmpty() || currentState.discoverGroups.isNotEmpty()
+            _uiState.value = currentState.copy(
+                isLoading = false,
+                error = e.localizedMessage ?: "Không thể tải danh sách hội nhóm",
+                hasBlockingError = !hadPreviousData
+            )
+        }
+    }
+
+    private suspend fun loadDiscoverGroups(search: String) {
+        val currentState = _uiState.value
+        _uiState.value = currentState.copy(
+            isLoading = true,
+            error = null,
+            hasBlockingError = false
+        )
+        try {
+            val query = search.ifBlank { null }
             val discover = withContext(Dispatchers.IO) {
                 repository.discoverGroups(query)
             }
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                myGroups = mine,
                 discoverGroups = discover,
                 error = null,
                 hasBlockingError = false
