@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
@@ -83,7 +82,6 @@ fun MedicineScreen(
     onAddMedicineClick: () -> Unit = {},
     onScheduleClick: () -> Unit = {},
     onAddScheduleClick: () -> Unit = {},
-    onOcrClick: () -> Unit = {},
 ) {
     val cabinetState by viewModel.cabinetState.collectAsState()
     val isActionLoading by viewModel.isActionLoading.collectAsState()
@@ -185,7 +183,19 @@ fun MedicineScreen(
                         Text(text = "Quét toa thuốc", color = Color(0xFF64748B), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         Text(text = "OCR đang tạm tắt trong MVP, sẽ hoàn thiện ở phase cuối", color = Color(0xFF64748B), fontSize = 12.sp)
                     }
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFBFC7D3))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(Color(0xFFE2E8F0))
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = "Phase cuối",
+                            color = Color(0xFF475569),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                 }
             }
 

@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.DocumentScanner
@@ -64,7 +63,6 @@ import java.util.Calendar
 fun AddMedicineScreen(
     viewModel: MedicineViewModel,
     onBack: () -> Unit,
-    onOpenOcrScanner: () -> Unit = {},
 ) {
     val isActionLoading by viewModel.isActionLoading.collectAsState()
     var name by remember { mutableStateOf("") }
@@ -163,7 +161,19 @@ fun AddMedicineScreen(
                         fontSize = 12.sp,
                     )
                 }
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF94A3B8))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Color(0xFFE2E8F0))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        text = "Phase cuối",
+                        color = Color(0xFF475569),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
 
             Row(

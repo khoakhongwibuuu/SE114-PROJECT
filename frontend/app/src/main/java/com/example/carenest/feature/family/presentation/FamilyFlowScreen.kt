@@ -54,7 +54,6 @@ fun FamilyFlowScreen(
     onNavigateToAddMedicine: () -> Unit = {},
     onNavigateToMedicineSchedule: () -> Unit = {},
     onNavigateToAddSchedule: () -> Unit = {},
-    onNavigateToOcrScanner: () -> Unit = {},
     onOpenFamilyChat: (FamilySummary) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -173,7 +172,6 @@ fun FamilyFlowScreen(
                     onAddMedicineClick = onNavigateToAddMedicine,
                     onScheduleClick = onNavigateToMedicineSchedule,
                     onAddScheduleClick = onNavigateToAddSchedule,
-                    onOcrClick = onNavigateToOcrScanner,
                 )
 
                 FamilyTab.CHAT -> FamilyChatDirectoryPane(
