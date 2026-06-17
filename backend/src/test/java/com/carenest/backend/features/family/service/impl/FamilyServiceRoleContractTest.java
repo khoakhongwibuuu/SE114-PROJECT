@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -135,6 +136,35 @@ class FamilyServiceRoleContractTest {
                 () -> familyService.updateMemberRole(FAMILY_ID, TARGET_MEMBER_ID, request));
 
         verify(familyMemberRepository, never()).save(any());
+    }
+
+    @Test
+    void getJoinCode_requiresExplicitActiveFamilyWhenUserBelongsToMultipleFamilies() {
+        FamilyMember firstMembership = member(1L, requester, FamilyRole.OWNER);
+        Family secondFamily = Family.builder().name("Pham family").owner(requester).build();
+        secondFamily.setId(11L);
+        FamilyMember secondMembership = FamilyMember.builder()
+                .family(secondFamily)
+                .user(requester)
+                .role(FamilyRole.ADMIN)
+                .build();
+        secondMembership.setId(2L);
+
+        when(familyMemberRepository.findAllByUserId(requester.getId()))
+                .thenReturn(java.util.List.of(firstMembership, secondMembership));
+
+        assertThrows(BadRequestException.class, () -> familyService.getJoinCode());
+    }
+
+    @Test
+    void joinByCode_rejectsBlankJoinCodeBeforeRepositoryLookup() {
+        assertThrows(BadRequestException.class, () -> familyService.joinByCode(
+                com.carenest.backend.features.family.dto.request.JoinFamilyByCodeRequest.builder()
+                        .joinCode("   ")
+                        .build()
+        ));
+
+        verify(familyRepository, never()).findByJoinCode(anyString());
     }
 
     private User user(Long id, String email) {

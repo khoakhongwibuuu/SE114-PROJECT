@@ -14,4 +14,6 @@ public interface HealthProfileRepository extends JpaRepository<HealthProfile, Lo
     List<HealthProfile> findByFamilyId(Long familyId);
     Optional<HealthProfile> findByIdAndDeletedAtIsNull(Long id);
     Optional<HealthProfile> findFirstByFamilyIdAndUserIdAndDeletedAtIsNull(Long familyId, Long userId);
+    boolean existsByUserIdAndFamilyIdAndDeletedAtIsNull(Long userId, Long familyId);
+    boolean existsByUserIdAndFamilyIsNullAndDeletedAtIsNull(Long userId);
 }
