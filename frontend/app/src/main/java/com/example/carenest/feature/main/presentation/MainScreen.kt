@@ -107,8 +107,7 @@ fun MainScreen(
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
             application.authApi,
-            application.secureSessionManager,
-            application.familyRepository
+            application.secureSessionManager
         )
     )
     val lifecycleOwner = LocalLifecycleOwner.current
