@@ -135,6 +135,20 @@ fun FamilyChatPane(
                 }
             }
 
+            !state.error.isNullOrBlank() && state.messages.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                ) {
+                    FamilyChatEmptyState(
+                        icon = Icons.AutoMirrored.Filled.Chat,
+                        title = "Không thể tải tin nhắn",
+                        description = state.error.orEmpty(),
+                    )
+                }
+            }
+
             state.messages.isEmpty() -> {
                 Box(
                     modifier = Modifier
