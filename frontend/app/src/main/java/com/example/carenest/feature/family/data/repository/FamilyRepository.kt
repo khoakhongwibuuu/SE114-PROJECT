@@ -1,6 +1,7 @@
 package com.example.carenest.feature.family.data.repository
 
 import com.example.carenest.feature.family.domain.model.*
+import com.example.carenest.feature.family.domain.port.FamilyDataSource
 import com.example.carenest.feature.family.data.remote.FamilyApi
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
@@ -19,8 +20,8 @@ import java.io.File
 class FamilyRepository(
     private val familyApi: FamilyApi,
     private val dataStoreManager: SecureSessionManager
-) {
-    suspend fun getMyFamilyList(): Result<List<FamilySummary>> {
+) : FamilyDataSource {
+    override suspend fun getMyFamilyList(): Result<List<FamilySummary>> {
         return try {
             val response = familyApi.getMyFamilyList()
             Result.success(response.requireList("Không thể tải danh sách gia đình"))
@@ -29,7 +30,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun getFamilyById(familyId: Long): Result<FamilyDetailResponse> {
+    override suspend fun getFamilyById(familyId: Long): Result<FamilyDetailResponse> {
         return try {
             val response = familyApi.getFamilyById(familyId)
             Result.success(response.requireData("Không thể tải thông tin gia đình").normalized())
@@ -97,7 +98,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun createFamily(name: String): Result<FamilyResponse> {
+    override suspend fun createFamily(name: String): Result<FamilyResponse> {
         return try {
             val response = familyApi.createFamily(CreateFamilyRequest(name))
             Result.success(response.requireData("Không thể tạo gia đình"))
@@ -106,7 +107,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun joinFamilyByCode(code: String, role: String? = null): Result<FamilyDetailResponse> {
+    override suspend fun joinFamilyByCode(code: String, role: String?): Result<FamilyDetailResponse> {
         return try {
             val response = familyApi.joinFamilyByCode(JoinFamilyByCodeRequest(code, role))
             Result.success(response.requireData("Không thể tham gia gia đình"))
@@ -115,7 +116,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun joinFamilyByQr(file: File, role: String): Result<FamilyDetailResponse> {
+    override suspend fun joinFamilyByQr(file: File, role: String): Result<FamilyDetailResponse> {
         return try {
             val reqFile = file.asRequestBody("image/*".toMediaTypeOrNull())
             val imagePart = MultipartBody.Part.createFormData("image", file.name, reqFile)
@@ -126,7 +127,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun inviteMember(familyId: Long, email: String, role: String): Result<Unit> {
+    override suspend fun inviteMember(familyId: Long, email: String, role: String): Result<Unit> {
         return try {
             val response = familyApi.inviteMember(familyId, InviteMemberRequest(email, role))
             response.requireSuccess("Không thể gửi lời mời")
@@ -136,7 +137,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun getReceivedInvitations(): Result<List<FamilyInvitationItem>> {
+    override suspend fun getReceivedInvitations(): Result<List<FamilyInvitationItem>> {
         return try {
             val response = familyApi.getReceivedInvitations()
             Result.success(response.requireList("Không thể tải lời mời đã nhận"))
@@ -145,7 +146,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun getSentInvitations(): Result<List<FamilyInvitationItem>> {
+    override suspend fun getSentInvitations(): Result<List<FamilyInvitationItem>> {
         return try {
             val response = familyApi.getSentInvitations()
             Result.success(response.requireList("Không thể tải lời mời đã gửi"))
@@ -154,7 +155,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun acceptInvitation(inviteId: Long): Result<Unit> {
+    override suspend fun acceptInvitation(inviteId: Long): Result<Unit> {
         return try {
             val response = familyApi.updateInvitationStatus(inviteId, UpdateInvitationRequest("ACCEPTED"))
             response.requireSuccess("Không thể chấp nhận lời mời")
@@ -164,7 +165,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun rejectInvitation(inviteId: Long): Result<Unit> {
+    override suspend fun rejectInvitation(inviteId: Long): Result<Unit> {
         return try {
             val response = familyApi.updateInvitationStatus(inviteId, UpdateInvitationRequest("REJECTED"))
             response.requireSuccess("Không thể từ chối lời mời")
@@ -174,7 +175,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun getFamilyJoinCode(): Result<FamilyJoinCodeResponse> {
+    override suspend fun getFamilyJoinCode(): Result<FamilyJoinCodeResponse> {
         return try {
             val response = familyApi.getFamilyJoinCode()
             Result.success(response.requireData("Không thể tải mã gia đình"))
@@ -183,7 +184,7 @@ class FamilyRepository(
         }
     }
 
-    suspend fun rotateFamilyJoinCode(): Result<FamilyJoinCodeResponse> {
+    override suspend fun rotateFamilyJoinCode(): Result<FamilyJoinCodeResponse> {
         return try {
             val response = familyApi.rotateFamilyJoinCode()
             Result.success(response.requireData("Không thể tạo lại mã gia đình"))
@@ -192,11 +193,11 @@ class FamilyRepository(
         }
     }
 
-    suspend fun saveActiveFamilyId(id: String) {
+    override suspend fun saveActiveFamilyId(id: String) {
         dataStoreManager.saveFamilyId(id)
     }
 
-    suspend fun getActiveFamilyId(): String? {
+    override suspend fun getActiveFamilyId(): String? {
         return dataStoreManager.familyIdFlow.first()
     }
 
