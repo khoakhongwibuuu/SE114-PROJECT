@@ -1,8 +1,10 @@
 package com.carenest.backend.features.healthprofile.service.impl;
 
 import com.carenest.backend.core.exception.ResourceNotFoundException;
+import com.carenest.backend.core.exception.DuplicateResourceException;
 import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.auth.repository.UserRepository;
+import com.carenest.backend.features.family.context.FamilyRequestContext;
 import com.carenest.backend.features.family.entity.Family;
 import com.carenest.backend.features.family.repository.FamilyRepository;
 import com.carenest.backend.features.family.util.FamilySecurityUtil;
@@ -48,6 +50,11 @@ public class HealthProfileServiceImpl implements HealthProfileService {
             familySecurityUtil.checkUserBelongsToFamily(request.getFamilyId());
             family = familyRepository.findById(request.getFamilyId())
                     .orElseThrow(() -> new ResourceNotFoundException("Family", "id", request.getFamilyId().toString()));
+            if (healthProfileRepository.existsByUserIdAndFamilyIdAndDeletedAtIsNull(userId, request.getFamilyId())) {
+                throw new DuplicateResourceException("HealthProfile", "userId/familyId", userId + "/" + request.getFamilyId());
+            }
+        } else if (healthProfileRepository.existsByUserIdAndFamilyIsNullAndDeletedAtIsNull(userId)) {
+            throw new DuplicateResourceException("HealthProfile", "userId", userId.toString());
         }
 
         HealthProfile healthProfile = HealthProfile.builder()
@@ -152,22 +159,19 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     public HealthProfileResponse getMyHealthProfile(Long userId) {
         List<HealthProfile> profiles = healthProfileRepository.findByUserIdAndDeletedAtIsNull(userId);
         if (profiles.isEmpty()) {
-            // Auto-create profile if missing
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", userId));
-
-            HealthProfile newProfile = HealthProfile.builder()
-                    .user(user)
-                    .fullName(user.getFullName())
-                    .dateOfBirth(user.getDateOfBirth() != null ? user.getDateOfBirth() : java.time.LocalDate.of(2000, 1, 1))
-                    .gender(user.getGender() != null ? user.getGender() : com.carenest.backend.features.auth.enums.Gender.OTHER)
-                    .isChild(false)
-                    .build();
-
-            HealthProfile saved = healthProfileRepository.save(newProfile);
-            return enrichWithHeightAndWeight(healthProfileMapper.toResponse(saved));
+            throw new ResourceNotFoundException("HealthProfile", "userId", userId.toString());
         }
-        // Usually the first one is the main profile
+
+        Long activeFamilyId = FamilyRequestContext.getFamilyId();
+        if (activeFamilyId != null) {
+            return profiles.stream()
+                    .filter(profile -> profile.getFamily() != null && activeFamilyId.equals(profile.getFamily().getId()))
+                    .findFirst()
+                    .map(healthProfileMapper::toResponse)
+                    .map(this::enrichWithHeightAndWeight)
+                    .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "familyId", activeFamilyId.toString()));
+        }
+
         return enrichWithHeightAndWeight(healthProfileMapper.toResponse(profiles.get(0)));
     }
 
