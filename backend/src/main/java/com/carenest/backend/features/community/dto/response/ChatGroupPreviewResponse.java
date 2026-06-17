@@ -19,4 +19,5 @@ public class ChatGroupPreviewResponse {
     private boolean joined;
     private GroupRole myRole;
     private String rules;
+    private boolean isFrozen;
 }

@@ -10,6 +10,7 @@ import java.time.Instant;
 public class AdminReportSummaryResponse {
     private Long id;
     private Long postId;
+    private Long messageId;
     private Long commentId;
     private String contentType;
     private Long reporterId;

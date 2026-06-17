@@ -45,6 +45,10 @@ public class ChatGroup extends BaseEntity {
     @Column(name = "is_private", nullable = false)
     private boolean isPrivate = false;
 
+    @Builder.Default
+    @Column(name = "is_frozen", nullable = false)
+    private boolean isFrozen = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lead_doctor_id")
     private User leadDoctor;
