@@ -9,6 +9,7 @@ import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.ekyc.data.repository.EkycRepository
 import com.example.carenest.feature.ekyc.domain.model.DoctorVerificationResponse
 import com.example.carenest.feature.ekyc.domain.model.VerificationStatus
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +42,7 @@ data class EkycUiState(
 
 class EkycViewModel(
     private val repository: EkycRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EkycUiState())
     val uiState: StateFlow<EkycUiState> = _uiState.asStateFlow()
@@ -53,7 +55,7 @@ class EkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, message = null) }
             try {
-                val verification = withContext(Dispatchers.IO) {
+                val verification = withContext(ioDispatcher) {
                     repository.getMyVerification()
                 }
                 _uiState.update {
@@ -107,7 +109,7 @@ class EkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, error = null, message = "Đang tải ảnh chứng chỉ...") }
             try {
-                val documentUrl = withContext(Dispatchers.IO) {
+                val documentUrl = withContext(ioDispatcher) {
                     snapshot.selectedCertificateUri?.let { uri ->
                         repository.uploadCertificate(context.applicationContext, uri)
                     } ?: snapshot.uploadedDocumentUrl.orEmpty()
@@ -115,7 +117,7 @@ class EkycViewModel(
 
                 _uiState.update { it.copy(uploadedDocumentUrl = documentUrl, message = "Đang gửi hồ sơ xác thực...") }
 
-                val verification = withContext(Dispatchers.IO) {
+                val verification = withContext(ioDispatcher) {
                     repository.submitVerification(
                         certificationNumber = snapshot.certificationNumber.trim(),
                         specialty = snapshot.specialty.trim(),
