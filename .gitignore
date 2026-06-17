@@ -1,72 +1,60 @@
-# ─────────────────────────────────────────
-# Environment files (chứa secrets - NEVER commit!)
-# ─────────────────────────────────────────
+# Environment files
 .env
 .env.*
 !.env.example
 
-# ─────────────────────────────────────────
 # IDE
-# ─────────────────────────────────────────
 .idea/
 *.iml
 .vscode/
 *.suo
 *.user
 
-# ─────────────────────────────────────────
 # Gradle / Maven build outputs
-# ─────────────────────────────────────────
 .gradle/
 build/
 target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-# ─────────────────────────────────────────
 # Logs
-# ─────────────────────────────────────────
 *.log
+*.log.*
+logcat*.txt
 logs/
 
-# ─────────────────────────────────────────
 # OS
-# ─────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# ─────────────────────────────────────────
-# Node (for frontend)
-# ─────────────────────────────────────────
+# Node
 node_modules/
 .next/
 out/
 
-# ─────────────────────────────────────────
-# Docker
-# ─────────────────────────────────────────
+# Docker and local runtime data
 docker-volumes/
-
-# ─────────────────────────────────────────
-# Local dev configs
-# ─────────────────────────────────────────
-local.properties
-
 backend/pgdata/
 
-# ─────────────────────────────────────────
-# Git patch leftovers (never commit these)
-# ─────────────────────────────────────────
+# Local dev configs
+local.properties
+
+# Git patch leftovers
 *.rej
 *.orig
 stash_diff*.txt
 
-# ─────────────────────────────────────────
 # Python bytecode / debug scripts
-# ─────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 fix*.py
 restore_files.py
+
+# Local investigation and secondary-repo coordination artifacts
+scratch/
+BATCH_REPORT_*.md
+SUBAGENT_*.md
+TEST_ACCOUNTS_AND_SCENARIOS.md
 EPIC_PROGRESS_TRACKER.md
+docs/qa/
