@@ -382,23 +382,6 @@ fun ProfileScreen(
                 }
             }
 
-            // Support
-            SectionLabel("Hỗ trợ")
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(24.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp)
-            ) {
-                Column {
-                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung tâm hỗ trợ", value = "Chưa hỗ trợ", enabled = false)
-                    HorizontalDivider(color = Color(0xFFF1F5F9))
-                    SettingsRow(icon = Icons.Default.BugReport, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Báo cáo sự cố", value = "Chưa hỗ trợ", enabled = false)
-                }
-            }
-
             // Logout Button
             Box(modifier = Modifier.padding(bottom = 20.dp)) {
                 Row(

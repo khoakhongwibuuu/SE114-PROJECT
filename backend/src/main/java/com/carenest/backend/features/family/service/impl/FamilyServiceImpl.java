@@ -365,14 +365,14 @@ public class FamilyServiceImpl implements FamilyService {
         Long activeFamilyId = FamilyRequestContext.getFamilyId();
         if (activeFamilyId != null) {
             return familyMemberRepository.findByFamilyIdAndUserId(activeFamilyId, currentUser.getId())
-                    .orElseThrow(() -> new AccessDeniedException("Báº¡n khĂ´ng thuá»™c gia Ä‘Ă¬nh nĂ y"));
+                    .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc gia đình này"));
         }
         List<FamilyMember> memberships = familyMemberRepository.findAllByUserId(currentUser.getId());
         if (memberships.isEmpty()) {
             throw new ResourceNotFoundException("Family", "userId", String.valueOf(currentUser.getId()));
         }
         if (memberships.size() > 1) {
-            throw new BadRequestException("Vui lĂ²ng chá»n gia Ä‘Ă¬nh Ä‘ang hoáº¡t Ä‘á»™ng trÆ°á»›c khi thá»±c hiá»‡n thao tĂ¡c nĂ y");
+            throw new BadRequestException("Vui lòng chọn gia đình đang hoạt động trước khi thực hiện thao tác này");
         }
         return memberships.get(0);
     }
@@ -438,7 +438,7 @@ public class FamilyServiceImpl implements FamilyService {
 
     private String normalizeJoinCode(String joinCode) {
         if (joinCode == null || joinCode.isBlank()) {
-            throw new BadRequestException("MÃ£ gia Ä‘Ă¬nh khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng");
+            throw new BadRequestException("Mã gia đình không được để trống");
         }
         return joinCode.trim().replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
     }
