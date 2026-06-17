@@ -123,6 +123,20 @@ fun MainNavigation() {
     }
   }
 
+  fun openConsultationRoomForRole(role: AppRole?, bookingId: Long?): NotificationOpenResult {
+    if (bookingId == null || bookingId <= 0L) {
+      return NotificationOpenResult.UNHANDLED
+    }
+    closeNotificationsCenterIfVisible()
+    return when (role) {
+      AppRole.USER, AppRole.DOCTOR -> {
+        backStack.add(ConsultationRoom(bookingId))
+        NotificationOpenResult.OPENED
+      }
+      else -> NotificationOpenResult.UNHANDLED
+    }
+  }
+
   fun openByNotificationType(type: String?, role: AppRole?): NotificationOpenResult {
     return when (type?.uppercase()) {
       "FAMILY" -> {
@@ -134,7 +148,10 @@ fun MainNavigation() {
         backStack.add(MedicineSchedule)
         NotificationOpenResult.OPENED
       }
-      "APPOINTMENT" -> openBookingAreaForRole(role)
+      "APPOINTMENT" -> {
+        routeToMainTab(MainTabTarget.HOME)
+        NotificationOpenResult.OPENED
+      }
       "GROWTH" -> {
         routeToMainTab(MainTabTarget.PROFILE)
         NotificationOpenResult.OPENED
@@ -148,6 +165,25 @@ fun MainNavigation() {
     val role = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
 
     val handled = when (referenceType) {
+      "BOOKING_WORKSPACE" -> {
+        if (role == AppRole.DOCTOR) {
+          closeNotificationsCenterIfVisible()
+          backStack.add(DoctorWorkspace)
+          NotificationOpenResult.OPENED
+        } else {
+          NotificationOpenResult.UNHANDLED
+        }
+      }
+      "BOOKING_HISTORY" -> {
+        if (role == AppRole.USER || role == AppRole.DOCTOR) {
+          closeNotificationsCenterIfVisible()
+          backStack.add(PatientBookingCenter)
+          NotificationOpenResult.OPENED
+        } else {
+          NotificationOpenResult.UNHANDLED
+        }
+      }
+      "CONSULTATION_ROOM" -> openConsultationRoomForRole(role, notification.referenceId)
       "BOOKING_REQUEST" -> openBookingAreaForRole(role)
       "DOCTOR_VERIFICATION" -> {
         authViewModel.refreshCurrentUser()
@@ -169,7 +205,10 @@ fun MainNavigation() {
         backStack.add(MedicineSchedule)
         NotificationOpenResult.OPENED
       }
-      "APPOINTMENT" -> openBookingAreaForRole(role)
+      "APPOINTMENT" -> {
+        routeToMainTab(MainTabTarget.HOME)
+        NotificationOpenResult.OPENED
+      }
       "GROWTH_RECORD" -> {
         routeToMainTab(MainTabTarget.PROFILE)
         NotificationOpenResult.OPENED
@@ -183,7 +222,10 @@ fun MainNavigation() {
       }
     }
     if (handled == NotificationOpenResult.UNHANDLED
-      && (referenceType == "BOOKING_REQUEST" || referenceType == "APPOINTMENT")) {
+      && (referenceType == "BOOKING_REQUEST"
+        || referenceType == "BOOKING_WORKSPACE"
+        || referenceType == "BOOKING_HISTORY"
+        || referenceType == "CONSULTATION_ROOM")) {
       Toast.makeText(context, "Thông báo đặt lịch này không áp dụng cho tài khoản hiện tại.", Toast.LENGTH_SHORT).show()
     }
     if (handled == NotificationOpenResult.OPENED) {
