@@ -156,7 +156,7 @@ fun AddAppointmentScreen(
                         onBack()
                     },
                     onError = {
-                        Toast.makeText(context, "Lỗi: $it", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, it, Toast.LENGTH_LONG).show()
                     }
                 )
             }

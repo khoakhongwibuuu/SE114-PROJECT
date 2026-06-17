@@ -4,6 +4,7 @@ import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
 import com.example.carenest.core.data.network.requireSuccess
+import com.example.carenest.core.data.network.userMessage
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -125,7 +126,7 @@ class MedicineViewModel(
                     _cabinetState.value = CabinetState.Error("Không thể tải tủ thuốc")
                 }
             } catch (e: Exception) {
-                _cabinetState.value = CabinetState.Error(e.localizedMessage ?: "Lỗi kết nối")
+                _cabinetState.value = CabinetState.Error(e.userMessage("Không thể tải tủ thuốc"))
             }
         }
     }
@@ -195,7 +196,7 @@ class MedicineViewModel(
                     }
                 }
             } catch (e: Exception) {
-                val errorMsg = e.localizedMessage ?: "Lỗi kết nối mạng"
+                val errorMsg = e.userMessage("Không thể thêm thuốc vào tủ")
                 withContext(Dispatchers.Main) {
                     onError(errorMsg)
                 }
@@ -217,7 +218,7 @@ class MedicineViewModel(
                 response.requireData("Không thể cập nhật số lượng thuốc")
                 fetchCabinet()
             } catch (e: Exception) {
-                _actionMessage.value = e.localizedMessage ?: "Không thể cập nhật số lượng thuốc"
+                _actionMessage.value = e.userMessage("Không thể cập nhật số lượng thuốc")
             } finally {
                 _isActionLoading.value = false
             }
@@ -232,7 +233,7 @@ class MedicineViewModel(
                 response.requireSuccess("Không thể xóa thuốc")
                 fetchCabinet()
             } catch (e: Exception) {
-                _actionMessage.value = e.localizedMessage ?: "Không thể xóa thuốc"
+                _actionMessage.value = e.userMessage("Không thể xóa thuốc")
             }
         }
     }
@@ -280,7 +281,7 @@ class MedicineViewModel(
                     _scheduleState.value = ScheduleState.Error("Không thể tải lịch thuốc")
                 }
             } catch (e: Exception) {
-                _scheduleState.value = ScheduleState.Error(e.localizedMessage ?: "Lỗi kết nối")
+                _scheduleState.value = ScheduleState.Error(e.userMessage("Không thể tải lịch thuốc"))
             }
         }
     }
@@ -364,7 +365,7 @@ class MedicineViewModel(
                     _schedules.value = response.requireData("Không thể tải lịch thuốc").content
                 }
             } catch (e: Exception) {
-                _actionMessage.value = e.localizedMessage ?: "Không thể tải danh sách lịch thuốc"
+                _actionMessage.value = e.userMessage("Không thể tải danh sách lịch thuốc")
             }
         }
     }
@@ -414,7 +415,7 @@ class MedicineViewModel(
                     }
                 }
             } catch (e: Exception) {
-                val errorMsg = e.localizedMessage ?: "Lỗi kết nối"
+                val errorMsg = e.userMessage("Không thể tạo lịch thuốc")
                 withContext(Dispatchers.Main) {
                     onError(errorMsg)
                 }
@@ -437,7 +438,7 @@ class MedicineViewModel(
                     fetchSchedules(resolvedProfileId)
                 }
             } catch (e: Exception) {
-                _actionMessage.value = e.localizedMessage ?: "Không thể xóa lịch thuốc"
+                _actionMessage.value = e.userMessage("Không thể xóa lịch thuốc")
             }
         }
     }
