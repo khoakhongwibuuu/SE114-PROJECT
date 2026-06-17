@@ -42,6 +42,7 @@ data class GroupPostDetailState(
     val members: List<GroupMember> = emptyList(),
     val isMembersSheetVisible: Boolean = false,
     val isMembersLoading: Boolean = false,
+    val isLeavingGroup: Boolean = false,
     val memberOperationUserId: Long? = null,
     val message: String? = null
 )
@@ -232,13 +233,19 @@ class GroupPostDetailViewModel(
 
     fun leaveGroup(onSuccess: () -> Unit) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLeavingGroup = true, error = null) }
             runCatching {
                 communityRepository.leave(groupId)
             }.onSuccess {
-                _uiState.update { it.copy(message = "Đã rời nhóm") }
+                _uiState.update { it.copy(isLeavingGroup = false, message = "Đã rời nhóm") }
                 onSuccess()
             }.onFailure { error ->
-                _uiState.update { it.copy(error = error.message ?: "Không thể rời nhóm") }
+                _uiState.update {
+                    it.copy(
+                        isLeavingGroup = false,
+                        error = error.message ?: "Không thể rời nhóm"
+                    )
+                }
             }
         }
     }

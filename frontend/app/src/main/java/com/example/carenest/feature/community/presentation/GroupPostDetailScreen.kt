@@ -3,12 +3,12 @@ package com.example.carenest.feature.community.presentation
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,13 +18,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -62,6 +67,7 @@ import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import com.example.carenest.feature.community.domain.model.GroupMember
 import com.example.carenest.feature.community.domain.model.GroupPost
 import com.example.carenest.feature.community.domain.model.GroupPostComment
 
@@ -89,6 +95,7 @@ fun GroupPostDetailScreen(
     val activeTab = state.activeTab
     
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val membersSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var commentText by remember { mutableStateOf("") }
     var reportTarget by remember { mutableStateOf<GroupPost?>(null) }
     var reportReason by remember { mutableStateOf("") }
@@ -97,6 +104,7 @@ fun GroupPostDetailScreen(
     var editContent by remember { mutableStateOf("") }
     var editTags by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<GroupPost?>(null) }
+    var showLeaveGroupConfirm by remember { mutableStateOf(false) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -152,7 +160,7 @@ fun GroupPostDetailScreen(
                     .padding(start = 8.dp)
                     .weight(1f)
             )
-            IconButton(onClick = { onNavigateToManageGroup(groupId, groupName) }) {
+            IconButton(onClick = viewModel::openMembersSheet) {
                 Icon(imageVector = Icons.Default.Groups, contentDescription = "Thành viên")
             }
         }
@@ -307,6 +315,123 @@ fun GroupPostDetailScreen(
         }
     }
 
+    if (state.isMembersSheetVisible) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.closeMembersSheet() },
+            sheetState = membersSheetState,
+            containerColor = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "Thành viên hội nhóm",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${state.members.size} thành viên",
+                    fontSize = 13.sp,
+                    color = Color(0xFF64748B)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                when {
+                    state.isMembersLoading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = PrimaryBlue)
+                        }
+                    }
+
+                    state.members.isEmpty() -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Chưa có dữ liệu thành viên.", color = Color(0xFF64748B))
+                        }
+                    }
+
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(320.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(state.members, key = { it.userId }) { member ->
+                                GroupMemberRow(member = member)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (state.canLeaveGroup) {
+                        OutlinedButton(
+                            onClick = { showLeaveGroupConfirm = true },
+                            modifier = Modifier.weight(1f),
+                            enabled = !state.isLeavingGroup
+                        ) {
+                            if (state.isLeavingGroup) {
+                                CircularProgressIndicator(
+                                    color = Color(0xFFDC2626),
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.ExitToApp,
+                                    contentDescription = null,
+                                    tint = Color(0xFFDC2626),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Rời nhóm", color = Color(0xFFDC2626))
+                            }
+                        }
+                    }
+
+                    if (state.canManageMembers) {
+                        Button(
+                            onClick = {
+                                viewModel.closeMembersSheet()
+                                onNavigateToManageGroup(groupId, groupName)
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ManageAccounts,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Quản trị nhóm")
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+
     reportTarget?.let { post ->
         AlertDialog(
             onDismissRequest = { reportTarget = null },
@@ -419,6 +544,90 @@ fun GroupPostDetailScreen(
                 }
             }
         )
+    }
+
+    if (showLeaveGroupConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLeaveGroupConfirm = false },
+            title = { Text("Rời nhóm?", fontWeight = FontWeight.Bold) },
+            text = { Text("Bạn sẽ mất quyền truy cập vào hội nhóm này cho đến khi tham gia lại.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLeaveGroupConfirm = false
+                        viewModel.leaveGroup(
+                            onSuccess = {
+                                viewModel.closeMembersSheet()
+                                Toast.makeText(context, "Đã rời nhóm thành công.", Toast.LENGTH_SHORT).show()
+                                onBack()
+                            }
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    enabled = !state.isLeavingGroup
+                ) {
+                    Text("Xác nhận")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLeaveGroupConfirm = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun GroupMemberRow(member: GroupMember) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFDBEAFE)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = member.name.take(1).uppercase(),
+                    color = PrimaryBlue,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 14.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = member.name,
+                    color = Color(0xFF0F172A),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = groupRoleLabel(member.role),
+                    color = Color(0xFF64748B),
+                    fontSize = 12.sp
+                )
+            }
+        }
+    }
+}
+
+private fun groupRoleLabel(role: String): String {
+    return when (role.uppercase()) {
+        "HOST" -> "Trưởng nhóm"
+        "MODERATOR" -> "Điều phối viên"
+        else -> "Thành viên"
     }
 }
 
