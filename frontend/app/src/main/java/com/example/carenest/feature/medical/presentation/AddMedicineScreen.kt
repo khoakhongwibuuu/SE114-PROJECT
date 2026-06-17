@@ -1,7 +1,6 @@
 package com.example.carenest.feature.medical.presentation
 
 import android.app.DatePickerDialog
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +37,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -45,6 +46,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +60,7 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import kotlinx.coroutines.launch
 
 @Composable
 fun AddMedicineScreen(
@@ -65,6 +68,8 @@ fun AddMedicineScreen(
     onBack: () -> Unit,
 ) {
     val isActionLoading by viewModel.isActionLoading.collectAsState()
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     var name by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("viên") }
@@ -99,12 +104,16 @@ fun AddMedicineScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .statusBarsPadding()
-            .windowInsetsPadding(WindowInsets.ime),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .windowInsetsPadding(WindowInsets.ime),
     ) {
         Row(
             modifier = Modifier
@@ -278,11 +287,13 @@ fun AddMedicineScreen(
                         unit = unit,
                         expiryDate = expiryDate,
                         onSuccess = {
-                            Toast.makeText(context, "Đã thêm thuốc thành công", Toast.LENGTH_SHORT).show()
-                            onBack()
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Đã thêm thuốc thành công")
+                                onBack()
+                            }
                         },
                         onError = { error ->
-                            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                            scope.launch { snackbarHostState.showSnackbar(error) }
                         }
                     )
                 },
@@ -305,5 +316,15 @@ fun AddMedicineScreen(
                 }
             }
         }
+
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(16.dp)
+        )
     }
 }
