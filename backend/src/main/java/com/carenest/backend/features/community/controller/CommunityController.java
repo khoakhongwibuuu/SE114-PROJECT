@@ -2,15 +2,16 @@ package com.carenest.backend.features.community.controller;
 
 import com.carenest.backend.core.api.ApiResponse;
 import com.carenest.backend.core.api.PageResponse;
+import com.carenest.backend.features.community.dto.request.CreateGroupPostCommentRequest;
 import com.carenest.backend.features.community.dto.request.CreateGroupPostRequest;
 import com.carenest.backend.features.community.dto.request.UpdateGroupMemberRoleRequest;
 import com.carenest.backend.features.community.dto.response.ChatGroupPreviewResponse;
 import com.carenest.backend.features.community.dto.response.ChatGroupResponse;
+import com.carenest.backend.features.community.dto.response.GroupGovernanceAuditLogResponse;
 import com.carenest.backend.features.community.dto.response.GroupMemberResponse;
-import com.carenest.backend.features.community.dto.response.GroupPostResponse;
-import com.carenest.backend.features.community.dto.response.GroupPostInteractionResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostCommentResponse;
-import com.carenest.backend.features.community.dto.request.CreateGroupPostCommentRequest;
+import com.carenest.backend.features.community.dto.response.GroupPostInteractionResponse;
+import com.carenest.backend.features.community.dto.response.GroupPostResponse;
 import com.carenest.backend.features.community.service.CommunityKnowledgeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +22,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -78,6 +79,11 @@ public class CommunityController {
     @GetMapping("/{id}/members")
     public ApiResponse<List<GroupMemberResponse>> getGroupMembers(@PathVariable("id") Long id) {
         return ApiResponse.success(communityKnowledgeService.getGroupMembers(id));
+    }
+
+    @GetMapping("/{id}/governance-audit-logs")
+    public ApiResponse<List<GroupGovernanceAuditLogResponse>> getGroupGovernanceAuditLogs(@PathVariable("id") Long id) {
+        return ApiResponse.success(communityKnowledgeService.getGroupGovernanceAuditLogs(id));
     }
 
     @PatchMapping("/{id}/members/{targetUserId}/role")
@@ -167,8 +173,9 @@ public class CommunityController {
     @DeleteMapping("/{id}/members/{targetUserId}")
     public ApiResponse<Void> kickMember(
             @PathVariable("id") Long id,
-            @PathVariable("targetUserId") Long targetUserId) {
-        communityKnowledgeService.kickMember(id, targetUserId);
+            @PathVariable("targetUserId") Long targetUserId,
+            @RequestParam("reason") String reason) {
+        communityKnowledgeService.kickMember(id, targetUserId, reason);
         return ApiResponse.success("Đã mời thành viên ra khỏi nhóm", null);
     }
 }

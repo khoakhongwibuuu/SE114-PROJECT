@@ -11,4 +11,7 @@ import lombok.NoArgsConstructor;
 public class AdminUserStatusUpdateRequest {
     @NotBlank(message = "Status cannot be blank")
     private String status;
+
+    @NotBlank(message = "Reason cannot be blank")
+    private String reason;
 }

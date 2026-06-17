@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface GroupGovernanceAuditLogRepository extends JpaRepository<GroupGovernanceAuditLog, Long> {
+    java.util.List<GroupGovernanceAuditLog> findTop20ByGroupIdOrderByCreatedAtDesc(Long groupId);
 }

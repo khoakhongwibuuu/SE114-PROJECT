@@ -5,6 +5,7 @@ import com.carenest.backend.core.api.PageResponse;
 import com.carenest.backend.features.admin.dto.request.AdminUserRoleUpdateRequest;
 import com.carenest.backend.features.admin.dto.request.AdminUserStatusUpdateRequest;
 import com.carenest.backend.features.admin.dto.response.AdminDashboardStatsResponse;
+import com.carenest.backend.features.admin.dto.response.AdminUserAuditLogResponse;
 import com.carenest.backend.features.admin.dto.response.AdminUserRoleUpdateResponse;
 import com.carenest.backend.features.admin.dto.response.AdminUserStatusUpdateResponse;
 import com.carenest.backend.features.admin.dto.response.AdminUserSummaryResponse;
@@ -17,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/admin")
@@ -42,6 +45,12 @@ public class AdminController {
             @RequestParam(required = false) String search) {
         PageResponse<AdminUserSummaryResponse> response = adminService.getUsers(page, size, search);
         return ApiResponse.success(response);
+    }
+
+    @GetMapping("/user-audit-logs")
+    @Operation(summary = "Get recent admin user override audit logs")
+    public ApiResponse<List<AdminUserAuditLogResponse>> getRecentUserAuditLogs() {
+        return ApiResponse.success(adminService.getRecentUserAuditLogs());
     }
 
     @PatchMapping("/users/{userId}/status")

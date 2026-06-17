@@ -11,4 +11,7 @@ import lombok.NoArgsConstructor;
 public class AdminUserRoleUpdateRequest {
     @NotBlank(message = "Role cannot be blank")
     private String role;
+
+    @NotBlank(message = "Reason cannot be blank")
+    private String reason;
 }

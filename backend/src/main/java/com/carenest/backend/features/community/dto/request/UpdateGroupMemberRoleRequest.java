@@ -11,4 +11,7 @@ import lombok.NoArgsConstructor;
 public class UpdateGroupMemberRoleRequest {
     @NotBlank(message = "Group role cannot be blank")
     private String role;
+
+    @NotBlank(message = "Reason cannot be blank")
+    private String reason;
 }
