@@ -3,6 +3,7 @@ package com.carenest.backend.features.admin.service.impl;
 import com.carenest.backend.core.exception.BadRequestException;
 import com.carenest.backend.features.admin.dto.request.AdminUserRoleUpdateRequest;
 import com.carenest.backend.features.admin.dto.request.AdminUserStatusUpdateRequest;
+import com.carenest.backend.features.admin.repository.AdminUserAuditLogRepository;
 import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.repository.UserRepository;
@@ -37,6 +38,8 @@ class AdminServiceImplTest {
     private ReportTicketRepository reportRepository;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private AdminUserAuditLogRepository adminUserAuditLogRepository;
 
     @InjectMocks
     private AdminServiceImpl adminService;
@@ -46,6 +49,7 @@ class AdminServiceImplTest {
         User admin = admin(1L);
         AdminUserStatusUpdateRequest request = new AdminUserStatusUpdateRequest();
         request.setStatus("BANNED");
+        request.setReason("Testing self-ban protection");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
 
@@ -60,6 +64,7 @@ class AdminServiceImplTest {
         User currentAdmin = admin(1L);
         AdminUserStatusUpdateRequest request = new AdminUserStatusUpdateRequest();
         request.setStatus("BANNED");
+        request.setReason("Testing last admin protection");
 
         when(userRepository.findById(2L)).thenReturn(Optional.of(targetAdmin));
         when(userRepository.countByRoleAndIsActiveTrue(Role.ADMIN)).thenReturn(1L);
@@ -75,6 +80,7 @@ class AdminServiceImplTest {
         User currentAdmin = admin(1L);
         AdminUserRoleUpdateRequest request = new AdminUserRoleUpdateRequest();
         request.setRole("USER");
+        request.setReason("Testing last admin demotion protection");
 
         when(userRepository.findById(2L)).thenReturn(Optional.of(targetAdmin));
         when(userRepository.countByRoleAndIsActiveTrue(Role.ADMIN)).thenReturn(1L);
@@ -89,6 +95,7 @@ class AdminServiceImplTest {
         User currentAdmin = admin(1L);
         AdminUserRoleUpdateRequest request = new AdminUserRoleUpdateRequest();
         request.setRole("USER");
+        request.setReason("Testing self demotion protection");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(currentAdmin));
 
@@ -108,6 +115,7 @@ class AdminServiceImplTest {
         user.setId(3L);
         AdminUserRoleUpdateRequest request = new AdminUserRoleUpdateRequest();
         request.setRole("ADMIN");
+        request.setReason("Testing inactive admin grant protection");
 
         when(userRepository.findById(3L)).thenReturn(Optional.of(user));
 
@@ -121,6 +129,7 @@ class AdminServiceImplTest {
         User user = user(3L);
         AdminUserStatusUpdateRequest request = new AdminUserStatusUpdateRequest();
         request.setStatus("BANNED");
+        request.setReason("User violated moderation policy");
 
         when(userRepository.findById(3L)).thenReturn(Optional.of(user));
         when(userRepository.save(user)).thenReturn(user);
@@ -143,6 +152,7 @@ class AdminServiceImplTest {
         User user = user(3L);
         AdminUserRoleUpdateRequest request = new AdminUserRoleUpdateRequest();
         request.setRole("ADMIN");
+        request.setReason("On-call operations coverage");
 
         when(userRepository.findById(3L)).thenReturn(Optional.of(user));
         when(userRepository.save(user)).thenReturn(user);
