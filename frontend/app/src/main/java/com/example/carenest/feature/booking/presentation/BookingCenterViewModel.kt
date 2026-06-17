@@ -3,11 +3,10 @@ package com.example.carenest.feature.booking.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.data.storage.SecureSessionManager
-import com.example.carenest.feature.booking.domain.model.BookingResponse
-import com.example.carenest.feature.booking.domain.model.BookingRequestType
 import com.example.carenest.feature.booking.data.repository.BookingRepository
+import com.example.carenest.feature.booking.domain.model.BookingRequestType
+import com.example.carenest.feature.booking.domain.model.BookingResponse
 import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -71,7 +70,7 @@ class BookingCenterViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.userMessage("Không thể tải trung tâm đặt lịch")
+                        error = e.message ?: "Không thể tải trung tâm đặt lịch"
                     )
                 }
             }
@@ -133,7 +132,7 @@ class BookingCenterViewModel(
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        error = e.userMessage("Không thể gửi yêu cầu đặt lịch")
+                        error = e.message ?: "Không thể gửi yêu cầu đặt lịch"
                     )
                 }
             }
@@ -162,7 +161,7 @@ class BookingCenterViewModel(
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        error = e.userMessage("Không thể xác nhận lịch")
+                        error = e.message ?: "Không thể xác nhận lịch"
                     )
                 }
             }
@@ -188,7 +187,7 @@ class BookingCenterViewModel(
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        error = e.userMessage("Không thể từ chối yêu cầu")
+                        error = e.message ?: "Không thể từ chối yêu cầu"
                     )
                 }
             }
@@ -210,7 +209,7 @@ class BookingCenterViewModel(
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        error = e.userMessage("Không thể hủy yêu cầu")
+                        error = e.message ?: "Không thể hủy yêu cầu"
                     )
                 }
             }

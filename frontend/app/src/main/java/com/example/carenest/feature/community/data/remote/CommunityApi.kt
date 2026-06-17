@@ -124,7 +124,8 @@ interface CommunityApi {
     @DELETE("/api/v1/communities/{id}/members/{userId}")
     suspend fun kickMember(
         @Path("id") id: Long,
-        @Path("userId") userId: Long
+        @Path("userId") userId: Long,
+        @Query("reason") reason: String
     ): Response<ApiResponse<Unit>>
 
     @POST("/api/v1/posts/{id}/report")
@@ -156,11 +157,20 @@ interface CommunityApi {
     @GET("/api/v1/communities/{id}/members")
     suspend fun getMembers(@Path("id") id: Long): Response<ApiResponse<List<com.example.carenest.feature.community.domain.model.GroupMember>>>
 
+    @GET("/api/v1/communities/{id}/governance-audit-logs")
+    suspend fun getGovernanceAuditLogs(@Path("id") id: Long): Response<ApiResponse<List<com.example.carenest.feature.community.domain.model.GroupGovernanceAuditEntry>>>
+
     @POST("/api/v1/admin/groups/{id}/freeze")
-    suspend fun freezeGroup(@Path("id") id: Long): Response<ApiResponse<Unit>>
+    suspend fun freezeGroup(
+        @Path("id") id: Long,
+        @Query("reason") reason: String
+    ): Response<ApiResponse<Unit>>
 
     @POST("/api/v1/admin/groups/{id}/unfreeze")
-    suspend fun unfreezeGroup(@Path("id") id: Long): Response<ApiResponse<Unit>>
+    suspend fun unfreezeGroup(
+        @Path("id") id: Long,
+        @Query("reason") reason: String
+    ): Response<ApiResponse<Unit>>
 
     @PATCH("/api/v1/communities/{id}/members/{userId}/role")
     suspend fun updateMemberRole(

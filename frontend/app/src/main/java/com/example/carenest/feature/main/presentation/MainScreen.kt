@@ -11,8 +11,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -21,7 +19,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -29,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -46,6 +44,8 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.PrimaryFixed
 import com.example.carenest.core.presentation.theme.SurfaceLowest
 import com.example.carenest.feature.auth.presentation.AuthViewModel
+import com.example.carenest.feature.booking.presentation.BookingCenterViewModel
+import com.example.carenest.feature.booking.presentation.BookingCenterViewModelFactory
 import com.example.carenest.feature.community.presentation.CommunityScreen
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.family.presentation.FamilyFlowScreen
@@ -53,7 +53,6 @@ import com.example.carenest.feature.medical.presentation.MedicineViewModel
 import com.example.carenest.feature.profile.presentation.ProfileScreen
 import com.example.carenest.feature.profile.presentation.ProfileViewModel
 import com.example.carenest.feature.profile.presentation.ProfileViewModelFactory
-import kotlinx.coroutines.launch
 
 private const val TAB_HOME = 0
 private const val TAB_FAMILY = 1
@@ -75,6 +74,7 @@ fun MainScreen(
     onNavigateToAddMedicine: () -> Unit = {},
     onNavigateToMedicineSchedule: () -> Unit = {},
     onNavigateToAddMedicineSchedule: () -> Unit = {},
+    onNavigateToOcrScanner: () -> Unit = {},
     onNavigateToAppointments: (Long) -> Unit = {},
     onNavigateToVaccinations: (Long) -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
@@ -101,13 +101,18 @@ fun MainScreen(
     var profileRefreshTrigger by rememberSaveable { mutableIntStateOf(0) }
 
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
     val application = context.applicationContext as CareNestApplication
+    val bookingCenterViewModel: BookingCenterViewModel = viewModel(
+        factory = BookingCenterViewModelFactory(
+            application.bookingRepository,
+            application.secureSessionManager
+        )
+    )
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModelFactory(
             application.authApi,
-            application.secureSessionManager
+            application.secureSessionManager,
+            application.familyRepository
         )
     )
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -115,9 +120,10 @@ fun MainScreen(
     val currentUser by dashboardViewModel.currentUser.collectAsState()
     val authCurrentUser by authViewModel.currentUser.collectAsState()
     val currentRole by application.secureSessionManager.userRoleFlow.collectAsState()
-    val normalizedRole = (authCurrentUser?.role ?: currentUser?.role ?: currentRole)?.normalizedRole()
-    val canAccessDoctorUi = normalizedRole == "DOCTOR" || normalizedRole == "ADMIN"
-    val canCreateGroupRequest = normalizedRole == "DOCTOR"
+    val canAccessDoctorUi = (authCurrentUser?.role ?: currentUser?.role ?: currentRole)
+        ?.normalizedRole()
+        ?.let { it == "DOCTOR" || it == "ADMIN" }
+        ?: false
 
     LaunchedEffect(Unit) {
         authViewModel.refreshCurrentUser()
@@ -169,9 +175,7 @@ fun MainScreen(
     fun resolveActiveProfileIdOrNotify(): Long? {
         val profileId = currentProfileId ?: application.secureSessionManager.getActiveProfileId()
         if (!profileId.isValidHealthProfileId()) {
-            scope.launch {
-                snackbarHostState.showSnackbar("Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước")
-            }
+            Toast.makeText(context, "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước", Toast.LENGTH_SHORT).show()
             selectedTab = TAB_FAMILY
             return null
         }
@@ -192,7 +196,6 @@ fun MainScreen(
             .fillMaxSize()
             .background(PageBackground),
         containerColor = PageBackground,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             NavigationBar(
                 containerColor = SurfaceLowest,
@@ -279,6 +282,7 @@ fun MainScreen(
                     onNavigateToAddMedicine = onNavigateToAddMedicine,
                     onNavigateToMedicineSchedule = onNavigateToMedicineSchedule,
                     onNavigateToAddSchedule = onNavigateToAddMedicineSchedule,
+                    onNavigateToOcrScanner = onNavigateToOcrScanner,
                     onOpenFamilyChat = { family ->
                         onNavigateToFamilyChat(family.id, family.name, family.memberCount)
                     },
@@ -287,7 +291,7 @@ fun MainScreen(
 
                 TAB_COMMUNITY -> CommunityScreen(
                     canCreateArticle = canAccessDoctorUi,
-                    canCreateGroupRequest = canCreateGroupRequest,
+                    canCreateGroupRequest = canAccessDoctorUi,
                     refreshTrigger = communityRefreshTrigger,
                     onOpenGroup = { onItemClick(ChatRoom(it.id, it.name)) },
                     onOpenGroupPosts = { group -> onItemClick(GroupPostDetail(group.id, group.name)) },

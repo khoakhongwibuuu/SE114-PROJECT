@@ -3,7 +3,6 @@ package com.example.carenest.feature.chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.chat.data.repository.ChatRepositoryEvent
 import com.example.carenest.feature.chat.data.repository.FamilyChatRepository
 import com.example.carenest.feature.chat.domain.model.ChatMessage
@@ -64,6 +63,14 @@ class FamilyChatViewModel(
         connect(familyId)
     }
 
+    fun retry() {
+        val familyId = boundFamilyId ?: return
+        loadHistory(familyId, page = 0)
+        if (!_uiState.value.isConnected) {
+            connect(familyId)
+        }
+    }
+
     fun unbind() {
         disconnect()
         reconnectJob?.cancel()
@@ -87,7 +94,7 @@ class FamilyChatViewModel(
                     "Tin nhắn không được vượt quá $MAX_MESSAGE_LENGTH ký tự"
                 } else {
                     null
-                },
+                }
             )
         }
     }
@@ -120,7 +127,8 @@ class FamilyChatViewModel(
                     isSending = false,
                     messages = current.messages.filterNot { it.id == optimistic.id },
                     inputText = content,
-                    error = throwable.userMessage("Không thể gửi tin nhắn gia đình. Vui lòng thử lại."),
+                    error = throwable.localizedMessage
+                        ?: "Không thể gửi tin nhắn gia đình. Vui lòng thử lại.",
                 )
             }
         }
@@ -176,7 +184,8 @@ class FamilyChatViewModel(
                     current.copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        error = throwable.userMessage("Không thể tải lịch sử trò chuyện gia đình."),
+                        error = throwable.localizedMessage
+                            ?: "Không thể tải lịch sử trò chuyện gia đình.",
                     )
                 }
             }
@@ -192,19 +201,17 @@ class FamilyChatViewModel(
                     _uiState.update {
                         it.copy(
                             isConnected = true,
-                            connectionHint = null,
+                            connectionHint = "Đang trò chuyện cùng gia đình",
                             error = null,
                         )
                     }
                 }
 
                 is ChatRepositoryEvent.Disconnected -> {
-                    val isReconnecting = event.message.contains("Đang kết nối lại", ignoreCase = true)
                     _uiState.update {
                         it.copy(
                             isConnected = false,
-                            connectionHint = if (isReconnecting) event.message else null,
-                            error = if (isReconnecting) null else event.message,
+                            connectionHint = event.message,
                         )
                     }
                     reconnect(familyId)
@@ -233,7 +240,7 @@ class FamilyChatViewModel(
                 it.copy(
                     isConnected = false,
                     connectionHint = null,
-                    error = "Không thể kết nối lại phòng chat gia đình sau nhiều lần thử.",
+                    error = "Không thể kết nối lại gia đình sau nhiều lần thử."
                 )
             }
             return

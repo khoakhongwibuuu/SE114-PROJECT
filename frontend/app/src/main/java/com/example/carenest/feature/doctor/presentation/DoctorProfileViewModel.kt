@@ -3,7 +3,6 @@ package com.example.carenest.feature.doctor.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.doctor.data.repository.DoctorRepository
 import com.example.carenest.feature.doctor.domain.model.DoctorPublicProfile
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,10 +35,7 @@ class DoctorProfileViewModel(
                 val profile = repository.getDoctorProfile(doctorId)
                 _uiState.value = _uiState.value.copy(isLoading = false, profile = profile)
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.userMessage("Không thể tải hồ sơ bác sĩ")
-                )
+                _uiState.value = _uiState.value.copy(isLoading = false, error = e.localizedMessage ?: "Lỗi tải hồ sơ")
             }
         }
     }

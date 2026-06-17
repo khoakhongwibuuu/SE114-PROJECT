@@ -3,11 +3,9 @@ package com.example.carenest.feature.admin.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.ekyc.data.repository.EkycRepository
 import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import com.example.carenest.feature.ekyc.domain.model.DoctorVerificationResponse
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +25,6 @@ data class AdminEkycUiState(
 
 class AdminEkycViewModel(
     private val repository: EkycRepository,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AdminEkycUiState())
     val uiState: StateFlow<AdminEkycUiState> = _uiState.asStateFlow()
@@ -41,7 +38,7 @@ class AdminEkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingPending = true, error = null) }
             runCatching {
-                withContext(ioDispatcher) {
+                withContext(Dispatchers.IO) {
                     repository.getPendingVerifications()
                 }
             }.onSuccess { pending ->
@@ -50,7 +47,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         isLoadingPending = false,
-                        error = error.userMessage("Không thể tải danh sách chờ duyệt"),
+                        error = error.localizedMessage ?: "Không thể tải danh sách chờ duyệt",
                     )
                 }
             }
@@ -61,7 +58,7 @@ class AdminEkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingDoctors = true, error = null) }
             runCatching {
-                withContext(ioDispatcher) {
+                withContext(Dispatchers.IO) {
                     repository.getAllDoctors()
                 }
             }.onSuccess { doctors ->
@@ -70,7 +67,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         isLoadingDoctors = false,
-                        error = error.userMessage("Không thể tải danh sách bác sĩ"),
+                        error = error.localizedMessage ?: "Không thể tải danh sách bác sĩ",
                     )
                 }
             }
@@ -82,7 +79,7 @@ class AdminEkycViewModel(
             val target = _uiState.value.pendingList.firstOrNull { it.id == id }
             _uiState.update { it.copy(error = null, message = "Đang phê duyệt hồ sơ...") }
             runCatching {
-                withContext(ioDispatcher) {
+                withContext(Dispatchers.IO) {
                     repository.approveVerification(id)
                 }
             }.onSuccess {
@@ -99,7 +96,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         message = null,
-                        error = error.userMessage("Phê duyệt hồ sơ thất bại"),
+                        error = error.localizedMessage ?: "Phê duyệt hồ sơ thất bại",
                     )
                 }
             }
@@ -114,7 +111,7 @@ class AdminEkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null, message = "Đang từ chối hồ sơ...") }
             runCatching {
-                withContext(ioDispatcher) {
+                withContext(Dispatchers.IO) {
                     repository.rejectVerification(id, reason.trim())
                 }
             }.onSuccess {
@@ -128,7 +125,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         message = null,
-                        error = error.userMessage("Từ chối hồ sơ thất bại"),
+                        error = error.localizedMessage ?: "Từ chối hồ sơ thất bại",
                     )
                 }
             }
@@ -139,7 +136,7 @@ class AdminEkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null, message = "Đang thu hồi quyền bác sĩ...") }
             runCatching {
-                withContext(ioDispatcher) {
+                withContext(Dispatchers.IO) {
                     repository.revokeDoctor(userId)
                 }
             }.onSuccess {
@@ -153,7 +150,7 @@ class AdminEkycViewModel(
                 _uiState.update {
                     it.copy(
                         message = null,
-                        error = error.userMessage("Thu hồi quyền bác sĩ thất bại"),
+                        error = error.localizedMessage ?: "Thu hồi quyền bác sĩ thất bại",
                     )
                 }
             }

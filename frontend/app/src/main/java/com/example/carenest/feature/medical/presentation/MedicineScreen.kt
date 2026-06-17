@@ -1,5 +1,7 @@
 package com.example.carenest.feature.medical.presentation
 
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
@@ -42,10 +45,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -54,7 +56,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,7 +68,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.medical.data.remote.CabinetMedicineResponse
-import kotlinx.coroutines.launch
 
 private enum class CabinetFilter(val label: String) {
     ALL("Tất cả"),
@@ -85,11 +85,12 @@ fun MedicineScreen(
     onAddMedicineClick: () -> Unit = {},
     onScheduleClick: () -> Unit = {},
     onAddScheduleClick: () -> Unit = {},
+    onOcrClick: () -> Unit = {},
 ) {
     val cabinetState by viewModel.cabinetState.collectAsState()
     val isActionLoading by viewModel.isActionLoading.collectAsState()
     val actionMessage by viewModel.actionMessage.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var selectedFilter by remember { mutableStateOf(CabinetFilter.ALL) }
     var selectedMedicine by remember { mutableStateOf<CabinetMedicineResponse?>(null) }
     var sheetVisible by remember { mutableStateOf(false) }
@@ -103,12 +104,11 @@ fun MedicineScreen(
 
     LaunchedEffect(actionMessage) {
         actionMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             viewModel.clearActionMessage()
         }
     }
 
-    // Apply filter on top of cabinet state
     val filteredMedicines = remember(cabinetState, selectedFilter) {
         val all = (cabinetState as? CabinetState.Success)?.medicines ?: emptyList()
         when (selectedFilter) {
@@ -162,13 +162,13 @@ fun MedicineScreen(
                 }
             }
 
-            // OCR card
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
                         .background(Color(0xFFF1F5F9))
+                        .clickable(onClick = onOcrClick)
                         .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -183,39 +183,48 @@ fun MedicineScreen(
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Quét toa thuốc", color = Color(0xFF64748B), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        Text(text = "OCR đang tạm tắt trong MVP, sẽ hoàn thiện ở phase cuối", color = Color(0xFF64748B), fontSize = 12.sp)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(Color(0xFFE2E8F0))
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                    ) {
                         Text(
-                            text = "Phase cuối",
-                            color = Color(0xFF475569),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            text = "Quét toa thuốc",
+                            color = Color(0xFF64748B),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "OCR đang tạm tắt trong MVP. Chạm để xem trạng thái tính năng.",
+                            color = Color(0xFF64748B),
+                            fontSize = 12.sp,
                         )
                     }
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Mở thông tin OCR",
+                        tint = Color(0xFFBFC7D3),
+                    )
                 }
             }
 
-            // Quick actions
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    QuickMedicalAction(title = "Lịch uống", icon = Icons.Default.CalendarToday, modifier = Modifier.weight(1f), onClick = onScheduleClick)
-                    QuickMedicalAction(title = "Thêm lịch", icon = Icons.Default.Notifications, modifier = Modifier.weight(1f), onClick = onAddScheduleClick)
+                    QuickMedicalAction(
+                        title = "Lịch uống",
+                        icon = Icons.Default.CalendarToday,
+                        modifier = Modifier.weight(1f),
+                        onClick = onScheduleClick,
+                    )
+                    QuickMedicalAction(
+                        title = "Thêm lịch",
+                        icon = Icons.Default.Notifications,
+                        modifier = Modifier.weight(1f),
+                        onClick = onAddScheduleClick,
+                    )
                 }
             }
 
-            // Filter chips
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 0.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     items(CabinetFilter.entries, key = { it.name }) { filter ->
                         val selected = selectedFilter == filter
@@ -226,31 +235,86 @@ fun MedicineScreen(
                                 .clickable { selectedFilter = filter }
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                         ) {
-                            Text(text = filter.label, color = if (selected) Color.White else Color(0xFF181C1F), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                text = filter.label,
+                                color = if (selected) Color.White else Color(0xFF181C1F),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
                     }
                 }
             }
 
-            // State-driven content
             when (val state = cabinetState) {
                 is CabinetState.Loading -> item {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = PrimaryBlue)
                     }
                 }
+
                 is CabinetState.Error -> item {
-                    Text(text = "⚠️ ${state.message}", color = Color(0xFFC62828), fontSize = 14.sp, modifier = Modifier.padding(8.dp))
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7F7)),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = state.message,
+                                color = Color(0xFFC62828),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Button(
+                                onClick = viewModel::fetchCabinet,
+                                shape = RoundedCornerShape(999.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            ) {
+                                Text("Thử lại", color = Color.White)
+                            }
+                        }
+                    }
                 }
+
                 is CabinetState.Success -> {
                     item {
                         Text(text = "${filteredMedicines.size} loại thuốc", color = Color(0xFF404751), fontSize = 12.sp)
                     }
                     if (filteredMedicines.isEmpty()) {
                         item {
-                            Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                                Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                                    Text(text = "Chưa có thuốc nào trong tủ", color = Color(0xFF404751), fontSize = 14.sp, fontStyle = FontStyle.Italic)
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Text(
+                                        text = if (selectedFilter == CabinetFilter.ALL) {
+                                            "Tủ thuốc đang trống"
+                                        } else {
+                                            "Không có thuốc nào khớp bộ lọc này"
+                                        },
+                                        color = Color(0xFF404751),
+                                        fontSize = 14.sp,
+                                        fontStyle = FontStyle.Italic,
+                                    )
+                                    if (selectedFilter == CabinetFilter.ALL) {
+                                        Button(
+                                            onClick = onAddMedicineClick,
+                                            shape = RoundedCornerShape(999.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                                        ) {
+                                            Text("Thêm thuốc đầu tiên", color = Color.White)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -286,17 +350,8 @@ fun MedicineScreen(
                 Icon(Icons.Default.Add, contentDescription = "Thêm thuốc", modifier = Modifier.size(28.dp))
             }
         }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(16.dp)
-        )
     }
 
-    // Bottom sheet for medicine actions
     if (sheetVisible && selectedMedicine != null) {
         ModalBottomSheet(
             onDismissRequest = { sheetVisible = false },
@@ -312,24 +367,33 @@ fun MedicineScreen(
                     .padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text(text = medicine.medicineName, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF181C1F), modifier = Modifier.fillMaxWidth())
-                Text(text = "Đơn vị: ${medicine.unit} • Số lượng: ${medicine.quantity}", color = Color(0xFF404751), fontSize = 13.sp)
+                Text(
+                    text = medicine.medicineName,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF181C1F),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = "Đơn vị: ${medicine.unit} • Số lượng: ${medicine.quantity}",
+                    color = Color(0xFF404751),
+                    fontSize = 13.sp,
+                )
 
                 if (!isEditingQuantity) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SheetActionRow(
                             icon = Icons.Default.LocalHospital,
-                            text = "Uống nhanh 1 ${medicine.unit}",
+                            text = "Dùng nhanh 1 ${medicine.unit}",
                             onClick = {
-                                // Quick take — decrease qty by 1
                                 viewModel.updateMedicineQuantity(medicine.id, (medicine.quantity - 1).coerceAtLeast(0))
                                 sheetVisible = false
-                            }
+                            },
                         )
                         SheetActionRow(
                             icon = Icons.Default.Edit,
                             text = "Chỉnh sửa số lượng",
-                            onClick = { isEditingQuantity = true }
+                            onClick = { isEditingQuantity = true },
                         )
                         SheetActionRow(
                             icon = Icons.Default.Delete,
@@ -340,48 +404,71 @@ fun MedicineScreen(
                             onClick = {
                                 viewModel.deleteMedicine(medicine.id)
                                 sheetVisible = false
-                            }
+                            },
                         )
                     }
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(text = "Nhập số lượng mới:", color = Color(0xFF404751), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = "Nhập số lượng mới:",
+                            color = Color(0xFF404751),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
                         OutlinedTextField(
                             value = quantityDraft,
                             onValueChange = { quantityDraft = it.filter(Char::isDigit) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            label = { Text("Số lượng") }
+                            label = { Text("Số lượng") },
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(
                                 onClick = { isEditingQuantity = false },
-                                modifier = Modifier.weight(1f).height(44.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp),
                                 shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE5E8EC), contentColor = Color(0xFF404751)),
-                            ) { Text("Hủy") }
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFE5E8EC),
+                                    contentColor = Color(0xFF404751),
+                                ),
+                            ) {
+                                Text("Hủy")
+                            }
                             Button(
                                 onClick = {
                                     val qty = quantityDraft.toIntOrNull() ?: 0
                                     viewModel.updateMedicineQuantity(medicine.id, qty)
                                     sheetVisible = false
                                 },
-                                modifier = Modifier.weight(1f).height(44.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp),
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                            ) { Text("Lưu", color = Color.White) }
+                            ) {
+                                Text("Lưu", color = Color.White)
+                            }
                         }
                     }
                 }
 
                 Button(
                     onClick = { sheetVisible = false },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
                     shape = RoundedCornerShape(999.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color(0xFF404751)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color(0xFF404751),
+                    ),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFC7D3)),
-                ) { Text("Đóng") }
+                    border = BorderStroke(1.dp, Color(0xFFBFC7D3)),
+                ) {
+                    Text("Đóng")
+                }
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -404,7 +491,10 @@ private fun QuickMedicalAction(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(Color.White),
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color.White),
             contentAlignment = Alignment.Center,
         ) {
             Icon(icon, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
@@ -416,7 +506,11 @@ private fun QuickMedicalAction(
 
 @Composable
 private fun MedicineHeader(alertCount: Int) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(text = "Tủ thuốc gia đình", color = Color(0xFF181C1F), fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Box {
             Box(
@@ -424,13 +518,18 @@ private fun MedicineHeader(alertCount: Int) {
                     .size(48.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFF5F8FC)),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Default.Notifications, contentDescription = "Cảnh báo tủ thuốc", tint = Color(0xFF404751))
             }
             if (alertCount > 0) {
                 Box(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp).size(8.dp).clip(CircleShape).background(Color(0xFFBA1A1A))
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 8.dp, end = 8.dp)
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFBA1A1A)),
                 )
             }
         }
@@ -443,21 +542,44 @@ private fun MedicineCabinetRow(
     onClick: () -> Unit,
 ) {
     val config = remember(medicine) { cabinetStatusConfig(medicine) }
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFCFE5FF)), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFCFE5FF)),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(Icons.Default.Medication, contentDescription = null, tint = PrimaryBlue)
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = medicine.medicineName, color = Color(0xFF181C1F), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 val expiry = medicine.expiryDate?.let { " • HSD: $it" } ?: ""
-                Text(text = "${medicine.quantity} ${medicine.unit}$expiry", color = Color(0xFF404751), fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
+                Text(
+                    text = "${medicine.quantity} ${medicine.unit}$expiry",
+                    color = Color(0xFF404751),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
             }
-            Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(config.background).padding(horizontal = 8.dp, vertical = 4.dp)) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(config.background)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            ) {
                 Text(text = config.label, color = config.textColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
         }
@@ -486,7 +608,12 @@ private fun SheetActionRow(
     onClick: () -> Unit = {},
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(background).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(background)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = iconTint)

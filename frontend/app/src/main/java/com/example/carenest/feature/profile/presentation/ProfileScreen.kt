@@ -2,13 +2,26 @@ package com.example.carenest.feature.profile.presentation
 
 import android.app.DatePickerDialog
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,9 +32,46 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpCenter
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Bloodtype
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.EventNote
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.Mail
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.Wc
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,9 +87,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-import java.util.*
+import java.util.Calendar
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
@@ -56,7 +105,6 @@ fun ProfileScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(refreshTrigger) {
         viewModel.loadCurrentUser()
@@ -64,16 +112,15 @@ fun ProfileScreen(
 
     LaunchedEffect(state.successMessage, state.error) {
         if (state.successMessage != null) {
-            snackbarHostState.showSnackbar(state.successMessage ?: "Cập nhật thành công")
+            Toast.makeText(context, state.successMessage, Toast.LENGTH_SHORT).show()
             viewModel.onEvent(ProfileEvent.ClearMessage)
         }
         if (state.error != null) {
-            snackbarHostState.showSnackbar(state.error ?: "Không thể cập nhật thông tin tài khoản")
+            Toast.makeText(context, state.error, Toast.LENGTH_LONG).show()
             viewModel.onEvent(ProfileEvent.ClearMessage)
         }
     }
 
-    // Image Picker
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri: Uri? ->
@@ -83,7 +130,6 @@ fun ProfileScreen(
         }
     )
 
-    // Date Picker
     val calendar = Calendar.getInstance()
     val datePickerDialog = DatePickerDialog(
         context,
@@ -96,56 +142,54 @@ fun ProfileScreen(
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Color(0xFFF8FAFC)
-    ) { paddingValues ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8FAFC))
+            .statusBarsPadding()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = Color(0xFF1E293B))
+            }
+            Text(
+                text = "Thông tin tài khoản",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF1E3A8A)
+            )
+            TextButton(
+                onClick = {
+                    if (!state.isEditing) {
+                        viewModel.onEvent(ProfileEvent.EditClicked)
+                    } else {
+                        viewModel.onEvent(ProfileEvent.SaveClicked)
+                    }
+                },
+                enabled = !state.isSaving
+            ) {
+                Text(
+                    text = if (state.isSaving) "Đang lưu" else if (state.isEditing) "Lưu" else "Sửa",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryBlue
+                )
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color(0xFFF8FAFC))
-                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 100.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFF1E293B))
-                }
-                Text(
-                    text = "Thông tin tài khoản",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF1E3A8A)
-                )
-                TextButton(
-                    onClick = {
-                        if (!state.isEditing) {
-                            viewModel.onEvent(ProfileEvent.EditClicked)
-                        } else {
-                            viewModel.onEvent(ProfileEvent.SaveClicked)
-                        }
-                    },
-                    enabled = !state.isSaving
-                ) {
-                    Text(
-                        text = if (state.isSaving) "Đang lưu" else if (state.isEditing) "Lưu" else "Sửa",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryBlue
-                    )
-                }
-            }
-
-            // Avatar Section
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -162,7 +206,7 @@ fun ProfileScreen(
                     if (state.avatarUri != null) {
                         AsyncImage(
                             model = state.avatarUri,
-                            contentDescription = "Avatar",
+                            contentDescription = "Ảnh đại diện",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -203,23 +247,27 @@ fun ProfileScreen(
                                 if (!state.isUploadingAvatar) {
                                     imagePickerLauncher.launch(
                                         androidx.activity.result.PickVisualMediaRequest(
-                                            androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
+                                            ActivityResultContracts.PickVisualMedia.ImageOnly
                                         )
                                     )
                                 }
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.PhotoCamera, contentDescription = "Camera", tint = Color.White, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.PhotoCamera, contentDescription = "Đổi ảnh đại diện", tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(state.fullName, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E293B))
+                Text(
+                    text = state.fullName.ifBlank { "Người dùng CareNest" },
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF1E293B)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(state.memberRole, fontSize = 14.sp, color = Color(0xFF64748B))
             }
 
-            // Medical Record Button
             if (!hasActiveHealthProfile) {
                 MissingHealthProfileCard(
                     onNavigateToFamilySetup = onNavigateToFamilySetup,
@@ -255,7 +303,6 @@ fun ProfileScreen(
                 }
             }
 
-            // Personal Info
             SectionLabel("Thông tin cá nhân")
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -274,8 +321,7 @@ fun ProfileScreen(
                     HorizontalDivider(color = Color(0xFFF1F5F9))
                     InputField(icon = Icons.Default.Phone, label = "Số điện thoại khẩn cấp", value = state.emergencyPhone, onValueChange = { viewModel.onEvent(ProfileEvent.EmergencyPhoneChanged(it)) }, editable = state.isEditing, placeholder = "Để trống nếu chưa có")
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    
-                    // Birthday Picker
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -303,12 +349,11 @@ fun ProfileScreen(
                             )
                         }
                     }
-                    
+
                     HorizontalDivider(color = Color(0xFFF1F5F9))
                     InputField(icon = Icons.Default.Cake, label = "Tuổi", value = state.age, onValueChange = {}, editable = false)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    
-                    // Gender Dropdown
+
                     SelectField(
                         icon = Icons.Default.Wc,
                         label = "Giới tính",
@@ -318,8 +363,7 @@ fun ProfileScreen(
                         onSelect = { viewModel.onEvent(ProfileEvent.GenderChanged(it)) }
                     )
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    
-                    // BloodType Dropdown
+
                     SelectField(
                         icon = Icons.Default.Bloodtype,
                         label = "Nhóm máu",
@@ -337,7 +381,6 @@ fun ProfileScreen(
                 }
             }
 
-            // Notification Settings
             SectionLabel("Cài đặt thông báo")
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -354,7 +397,6 @@ fun ProfileScreen(
                 }
             }
 
-            // App Settings
             SectionLabel("Ứng dụng")
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -373,17 +415,30 @@ fun ProfileScreen(
                         SettingsRow(icon = Icons.Default.LocalHospital, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF3B82F6), label = "Phòng khám của tôi", onClick = onNavigateToDoctorWorkspace)
                         HorizontalDivider(color = Color(0xFFF1F5F9))
                     }
-                    if (state.role != "ADMIN") {
-                        SettingsRow(icon = Icons.Default.History, iconBg = Color(0xFFF0FDF4), iconTint = Color(0xFF22C55E), label = "Lịch sử đặt khám", onClick = onNavigateToPatientBookingCenter)
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
-                    }
+                    SettingsRow(icon = Icons.Default.EventNote, iconBg = Color(0xFFF0FDF4), iconTint = Color(0xFF22C55E), label = "Lịch sử đặt khám", onClick = onNavigateToPatientBookingCenter)
+                    HorizontalDivider(color = Color(0xFFF1F5F9))
                     SettingsRow(icon = Icons.Default.Language, iconBg = Color(0xFFF5F3FF), iconTint = Color(0xFF7C3AED), label = "Ngôn ngữ", value = "Tiếng Việt", enabled = false)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
                     SettingsRow(icon = Icons.Default.Security, iconBg = Color(0xFFF0FDFA), iconTint = Color(0xFF0D9488), label = "Chính sách bảo mật", onClick = onNavigateToPolicy)
                 }
             }
 
-            // Logout Button
+            SectionLabel("Hỗ trợ")
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp)
+            ) {
+                Column {
+                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung tâm hỗ trợ", value = "Tạm ẩn", enabled = false)
+                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                    SettingsRow(icon = Icons.Default.BugReport, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Báo cáo sự cố", value = "Tạm ẩn", enabled = false)
+                }
+            }
+
             Box(modifier = Modifier.padding(bottom = 20.dp)) {
                 Row(
                     modifier = Modifier
@@ -510,7 +565,7 @@ fun SelectField(
     icon: ImageVector,
     label: String,
     value: String,
-    options: List<Pair<String, String>>, // Pair<Key, DisplayValue>
+    options: List<Pair<String, String>>,
     editable: Boolean,
     onSelect: (String) -> Unit
 ) {
@@ -536,7 +591,7 @@ fun SelectField(
         Column(modifier = Modifier.weight(1f)) {
             Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF94A3B8))
             Spacer(modifier = Modifier.height(2.dp))
-            
+
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { if (editable) expanded = !expanded }
@@ -546,12 +601,9 @@ fun SelectField(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1E293B),
-                    modifier = Modifier.menuAnchor(
-                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                        enabled = editable
-                    )
+                    modifier = Modifier.menuAnchor()
                 )
-                ExposedDropdownMenu(
+                DropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
@@ -572,7 +624,6 @@ fun SelectField(
         }
     }
 }
-
 
 @Composable
 fun SettingsRow(
@@ -611,7 +662,14 @@ fun SettingsRow(
 }
 
 @Composable
-fun SettingsRowSwitch(icon: ImageVector, iconBg: Color, iconTint: Color, label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun SettingsRowSwitch(
+    icon: ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

@@ -32,6 +32,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -56,10 +57,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.community.data.repository.CommunityRepository
+import com.example.carenest.feature.community.domain.model.GroupGovernanceAuditEntry
 import com.example.carenest.feature.community.domain.model.GroupMember
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,6 +70,7 @@ import kotlinx.coroutines.launch
 
 data class GroupGovernanceState(
     val members: List<GroupMember> = emptyList(),
+    val auditLogs: List<GroupGovernanceAuditEntry> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val message: String? = null,
@@ -88,7 +90,9 @@ private data class GovernanceAction(
     val body: String,
     val confirmLabel: String,
     val confirmColor: Color,
-    val onConfirm: () -> Unit
+    val reasonLabel: String,
+    val reasonPlaceholder: String,
+    val onConfirm: (String) -> Unit
 )
 
 class GroupGovernanceViewModel(
@@ -112,90 +116,128 @@ class GroupGovernanceViewModel(
     fun loadData() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            try {
+            runCatching {
                 val members = repository.getMembers(groupId)
                 val preview = repository.preview(groupId)
+                val auditLogs = repository.getGovernanceAuditLogs(groupId)
+                Triple(members, preview, auditLogs)
+            }.onSuccess { (members, preview, auditLogs) ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         members = members,
+                        auditLogs = auditLogs,
                         currentGroupRole = preview.myRole?.uppercase(),
                         isGroupFrozen = preview.isFrozen
                     )
                 }
-            } catch (e: Exception) {
+            }.onFailure { error ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.userMessage("Không thể tải dữ liệu quản trị nhóm")
+                        error = error.localizedMessage ?: "Không thể tải dữ liệu quản trị nhóm"
                     )
                 }
             }
         }
     }
 
-    fun updateRole(userId: Long, newRole: String) {
+    fun updateRole(userId: Long, newRole: String, reason: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(memberOperationUserId = userId, error = null, message = null) }
-            try {
-                repository.updateMemberRole(groupId, userId, newRole)
-                loadData()
-                _uiState.update { it.copy(memberOperationUserId = null, message = roleSuccessMessage(newRole)) }
-            } catch (e: Exception) {
+            runCatching {
+                repository.updateMemberRole(groupId, userId, newRole, reason.trim())
+                val members = repository.getMembers(groupId)
+                val preview = repository.preview(groupId)
+                val auditLogs = repository.getGovernanceAuditLogs(groupId)
+                Triple(members, preview, auditLogs)
+            }.onSuccess { (members, preview, auditLogs) ->
+                _uiState.update {
+                    it.copy(
+                        members = members,
+                        auditLogs = auditLogs,
+                        currentGroupRole = preview.myRole?.uppercase(),
+                        isGroupFrozen = preview.isFrozen,
+                        memberOperationUserId = null,
+                        message = roleSuccessMessage(newRole)
+                    )
+                }
+            }.onFailure { error ->
                 _uiState.update {
                     it.copy(
                         memberOperationUserId = null,
-                        error = e.userMessage("Không thể cập nhật vai trò thành viên")
+                        error = error.localizedMessage ?: "Không thể cập nhật vai trò thành viên"
                     )
                 }
             }
         }
     }
 
-    fun toggleFreeze() {
+    fun toggleFreeze(reason: String) {
         viewModelScope.launch {
             val wasFrozen = _uiState.value.isGroupFrozen
             _uiState.update { it.copy(isFreezeUpdating = true, error = null, message = null) }
-            try {
+            runCatching {
                 if (wasFrozen) {
-                    repository.unfreezeGroup(groupId)
+                    repository.unfreezeGroup(groupId, reason.trim())
                 } else {
-                    repository.freezeGroup(groupId)
+                    repository.freezeGroup(groupId, reason.trim())
                 }
-                loadData()
+                val members = repository.getMembers(groupId)
+                val preview = repository.preview(groupId)
+                val auditLogs = repository.getGovernanceAuditLogs(groupId)
+                Triple(members, preview, auditLogs)
+            }.onSuccess { (members, preview, auditLogs) ->
                 _uiState.update {
                     it.copy(
+                        members = members,
+                        auditLogs = auditLogs,
+                        currentGroupRole = preview.myRole?.uppercase(),
+                        isGroupFrozen = preview.isFrozen,
                         isFreezeUpdating = false,
                         message = if (wasFrozen) {
                             "Nhóm đã được mở lại."
                         } else {
-                            "Nhóm đã bị tạm khóa."
+                            "Nhóm đã được tạm khóa."
                         }
                     )
                 }
-            } catch (e: Exception) {
+            }.onFailure { error ->
                 _uiState.update {
                     it.copy(
                         isFreezeUpdating = false,
-                        error = e.userMessage("Không thể thay đổi trạng thái nhóm")
+                        error = error.localizedMessage ?: "Không thể thay đổi trạng thái nhóm"
                     )
                 }
             }
         }
     }
 
-    fun kickMember(userId: Long) {
+    fun kickMember(userId: Long, reason: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(memberOperationUserId = userId, error = null, message = null) }
-            try {
-                repository.kickMember(groupId, userId)
-                loadData()
-                _uiState.update { it.copy(memberOperationUserId = null, message = "Đã mời thành viên rời nhóm.") }
-            } catch (e: Exception) {
+            runCatching {
+                repository.kickMember(groupId, userId, reason.trim())
+                val members = repository.getMembers(groupId)
+                val preview = repository.preview(groupId)
+                val auditLogs = repository.getGovernanceAuditLogs(groupId)
+                Triple(members, preview, auditLogs)
+            }.onSuccess { (members, preview, auditLogs) ->
+                _uiState.update {
+                    it.copy(
+                        members = members,
+                        auditLogs = auditLogs,
+                        currentGroupRole = preview.myRole?.uppercase(),
+                        isGroupFrozen = preview.isFrozen,
+                        memberOperationUserId = null,
+                        message = "Đã mời thành viên rời nhóm."
+                    )
+                }
+            }.onFailure { error ->
                 _uiState.update {
                     it.copy(
                         memberOperationUserId = null,
-                        error = e.userMessage("Không thể mời thành viên rời nhóm")
+                        error = error.localizedMessage ?: "Không thể mời thành viên rời nhóm"
                     )
                 }
             }
@@ -256,7 +298,7 @@ fun GroupGovernanceScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Quản lý hội nhóm",
+                        text = "Quản trị hội nhóm",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -306,36 +348,11 @@ fun GroupGovernanceScreen(
                 )
             }
 
-            if (state.isAdmin) {
-                AdminGovernanceCard(
-                    isGroupFrozen = state.isGroupFrozen,
-                    isUpdating = state.isFreezeUpdating,
-                    onToggleFreeze = {
-                        pendingAction = GovernanceAction(
-                            title = if (state.isGroupFrozen) "Mở lại nhóm" else "Tạm khóa nhóm",
-                            body = if (state.isGroupFrozen) {
-                                "Nhóm sẽ mở lại và thành viên có thể tiếp tục đăng bài, nhắn tin và tham gia."
-                            } else {
-                                "Nhóm bị tạm khóa sẽ không nhận thêm bài viết, bình luận, tin nhắn hoặc thành viên mới."
-                            },
-                            confirmLabel = if (state.isGroupFrozen) "Mở lại" else "Tạm khóa",
-                            confirmColor = if (state.isGroupFrozen) Color(0xFF059669) else Color(0xFFDC2626),
-                            onConfirm = viewModel::toggleFreeze
-                        )
-                    }
-                )
-            }
-
-            Text(
-                text = "Thành viên (${state.members.size})",
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Color(0xFF0F172A),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
             if (state.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator(color = PrimaryBlue)
                 }
             } else {
@@ -343,6 +360,38 @@ fun GroupGovernanceScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    if (state.isAdmin) {
+                        item {
+                            AdminGovernanceCard(
+                                isGroupFrozen = state.isGroupFrozen,
+                                isUpdating = state.isFreezeUpdating,
+                                onToggleFreeze = {
+                                    pendingAction = GovernanceAction(
+                                        title = if (state.isGroupFrozen) "Mở lại nhóm" else "Tạm khóa nhóm",
+                                        body = if (state.isGroupFrozen) {
+                                            "Nhóm sẽ hoạt động trở lại. Thành viên có thể đăng bài, bình luận và nhắn tin như trước."
+                                        } else {
+                                            "Nhóm bị tạm khóa sẽ dừng toàn bộ tương tác mới để đội vận hành xử lý sự cố hoặc moderation."
+                                        },
+                                        confirmLabel = if (state.isGroupFrozen) "Mở lại" else "Tạm khóa",
+                                        confirmColor = if (state.isGroupFrozen) Color(0xFF059669) else Color(0xFFDC2626),
+                                        reasonLabel = "Lý do",
+                                        reasonPlaceholder = if (state.isGroupFrozen) {
+                                            "Ví dụ: Đã xử lý xong vấn đề moderation"
+                                        } else {
+                                            "Ví dụ: Tạm khóa để xử lý báo cáo vi phạm"
+                                        },
+                                        onConfirm = viewModel::toggleFreeze
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    item {
+                        SectionTitle("Thành viên (${state.members.size})")
+                    }
+
                     items(state.members, key = { it.userId }) { member ->
                         MemberItem(
                             member = member,
@@ -350,32 +399,73 @@ fun GroupGovernanceScreen(
                             currentGroupRole = state.currentGroupRole,
                             isAdmin = state.isAdmin,
                             isLoading = state.memberOperationUserId == member.userId,
-                            onPromoteModerator = { viewModel.updateRole(member.userId, "MODERATOR") },
-                            onDemoteToMember = { viewModel.updateRole(member.userId, "MEMBER") },
-                            onPromoteHost = {
-                                val isHostTransfer = state.currentGroupRole == "HOST" && !state.isAdmin
+                            onPromoteModerator = {
                                 pendingAction = GovernanceAction(
-                                    title = if (isHostTransfer) "Chuyển quyền trưởng nhóm" else "Đặt làm trưởng nhóm",
-                                    body = if (isHostTransfer) {
-                                        "Sau khi xác nhận, ${member.name} sẽ trở thành trưởng nhóm mới và bạn sẽ trở về vai trò thành viên."
-                                    } else {
-                                        "${member.name} sẽ trở thành trưởng nhóm của hội nhóm này."
-                                    },
-                                    confirmLabel = if (isHostTransfer) "Chuyển quyền" else "Xác nhận",
+                                    title = "Bổ nhiệm điều phối viên",
+                                    body = "Thành viên này sẽ có quyền duyệt bài và hỗ trợ điều phối hội nhóm.",
+                                    confirmLabel = "Cập nhật",
                                     confirmColor = PrimaryBlue,
-                                    onConfirm = { viewModel.updateRole(member.userId, "HOST") }
+                                    reasonLabel = "Lý do bổ nhiệm",
+                                    reasonPlaceholder = "Ví dụ: Thành viên hỗ trợ moderation ổn định",
+                                    onConfirm = { reason ->
+                                        viewModel.updateRole(member.userId, "MODERATOR", reason)
+                                    }
+                                )
+                            },
+                            onDemoteToMember = {
+                                pendingAction = GovernanceAction(
+                                    title = "Đặt về thành viên",
+                                    body = "Thành viên này sẽ mất quyền điều phối và quay về quyền cơ bản.",
+                                    confirmLabel = "Cập nhật",
+                                    confirmColor = Color(0xFF475569),
+                                    reasonLabel = "Lý do thay đổi",
+                                    reasonPlaceholder = "Ví dụ: Không còn phụ trách moderation",
+                                    onConfirm = { reason ->
+                                        viewModel.updateRole(member.userId, "MEMBER", reason)
+                                    }
+                                )
+                            },
+                            onPromoteHost = {
+                                pendingAction = GovernanceAction(
+                                    title = "Chuyển quyền trưởng nhóm",
+                                    body = "Người này sẽ trở thành trưởng nhóm mới và có toàn quyền quản trị hội nhóm.",
+                                    confirmLabel = "Chuyển quyền",
+                                    confirmColor = Color(0xFF7C3AED),
+                                    reasonLabel = "Lý do chuyển quyền",
+                                    reasonPlaceholder = "Ví dụ: Chuyển người phụ trách chính",
+                                    onConfirm = { reason ->
+                                        viewModel.updateRole(member.userId, "HOST", reason)
+                                    }
                                 )
                             },
                             onKick = {
                                 pendingAction = GovernanceAction(
                                     title = "Mời rời nhóm",
-                                    body = "Thành viên này sẽ mất quyền truy cập vào hội nhóm ngay sau khi xác nhận.",
+                                    body = "Sau khi xác nhận, thành viên này sẽ mất quyền truy cập vào hội nhóm ngay lập tức.",
                                     confirmLabel = "Xác nhận",
                                     confirmColor = Color(0xFFDC2626),
-                                    onConfirm = { viewModel.kickMember(member.userId) }
+                                    reasonLabel = "Lý do mời rời nhóm",
+                                    reasonPlaceholder = "Ví dụ: Vi phạm quy tắc nhóm",
+                                    onConfirm = { reason ->
+                                        viewModel.kickMember(member.userId, reason)
+                                    }
                                 )
                             }
                         )
+                    }
+
+                    item {
+                        SectionTitle("Nhật ký quản trị")
+                    }
+
+                    if (state.auditLogs.isEmpty()) {
+                        item {
+                            EmptyAuditCard()
+                        }
+                    } else {
+                        items(state.auditLogs, key = { it.id }) { entry ->
+                            AuditLogCard(entry = entry)
+                        }
                     }
                 }
             }
@@ -383,16 +473,31 @@ fun GroupGovernanceScreen(
     }
 
     pendingAction?.let { action ->
+        var reason by remember(action.title) { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { pendingAction = null },
             title = { Text(action.title) },
-            text = { Text(action.body) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(action.body)
+                    OutlinedTextField(
+                        value = reason,
+                        onValueChange = { reason = it },
+                        label = { Text(action.reasonLabel) },
+                        placeholder = { Text(action.reasonPlaceholder) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3,
+                        maxLines = 5
+                    )
+                }
+            },
             confirmButton = {
                 Button(
                     onClick = {
-                        action.onConfirm()
+                        action.onConfirm(reason.trim())
                         pendingAction = null
                     },
+                    enabled = reason.trim().isNotEmpty(),
                     colors = ButtonDefaults.buttonColors(containerColor = action.confirmColor)
                 ) {
                     Text(action.confirmLabel)
@@ -412,7 +517,7 @@ private fun GovernanceHeaderCard(
     groupName: String,
     currentGroupRole: String?,
     isAdmin: Boolean,
-    isGroupFrozen: Boolean,
+    isGroupFrozen: Boolean
 ) {
     Card(
         modifier = Modifier
@@ -445,9 +550,9 @@ private fun GovernanceHeaderCard(
             }
             Text(
                 text = if (isAdmin) {
-                    "Bạn đang dùng chế độ can thiệp hệ thống cho hội nhóm này."
+                    "Bạn đang can thiệp ở cấp hệ thống. Mọi thao tác đóng băng nhóm hoặc đổi vai trò đều được ghi vào nhật ký quản trị."
                 } else {
-                    "Host có thể quản lý thành viên và điều phối viên. Admin có thể tạm khóa nhóm hoặc can thiệp vai trò khi cần."
+                    "Trưởng nhóm có thể quản lý thành viên và điều phối viên. Admin hệ thống có thêm quyền tạm khóa hoặc mở lại nhóm."
                 },
                 color = Color(0xFF475569),
                 fontSize = 13.sp,
@@ -461,12 +566,10 @@ private fun GovernanceHeaderCard(
 private fun AdminGovernanceCard(
     isGroupFrozen: Boolean,
     isUpdating: Boolean,
-    onToggleFreeze: () -> Unit,
+    onToggleFreeze: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -489,7 +592,7 @@ private fun AdminGovernanceCard(
                     text = if (isGroupFrozen) {
                         "Nhóm đang bị tạm khóa. Thành viên chỉ có thể xem dữ liệu hiện có."
                     } else {
-                        "Có thể tạm khóa nhóm khi cần dừng tương tác mới để xử lý sự cố hoặc moderation."
+                        "Tạm khóa khi cần chặn tương tác mới để xử lý báo cáo, kiểm tra nội dung hoặc sự cố vận hành."
                     },
                     color = Color(0xFF475569),
                     fontSize = 13.sp,
@@ -523,7 +626,7 @@ private fun GovernanceBanner(
     text: String,
     containerColor: Color,
     textColor: Color,
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -549,6 +652,16 @@ private fun GovernanceBanner(
             }
         }
     }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        color = Color(0xFF0F172A)
+    )
 }
 
 @Composable
@@ -666,15 +779,6 @@ private fun MemberItem(
                                 }
                             )
                         } else if (canHostManage) {
-                            if (member.role != "HOST") {
-                                DropdownMenuItem(
-                                    text = { Text("Chuyển quyền trưởng nhóm") },
-                                    onClick = {
-                                        showMenu = false
-                                        onPromoteHost()
-                                    }
-                                )
-                            }
                             if (member.role == "MEMBER") {
                                 DropdownMenuItem(
                                     text = { Text("Bổ nhiệm điều phối viên") },
@@ -709,10 +813,83 @@ private fun MemberItem(
 }
 
 @Composable
+private fun EmptyAuditCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "Chưa có lịch sử quản trị",
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF0F172A)
+            )
+            Text(
+                text = "Các thao tác đổi vai trò, mời rời nhóm, tạm khóa hoặc mở lại nhóm sẽ xuất hiện tại đây.",
+                color = Color(0xFF64748B),
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun AuditLogCard(entry: GroupGovernanceAuditEntry) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                StatusChip(
+                    label = actionLabel(entry.action),
+                    containerColor = actionColor(entry.action).copy(alpha = 0.12f),
+                    textColor = actionColor(entry.action)
+                )
+                entry.createdAt?.takeIf { it.isNotBlank() }?.let { createdAt ->
+                    Text(
+                        text = createdAt,
+                        color = Color(0xFF64748B),
+                        fontSize = 12.sp
+                    )
+                }
+            }
+            Text(
+                text = buildAuditHeadline(entry),
+                color = Color(0xFF0F172A),
+                fontWeight = FontWeight.SemiBold,
+                lineHeight = 20.sp
+            )
+            entry.note?.takeIf { it.isNotBlank() }?.let { note ->
+                Text(
+                    text = "Lý do: $note",
+                    color = Color(0xFF475569),
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun StatusChip(
     label: String,
     containerColor: Color,
-    textColor: Color,
+    textColor: Color
 ) {
     Surface(
         color = containerColor,
@@ -733,6 +910,43 @@ private fun roleLabel(role: String?): String {
         "HOST" -> "Trưởng nhóm"
         "MODERATOR" -> "Điều phối viên"
         else -> "Thành viên"
+    }
+}
+
+private fun actionLabel(action: String?): String {
+    return when (action) {
+        "ADMIN_ROLE_OVERRIDE" -> "Admin đổi vai trò"
+        "ROLE_UPDATED" -> "Đổi vai trò"
+        "ADMIN_MEMBER_REMOVED" -> "Admin mời rời nhóm"
+        "MEMBER_REMOVED" -> "Mời rời nhóm"
+        "GROUP_FROZEN" -> "Tạm khóa nhóm"
+        "GROUP_UNFROZEN" -> "Mở lại nhóm"
+        else -> "Quản trị nhóm"
+    }
+}
+
+private fun actionColor(action: String?): Color {
+    return when (action) {
+        "GROUP_FROZEN", "ADMIN_MEMBER_REMOVED", "MEMBER_REMOVED" -> Color(0xFFDC2626)
+        "GROUP_UNFROZEN" -> Color(0xFF059669)
+        "ADMIN_ROLE_OVERRIDE", "ROLE_UPDATED" -> PrimaryBlue
+        else -> Color(0xFF475569)
+    }
+}
+
+private fun buildAuditHeadline(entry: GroupGovernanceAuditEntry): String {
+    val actor = entry.actorName ?: "Người quản trị"
+    val target = entry.targetUserName ?: "thành viên"
+    return when (entry.action) {
+        "ADMIN_ROLE_OVERRIDE", "ROLE_UPDATED" -> {
+            val previousRole = roleLabel(entry.previousRole)
+            val newRole = roleLabel(entry.newRole)
+            "$actor đã chuyển $target từ $previousRole sang $newRole."
+        }
+        "ADMIN_MEMBER_REMOVED", "MEMBER_REMOVED" -> "$actor đã mời $target rời khỏi nhóm."
+        "GROUP_FROZEN" -> "$actor đã tạm khóa hội nhóm."
+        "GROUP_UNFROZEN" -> "$actor đã mở lại hội nhóm."
+        else -> "$actor đã thực hiện một thao tác quản trị."
     }
 }
 

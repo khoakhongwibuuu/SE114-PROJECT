@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.VerifiedUser
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,7 +24,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -52,7 +50,7 @@ private enum class AdminTab(
     EKYC(
         title = "Duyệt hồ sơ bác sĩ",
         label = "Bác sĩ",
-        icon = { Icon(Icons.Default.VerifiedUser, contentDescription = "eKYC") },
+        icon = { Icon(Icons.Default.VerifiedUser, contentDescription = "Duyệt bác sĩ") },
     ),
     MODERATION(
         title = "Kiểm duyệt nội dung",
@@ -65,7 +63,7 @@ private enum class AdminTab(
 @Composable
 fun AdminMainScreen(
     onLogout: () -> Unit = {},
-    onNavigateToGroupRequests: () -> Unit = {}
+    onNavigateToGroupRequests: () -> Unit = {},
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val currentTab = AdminTab.entries.getOrNull(selectedTab) ?: AdminTab.DASHBOARD
@@ -76,7 +74,7 @@ fun AdminMainScreen(
                 title = { Text("CareNest Admin", fontWeight = FontWeight.Black) },
                 actions = {
                     IconButton(onClick = onNavigateToGroupRequests) {
-                        Icon(Icons.Default.Groups, contentDescription = "Duyệt nhóm")
+                        Icon(Icons.Default.Groups, contentDescription = "Duyệt yêu cầu nhóm")
                     }
                     IconButton(onClick = onLogout) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Đăng xuất")
@@ -124,6 +122,7 @@ fun AdminMainScreen(
                     onOpenEkyc = { selectedTab = AdminTab.EKYC.ordinal },
                     onOpenModeration = { selectedTab = AdminTab.MODERATION.ordinal },
                 )
+
                 AdminTab.USERS -> AdminUserManagementScreen()
                 AdminTab.EKYC -> AdminEkycScreen()
                 AdminTab.MODERATION -> AdminModerationScreen()

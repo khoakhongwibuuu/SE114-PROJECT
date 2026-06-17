@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Medication
@@ -62,7 +61,7 @@ import java.util.Locale
 enum class NotificationOpenResult {
     OPENED,
     CONSUMED,
-    UNHANDLED,
+    UNHANDLED
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +70,7 @@ fun NotificationsCenterScreen(
     profileId: Long?,
     viewModel: NotificationsCenterViewModel,
     onBack: () -> Unit,
-    onOpenNotification: (NotificationItem) -> NotificationOpenResult = { NotificationOpenResult.UNHANDLED },
+    onOpenNotification: (NotificationItem) -> NotificationOpenResult = { NotificationOpenResult.UNHANDLED }
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -85,10 +84,10 @@ fun NotificationsCenterScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Trung tâm thông báo",
+                        text = "Trung tâm thông báo",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E3A8A),
+                        color = Color(0xFF1E3A8A)
                     )
                 },
                 navigationIcon = {
@@ -96,39 +95,39 @@ fun NotificationsCenterScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Quay lại",
-                            tint = Color(0xFF1E293B),
+                            tint = Color(0xFF1E293B)
                         )
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = { viewModel.loadNotifications(profileId) },
-                        enabled = !state.isActionLoading,
+                        enabled = !state.isActionLoading
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Tải lại", tint = PrimaryBlue)
                     }
                     if (state.unreadCount > 0) {
                         TextButton(
                             onClick = { viewModel.markAllAsRead() },
-                            enabled = !state.isActionLoading,
+                            enabled = !state.isActionLoading
                         ) {
                             Text(
-                                if (state.isActionLoading) "Đang xử lý" else "Đọc tất cả",
+                                text = if (state.isActionLoading) "Đang xử lý" else "Đọc tất cả",
                                 color = PrimaryBlue,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
+                                fontSize = 14.sp
                             )
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF8FAFC)),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF8FAFC))
             )
-        },
+        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                .padding(paddingValues)
         ) {
             when {
                 state.isLoading && state.notifications.isEmpty() -> {
@@ -140,19 +139,13 @@ fun NotificationsCenterScreen(
                 state.notifications.isEmpty() -> {
                     EmptyNotificationState(
                         error = state.error,
-                        onRetry = { viewModel.loadNotifications(profileId) },
+                        onRetry = { viewModel.loadNotifications(profileId) }
                     )
                 }
 
                 else -> {
                     NotificationsList(
                         state = state,
-                        onDismissBanner = viewModel::clearTransientMessage,
-                        onMarkAsRead = { notification ->
-                            if (!state.isActionLoading && !notification.isRead && notification.id > 0L) {
-                                viewModel.markAsRead(notification.id)
-                            }
-                        },
                         onNotificationClick = { notification ->
                             if (!state.isActionLoading) {
                                 val openResult = onOpenNotification(notification)
@@ -164,7 +157,7 @@ fun NotificationsCenterScreen(
                                     viewModel.markAsRead(notification.id)
                                 }
                             }
-                        },
+                        }
                     )
                 }
             }
@@ -175,20 +168,20 @@ fun NotificationsCenterScreen(
 @Composable
 private fun EmptyNotificationState(
     error: String?,
-    onRetry: () -> Unit,
+    onRetry: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = if (error == null) Icons.Default.NotificationsNone else Icons.Default.Info,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
-            tint = Color(0xFF94A3B8),
+            tint = Color(0xFF94A3B8)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
@@ -196,14 +189,14 @@ private fun EmptyNotificationState(
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF64748B),
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = error ?: "CareNest sẽ cập nhật khi có lịch hẹn, lời mời gia đình hoặc nhắc nhở mới.",
+            text = error ?: "CareNest sẽ cập nhật tại đây khi có lịch hẹn, lời mời gia đình hoặc nhắc nhở mới.",
             fontSize = 14.sp,
             color = Color(0xFF94A3B8),
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Center
         )
         if (error != null) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -217,16 +210,11 @@ private fun EmptyNotificationState(
 @Composable
 private fun NotificationsList(
     state: NotificationsUiState,
-    onDismissBanner: () -> Unit,
-    onMarkAsRead: (NotificationItem) -> Unit,
-    onNotificationClick: (NotificationItem) -> Unit,
+    onNotificationClick: (NotificationItem) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        state.message?.let { message ->
-            InlineStatusBanner(message = message, onDismiss = onDismissBanner)
-        }
         state.error?.let { error ->
-            InlineStatusBanner(message = error, isError = true, onDismiss = onDismissBanner)
+            InlineStatusBanner(message = error, isError = true)
         }
         if (state.unreadCount > 0) {
             InlineStatusBanner(message = "Bạn có ${state.unreadCount} thông báo chưa đọc")
@@ -234,7 +222,7 @@ private fun NotificationsList(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 24.dp),
+            contentPadding = PaddingValues(bottom = 24.dp)
         ) {
             state.groupedNotifications.forEach { (groupKey, groupItems) ->
                 item {
@@ -244,16 +232,14 @@ private fun NotificationsList(
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFF64748B),
                         letterSpacing = 0.sp,
-                        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp)
                     )
                 }
 
                 items(groupItems, key = { it.id }) { item ->
                     NotificationRow(
                         item = item,
-                        isActionLoading = state.isActionLoading,
-                        onMarkAsRead = { onMarkAsRead(item) },
-                        onClick = { onNotificationClick(item) },
+                        onClick = { onNotificationClick(item) }
                     )
                     HorizontalDivider(color = Color(0xFFF1F5F9))
                 }
@@ -265,21 +251,20 @@ private fun NotificationsList(
 @Composable
 private fun InlineStatusBanner(
     message: String,
-    isError: Boolean = false,
-    onDismiss: (() -> Unit)? = null,
+    isError: Boolean = false
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(if (isError) Color(0xFFFFF1F2) else Color(0xFFEFF6FF))
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             Icons.Default.Info,
             contentDescription = null,
             tint = if (isError) Color(0xFFE11D48) else PrimaryBlue,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
@@ -287,22 +272,15 @@ private fun InlineStatusBanner(
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = if (isError) Color(0xFFBE123C) else Color(0xFF1E40AF),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f)
         )
-        if (onDismiss != null) {
-            TextButton(onClick = onDismiss) {
-                Text("Đóng", color = if (isError) Color(0xFFBE123C) else Color(0xFF1E40AF))
-            }
-        }
     }
 }
 
 @Composable
 fun NotificationRow(
     item: NotificationItem,
-    isActionLoading: Boolean,
-    onMarkAsRead: () -> Unit,
-    onClick: () -> Unit,
+    onClick: () -> Unit
 ) {
     val (icon, bgColor, iconColor) = getNotificationStyle(item.type)
     val rowBg = if (item.isRead) Color.White else Color(0xFFEFF6FF)
@@ -313,20 +291,20 @@ fun NotificationRow(
             .background(rowBg)
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.Top
     ) {
         Box(
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
                 .background(bgColor),
-            contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = iconColor,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(20.dp)
             )
         }
 
@@ -336,7 +314,7 @@ fun NotificationRow(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = item.title,
@@ -345,44 +323,15 @@ fun NotificationRow(
                     color = if (item.isRead) Color(0xFF334155) else Color(0xFF1E293B),
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    overflow = TextOverflow.Ellipsis
                 )
                 if (!item.isRead) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(
-                            onClick = onMarkAsRead,
-                            enabled = !isActionLoading,
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                        ) {
-                            if (isActionLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(14.dp),
-                                    color = PrimaryBlue,
-                                    strokeWidth = 2.dp,
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Đánh dấu đã đọc",
-                                    tint = PrimaryBlue,
-                                    modifier = Modifier.size(14.dp),
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "Đã đọc",
-                                color = PrimaryBlue,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(PrimaryBlue),
-                        )
-                    }
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryBlue)
+                    )
                 }
             }
 
@@ -393,7 +342,7 @@ fun NotificationRow(
                 fontSize = 13.sp,
                 color = if (item.isRead) Color(0xFF64748B) else Color(0xFF475569),
                 lineHeight = 18.sp,
-                fontWeight = if (item.isRead) FontWeight.Normal else FontWeight.Medium,
+                fontWeight = if (item.isRead) FontWeight.Normal else FontWeight.Medium
             )
 
             item.createdAt?.let {
@@ -401,7 +350,7 @@ fun NotificationRow(
                 Text(
                     text = formatIsoTime(it),
                     fontSize = 11.sp,
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFF94A3B8)
                 )
             }
         }

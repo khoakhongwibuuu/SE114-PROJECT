@@ -1,9 +1,8 @@
-package com.example.carenest.feature.community.presentation
+﻿package com.example.carenest.feature.community.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.community.data.repository.CommunityRepository
 import com.example.carenest.feature.community.domain.model.GroupMember
@@ -18,42 +17,46 @@ import kotlinx.coroutines.launch
 enum class GroupPostTab(val label: String) {
     APPROVED("Bài viết"),
     MY_POSTS("Bài của tôi"),
-    PENDING("Chờ duyệt"),
+    PENDING("Chờ duyệt")
 }
 
 data class GroupPostDetailState(
     val activeTab: GroupPostTab = GroupPostTab.APPROVED,
     val isModerator: Boolean = false,
     val canManageMembers: Boolean = false,
-    val canLeaveGroup: Boolean = false,
-    val leaveGroupHint: String? = null,
+    val canLeaveGroup: Boolean = true,
     val approvedPosts: List<GroupPost> = emptyList(),
     val myPosts: List<GroupPost> = emptyList(),
     val pendingPosts: List<GroupPost> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
+    
+    // Comment Sheet State
     val isCommentSheetVisible: Boolean = false,
     val selectedPostIdForComments: Long? = null,
     val commentsList: List<GroupPostComment> = emptyList(),
     val isCommentsLoading: Boolean = false,
     val commentError: String? = null,
+
     val currentUserId: Long? = null,
     val members: List<GroupMember> = emptyList(),
     val isMembersSheetVisible: Boolean = false,
     val isMembersLoading: Boolean = false,
-    val isLeavingGroup: Boolean = false,
     val memberOperationUserId: Long? = null,
-    val message: String? = null,
+    val message: String? = null
 )
 
 class GroupPostDetailViewModel(
     private val groupId: Long,
     private val communityRepository: CommunityRepository,
-    private val secureSessionManager: SecureSessionManager,
+    private val secureSessionManager: SecureSessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GroupPostDetailState())
     val uiState: StateFlow<GroupPostDetailState> = _uiState.asStateFlow()
+
+    private val fallbackKickReason = "Điều phối thành viên từ màn bài viết nhóm"
+    private val fallbackRoleReason = "Cập nhật vai trò từ màn bài viết nhóm"
 
     init {
         _uiState.update { it.copy(currentUserId = secureSessionManager.getUserId()) }
@@ -76,23 +79,16 @@ class GroupPostDetailViewModel(
         val normalizedGroupRole = myRoleInGroup?.uppercase()
         val isModerator = normalizedAppRole == "ADMIN" || normalizedGroupRole == "HOST" || normalizedGroupRole == "MODERATOR"
         val canManageMembers = normalizedAppRole == "ADMIN" || normalizedGroupRole == "HOST"
-        val hasExplicitMembership = normalizedGroupRole != null
-        val canLeaveGroup = hasExplicitMembership && (normalizedAppRole == "ADMIN" || normalizedGroupRole != "HOST")
         _uiState.update { current ->
             current.copy(
                 isModerator = isModerator,
                 canManageMembers = canManageMembers,
-                canLeaveGroup = canLeaveGroup,
-                leaveGroupHint = if (joined && hasExplicitMembership && !canLeaveGroup) {
-                    "Bạn đang là trưởng nhóm. Hãy liên hệ admin hệ thống nếu cần rời nhóm hoặc chuyển quyền trưởng nhóm."
-                } else {
-                    null
-                },
+                canLeaveGroup = joined,
                 activeTab = if (!isModerator && current.activeTab == GroupPostTab.PENDING) {
                     GroupPostTab.APPROVED
                 } else {
                     current.activeTab
-                },
+                }
             )
         }
     }
@@ -111,19 +107,17 @@ class GroupPostDetailViewModel(
                         val posts = communityRepository.posts(groupId)
                         _uiState.update { it.copy(approvedPosts = posts) }
                     }
-
                     GroupPostTab.MY_POSTS -> {
                         val posts = communityRepository.myPosts(groupId)
                         _uiState.update { it.copy(myPosts = posts) }
                     }
-
                     GroupPostTab.PENDING -> {
                         val posts = communityRepository.pendingPosts(groupId)
                         _uiState.update { it.copy(pendingPosts = posts) }
                     }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.userMessage("Không thể tải danh sách bài viết")) }
+                _uiState.update { it.copy(error = e.message ?: "Đã có lỗi xảy ra") }
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
             }
@@ -134,10 +128,9 @@ class GroupPostDetailViewModel(
         viewModelScope.launch {
             try {
                 communityRepository.approvePost(postId)
-                _uiState.update { it.copy(error = null, message = "Đã duyệt bài viết") }
                 loadPosts()
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.userMessage("Không thể duyệt bài viết")) }
+                _uiState.update { it.copy(error = e.message ?: "Không thể duyệt bài viết") }
             }
         }
     }
@@ -146,10 +139,9 @@ class GroupPostDetailViewModel(
         viewModelScope.launch {
             try {
                 communityRepository.rejectPost(postId, reason)
-                _uiState.update { it.copy(error = null, message = "Đã từ chối bài viết") }
                 loadPosts()
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.userMessage("Không thể từ chối bài viết")) }
+                _uiState.update { it.copy(error = e.message ?: "Không thể từ chối bài viết") }
             }
         }
     }
@@ -167,12 +159,12 @@ class GroupPostDetailViewModel(
                     it.copy(
                         activeTab = GroupPostTab.MY_POSTS,
                         error = null,
-                        message = "Bài viết đã được gửi lại để duyệt",
+                        message = "Bài viết đã được gửi lại để duyệt"
                     )
                 }
                 loadPosts()
             }.onFailure { error ->
-                _uiState.update { it.copy(error = error.userMessage("Không thể cập nhật bài viết")) }
+                _uiState.update { it.copy(error = error.message ?: "Không thể cập nhật bài viết") }
             }
         }
     }
@@ -188,12 +180,12 @@ class GroupPostDetailViewModel(
                         myPosts = state.myPosts.filterNot { it.id == postId },
                         pendingPosts = state.pendingPosts.filterNot { it.id == postId },
                         error = null,
-                        message = "Đã xóa bài viết",
+                        message = "Đã xóa bài viết"
                     )
                 }
                 loadPosts()
             }.onFailure { error ->
-                _uiState.update { it.copy(error = error.userMessage("Không thể xóa bài viết")) }
+                _uiState.update { it.copy(error = error.message ?: "Không thể xóa bài viết") }
             }
         }
     }
@@ -209,7 +201,7 @@ class GroupPostDetailViewModel(
             }.onSuccess {
                 _uiState.update { it.copy(error = null, message = "Đã gửi báo cáo cho quản trị viên") }
             }.onFailure { error ->
-                _uiState.update { it.copy(error = error.userMessage("Không thể báo cáo bài viết")) }
+                _uiState.update { it.copy(error = error.message ?: "Không thể báo cáo bài viết") }
             }
         }
     }
@@ -234,7 +226,7 @@ class GroupPostDetailViewModel(
                 _uiState.update {
                     it.copy(
                         isMembersLoading = false,
-                        error = error.userMessage("Không thể tải danh sách thành viên"),
+                        error = error.message ?: "Không thể tải danh sách thành viên"
                     )
                 }
             }
@@ -243,19 +235,13 @@ class GroupPostDetailViewModel(
 
     fun leaveGroup(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLeavingGroup = true, error = null) }
             runCatching {
                 communityRepository.leave(groupId)
             }.onSuccess {
-                _uiState.update { it.copy(isLeavingGroup = false, message = "Đã rời nhóm") }
+                _uiState.update { it.copy(message = "Đã rời nhóm") }
                 onSuccess()
             }.onFailure { error ->
-                _uiState.update {
-                    it.copy(
-                        isLeavingGroup = false,
-                        error = error.userMessage("Không thể rời nhóm"),
-                    )
-                }
+                _uiState.update { it.copy(error = error.message ?: "Không thể rời nhóm") }
             }
         }
     }
@@ -264,20 +250,20 @@ class GroupPostDetailViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(memberOperationUserId = userId, error = null) }
             runCatching {
-                communityRepository.kickMember(groupId, userId)
+                communityRepository.kickMember(groupId, userId, fallbackKickReason)
             }.onSuccess {
                 _uiState.update { state ->
                     state.copy(
                         members = state.members.filterNot { it.userId == userId },
                         memberOperationUserId = null,
-                        message = "Đã mời thành viên rời nhóm",
+                        message = "Đã mời thành viên rời nhóm"
                     )
                 }
             }.onFailure { error ->
                 _uiState.update {
                     it.copy(
                         memberOperationUserId = null,
-                        error = error.userMessage("Không thể mời thành viên rời nhóm"),
+                        error = error.message ?: "Không thể mời thành viên rời nhóm"
                     )
                 }
             }
@@ -288,15 +274,15 @@ class GroupPostDetailViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(memberOperationUserId = userId, error = null) }
             runCatching {
-                communityRepository.updateMemberRole(groupId, userId, role)
-            }.onSuccess {
+                communityRepository.updateMemberRole(groupId, userId, role, fallbackRoleReason)
+            }.onSuccess { 
                 _uiState.update { state ->
                     state.copy(
                         members = state.members.map { member ->
                             if (member.userId == userId) member.copy(role = role) else member
                         },
                         memberOperationUserId = null,
-                        message = "Đã cập nhật vai trò thành viên",
+                        message = "Đã cập nhật vai trò thành viên"
                     )
                 }
                 val myRole = if (userId == secureSessionManager.getUserId()) role else null
@@ -305,7 +291,7 @@ class GroupPostDetailViewModel(
                 _uiState.update {
                     it.copy(
                         memberOperationUserId = null,
-                        error = error.userMessage("Không thể cập nhật quyền thành viên"),
+                        error = error.message ?: "Không thể cập nhật quyền thành viên"
                     )
                 }
             }
@@ -320,14 +306,12 @@ class GroupPostDetailViewModel(
                         val newLikedByMe = !post.likedByMe
                         val newLikeCount = if (newLikedByMe) post.likeCount + 1 else maxOf(0, post.likeCount - 1)
                         post.copy(likedByMe = newLikedByMe, likeCount = newLikeCount)
-                    } else {
-                        post
-                    }
+                    } else post
                 }
             }
             state.copy(
                 approvedPosts = updatePosts(state.approvedPosts),
-                myPosts = updatePosts(state.myPosts),
+                myPosts = updatePosts(state.myPosts)
             )
         }
 
@@ -340,48 +324,42 @@ class GroupPostDetailViewModel(
     }
 
     fun openCommentSheet(postId: Long) {
-        _uiState.update {
+        _uiState.update { 
             it.copy(
                 isCommentSheetVisible = true,
                 selectedPostIdForComments = postId,
                 commentsList = emptyList(),
                 isCommentsLoading = true,
-                commentError = null,
+                commentError = null
             )
         }
         loadCommentsForPost(postId)
     }
 
     fun closeCommentSheet() {
-        _uiState.update {
+        _uiState.update { 
             it.copy(
                 isCommentSheetVisible = false,
-                selectedPostIdForComments = null,
+                selectedPostIdForComments = null
             )
         }
-    }
-
-    fun reloadComments() {
-        val postId = _uiState.value.selectedPostIdForComments ?: return
-        _uiState.update { it.copy(isCommentsLoading = true, commentError = null) }
-        loadCommentsForPost(postId)
     }
 
     private fun loadCommentsForPost(postId: Long) {
         viewModelScope.launch {
             val result = communityRepository.getGroupPostComments(postId)
             if (result.isSuccess) {
-                _uiState.update {
+                _uiState.update { 
                     it.copy(
                         commentsList = result.getOrNull() ?: emptyList(),
-                        isCommentsLoading = false,
+                        isCommentsLoading = false
                     )
                 }
             } else {
-                _uiState.update {
+                _uiState.update { 
                     it.copy(
-                        commentError = result.exceptionOrNull()?.userMessage("Không thể tải bình luận"),
-                        isCommentsLoading = false,
+                        commentError = result.exceptionOrNull()?.message ?: "Lỗi tải bình luận",
+                        isCommentsLoading = false
                     )
                 }
             }
@@ -402,22 +380,17 @@ class GroupPostDetailViewModel(
                         posts.map { post ->
                             if (post.id == postId) {
                                 post.copy(commentCount = post.commentCount + 1)
-                            } else {
-                                post
-                            }
+                            } else post
                         }
                     }
                     state.copy(
                         commentsList = updatedComments,
                         approvedPosts = updatePosts(state.approvedPosts),
-                        myPosts = updatePosts(state.myPosts),
-                        commentError = null,
+                        myPosts = updatePosts(state.myPosts)
                     )
                 }
             } else {
-                _uiState.update {
-                    it.copy(commentError = result.exceptionOrNull()?.userMessage("Không thể gửi bình luận"))
-                }
+                _uiState.update { it.copy(commentError = result.exceptionOrNull()?.message) }
             }
         }
     }
@@ -430,7 +403,7 @@ class GroupPostDetailViewModel(
         fun provideFactory(
             groupId: Long,
             communityRepository: CommunityRepository,
-            secureSessionManager: SecureSessionManager,
+            secureSessionManager: SecureSessionManager
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

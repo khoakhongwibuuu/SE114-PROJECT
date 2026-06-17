@@ -22,25 +22,25 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AdminErrorState(
     message: String = "Không thể tải dữ liệu",
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
             imageVector = Icons.Default.ErrorOutline,
             contentDescription = "Error",
             modifier = Modifier.size(48.dp),
-            tint = Color(0xFF64748B) // Subtle dark gray
+            tint = Color(0xFF64748B),
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = message,
             color = Color(0xFF64748B),
             style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onRetry) {

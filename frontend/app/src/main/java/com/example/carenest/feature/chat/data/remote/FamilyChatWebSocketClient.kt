@@ -15,59 +15,45 @@ class FamilyChatWebSocketClient(
     private val disposables = CompositeDisposable()
     private var stompClient: StompClient? = null
     private var subscribedFamilyId: Long? = null
-    private var connectionId: Long = 0L
-    private var isManualDisconnect = false
-    private var disconnectNotified = false
 
     fun connect(familyId: Long, onEvent: (ChatSocketEvent) -> Unit) {
         disconnect()
-        connectionId += 1
-        val currentConnectionId = connectionId
-
         val client = Stomp.over(Stomp.ConnectionProvider.OKHTTP, webSocketUrl)
         stompClient = client
         subscribedFamilyId = null
-        isManualDisconnect = false
-        disconnectNotified = false
 
         disposables.add(
             client.lifecycle().subscribe({ event ->
-                if (currentConnectionId != connectionId) return@subscribe
                 when (event.type) {
                     LifecycleEvent.Type.OPENED -> {
                         Log.d("FamilyChatWS", "WebSocket connected for family=$familyId")
-                        subscribeToTopic(client, familyId, currentConnectionId, onEvent)
+                        subscribeToTopic(client, familyId, onEvent)
                         onEvent(ChatSocketEvent.Connected)
                     }
 
                     LifecycleEvent.Type.ERROR -> {
                         Log.e("FamilyChatWS", "WebSocket error", event.exception)
-                        notifyDisconnectOnce(
-                            currentConnectionId = currentConnectionId,
-                            message = "Mất kết nối phòng chat gia đình. Đang thử kết nối lại...",
-                            onEvent = onEvent,
+                        onEvent(
+                            ChatSocketEvent.Disconnected(
+                                event.exception?.localizedMessage
+                                    ?: "Mất kết nối phòng chat gia đình",
+                            ),
                         )
                     }
 
                     LifecycleEvent.Type.CLOSED -> {
                         Log.w("FamilyChatWS", "WebSocket closed for family=$familyId")
-                        if (!isManualDisconnect) {
-                            notifyDisconnectOnce(
-                                currentConnectionId = currentConnectionId,
-                                message = "Đang kết nối lại...",
-                                onEvent = onEvent,
-                            )
-                        }
+                        onEvent(ChatSocketEvent.Disconnected("Đang kết nối lại..."))
                     }
 
                     else -> Unit
                 }
             }, { error ->
                 Log.e("FamilyChatWS", "Lifecycle subscription error", error)
-                notifyDisconnectOnce(
-                    currentConnectionId = currentConnectionId,
-                    message = "Mất kết nối phòng chat gia đình. Đang thử kết nối lại...",
-                    onEvent = onEvent,
+                onEvent(
+                    ChatSocketEvent.Disconnected(
+                        error.localizedMessage ?: "Mất kết nối phòng chat gia đình",
+                    ),
                 )
             }),
         )
@@ -92,7 +78,6 @@ class FamilyChatWebSocketClient(
 
     fun disconnect() {
         Log.d("FamilyChatWS", "Disconnecting STOMP WebSocket client.")
-        isManualDisconnect = true
         disposables.clear()
         subscribedFamilyId = null
         stompClient?.disconnect()
@@ -102,7 +87,6 @@ class FamilyChatWebSocketClient(
     private fun subscribeToTopic(
         client: StompClient,
         familyId: Long,
-        currentConnectionId: Long,
         onEvent: (ChatSocketEvent) -> Unit,
     ) {
         if (subscribedFamilyId == familyId) return
@@ -114,23 +98,13 @@ class FamilyChatWebSocketClient(
                 onEvent(ChatSocketEvent.MessageReceived(message.payload))
             }, { error ->
                 Log.e("FamilyChatWS", "Topic subscription error", error)
-                notifyDisconnectOnce(
-                    currentConnectionId = currentConnectionId,
-                    message = "Không thể duy trì kết nối phòng chat gia đình. Đang thử kết nối lại...",
-                    onEvent = onEvent,
+                onEvent(
+                    ChatSocketEvent.Disconnected(
+                        error.localizedMessage ?: "Không thể kết nối phòng chat gia đình",
+                    ),
                 )
             }),
         )
-    }
-
-    private fun notifyDisconnectOnce(
-        currentConnectionId: Long,
-        message: String,
-        onEvent: (ChatSocketEvent) -> Unit,
-    ) {
-        if (currentConnectionId != connectionId || isManualDisconnect || disconnectNotified) return
-        disconnectNotified = true
-        onEvent(ChatSocketEvent.Disconnected(message))
     }
 
     private fun headers(): List<StompHeader> {

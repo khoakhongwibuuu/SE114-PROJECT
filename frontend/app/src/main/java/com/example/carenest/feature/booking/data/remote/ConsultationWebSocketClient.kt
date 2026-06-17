@@ -2,7 +2,6 @@ package com.example.carenest.feature.booking.data.remote
 
 import android.util.Log
 import com.example.carenest.core.data.storage.SecureSessionManager
-import com.example.carenest.feature.booking.domain.port.ConsultationSocketGateway
 import io.reactivex.disposables.CompositeDisposable
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
@@ -17,81 +16,61 @@ sealed interface ConsultationSocketEvent {
 
 class ConsultationWebSocketClient(
     private val secureSessionManager: SecureSessionManager,
-    private val webSocketUrl: String = com.example.carenest.AppConfig.WEBSOCKET_URL,
-) : ConsultationSocketGateway {
+    private val webSocketUrl: String = com.example.carenest.AppConfig.WEBSOCKET_URL
+) {
     private val disposables = CompositeDisposable()
     private var stompClient: StompClient? = null
     private var subscribedThreadId: Long? = null
-    private var connectionId: Long = 0L
-    private var isManualDisconnect = false
-    private var disconnectNotified = false
 
-    override fun connect(threadId: Long, onEvent: (ConsultationSocketEvent) -> Unit) {
+    fun connect(threadId: Long, onEvent: (ConsultationSocketEvent) -> Unit) {
         disconnect()
-        connectionId += 1
-        val currentConnectionId = connectionId
-
         val client = Stomp.over(Stomp.ConnectionProvider.OKHTTP, webSocketUrl)
         stompClient = client
         subscribedThreadId = null
-        isManualDisconnect = false
-        disconnectNotified = false
 
         disposables.add(
             client.lifecycle().subscribe({ event ->
-                if (currentConnectionId != connectionId) return@subscribe
                 when (event.type) {
                     LifecycleEvent.Type.OPENED -> {
                         Log.d("ConsultationChat", "WebSocket connected for thread=$threadId")
-                        subscribeToTopic(client, threadId, currentConnectionId, onEvent)
+                        subscribeToTopic(client, threadId, onEvent)
                         onEvent(ConsultationSocketEvent.Connected)
                     }
 
                     LifecycleEvent.Type.ERROR -> {
                         Log.e("ConsultationChat", "WebSocket error", event.exception)
-                        notifyDisconnectOnce(
-                            currentConnectionId = currentConnectionId,
-                            message = "Mất kết nối phòng tư vấn. Đang thử kết nối lại...",
-                            onEvent = onEvent,
+                        onEvent(
+                            ConsultationSocketEvent.Disconnected(
+                                event.exception?.localizedMessage ?: "Mất kết nối phòng tư vấn"
+                            )
                         )
                     }
 
                     LifecycleEvent.Type.CLOSED -> {
                         Log.w("ConsultationChat", "WebSocket closed for thread=$threadId")
-                        if (!isManualDisconnect) {
-                            notifyDisconnectOnce(
-                                currentConnectionId = currentConnectionId,
-                                message = "Đang kết nối lại...",
-                                onEvent = onEvent,
-                            )
-                        }
+                        onEvent(ConsultationSocketEvent.Disconnected("Đang kết nối lại..."))
                     }
 
                     else -> Unit
                 }
             }, { error ->
                 Log.e("ConsultationChat", "Lifecycle subscription error", error)
-                notifyDisconnectOnce(
-                    currentConnectionId = currentConnectionId,
-                    message = "Mất kết nối phòng tư vấn. Đang thử kết nối lại...",
-                    onEvent = onEvent,
-                )
-            }),
+                onEvent(ConsultationSocketEvent.Disconnected(error.localizedMessage ?: "Mất kết nối phòng tư vấn"))
+            })
         )
 
         client.connect(headers())
     }
 
-    override fun send(threadId: Long, payload: String, onError: (Throwable) -> Unit): Boolean {
+    fun send(threadId: Long, payload: String, onError: (Throwable) -> Unit): Boolean {
         val client = stompClient ?: return false
         disposables.add(
-            client.send("/app/consultation/thread/$threadId", payload).subscribe({}, onError),
+            client.send("/app/consultation/thread/$threadId", payload).subscribe({}, onError)
         )
         return true
     }
 
-    override fun disconnect() {
-        isManualDisconnect = true
+    fun disconnect() {
         disposables.clear()
         subscribedThreadId = null
         stompClient?.disconnect()
@@ -101,7 +80,6 @@ class ConsultationWebSocketClient(
     private fun subscribeToTopic(
         client: StompClient,
         threadId: Long,
-        currentConnectionId: Long,
         onEvent: (ConsultationSocketEvent) -> Unit,
     ) {
         if (subscribedThreadId == threadId) return
@@ -111,23 +89,9 @@ class ConsultationWebSocketClient(
                 onEvent(ConsultationSocketEvent.MessageReceived(message.payload))
             }, { error ->
                 Log.e("ConsultationChat", "Topic subscription error", error)
-                notifyDisconnectOnce(
-                    currentConnectionId = currentConnectionId,
-                    message = "Không thể duy trì kết nối phòng tư vấn. Đang thử kết nối lại...",
-                    onEvent = onEvent,
-                )
-            }),
+                onEvent(ConsultationSocketEvent.Disconnected(error.localizedMessage ?: "Không thể kết nối phòng tư vấn"))
+            })
         )
-    }
-
-    private fun notifyDisconnectOnce(
-        currentConnectionId: Long,
-        message: String,
-        onEvent: (ConsultationSocketEvent) -> Unit,
-    ) {
-        if (currentConnectionId != connectionId || isManualDisconnect || disconnectNotified) return
-        disconnectNotified = true
-        onEvent(ConsultationSocketEvent.Disconnected(message))
     }
 
     private fun headers(): List<StompHeader> {

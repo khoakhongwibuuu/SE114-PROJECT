@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -29,7 +27,6 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -47,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -57,7 +53,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,7 +63,7 @@ fun RegisterScreen(
     viewModel: AuthViewModel,
     onNavigateToLogin: () -> Unit,
     onNavigateBack: () -> Unit = onNavigateToLogin,
-    onNavigateToPolicy: () -> Unit = {}
+    onNavigateToPolicy: () -> Unit = {},
 ) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -95,13 +90,13 @@ fun RegisterScreen(
                 .windowInsetsPadding(WindowInsets.ime)
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 24.dp)
+                .padding(horizontal = 24.dp, vertical = 24.dp),
         ) {
             IconButton(
                 onClick = onNavigateBack,
                 modifier = Modifier
                     .padding(bottom = 20.dp)
-                    .size(40.dp)
+                    .size(40.dp),
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = LegacyOnSurface)
             }
@@ -110,7 +105,7 @@ fun RegisterScreen(
                 painter = painterResource(R.drawable.carenest_logo_full),
                 contentDescription = "CareNest",
                 modifier = Modifier.size(132.dp),
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Fit,
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -119,13 +114,13 @@ fun RegisterScreen(
                 text = "Tạo tài khoản mới",
                 fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = LegacyOnSurface
+                color = LegacyOnSurface,
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "Bắt đầu hành trình chăm sóc sức khỏe gia đình",
                 fontSize = 14.sp,
-                color = LegacyOnSurfaceVariant
+                color = LegacyOnSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -134,57 +129,65 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = LegacySurface.copy(alpha = 0.9f)),
                 shape = RoundedCornerShape(24.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     AuthField(
                         label = "Họ và tên",
                         value = fullName,
                         onValueChange = { fullName = it },
                         placeholder = "Nguyễn Văn A",
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) }
+                        leadingIcon = {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp))
+                        },
                     )
                     AuthField(
                         label = "Email",
                         value = email,
                         onValueChange = { email = it },
                         placeholder = "email@vi-du.com",
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
-                        keyboardType = KeyboardType.Email
+                        leadingIcon = {
+                            Icon(Icons.Default.Email, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp))
+                        },
+                        keyboardType = KeyboardType.Email,
                     )
                     AuthField(
                         label = "Số điện thoại",
                         value = phoneNumber,
                         onValueChange = { phoneNumber = it },
                         placeholder = "0901234567",
-                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
-                        keyboardType = KeyboardType.Phone
+                        leadingIcon = {
+                            Icon(Icons.Default.Phone, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp))
+                        },
+                        keyboardType = KeyboardType.Phone,
                     )
                     AuthField(
                         label = "Mật khẩu",
                         value = password,
                         onValueChange = { password = it },
                         placeholder = "Tối thiểu 8 ký tự",
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp))
+                        },
                         trailingIcon = {
                             IconButton(onClick = { showPassword = !showPassword }) {
                                 Icon(
                                     if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                     contentDescription = null,
                                     tint = LegacyOutline,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
                         },
-                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation()
+                        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
                     ) {
                         Checkbox(
                             checked = agreed,
@@ -192,8 +195,8 @@ fun RegisterScreen(
                             colors = CheckboxDefaults.colors(
                                 checkedColor = LegacyPrimary,
                                 uncheckedColor = LegacyOutline,
-                                checkmarkColor = Color.White
-                            )
+                                checkmarkColor = Color.White,
+                            ),
                         )
                         Text(
                             text = buildAnnotatedString {
@@ -216,7 +219,7 @@ fun RegisterScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(top = 12.dp)
-                                .clickable(onClick = onNavigateToPolicy)
+                                .clickable(onClick = onNavigateToPolicy),
                         )
                     }
 
@@ -227,7 +230,7 @@ fun RegisterScreen(
                         onClick = { viewModel.register(email, password, fullName, phoneNumber) },
                         icon = {
                             Icon(Icons.Default.PersonAdd, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                        }
+                        },
                     )
 
                     if (authState is AuthState.Error) {
@@ -235,14 +238,14 @@ fun RegisterScreen(
                             text = (authState as AuthState.Error).error,
                             color = LegacyError,
                             fontSize = 12.sp,
-                            modifier = Modifier.padding(start = 4.dp)
+                            modifier = Modifier.padding(start = 4.dp),
                         )
                     }
 
                     DividerRow()
 
                     OutlinePillButton(
-                        text = "Google chưa hỗ trợ",
+                        text = "Google sẽ mở ở phase sau",
                         enabled = false,
                         onClick = {},
                         leading = {
@@ -250,9 +253,15 @@ fun RegisterScreen(
                                 text = "G",
                                 color = Color(0xFF4285F4),
                                 fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
-                        }
+                        },
+                    )
+                    Text(
+                        text = "MVP hiện hỗ trợ tạo tài khoản bằng email, số điện thoại và mật khẩu.",
+                        color = LegacyOnSurfaceVariant,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 4.dp),
                     )
                 }
             }
@@ -261,7 +270,7 @@ fun RegisterScreen(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(top = 24.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Đã có tài khoản?", fontSize = 14.sp, color = LegacyOnSurfaceVariant)
                 Text(
@@ -269,7 +278,7 @@ fun RegisterScreen(
                     fontSize = 14.sp,
                     color = LegacyPrimary,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable(onClick = onNavigateToLogin)
+                    modifier = Modifier.clickable(onClick = onNavigateToLogin),
                 )
             }
         }

@@ -1,20 +1,12 @@
 package com.example.carenest.feature.health.presentation
 
 import android.app.DatePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -22,36 +14,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,12 +31,11 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.health.domain.model.AdministerDoseRequest
 import com.example.carenest.feature.health.domain.model.CreateVaccinationRequest
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.ZoneId
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,12 +44,10 @@ fun AddVaccinationScheduleScreen(
     vaccineId: Long?,
     doseId: Long?,
     viewModel: VaccinationViewModel,
-    onNavigateBack: () -> Unit,
+    onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     var vaccineName by remember { mutableStateOf("") }
     var selectedDose by remember { mutableStateOf(1) }
@@ -95,9 +64,7 @@ fun AddVaccinationScheduleScreen(
     val editingDose = remember(uiState.vaccinationGroups, vaccineId, doseId) {
         uiState.vaccinationGroups
             .flatMap { it.vaccinations }
-            .firstOrNull { dose ->
-                dose.doseId == doseId && (vaccineId == null || dose.recordId == vaccineId)
-            }
+            .firstOrNull { dose -> dose.doseId == doseId && (vaccineId == null || dose.recordId == vaccineId) }
     }
     val canSubmit = !uiState.isSubmitting && (isEdit || vaccineName.isNotBlank())
 
@@ -111,20 +78,19 @@ fun AddVaccinationScheduleScreen(
             hasPrefilledEdit = true
         }
     }
-
+    
+    // Listen for submission success
     LaunchedEffect(uiState.submitSuccess) {
         if (uiState.submitSuccess) {
-            snackbarHostState.showSnackbar(
-                if (isEdit) "Đã cập nhật mũi tiêm" else "Đã lưu mũi tiêm",
-            )
+            Toast.makeText(context, if (isEdit) "Cập nhật thành công" else "Lưu thành công", Toast.LENGTH_SHORT).show()
             viewModel.resetSubmitState()
             onNavigateBack()
         }
     }
-
+    
     LaunchedEffect(uiState.error) {
         if (uiState.error != null) {
-            snackbarHostState.showSnackbar(uiState.error ?: "Không thể lưu lịch tiêm")
+            Toast.makeText(context, uiState.error, Toast.LENGTH_SHORT).show()
             viewModel.resetSubmitState()
         }
     }
@@ -140,7 +106,7 @@ fun AddVaccinationScheduleScreen(
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
         ).apply {
             val todayMillis = LocalDate.now().toDateAtStartOfDay().time
             if (isEdit || isCompleted) {
@@ -152,7 +118,6 @@ fun AddVaccinationScheduleScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -160,7 +125,7 @@ fun AddVaccinationScheduleScreen(
                         if (isEdit) "Chỉnh sửa mũi tiêm" else "Ghi nhận tiêm chủng",
                         fontWeight = FontWeight.ExtraBold,
                         color = PrimaryBlue,
-                        fontSize = 20.sp,
+                        fontSize = 20.sp
                     )
                 },
                 navigationIcon = {
@@ -169,8 +134,8 @@ fun AddVaccinationScheduleScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFF0F7FF),
-                ),
+                    containerColor = Color(0xFFF0F7FF)
+                )
             )
         },
         bottomBar = {
@@ -178,39 +143,32 @@ fun AddVaccinationScheduleScreen(
                 Button(
                     onClick = {
                         if (vaccineName.isBlank() && !isEdit) {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Vui lòng nhập tên vắc xin")
-                            }
+                            Toast.makeText(context, "Vui lòng nhập tên vắc xin", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
                         val selectedLocalDate = selectedDate.toLocalDate()
                         val today = LocalDate.now()
                         if ((isEdit || isCompleted) && selectedLocalDate.isAfter(today)) {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Ngày tiêm thực tế không được ở tương lai")
-                            }
+                            Toast.makeText(context, "Ngày tiêm thực tế không được ở tương lai", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
                         if (!isEdit && !isCompleted && selectedLocalDate.isBefore(today)) {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Ngày dự kiến không được ở quá khứ")
-                            }
+                            Toast.makeText(context, "Ngày dự kiến không được ở quá khứ", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
-
                         val dateStr = dateFormat.format(selectedDate)
                         val trimmedClinicName = clinicName.trim().ifBlank { null }
                         val trimmedNotes = notes.trim().ifBlank { null }
-
+                        
                         if (doseId != null) {
                             viewModel.administerDose(
                                 doseId = doseId,
                                 request = AdministerDoseRequest(
                                     dateAdministered = dateStr,
                                     location = trimmedClinicName,
-                                    notes = trimmedNotes,
+                                    notes = trimmedNotes
                                 ),
-                                onSuccess = {},
+                                onSuccess = {}
                             )
                         } else {
                             viewModel.createVaccinationPlan(
@@ -221,329 +179,175 @@ fun AddVaccinationScheduleScreen(
                                     status = if (isCompleted) "COMPLETED" else "PENDING",
                                     date = dateStr,
                                     location = trimmedClinicName,
-                                    notes = trimmedNotes,
+                                    notes = trimmedNotes
                                 ),
-                                onSuccess = {},
+                                onSuccess = {}
                             )
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                    enabled = canSubmit,
+                    enabled = canSubmit
                 ) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White)
-                    Spacer(modifier = Modifier.size(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         if (isEdit) "Cập nhật mũi tiêm" else "Lưu mũi tiêm",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
+                        fontSize = 16.sp
                     )
                 }
             }
         },
-        containerColor = Color(0xFFF0F7FF),
+        containerColor = Color(0xFFF0F7FF)
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
         ) {
             Text(
-                text = if (isEdit) {
-                    "Cập nhật lại thông tin mũi tiêm đã ghi nhận trong hồ sơ sức khỏe."
-                } else {
-                    "Ghi nhận từng mũi tiêm để theo dõi đầy đủ và chính xác lịch phòng bệnh."
-                },
+                if (isEdit) "Cập nhật lại thông tin mũi tiêm đã ghi nhận trong hồ sơ sức khỏe."
+                else "Ghi nhận từng mũi tiêm cụ thể để theo dõi đầy đủ và chính xác lịch trình phòng bệnh của bé.",
                 color = Color(0xFF64748B),
                 fontSize = 13.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .padding(vertical = 16.dp)
-                    .fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(vertical = 16.dp).fillMaxWidth()
             )
 
+            // Vắc xin Card
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 20.dp)
-                    .shadow(2.dp, RoundedCornerShape(24.dp)),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp).shadow(2.dp, RoundedCornerShape(24.dp)),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(24.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        "Thông tin vắc xin",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 16.sp,
-                        color = Color(0xFF1E293B),
-                        modifier = Modifier.padding(bottom = 20.dp),
-                    )
-
+                    Text("Thông tin vắc xin", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Color(0xFF1E293B), modifier = Modifier.padding(bottom = 20.dp))
+                    
                     if (!isEdit) {
-                        Text(
-                            "TÊN VẮC XIN",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 11.sp,
-                            color = Color(0xFF64748B),
-                            modifier = Modifier.padding(bottom = 10.dp),
-                        )
+                        Text("TÊN VẮC XIN", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(bottom = 10.dp))
                         OutlinedTextField(
                             value = vaccineName,
                             onValueChange = { vaccineName = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
                             shape = RoundedCornerShape(16.dp),
-                            placeholder = {
-                                Text("Ví dụ: Vắc xin 6 trong 1 Hexaxim", color = Color(0xFF94A3B8))
-                            },
+                            placeholder = { Text("Ví dụ: Vắc xin 6 trong 1 Hexaxim", color = Color(0xFF94A3B8)) },
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = Color(0xFFF1F5F9),
                                 focusedContainerColor = Color(0xFFF1F5F9),
                                 unfocusedBorderColor = Color.Transparent,
-                                focusedBorderColor = PrimaryBlue,
-                            ),
+                                focusedBorderColor = PrimaryBlue
+                            )
                         )
-
-                        Text(
-                            "ĐÂY LÀ MŨI THỨ MẤY?",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 11.sp,
-                            color = Color(0xFF64748B),
-                            modifier = Modifier.padding(top = 24.dp, bottom = 10.dp),
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            listOf(
-                                1 to "Mũi 1",
-                                2 to "Mũi 2",
-                                3 to "Mũi 3",
-                                4 to "Mũi 4",
-                                99 to "Nhắc lại",
-                            ).forEach { (value, label) ->
+                        
+                        Text("ĐÂY LÀ MŨI THỨ MẤY?", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
+                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(1 to "Mũi 1", 2 to "Mũi 2", 3 to "Mũi 3", 4 to "Mũi 4", 99 to "Nhắc lại").forEach { (value, label) ->
                                 val isSelected = selectedDose == value
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(20.dp))
-                                        .background(
-                                            if (isSelected) PrimaryBlue else Color(0xFFF1F5F9),
-                                        )
-                                        .border(
-                                            1.dp,
-                                            if (isSelected) PrimaryBlue else Color(0xFFE2E8F0),
-                                            RoundedCornerShape(20.dp),
-                                        )
+                                        .background(if (isSelected) PrimaryBlue else Color(0xFFF1F5F9))
+                                        .border(1.dp, if (isSelected) PrimaryBlue else Color(0xFFE2E8F0), RoundedCornerShape(20.dp))
                                         .clickable { selectedDose = value }
                                         .padding(horizontal = 16.dp, vertical = 10.dp),
-                                    contentAlignment = Alignment.Center,
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        label,
-                                        color = if (isSelected) Color.White else Color(0xFF475569),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
-                                    )
+                                    Text(label, color = if (isSelected) Color.White else Color(0xFF475569), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                 }
                             }
                         }
                     }
 
-                    Text(
-                        "TRẠNG THÁI",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp,
-                        color = Color(0xFF64748B),
-                        modifier = Modifier.padding(top = 24.dp, bottom = 10.dp),
-                    )
+                    Text("TRẠNG THÁI", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
                     if (isEdit) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(PrimaryBlue),
+                            modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(16.dp)).background(PrimaryBlue),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
+                            horizontalArrangement = Arrangement.Center
                         ) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Spacer(modifier = Modifier.size(6.dp))
-                            Text(
-                                "Ghi nhận là đã tiêm",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                            )
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Ghi nhận là đã tiêm", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
                     } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (isCompleted) PrimaryBlue else Color(0xFFF1F5F9))
-                                    .clickable { isCompleted = true },
+                                modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(16.dp)).background(if (isCompleted) PrimaryBlue else Color(0xFFF1F5F9)).clickable { isCompleted = true },
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
+                                horizontalArrangement = Arrangement.Center
                             ) {
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = if (isCompleted) Color.White else Color(0xFF64748B),
-                                    modifier = Modifier.size(16.dp),
-                                )
-                                Spacer(modifier = Modifier.size(6.dp))
-                                Text(
-                                    "Đã tiêm",
-                                    color = if (isCompleted) Color.White else Color(0xFF475569),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                )
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (isCompleted) Color.White else Color(0xFF64748B), modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Đã tiêm", color = if (isCompleted) Color.White else Color(0xFF475569), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
 
                             Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (!isCompleted) PrimaryBlue else Color(0xFFF1F5F9))
-                                    .clickable { isCompleted = false },
+                                modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(16.dp)).background(if (!isCompleted) PrimaryBlue else Color(0xFFF1F5F9)).clickable { isCompleted = false },
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
+                                horizontalArrangement = Arrangement.Center
                             ) {
-                                Icon(
-                                    Icons.Default.DateRange,
-                                    contentDescription = null,
-                                    tint = if (!isCompleted) Color.White else Color(0xFF64748B),
-                                    modifier = Modifier.size(16.dp),
-                                )
-                                Spacer(modifier = Modifier.size(6.dp))
-                                Text(
-                                    "Lịch dự kiến",
-                                    color = if (!isCompleted) Color.White else Color(0xFF475569),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                )
+                                Icon(Icons.Default.DateRange, contentDescription = null, tint = if (!isCompleted) Color.White else Color(0xFF64748B), modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Lịch dự kiến", color = if (!isCompleted) Color.White else Color(0xFF475569), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
                         }
                     }
                 }
             }
-
+            
+            // Chi tiết mũi tiêm Card
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 20.dp)
-                    .shadow(2.dp, RoundedCornerShape(24.dp)),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp).shadow(2.dp, RoundedCornerShape(24.dp)),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(24.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        "Chi tiết mũi tiêm",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 16.sp,
-                        color = Color(0xFF1E293B),
-                        modifier = Modifier.padding(bottom = 20.dp),
-                    )
-
-                    Text(
-                        if (isCompleted) "NGÀY TIÊM THỰC TẾ" else "NGÀY HẸN / DỰ KIẾN",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp,
-                        color = Color(0xFF64748B),
-                        modifier = Modifier.padding(bottom = 10.dp),
-                    )
+                    Text("Chi tiết mũi tiêm", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Color(0xFF1E293B), modifier = Modifier.padding(bottom = 20.dp))
+                    
+                    Text(if (isCompleted) "NGÀY TIÊM THỰC TẾ" else "NGÀY HẸN / DỰ KIẾN", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(bottom = 10.dp))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFF1F5F9))
-                            .clickable { showDatePicker() }
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFFF1F5F9)).clickable { showDatePicker() }.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(Icons.Default.DateRange, contentDescription = null, tint = Color(0xFF64748B))
-                        Spacer(modifier = Modifier.size(12.dp))
-                        Text(
-                            displayFormat.format(selectedDate),
-                            color = Color(0xFF1E293B),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp,
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(displayFormat.format(selectedDate), color = Color(0xFF1E293B), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                     }
 
-                    Text(
-                        "ĐỊA ĐIỂM TIÊM (TÙY CHỌN)",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp,
-                        color = Color(0xFF64748B),
-                        modifier = Modifier.padding(top = 24.dp, bottom = 10.dp),
-                    )
+                    Text("ĐỊA ĐIỂM TIÊM (TÙY CHỌN)", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
                     OutlinedTextField(
                         value = clinicName,
                         onValueChange = { clinicName = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        placeholder = {
-                            Text("Ví dụ: Trung tâm Tiêm chủng VNVC", color = Color(0xFF94A3B8))
-                        },
+                        placeholder = { Text("Ví dụ: Trung tâm Tiêm chủng VNVC", color = Color(0xFF94A3B8)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedContainerColor = Color(0xFFF1F5F9),
                             focusedContainerColor = Color(0xFFF1F5F9),
                             unfocusedBorderColor = Color.Transparent,
-                            focusedBorderColor = PrimaryBlue,
-                        ),
+                            focusedBorderColor = PrimaryBlue
+                        )
                     )
 
-                    Text(
-                        "GHI CHÚ (TÙY CHỌN)",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp,
-                        color = Color(0xFF64748B),
-                        modifier = Modifier.padding(top = 24.dp, bottom = 10.dp),
-                    )
+                    Text("GHI CHÚ (TÙY CHỌN)", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
                     OutlinedTextField(
                         value = notes,
                         onValueChange = { notes = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp),
+                        modifier = Modifier.fillMaxWidth().height(120.dp),
                         shape = RoundedCornerShape(16.dp),
-                        placeholder = {
-                            Text(
-                                "Phản ứng sau tiêm hoặc lưu ý cần theo dõi thêm...",
-                                color = Color(0xFF94A3B8),
-                            )
-                        },
+                        placeholder = { Text("Phản ứng sau tiêm hoặc lưu ý theo dõi sức khỏe cho bé...", color = Color(0xFF94A3B8)) },
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedContainerColor = Color(0xFFF1F5F9),
                             focusedContainerColor = Color(0xFFF1F5F9),
                             unfocusedBorderColor = Color.Transparent,
-                            focusedBorderColor = PrimaryBlue,
+                            focusedBorderColor = PrimaryBlue
                         ),
-                        maxLines = 4,
+                        maxLines = 4
                     )
                 }
             }

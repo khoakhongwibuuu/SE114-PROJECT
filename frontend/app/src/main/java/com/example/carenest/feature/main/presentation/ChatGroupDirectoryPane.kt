@@ -144,7 +144,9 @@ fun ChatGroupDirectoryPane(
                         Icon(Icons.Default.Close, contentDescription = "Xóa", tint = Color(0xFF94A3B8))
                     }
                 }
-            } else null,
+            } else {
+                null
+            },
             singleLine = true,
             shape = RoundedCornerShape(8.dp),
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
@@ -251,14 +253,23 @@ fun ChatGroupDirectoryPane(
                                     showPreview = true
                                     viewModel.loadGroupPreview(group.id)
                                 },
-                                onJoin = {
-                                    viewModel.join(group) { joined ->
+                                onPrimaryAction = {
+                                    if (group.joined) {
                                         onOpenGroupPosts(
-                                            joined.copy(
-                                                name = joined.name.ifBlank { "Nhóm cộng đồng" },
-                                                latestMessage = joined.latestMessage.orDefaultGroupSubtitle()
+                                            group.copy(
+                                                name = group.name.ifBlank { "Nhóm cộng đồng" },
+                                                latestMessage = group.latestMessage.orDefaultGroupSubtitle()
                                             )
                                         )
+                                    } else {
+                                        viewModel.join(group) { joined ->
+                                            onOpenGroupPosts(
+                                                joined.copy(
+                                                    name = joined.name.ifBlank { "Nhóm cộng đồng" },
+                                                    latestMessage = joined.latestMessage.orDefaultGroupSubtitle()
+                                                )
+                                            )
+                                        }
                                     }
                                 },
                             )
@@ -690,7 +701,7 @@ private fun DiscoverGroupItem(
     group: ChatGroup,
     joining: Boolean,
     onPreview: () -> Unit,
-    onJoin: () -> Unit,
+    onPrimaryAction: () -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -757,17 +768,28 @@ private fun DiscoverGroupItem(
             }
             Spacer(modifier = Modifier.width(10.dp))
             Button(
-                onClick = onJoin,
+                onClick = onPrimaryAction,
                 enabled = !joining,
                 modifier = Modifier.height(34.dp),
                 shape = RoundedCornerShape(999.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (group.joined) Color(0xFFEFF6FF) else PrimaryBlue,
+                    contentColor = if (group.joined) PrimaryBlue else Color.White
+                ),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
             ) {
                 if (joining) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = if (group.joined) PrimaryBlue else Color.White,
+                        strokeWidth = 2.dp
+                    )
                 } else {
-                    Text("Tham gia", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color.White)
+                    Text(
+                        if (group.joined) "Xem" else "Tham gia",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
                 }
             }
         }

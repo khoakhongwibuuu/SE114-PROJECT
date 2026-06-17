@@ -28,6 +28,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,36 +50,23 @@ import coil.compose.AsyncImage
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.community.domain.model.GroupPost
 
-// ---------------------------------------------------------------------------
-// Helper: derive a display title if backend didn't send one yet (old posts)
-// ---------------------------------------------------------------------------
 private fun GroupPost.displayTitle(): String {
     if (!title.isNullOrBlank()) return title
     val firstLine = content.lines().firstOrNull { it.isNotBlank() } ?: content
     return if (firstLine.length <= 80) firstLine else firstLine.take(77) + "..."
 }
 
-// When title is real (from backend), body = full content.
-// When title was derived from the first line, body = content MINUS that first line
-// to avoid showing the same sentence twice.
 private fun GroupPost.bodyPreview(): String {
-    if (!title.isNullOrBlank()) return content // real title — show all of content
+    if (!title.isNullOrBlank()) return content
     val lines = content.lines()
     val remaining = lines.dropWhile { it.isBlank() }.drop(1).dropWhile { it.isBlank() }
     return remaining.joinToString("\n").trim()
 }
 
-// ---------------------------------------------------------------------------
-// Helper: format createdAt string to readable date
-// ---------------------------------------------------------------------------
 private fun String?.toReadableDate(): String {
     if (this == null || length < 10) return ""
-    return take(10) // "YYYY-MM-DD"
+    return take(10)
 }
-
-// ---------------------------------------------------------------------------
-// Panes
-// ---------------------------------------------------------------------------
 
 @Composable
 fun ApprovedPostsPane(
@@ -90,21 +79,31 @@ fun ApprovedPostsPane(
     onCommentClick: (Long) -> Unit,
     onDoctorClick: (Long) -> Unit,
     onReportClick: (GroupPost) -> Unit,
-    onDeleteClick: (GroupPost) -> Unit
+    onDeleteClick: (GroupPost) -> Unit,
+    onRetry: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryBlue)
             }
-            !error.isNullOrBlank() -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                Text(error, color = Color(0xFFEF4444), fontSize = 14.sp)
-            }
-            posts.isEmpty() -> EmptyState("Chưa có bài viết nào trong nhóm này.")
+
+            !error.isNullOrBlank() -> PaneErrorState(
+                message = error,
+                onRetry = onRetry,
+            )
+
+            posts.isEmpty() -> PaneEmptyState(
+                title = "Nhóm chưa có bài viết nào",
+                message = "Hãy đăng bài đầu tiên để bắt đầu trao đổi trong nhóm này.",
+                primaryLabel = "Đăng bài đầu tiên",
+                onPrimaryClick = onNavigateToCreatePost,
+            )
+
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp, ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(posts, key = { it.id }) { post ->
                     StructuredGroupPostCard(
@@ -115,7 +114,7 @@ fun ApprovedPostsPane(
                         actionRow = {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
+                                horizontalArrangement = Arrangement.End,
                             ) {
                                 if (canModerate) {
                                     TextButton(onClick = { onDeleteClick(post) }) {
@@ -127,7 +126,7 @@ fun ApprovedPostsPane(
                                     Text("Báo cáo", color = Color(0xFFDC2626))
                                 }
                             }
-                        }
+                        },
                     )
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -140,7 +139,7 @@ fun ApprovedPostsPane(
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
         ) {
             Text("+ Đăng bài viết", fontWeight = FontWeight.Bold)
         }
@@ -157,25 +156,35 @@ fun MyGroupPostsPane(
     onCommentClick: (Long) -> Unit,
     onDoctorClick: (Long) -> Unit,
     onEditClick: (GroupPost) -> Unit,
-    onDeleteClick: (GroupPost) -> Unit
+    onDeleteClick: (GroupPost) -> Unit,
+    onRetry: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryBlue)
             }
-            !error.isNullOrBlank() -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                Text(error, color = Color(0xFFEF4444), fontSize = 14.sp)
-            }
-            posts.isEmpty() -> EmptyState("Bạn chưa đăng bài viết nào trong nhóm này.")
+
+            !error.isNullOrBlank() -> PaneErrorState(
+                message = error,
+                onRetry = onRetry,
+            )
+
+            posts.isEmpty() -> PaneEmptyState(
+                title = "Bạn chưa đăng bài nào",
+                message = "Bài viết của bạn sẽ xuất hiện ở đây để tiện chỉnh sửa, gửi lại duyệt hoặc xóa.",
+                primaryLabel = "Tạo bài viết mới",
+                onPrimaryClick = onNavigateToCreatePost,
+            )
+
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(posts, key = { it.id }) { post ->
                     StructuredGroupPostCard(
-                        post = post, 
+                        post = post,
                         showStatus = true,
                         onLikeClick = onLikeClick,
                         onCommentClick = onCommentClick,
@@ -186,7 +195,7 @@ fun MyGroupPostsPane(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 6.dp),
-                                horizontalArrangement = Arrangement.End
+                                horizontalArrangement = Arrangement.End,
                             ) {
                                 TextButton(onClick = { onEditClick(post) }) {
                                     Text("Chỉnh sửa", color = PrimaryBlue, fontWeight = FontWeight.Bold)
@@ -196,7 +205,7 @@ fun MyGroupPostsPane(
                                     Text("Xóa", color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
                                 }
                             }
-                        }
+                        },
                     )
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -209,7 +218,7 @@ fun MyGroupPostsPane(
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
         ) {
             Text("+ Đăng bài viết", fontWeight = FontWeight.Bold)
         }
@@ -222,7 +231,8 @@ fun ModerationQueuePane(
     isLoading: Boolean,
     error: String?,
     onApprove: (Long) -> Unit,
-    onReject: (Long, String) -> Unit
+    onReject: (Long, String) -> Unit,
+    onRetry: () -> Unit,
 ) {
     var rejectPostId by remember { mutableStateOf<Long?>(null) }
     var rejectReason by remember { mutableStateOf("") }
@@ -236,7 +246,11 @@ fun ModerationQueuePane(
             },
             text = {
                 Column {
-                    Text("Vui lòng nhập lý do từ chối để tác giả có thể chỉnh sửa.", fontSize = 13.sp, color = Color(0xFF64748B))
+                    Text(
+                        "Vui lòng nhập lý do từ chối để tác giả có thể chỉnh sửa và gửi lại.",
+                        fontSize = 13.sp,
+                        color = Color(0xFF64748B),
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = rejectReason,
@@ -244,7 +258,7 @@ fun ModerationQueuePane(
                         label = { Text("Lý do từ chối") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        maxLines = 4
+                        maxLines = 4,
                     )
                 }
             },
@@ -260,7 +274,7 @@ fun ModerationQueuePane(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                     enabled = rejectReason.isNotBlank(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 ) {
                     Text("Từ chối")
                 }
@@ -269,7 +283,7 @@ fun ModerationQueuePane(
                 TextButton(onClick = { rejectPostId = null; rejectReason = "" }) {
                     Text("Hủy", color = Color(0xFF64748B))
                 }
-            }
+            },
         )
     }
 
@@ -278,14 +292,21 @@ fun ModerationQueuePane(
             isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryBlue)
             }
-            !error.isNullOrBlank() -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                Text(error, color = Color(0xFFEF4444), fontSize = 14.sp)
-            }
-            posts.isEmpty() -> EmptyState("Không có bài viết nào đang chờ duyệt.")
+
+            !error.isNullOrBlank() -> PaneErrorState(
+                message = error,
+                onRetry = onRetry,
+            )
+
+            posts.isEmpty() -> PaneEmptyState(
+                title = "Không có bài viết chờ duyệt",
+                message = "Khi thành viên gửi bài mới, chúng sẽ xuất hiện ở đây để moderator xem xét.",
+            )
+
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(posts, key = { it.id }) { post ->
                     StructuredGroupPostCard(
@@ -297,7 +318,7 @@ fun ModerationQueuePane(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.End
+                                horizontalArrangement = Arrangement.End,
                             ) {
                                 TextButton(onClick = { rejectPostId = post.id }) {
                                     Text("Từ chối", color = Color(0xFFEF4444), fontWeight = FontWeight.Bold)
@@ -306,12 +327,12 @@ fun ModerationQueuePane(
                                 Button(
                                     onClick = { onApprove(post.id) },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                                    shape = RoundedCornerShape(8.dp)
+                                    shape = RoundedCornerShape(8.dp),
                                 ) {
                                     Text("Duyệt", fontWeight = FontWeight.Bold)
                                 }
                             }
-                        }
+                        },
                     )
                 }
                 item { Spacer(modifier = Modifier.height(24.dp)) }
@@ -320,10 +341,6 @@ fun ModerationQueuePane(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Structured Post Card
-// ---------------------------------------------------------------------------
-
 @Composable
 fun StructuredGroupPostCard(
     post: GroupPost,
@@ -331,7 +348,7 @@ fun StructuredGroupPostCard(
     onLikeClick: ((Long) -> Unit)? = null,
     onCommentClick: ((Long) -> Unit)? = null,
     onDoctorClick: ((Long) -> Unit)? = null,
-    actionRow: (@Composable () -> Unit)? = null
+    actionRow: (@Composable () -> Unit)? = null,
 ) {
     val displayTitle = post.displayTitle()
     val tags = post.tags?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.take(5).orEmpty()
@@ -342,29 +359,28 @@ fun StructuredGroupPostCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-
-            // ---- Header row ----
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(
                         if (isDoctor && post.authorId != null && onDoctorClick != null) {
                             Modifier.clickable { onDoctorClick(post.authorId) }
-                        } else Modifier
+                        } else {
+                            Modifier
+                        },
                     )
                     .padding(horizontal = 14.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Avatar initial
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(Color(0xFFDBEAFE)),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(initials, color = PrimaryBlue, fontSize = 15.sp, fontWeight = FontWeight.Black)
                 }
@@ -375,7 +391,7 @@ fun StructuredGroupPostCard(
                             post.authorName ?: "Thành viên",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFF0F172A)
+                            color = Color(0xFF0F172A),
                         )
                         if (isDoctor) {
                             Spacer(modifier = Modifier.width(4.dp))
@@ -383,36 +399,34 @@ fun StructuredGroupPostCard(
                                 Icons.Default.CheckCircle,
                                 contentDescription = null,
                                 tint = Color(0xFF0EA5E9),
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(14.dp),
                             )
                         }
                     }
                     Text(
                         post.createdAt.toReadableDate(),
                         fontSize = 11.sp,
-                        color = Color(0xFF94A3B8)
+                        color = Color(0xFF94A3B8),
                     )
                 }
-                // Status chip in header (for My Posts and Moderation Queue)
                 if (showStatus && post.status != null) {
                     val (chipColor, chipBg, statusLabel) = when (post.status) {
                         "PENDING_APPROVAL" -> Triple(Color(0xFFF59E0B), Color(0xFFFFFBEB), "Chờ duyệt")
-                        "APPROVED"         -> Triple(Color(0xFF10B981), Color(0xFFF0FDF4), "Đã duyệt")
-                        "REJECTED"         -> Triple(Color(0xFFEF4444), Color(0xFFFEF2F2), "Từ chối")
-                        else               -> Triple(Color(0xFF94A3B8), Color(0xFFF1F5F9), post.status)
+                        "APPROVED" -> Triple(Color(0xFF10B981), Color(0xFFF0FDF4), "Đã duyệt")
+                        "REJECTED" -> Triple(Color(0xFFEF4444), Color(0xFFFEF2F2), "Từ chối")
+                        else -> Triple(Color(0xFF94A3B8), Color(0xFFF1F5F9), post.status)
                     }
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
                             .background(chipBg)
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
                     ) {
                         Text(statusLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = chipColor)
                     }
                 }
             }
 
-            // ---- Title ----
             Text(
                 text = displayTitle,
                 modifier = Modifier.padding(horizontal = 14.dp),
@@ -421,14 +435,11 @@ fun StructuredGroupPostCard(
                 color = Color(0xFF0F172A),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                lineHeight = 22.sp
+                lineHeight = 22.sp,
             )
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // ---- Body preview ----
-            // When title is real, show full content. When title was derived from first line,
-            // strip that first line from the preview to avoid repetition.
             val bodyText = post.bodyPreview()
             if (bodyText.isNotBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -439,11 +450,10 @@ fun StructuredGroupPostCard(
                     color = Color(0xFF475569),
                     lineHeight = 20.sp,
                     maxLines = 4,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
-            // ---- Optional image ----
             if (!post.imageUrl.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 AsyncImage(
@@ -451,23 +461,22 @@ fun StructuredGroupPostCard(
                     contentDescription = displayTitle,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
+                        .height(180.dp),
                 )
             }
 
-            // ---- Tags row ----
             if (tags.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     modifier = Modifier.padding(horizontal = 14.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     tags.forEach { tag ->
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(Color(0xFFF1F5F9))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
                         ) {
                             Text("#$tag", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue)
                         }
@@ -475,7 +484,6 @@ fun StructuredGroupPostCard(
                 }
             }
 
-            // ---- Rejection reason (only when rejected) ----
             if (post.status == "REJECTED" && !post.rejectionReason.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Box(
@@ -484,61 +492,58 @@ fun StructuredGroupPostCard(
                         .padding(horizontal = 14.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .background(Color(0xFFFEF2F2))
-                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
                 ) {
                     Text(
                         "Lý do từ chối: ${post.rejectionReason}",
                         fontSize = 12.sp,
                         color = Color(0xFFEF4444),
-                        lineHeight = 17.sp
+                        lineHeight = 17.sp,
                     )
                 }
             }
 
-            // ---- Interaction Stats & Buttons (For Approved Posts Only) ----
             if (post.status.equals("APPROVED", ignoreCase = true) || post.status == null) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     modifier = Modifier.padding(horizontal = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = "${post.likeCount} lượt thích • ${post.commentCount} bình luận",
                         fontSize = 12.sp,
-                        color = Color(0xFF64748B)
+                        color = Color(0xFF64748B),
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider(color = Color(0xFFF1F5F9))
 
-                // Action Buttons
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     TextButton(
                         onClick = { onLikeClick?.invoke(post.id) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     ) {
                         Text(
-                            "Thích", 
+                            "Thích",
                             color = if (post.likedByMe) PrimaryBlue else Color(0xFF64748B),
-                            fontWeight = if (post.likedByMe) FontWeight.Bold else FontWeight.Medium
+                            fontWeight = if (post.likedByMe) FontWeight.Bold else FontWeight.Medium,
                         )
                     }
                     TextButton(
                         onClick = { onCommentClick?.invoke(post.id) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     ) {
                         Text("Bình luận", color = Color(0xFF64748B))
                     }
                 }
             }
 
-            // ---- Action row (moderation approve/reject buttons) ----
             if (actionRow != null) {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
                     actionRow()
@@ -550,24 +555,76 @@ fun StructuredGroupPostCard(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
-
 @Composable
-private fun EmptyState(message: String) {
-    Box(
+private fun PaneErrorState(
+    message: String,
+    onRetry: () -> Unit,
+) {
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
+        Text(
+            text = "Không thể tải nội dung nhóm",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0F172A),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = message,
             fontSize = 14.sp,
-            color = Color(0xFF94A3B8),
-            lineHeight = 20.sp,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            color = Color(0xFFEF4444),
+            textAlign = TextAlign.Center,
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedButton(onClick = onRetry) {
+            Text("Thử lại", color = PrimaryBlue)
+        }
+    }
+}
+
+@Composable
+private fun PaneEmptyState(
+    title: String,
+    message: String,
+    primaryLabel: String? = null,
+    onPrimaryClick: (() -> Unit)? = null,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0F172A),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = message,
+            fontSize = 14.sp,
+            color = Color(0xFF64748B),
+            lineHeight = 20.sp,
+            textAlign = TextAlign.Center,
+        )
+        if (!primaryLabel.isNullOrBlank() && onPrimaryClick != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onPrimaryClick,
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+            ) {
+                Text(primaryLabel, color = Color.White)
+            }
+        }
     }
 }

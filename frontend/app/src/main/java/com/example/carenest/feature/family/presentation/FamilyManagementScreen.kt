@@ -2,6 +2,7 @@ package com.example.carenest.feature.family.presentation
 
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -42,8 +43,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,7 +54,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,7 +80,6 @@ import com.example.carenest.core.presentation.theme.SurfaceHigh
 import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
 import com.example.carenest.feature.family.domain.model.FamilyMemberSummary
-import kotlinx.coroutines.launch
 
 val JOIN_ROLE_OPTIONS = listOf(
     "Thành viên" to "MEMBER",
@@ -104,8 +101,6 @@ fun FamilyManagementScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     var currentMode by remember { mutableStateOf(mode) }
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(currentMode, uiState.activeFamilyId) {
         viewModel.loadInvitations()
@@ -116,7 +111,6 @@ fun FamilyManagementScreen(
 
     Scaffold(
         containerColor = PageBackground,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -162,14 +156,7 @@ fun FamilyManagementScreen(
             when (currentMode) {
                 "create" -> CreateFamilyContent(viewModel, onDone = { currentMode = null })
                 "join" -> JoinFamilyContent(viewModel, onDone = { currentMode = null })
-                else -> ManagementContent(
-                    viewModel = viewModel,
-                    onInviteCodeCopied = {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Đã sao chép mã mời")
-                        }
-                    }
-                )
+                else -> ManagementContent(viewModel)
             }
         }
     }
@@ -365,10 +352,7 @@ fun JoinFamilyContent(viewModel: FamilyViewModel, onDone: () -> Unit) {
 }
 
 @Composable
-fun ManagementContent(
-    viewModel: FamilyViewModel,
-    onInviteCodeCopied: () -> Unit,
-) {
+fun ManagementContent(viewModel: FamilyViewModel) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val uiState by viewModel.uiState.collectAsState()
@@ -536,7 +520,7 @@ fun ManagementContent(
                 OutlinedButton(
                     onClick = {
                         clipboardManager.setText(AnnotatedString(codeInfo.joinCode))
-                        onInviteCodeCopied()
+                        Toast.makeText(context, "Đã sao chép mã mời", Toast.LENGTH_SHORT).show()
                     },
                     enabled = !uiState.isBusy,
                     modifier = Modifier

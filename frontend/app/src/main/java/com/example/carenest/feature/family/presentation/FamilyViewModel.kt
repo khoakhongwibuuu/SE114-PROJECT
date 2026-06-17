@@ -5,8 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.userMessage
-import com.example.carenest.feature.family.domain.port.FamilyDataSource
+import com.example.carenest.feature.family.data.repository.FamilyRepository
 import com.example.carenest.feature.family.domain.model.FamilyDetailResponse
 import com.example.carenest.feature.family.domain.model.FamilyInvitationItem
 import com.example.carenest.feature.family.domain.model.FamilyJoinCodeResponse
@@ -33,7 +32,7 @@ data class FamilyUiState(
     val message: String? = null
 )
 
-class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
+class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FamilyUiState())
     val uiState: StateFlow<FamilyUiState> = _uiState.asStateFlow()
@@ -63,7 +62,7 @@ class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
             result.onSuccess { families ->
                 _uiState.update { it.copy(isLoading = false, myFamilies = families) }
             }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.userMessage("Không thể tải danh sách gia đình")) }
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }
@@ -83,7 +82,7 @@ class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
             result.onSuccess { detail ->
                 _uiState.update { it.copy(isLoading = false, activeFamily = detail) }
             }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.userMessage("Không thể tải chi tiết gia đình")) }
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }
@@ -110,7 +109,7 @@ class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
                 loadFamilies()
                 loadActiveFamilyDetail(family.id)
             }.onFailure { e ->
-                _uiState.update { it.copy(isBusy = false, error = e.userMessage("Không thể tạo gia đình")) }
+                _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
         }
     }
@@ -151,7 +150,7 @@ class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
                     _uiState.update { it.copy(sentInvitations = list) }
                 }
             }.onFailure { e ->
-                _uiState.update { it.copy(isBusy = false, error = e.userMessage("Không thể gửi lời mời")) }
+                _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
         }
     }
@@ -177,7 +176,7 @@ class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
                     loadFamilies()
                 }
             }.onFailure { e ->
-                _uiState.update { it.copy(isBusy = false, error = e.userMessage("Không thể xử lý lời mời")) }
+                _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
         }
     }
@@ -205,7 +204,7 @@ class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
                 loadFamilies()
                 loadJoinCode()
             }.onFailure { e ->
-                _uiState.update { it.copy(isBusy = false, error = e.userMessage("Không thể tham gia gia đình")) }
+                _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
         }
     }
@@ -227,7 +226,7 @@ class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
                 loadFamilies()
                 loadJoinCode()
             }.onFailure { e ->
-                _uiState.update { it.copy(isBusy = false, error = e.userMessage("Không thể tham gia gia đình bằng QR")) }
+                _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
         }
     }
@@ -254,13 +253,13 @@ class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
                     loadFamilies()
                     loadJoinCode()
                 }.onFailure { e ->
-                    _uiState.update { it.copy(isBusy = false, error = e.userMessage("Không thể tham gia gia đình bằng QR")) }
+                    _uiState.update { it.copy(isBusy = false, error = e.message) }
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isBusy = false,
-                        error = e.userMessage("Không thể đọc ảnh QR")
+                        error = e.message ?: "Không thể đọc ảnh QR"
                     )
                 }
             } finally {
@@ -301,7 +300,7 @@ class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
                     )
                 }
             }.onFailure { e ->
-                _uiState.update { it.copy(isBusy = false, error = e.userMessage("Không thể tạo lại mã gia đình")) }
+                _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
         }
     }
@@ -318,7 +317,7 @@ private fun copyQrImageToCache(context: Context, uri: Uri): File {
 }
 
 class FamilyViewModelFactory(
-    private val repository: FamilyDataSource
+    private val repository: FamilyRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(FamilyViewModel::class.java)) {

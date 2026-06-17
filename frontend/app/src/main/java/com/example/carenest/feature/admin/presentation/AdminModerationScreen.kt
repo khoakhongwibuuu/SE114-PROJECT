@@ -1,5 +1,6 @@
 package com.example.carenest.feature.admin.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,12 +26,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,15 +51,14 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.AsyncImage
 import com.example.carenest.CareNestApplication
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.admin.data.AdminContentType
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
 import com.example.carenest.feature.admin.presentation.components.AdminErrorState
-import com.example.carenest.feature.admin.presentation.components.AdminTransientBanner
 
 @Composable
 fun AdminModerationScreen() {
-    val application = LocalContext.current.applicationContext as CareNestApplication
+    val context = LocalContext.current
+    val application = context.applicationContext as CareNestApplication
     val viewModel: AdminModerationViewModel = viewModel(
         factory = AdminModerationViewModelFactory(application.adminRepository),
     )
@@ -67,6 +67,17 @@ fun AdminModerationScreen() {
     var deleteTarget by remember { mutableStateOf<AdminReportSummaryResponse?>(null) }
     val visibleReportCount = (0 until reports.itemCount).count { index ->
         reports.peek(index)?.id !in state.hiddenReportIds
+    }
+
+    LaunchedEffect(state.error, state.message) {
+        state.error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearTransientMessage()
+        }
+        state.message?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearTransientMessage()
+        }
     }
 
     when {
@@ -79,67 +90,44 @@ fun AdminModerationScreen() {
         reports.loadState.refresh is LoadState.Error -> {
             val error = (reports.loadState.refresh as LoadState.Error).error
             AdminErrorState(
-                message = error.userMessage("Không thể tải danh sách báo cáo"),
+                message = error.localizedMessage ?: "Không thể tải danh sách báo cáo",
                 onRetry = { reports.retry() },
             )
         }
 
         else -> {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFFF8FAFC)),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                state.message?.let { message ->
-                    AdminTransientBanner(
-                        message = message,
-                        isError = false,
-                        onDismiss = viewModel::clearTransientMessage,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                items(reports.itemCount) { index ->
+                    val report = reports[index] ?: return@items
+                    if (report.id in state.hiddenReportIds) return@items
+                    ReportCard(
+                        report = report,
+                        onDelete = { deleteTarget = report },
+                        onDismiss = { viewModel.resolveReport(report, ModerationAction.DISMISS) },
                     )
                 }
 
-                state.error?.let { error ->
-                    AdminTransientBanner(
-                        message = error,
-                        isError = true,
-                        onDismiss = viewModel::clearTransientMessage,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
+                if (visibleReportCount == 0 && reports.loadState.append !is LoadState.Loading) {
+                    item {
+                        EmptyModerationState()
+                    }
                 }
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    items(reports.itemCount) { index ->
-                        val report = reports[index] ?: return@items
-                        if (report.id in state.hiddenReportIds) return@items
-                        ReportCard(
-                            report = report,
-                            onDelete = { deleteTarget = report },
-                            onDismiss = { viewModel.resolveReport(report, ModerationAction.DISMISS) },
-                        )
-                    }
-
-                    if (visibleReportCount == 0 && reports.loadState.append !is LoadState.Loading) {
-                        item {
-                            EmptyModerationState()
-                        }
-                    }
-
-                    if (reports.loadState.append is LoadState.Loading) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                            }
+                if (reports.loadState.append is LoadState.Loading) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         }
                     }
                 }
@@ -153,7 +141,7 @@ fun AdminModerationScreen() {
             onDismissRequest = { deleteTarget = null },
             title = { Text("Xóa $contentLabel", fontWeight = FontWeight.Bold) },
             text = {
-                Text("Bạn có chắc chắn muốn xóa $contentLabel bị báo cáo này không? Hành động này không thể hoàn tác.")
+                Text("Bạn có chắc muốn xóa $contentLabel bị báo cáo này không? Hành động này không thể hoàn tác.")
             },
             confirmButton = {
                 Button(
@@ -203,7 +191,11 @@ private fun ReportCard(
                         .background(Color(0xFFFEF2F2), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Default.Flag, contentDescription = null, tint = Color(0xFFDC2626))
+                    androidx.compose.material3.Icon(
+                        Icons.Default.Flag,
+                        contentDescription = null,
+                        tint = Color(0xFFDC2626),
+                    )
                 }
                 Spacer(modifier = Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -270,6 +262,14 @@ private fun ReportCard(
                 fontSize = 12.sp,
                 color = Color(0xFF64748B),
             )
+            report.createdAt?.takeIf { it.isNotBlank() }?.let { createdAt ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Gửi lúc: $createdAt",
+                    fontSize = 12.sp,
+                    color = Color(0xFF94A3B8),
+                )
+            }
 
             Spacer(modifier = Modifier.height(18.dp))
             Row(
@@ -282,7 +282,7 @@ private fun ReportCard(
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.weight(1f),
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
+                    androidx.compose.material3.Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.size(8.dp))
                     Text("Xóa $contentTypeLabel", color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -316,8 +316,8 @@ private fun EmptyModerationState() {
 
 private fun AdminContentType.moderationLabel(): String {
     return when (this) {
-        AdminContentType.COMMENT -> "bình luận"
-        AdminContentType.MESSAGE -> "tin nhắn"
-        AdminContentType.POST -> "bài viết"
+        AdminContentType.COMMENT -> "Bình luận"
+        AdminContentType.MESSAGE -> "Tin nhắn"
+        AdminContentType.POST -> "Bài viết"
     }
 }

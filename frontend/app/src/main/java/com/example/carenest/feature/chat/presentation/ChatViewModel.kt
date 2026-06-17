@@ -3,7 +3,6 @@ package com.example.carenest.feature.chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.chat.data.repository.ChatRepository
 import com.example.carenest.feature.chat.data.repository.ChatRepositoryEvent
 import com.example.carenest.feature.chat.domain.model.ChatMessage
@@ -41,12 +40,16 @@ class ChatViewModel(
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     init {
+        retryInitialLoad()
+    }
+
+    fun onInputChange(value: String) = _uiState.update { it.copy(inputText = value) }
+
+    fun retryInitialLoad() {
         loadGroupPreview()
         loadHistory()
         connect()
     }
-
-    fun onInputChange(value: String) = _uiState.update { it.copy(inputText = value) }
 
     fun sendMessage() {
         val content = _uiState.value.inputText.trim()
@@ -123,7 +126,7 @@ class ChatViewModel(
                 it.copy(
                     isSending = false,
                     inputText = content,
-                    error = error.userMessage("Không thể gửi tin nhắn. Vui lòng thử lại."),
+                    error = error.localizedMessage ?: "Không thể gửi tin nhắn. Vui lòng thử lại.",
                 )
             }
         }
@@ -142,7 +145,7 @@ class ChatViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = error.userMessage("Không thể tải lịch sử tin nhắn."),
+                        error = error.localizedMessage ?: "Không thể tải lịch sử tin nhắn",
                     )
                 }
             }
@@ -167,32 +170,24 @@ class ChatViewModel(
                 when (event) {
                     ChatRepositoryEvent.Connected -> {
                         reconnectAttempt = 0
-                        reconnectJob?.cancel()
-                        _uiState.update {
-                            it.copy(
-                                isConnected = true,
-                                error = null,
-                                connectionStatusHint = null,
-                            )
-                        }
+                        _uiState.update { it.copy(isConnected = true, error = null) }
                     }
 
                     is ChatRepositoryEvent.Disconnected -> {
-                        val msg = event.message
-                        val isReconnecting = msg.contains("Đang kết nối lại", ignoreCase = true)
+                        val message = event.message
+                        val isReconnecting = message.contains("Đang kết nối lại", ignoreCase = true)
                         if (isReconnecting) {
                             _uiState.update {
                                 it.copy(
                                     isConnected = false,
-                                    error = null,
-                                    connectionStatusHint = msg,
+                                    connectionStatusHint = message,
                                 )
                             }
                         } else {
                             _uiState.update {
                                 it.copy(
                                     isConnected = false,
-                                    error = msg,
+                                    error = message,
                                     connectionStatusHint = null,
                                 )
                             }
@@ -224,7 +219,7 @@ class ChatViewModel(
                 it.copy(
                     isConnected = false,
                     connectionStatusHint = null,
-                    error = "Không thể kết nối lại sau nhiều lần thử. Vui lòng kiểm tra mạng.",
+                    error = "Không thể kết nối lại sau nhiều lần thử. Vui lòng kiểm tra mạng."
                 )
             }
             return
@@ -256,21 +251,21 @@ class ChatViewModel(
             }.onSuccess {
                 onSuccess()
             }.onFailure {
-                onError(it.userMessage("Không thể rời nhóm"))
+                onError(it.localizedMessage ?: "Không thể rời nhóm")
             }
         }
     }
 
-    fun kickMember(userId: Long, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun kickMember(userId: Long, reason: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             runCatching {
                 withContext(Dispatchers.IO) {
-                    repository.kickMember(groupId, userId)
+                    repository.kickMember(groupId, userId, reason)
                 }
             }.onSuccess {
                 onSuccess()
             }.onFailure {
-                onError(it.userMessage("Không thể mời thành viên rời nhóm"))
+                onError(it.localizedMessage ?: "Không thể mời thành viên rời nhóm")
             }
         }
     }
@@ -284,7 +279,7 @@ class ChatViewModel(
             }.onSuccess {
                 onSuccess()
             }.onFailure {
-                onError(it.userMessage("Không thể báo cáo tin nhắn"))
+                onError(it.localizedMessage ?: "Không thể báo cáo tin nhắn")
             }
         }
     }
