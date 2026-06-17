@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.booking.data.remote.ConsultationSocketEvent
 import com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient
+import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.example.carenest.feature.booking.domain.model.ConsultationMessage
 import com.example.carenest.feature.booking.domain.model.ConsultationThreadResponse
 import com.example.carenest.feature.booking.domain.model.SendConsultationMessageRequest
-import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.google.gson.Gson
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,23 +26,29 @@ data class ConsultationRoomState(
     val messages: List<ConsultationMessage> = emptyList(),
     val isConnected: Boolean = false,
     val isActionLoading: Boolean = false,
-    val actionSuccess: String? = null
+    val actionSuccess: String? = null,
 )
 
 class ConsultationRoomViewModel(
     private val repository: BookingRepository,
     private val webSocketClient: ConsultationWebSocketClient,
-    private val gson: Gson = Gson()
+    private val gson: Gson = Gson(),
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ConsultationRoomState())
     val state: StateFlow<ConsultationRoomState> = _state.asStateFlow()
+
+    private var reconnectJob: Job? = null
+    private var reconnectAttempt = 0
+    private var activeThreadId: Long? = null
 
     fun loadRoom(bookingId: Long) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             val result = repository.provisionConsultationThread(bookingId)
             result.onSuccess { thread ->
+                reconnectAttempt = 0
+                activeThreadId = thread.id
                 _state.update { it.copy(thread = thread) }
                 loadMessages(thread.id)
                 connectWebSocket(thread.id)
@@ -64,12 +72,23 @@ class ConsultationRoomViewModel(
     private fun connectWebSocket(threadId: Long) {
         webSocketClient.connect(threadId) { event ->
             when (event) {
-                is ConsultationSocketEvent.Connected -> {
+                ConsultationSocketEvent.Connected -> {
+                    reconnectAttempt = 0
+                    reconnectJob?.cancel()
                     _state.update { it.copy(isConnected = true, error = null) }
                 }
+
                 is ConsultationSocketEvent.Disconnected -> {
-                    _state.update { it.copy(isConnected = false, error = event.message) }
+                    val isReconnecting = event.message.contains("Đang kết nối lại", ignoreCase = true)
+                    _state.update {
+                        it.copy(
+                            isConnected = false,
+                            error = if (isReconnecting) null else event.message,
+                        )
+                    }
+                    reconnect(threadId)
                 }
+
                 is ConsultationSocketEvent.MessageReceived -> {
                     try {
                         val newMessage = gson.fromJson(event.payload, ConsultationMessage::class.java)
@@ -86,10 +105,29 @@ class ConsultationRoomViewModel(
                             }
                             it.copy(messages = newList)
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    } catch (_: Exception) {
                     }
                 }
+            }
+        }
+    }
+
+    private fun reconnect(threadId: Long) {
+        if (reconnectJob?.isActive == true) return
+        if (reconnectAttempt >= 5) {
+            _state.update {
+                it.copy(
+                    isConnected = false,
+                    error = "Không thể kết nối lại phòng tư vấn sau nhiều lần thử. Vui lòng kiểm tra mạng.",
+                )
+            }
+            return
+        }
+        reconnectAttempt++
+        reconnectJob = viewModelScope.launch {
+            delay(2000L * reconnectAttempt)
+            if (activeThreadId == threadId) {
+                connectWebSocket(threadId)
             }
         }
     }
@@ -121,11 +159,13 @@ class ConsultationRoomViewModel(
             _state.update { it.copy(isActionLoading = true, error = null) }
             val result = repository.completeConsultation(bookingId)
             result.onSuccess { updated ->
-                _state.update { it.copy(
-                    thread = it.thread?.copy(status = updated.status),
-                    isActionLoading = false,
-                    actionSuccess = "Phiên tư vấn đã kết thúc."
-                )}
+                _state.update {
+                    it.copy(
+                        thread = it.thread?.copy(status = updated.status),
+                        isActionLoading = false,
+                        actionSuccess = "Phiên tư vấn đã kết thúc.",
+                    )
+                }
                 onDone()
             }.onFailure { e ->
                 _state.update { it.copy(isActionLoading = false, error = e.userMessage("Không thể kết thúc phiên tư vấn")) }
@@ -138,11 +178,13 @@ class ConsultationRoomViewModel(
             _state.update { it.copy(isActionLoading = true, error = null) }
             val result = repository.restrictMessaging(bookingId)
             result.onSuccess { updated ->
-                _state.update { it.copy(
-                    thread = it.thread?.copy(status = updated.status),
-                    isActionLoading = false,
-                    actionSuccess = "Đã hạn chế nhắn tin trong phiên này."
-                )}
+                _state.update {
+                    it.copy(
+                        thread = it.thread?.copy(status = updated.status),
+                        isActionLoading = false,
+                        actionSuccess = "Đã hạn chế nhắn tin trong phiên này.",
+                    )
+                }
             }.onFailure { e ->
                 _state.update { it.copy(isActionLoading = false, error = e.userMessage("Không thể hạn chế nhắn tin")) }
             }
@@ -154,11 +196,13 @@ class ConsultationRoomViewModel(
             _state.update { it.copy(isActionLoading = true, error = null) }
             val result = repository.unrestrictMessaging(bookingId)
             result.onSuccess { updated ->
-                _state.update { it.copy(
-                    thread = it.thread?.copy(status = updated.status),
-                    isActionLoading = false,
-                    actionSuccess = "Đã hủy hạn chế nhắn tin thành công."
-                )}
+                _state.update {
+                    it.copy(
+                        thread = it.thread?.copy(status = updated.status),
+                        isActionLoading = false,
+                        actionSuccess = "Đã hủy hạn chế nhắn tin thành công.",
+                    )
+                }
             }.onFailure { e ->
                 _state.update { it.copy(isActionLoading = false, error = e.userMessage("Không thể hủy hạn chế nhắn tin")) }
             }
@@ -174,14 +218,16 @@ class ConsultationRoomViewModel(
     }
 
     override fun onCleared() {
-        super.onCleared()
+        reconnectJob?.cancel()
+        activeThreadId = null
         webSocketClient.disconnect()
+        super.onCleared()
     }
 }
 
 class ConsultationRoomViewModelFactory(
     private val repository: BookingRepository,
-    private val webSocketClient: ConsultationWebSocketClient
+    private val webSocketClient: ConsultationWebSocketClient,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ConsultationRoomViewModel::class.java)) {
