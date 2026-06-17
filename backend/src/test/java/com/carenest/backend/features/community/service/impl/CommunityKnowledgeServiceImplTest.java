@@ -207,11 +207,6 @@ class CommunityKnowledgeServiceImplTest {
         User host = user(2L, "host@example.com", Role.USER);
         User member = user(3L, "member@example.com", Role.USER);
         ChatGroup group = group(10L);
-        UserGroupMembership hostMembership = UserGroupMembership.builder()
-                .group(group)
-                .user(host)
-                .groupRole(GroupRole.HOST)
-                .build();
         UserGroupMembership membership = UserGroupMembership.builder()
                 .group(group)
                 .user(member)
@@ -222,15 +217,15 @@ class CommunityKnowledgeServiceImplTest {
         when(userRepository.findByEmail(host.getEmail())).thenReturn(Optional.of(host));
         when(chatGroupRepository.findById(10L)).thenReturn(Optional.of(group));
         when(membershipRepository.existsByGroupIdAndUserIdAndGroupRole(10L, 2L, GroupRole.HOST)).thenReturn(true);
-        when(membershipRepository.findByGroupIdAndUserId(10L, 2L)).thenReturn(Optional.of(hostMembership));
         when(membershipRepository.findByGroupIdAndUserId(10L, 3L)).thenReturn(Optional.of(membership));
         when(membershipRepository.save(any(UserGroupMembership.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var request = new com.carenest.backend.features.community.dto.request.UpdateGroupMemberRoleRequest();
         request.setRole("MODERATOR");
+        request.setReason("Need moderation coverage");
 
         assertThat(service.updateGroupMemberRole(10L, 3L, request).getRole()).isEqualTo(GroupRole.MODERATOR);
-        verify(groupGovernanceAuditLogRepository, never()).save(any());
+        verify(groupGovernanceAuditLogRepository).save(any());
     }
 
     @Test
@@ -248,12 +243,12 @@ class CommunityKnowledgeServiceImplTest {
         SecurityContextHolder.getContext().setAuthentication(authenticated(admin.getEmail()));
         when(userRepository.findByEmail(admin.getEmail())).thenReturn(Optional.of(admin));
         when(chatGroupRepository.findById(10L)).thenReturn(Optional.of(group));
-        when(membershipRepository.findByGroupIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
         when(membershipRepository.findByGroupIdAndUserId(10L, 2L)).thenReturn(Optional.of(membership));
         when(membershipRepository.countByGroupIdAndGroupRole(10L, GroupRole.HOST)).thenReturn(1L);
 
         var request = new com.carenest.backend.features.community.dto.request.UpdateGroupMemberRoleRequest();
         request.setRole("MEMBER");
+        request.setReason("Host is no longer active");
 
         assertThatThrownBy(() -> service.updateGroupMemberRole(10L, 2L, request))
                 .isInstanceOf(com.carenest.backend.core.exception.BadRequestException.class);
@@ -270,7 +265,7 @@ class CommunityKnowledgeServiceImplTest {
         when(chatGroupRepository.findById(10L)).thenReturn(Optional.of(group));
         when(chatGroupRepository.save(any(ChatGroup.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.freezeGroup(10L);
+        service.freezeGroup(10L, "moderation escalation");
 
         assertThat(group.isFrozen()).isTrue();
         verify(groupGovernanceAuditLogRepository).save(any());

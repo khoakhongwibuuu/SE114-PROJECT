@@ -180,7 +180,7 @@ class BookingServiceImplTest {
                 contains("chấp nhận"),
                 contains("Doctor"),
                 eq(NotificationType.APPOINTMENT),
-                eq("BOOKING_HISTORY"),
+                eq("BOOKING_REQUEST"),
                 eq(1L)
         );
     }
