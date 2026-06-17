@@ -10,7 +10,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 
 /**
- * Base entity â€” all entities extend this.
+ * Base entity — all entities extend this.
  * Provides: id, createdAt, updatedAt (auto-managed by JPA Auditing).
  */
 @Getter

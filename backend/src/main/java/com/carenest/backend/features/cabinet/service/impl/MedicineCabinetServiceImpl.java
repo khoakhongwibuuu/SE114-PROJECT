@@ -118,7 +118,7 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
         assertCabinetAccess(medicine.getCabinet());
 
         if (!medicine.getCabinet().getId().equals(cabinetId)) {
-            throw new IllegalArgumentException("Medicine does not belong to the specified cabinet");
+            throw new IllegalArgumentException("Thuốc không thuộc tủ thuốc đã chọn");
         }
 
         if (request.getMedicineName() != null) medicine.setMedicineName(request.getMedicineName());
@@ -139,7 +139,7 @@ public class MedicineCabinetServiceImpl implements MedicineCabinetService {
         assertCabinetAccess(medicine.getCabinet());
 
         if (!medicine.getCabinet().getId().equals(cabinetId)) {
-            throw new IllegalArgumentException("Medicine does not belong to the specified cabinet");
+            throw new IllegalArgumentException("Thuốc không thuộc tủ thuốc đã chọn");
         }
 
         medicineRepository.delete(medicine);

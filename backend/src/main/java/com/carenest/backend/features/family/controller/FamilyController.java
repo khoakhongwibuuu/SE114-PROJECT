@@ -34,7 +34,7 @@ public class FamilyController {
     private final FamilyService familyService;
 
     @GetMapping
-    @Operation(summary = "Get current user's primary family (legacy â€” prefer /my-list)")
+    @Operation(summary = "Get current user's primary family (legacy — prefer /my-list)")
     public ApiResponse<FamilyDetailResponse> getMyFamily() {
         return ApiResponse.success(familyService.getMyFamily());
     }
@@ -49,7 +49,7 @@ public class FamilyController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new family")
     public ApiResponse<FamilyResponse> createFamily(@Valid @RequestBody CreateFamilyRequest request) {
-        return ApiResponse.success("Táº¡o gia Ä‘Ã¬nh thÃ nh cÃ´ng", familyService.createFamily(request));
+        return ApiResponse.success("Tạo gia đình thành công", familyService.createFamily(request));
     }
 
     @GetMapping("/{id}")
@@ -64,7 +64,7 @@ public class FamilyController {
             @PathVariable("id") Long id,
             @Valid @RequestBody InviteMemberRequest request) {
         familyService.inviteMember(id, request);
-        return ApiResponse.success("ÄÃ£ gá»­i lá»i má»i gia Ä‘Ã¬nh", null);
+        return ApiResponse.success("Đã gửi lời mời gia đình", null);
     }
 
     @PutMapping("/{id}/members/{memberId}/role")
@@ -74,7 +74,7 @@ public class FamilyController {
             @PathVariable("memberId") Long memberId,
             @Valid @RequestBody UpdateRoleRequest request) {
         familyService.updateMemberRole(id, memberId, request);
-        return ApiResponse.success("Cáº­p nháº­t vai trÃ² thành viên thÃ nh cÃ´ng", null);
+        return ApiResponse.success("Cập nhật vai trò thành viên thành công", null);
     }
 
     @GetMapping("/join-code")

@@ -48,11 +48,11 @@ public class AppointmentReminderJob {
         for (Appointment appointment : upcomingAppointments) {
             log.info("Sending reminder for appointment ID: {} for profile: {}",
                     appointment.getId(), appointment.getHealthProfile().getFullName());
-            String title = "Nháº¯c nhá»Ÿ lá»‹ch khÃ¡m";
-            String message = String.format("Báº¡n cÃ³ lá»‹ch khÃ¡m cho %s vá»›i bÃ¡c sÄ© %s táº¡i %s.",
+            String title = "Nhắc nhở lịch khám";
+            String message = String.format("Bạn có lịch khám cho %s với bác sĩ %s tại %s.",
                     appointment.getHealthProfile().getFullName(),
-                    appointment.getDoctorName() != null ? appointment.getDoctorName() : "chÆ°a rÃµ",
-                    appointment.getHospitalName() != null ? appointment.getHospitalName() : "chÆ°a rÃµ"
+                    appointment.getDoctorName() != null ? appointment.getDoctorName() : "chưa rõ",
+                    appointment.getHospitalName() != null ? appointment.getHospitalName() : "chưa rõ"
             );
 
             Family family = appointment.getHealthProfile().getFamily();

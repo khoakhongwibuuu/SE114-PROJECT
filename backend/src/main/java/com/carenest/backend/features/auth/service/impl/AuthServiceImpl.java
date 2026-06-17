@@ -125,7 +125,7 @@ public class AuthServiceImpl implements AuthService {
             try {
                 user.setGender(Gender.valueOf(request.getGender().trim().toUpperCase(Locale.ROOT)));
             } catch (IllegalArgumentException e) {
-                throw new BadRequestException("Giới tính không hợp lệ");
+                throw new BadRequestException("Gioi tinh khong hop le");
             }
         }
 

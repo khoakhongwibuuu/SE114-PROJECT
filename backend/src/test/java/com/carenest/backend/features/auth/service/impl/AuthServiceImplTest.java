@@ -84,19 +84,19 @@ class AuthServiceImplTest {
 
     private void authenticateAs(String email) {
         SecurityContextHolder.getContext().setAuthentication(
-            new UsernamePasswordAuthenticationToken(email, "n/a")
+                new UsernamePasswordAuthenticationToken(email, "n/a")
         );
     }
 
     private User user(String email) {
         return User.builder()
-            .email(email)
-            .passwordHash("hash")
-            .fullName("Patient User")
-            .role(Role.USER)
-            .isActive(true)
-            .isVerified(false)
-            .build();
+                .email(email)
+                .passwordHash("hash")
+                .fullName("Patient User")
+                .role(Role.USER)
+                .isActive(true)
+                .isVerified(false)
+                .build();
     }
 
     private UpdateUserRequest updateRequest(String gender) {

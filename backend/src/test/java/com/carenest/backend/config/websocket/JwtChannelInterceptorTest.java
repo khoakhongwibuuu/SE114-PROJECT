@@ -2,6 +2,9 @@ package com.carenest.backend.config.websocket;
 
 import com.carenest.backend.config.security.JwtService;
 import com.carenest.backend.features.auth.entity.User;
+import com.carenest.backend.features.auth.repository.UserRepository;
+import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
+import com.carenest.backend.features.family.repository.FamilyMemberRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -27,11 +30,26 @@ class JwtChannelInterceptorTest {
     private UserDetailsService userDetailsService;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private UserGroupMembershipRepository userGroupMembershipRepository;
+
+    @Mock
+    private FamilyMemberRepository familyMemberRepository;
+
+    @Mock
     private MessageChannel channel;
 
     @Test
-    void preSend_rejectsConnectForDisabledUserWithValidToken() {
-        JwtChannelInterceptor interceptor = new JwtChannelInterceptor(jwtService, userDetailsService);
+    void preSend_rejectsConnectForDisabledUserWithStillValidToken() {
+        JwtChannelInterceptor interceptor = new JwtChannelInterceptor(
+                jwtService,
+                userDetailsService,
+                userRepository,
+                userGroupMembershipRepository,
+                familyMemberRepository
+        );
         User disabledUser = User.builder()
                 .email("locked@example.com")
                 .passwordHash("hashed")

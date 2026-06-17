@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 public class ChatRequest {
-    @NotBlank(message = "Ná»™i dung chat khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotBlank(message = "Nội dung chat không được để trống")
     private String message;
 }

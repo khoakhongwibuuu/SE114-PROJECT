@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InviteMemberRequest {
 
-    @NotBlank(message = "Vui lÃ²ng nháº­p email")
-    @Email(message = "Email khÃ´ng Ä‘Ãºng Ä‘á»‹nh dáº¡ng")
+    @NotBlank(message = "Vui lòng nhập email")
+    @Email(message = "Email không đúng định dạng")
     private String email;
 
     private FamilyRole role;

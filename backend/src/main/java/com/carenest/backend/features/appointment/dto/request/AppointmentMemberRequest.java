@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AppointmentMemberRequest {
 
-    @NotNull(message = "Vui lÃ²ng chá»n há»“ sÆ¡ sá»©c khá»e")
+    @NotNull(message = "Vui lòng chọn hồ sơ sức khỏe")
     private Long healthProfileId;
 }

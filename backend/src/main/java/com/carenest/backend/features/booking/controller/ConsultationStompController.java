@@ -47,7 +47,7 @@ public class ConsultationStompController {
                 .threadId(threadId)
                 .senderId(-1L)
                 .senderName("System")
-                .content("ERROR: " + e.toString())
+                .content("Không thể gửi tin nhắn. Phiên tư vấn có thể đã kết thúc, bị hạn chế hoặc bạn không có quyền thao tác.")
                 .createdAt(java.time.Instant.now())
                 .build();
             messagingTemplate.convertAndSend("/topic/consultation/thread/" + threadId, errorResponse);

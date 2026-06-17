@@ -19,6 +19,8 @@ import com.carenest.backend.features.doctorverification.enums.VerificationStatus
 import com.carenest.backend.features.doctorverification.repository.DoctorVerificationRepository;
 import com.carenest.backend.features.doctorverification.service.impl.DoctorVerificationServiceImpl;
 import com.carenest.backend.features.family.util.FamilySecurityUtil;
+import com.carenest.backend.features.notification.enums.NotificationType;
+import com.carenest.backend.features.notification.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +59,9 @@ class DoctorVerificationServiceTest {
 
     @Mock
     private UserGroupMembershipRepository membershipRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private DoctorVerificationServiceImpl doctorVerificationService;
@@ -198,6 +203,14 @@ class DoctorVerificationServiceTest {
         verify(chatGroupRepository, times(2)).save(any(ChatGroup.class));
         verify(membershipRepository, times(2)).save(any());
         verify(doctorVerificationRepository).save(pendingVerification);
+        verify(notificationService).createNotificationForUser(
+                eq(testUser),
+                contains("được duyệt"),
+                contains("quyền bác sĩ"),
+                eq(NotificationType.SYSTEM),
+                eq("DOCTOR_VERIFICATION"),
+                eq(10L)
+        );
     }
 
     @Test
@@ -214,10 +227,12 @@ class DoctorVerificationServiceTest {
                 .user(testUser)
                 .status(VerificationStatus.APPROVED)
                 .build();
+        approvedVerification.setId(11L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
         when(doctorVerificationRepository.findByUserId(1L)).thenReturn(Optional.of(approvedVerification));
+        when(doctorVerificationRepository.save(approvedVerification)).thenReturn(approvedVerification);
         when(chatGroupRepository.findByLeadDoctorIdAndIsPrivateTrue(1L)).thenReturn(Optional.of(privateGroup));
 
         doctorVerificationService.revokeDoctorRights(1L);
@@ -230,6 +245,14 @@ class DoctorVerificationServiceTest {
         verify(groupPostRepository).deleteAllByChatGroupId(99L);
         verify(membershipRepository).deleteAllByGroupId(99L);
         verify(chatGroupRepository).delete(privateGroup);
+        verify(notificationService).createNotificationForUser(
+                eq(testUser),
+                contains("thu hồi"),
+                contains("quản trị viên"),
+                eq(NotificationType.SYSTEM),
+                eq("DOCTOR_VERIFICATION"),
+                eq(approvedVerification.getId())
+        );
     }
 
     @Test
@@ -256,5 +279,13 @@ class DoctorVerificationServiceTest {
 
         verify(doctorVerificationRepository).save(pendingVerification);
         verifyNoInteractions(userRepository);
+        verify(notificationService).createNotificationForUser(
+                eq(testUser),
+                contains("từ chối"),
+                contains("Document is unreadable."),
+                eq(NotificationType.SYSTEM),
+                eq("DOCTOR_VERIFICATION"),
+                eq(10L)
+        );
     }
 }

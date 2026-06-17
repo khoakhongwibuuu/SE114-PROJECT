@@ -15,16 +15,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @AllArgsConstructor
 public class AdministerDoseRequest {
 
-    @NotNull(message = "NgÃ y tiÃªm khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
-    @Schema(description = "NgÃ y thá»±c táº¿ Ä‘Ã£ tiÃªm", example = "2023-11-01")
+    @NotNull(message = "Ngày tiêm không được để trống")
+    @Schema(description = "Ngày thực tế đã tiêm", example = "2023-11-01")
     private LocalDate dateAdministered;
 
-    @Schema(description = "Äá»‹a Ä‘iá»ƒm tiÃªm", example = "VNVC HoÃ ng VÄƒn Thá»¥")
+    @Schema(description = "Địa điểm tiêm", example = "VNVC Hoàng Văn Thụ")
     private String location;
 
-    @Schema(description = "NgÆ°á»i thá»±c hiá»‡n tiÃªm", example = "BS. Nguyá»…n VÄƒn A")
+    @Schema(description = "Người thực hiện tiêm", example = "BS. Nguyễn Văn A")
     private String administeredBy;
 
-    @Schema(description = "Ghi chÃº sau tiÃªm", example = "BÃ© khÃ³c nhiá»u, khÃ´ng sá»‘t")
+    @Schema(description = "Ghi chú sau tiêm", example = "Bé khóc nhiều, không sốt")
     private String notes;
 }

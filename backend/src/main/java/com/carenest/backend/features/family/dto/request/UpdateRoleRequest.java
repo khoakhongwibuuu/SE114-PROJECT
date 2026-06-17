@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UpdateRoleRequest {
 
-    @NotNull(message = "Vai trÃ² khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    @NotNull(message = "Vai trò không được để trống")
     private FamilyRole role;
 }

@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface AiChatService {
     /**
-     * Nháº­n tin nháº¯n tá»« user, tiÃªm bá»‘i cáº£nh y táº¿ tá»« DB, gá»i LLM vÃ  tráº£ vá» pháº£n há»“i an toÃ n.
+     * Nhận tin nhắn từ user, tiêm bối cảnh y tế từ DB, gọi LLM và trả về phản hồi an toàn.
      */
     ChatResponse sendMessage(ChatRequest request);
 

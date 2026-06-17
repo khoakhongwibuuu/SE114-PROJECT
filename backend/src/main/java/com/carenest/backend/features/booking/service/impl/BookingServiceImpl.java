@@ -29,12 +29,15 @@ import com.carenest.backend.features.doctorverification.repository.DoctorVerific
 import com.carenest.backend.features.family.util.FamilySecurityUtil;
 import com.carenest.backend.features.healthprofile.entity.HealthProfile;
 import com.carenest.backend.features.healthprofile.repository.HealthProfileRepository;
+import com.carenest.backend.features.notification.enums.NotificationType;
+import com.carenest.backend.features.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,11 +52,15 @@ public class BookingServiceImpl implements BookingService {
     private final HealthProfileRepository healthProfileRepository;
     private final AppointmentRepository appointmentRepository;
     private final FamilySecurityUtil familySecurityUtil;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
     public List<DoctorSummaryResponse> getAvailableDoctors() {
-        return userRepository.findAllByRoleOrderByCreatedAtDesc(Role.DOCTOR).stream()
+        return doctorVerificationRepository.findAllByStatusOrderByUpdatedAtDesc(VerificationStatus.APPROVED).stream()
+                .filter(verification -> verification.getUser() != null)
+                .filter(verification -> verification.getUser().getRole() == Role.DOCTOR)
+                .filter(verification -> Boolean.TRUE.equals(verification.getUser().getIsActive()))
                 .map(this::toDoctorSummary)
                 .toList();
     }
@@ -130,7 +137,9 @@ public class BookingServiceImpl implements BookingService {
                 .thread(thread)
                 .build();
 
-        return mapToResponse(bookingRequestRepository.save(bookingRequest));
+        BookingRequest saved = bookingRequestRepository.save(bookingRequest);
+        notifyBookingCreated(saved);
+        return mapToResponse(saved);
     }
 
     @Override
@@ -142,6 +151,9 @@ public class BookingServiceImpl implements BookingService {
 
         if (doctor.getRole() != Role.DOCTOR && doctor.getRole() != Role.ADMIN) {
             throw new BadRequestException("Tài khoản không có quyền.");
+        }
+        if (doctor.getRole() == Role.DOCTOR) {
+            ensureDoctorIsApproved(doctor);
         }
 
         List<BookingRequest> requests;
@@ -227,7 +239,13 @@ public class BookingServiceImpl implements BookingService {
         }
 
         request.setStatus(BookingStatus.APPROVED);
-        return mapToResponse(bookingRequestRepository.save(request));
+        BookingRequest saved = bookingRequestRepository.save(request);
+        notifyPatient(
+                saved,
+                "Yêu cầu tư vấn đã được chấp nhận",
+                "Bác sĩ " + resolveDoctorName(saved.getDoctor()) + " đã chấp nhận yêu cầu tư vấn trực tuyến của bạn."
+        );
+        return mapToResponse(saved);
     }
 
     @Override
@@ -240,6 +258,16 @@ public class BookingServiceImpl implements BookingService {
                 || booking.getStatus() == BookingStatus.CANCELLED
                 || booking.getStatus() == BookingStatus.COMPLETED) {
             throw new BadRequestException("Không thể xác nhận lịch cho yêu cầu hiện tại");
+        }
+        if (requestPayload.getScheduledAt() == null) {
+            throw new BadRequestException("scheduledAt is required");
+        }
+        if (requestPayload.getScheduledAt().isBefore(Instant.now())) {
+            throw new BadRequestException("Thời gian hẹn không được ở quá khứ");
+        }
+        if (booking.getRequestType() == BookingRequestType.OFFLINE_CLINIC
+                && trimToNull(requestPayload.getConfirmedLocation()) == null) {
+            throw new BadRequestException("Khám trực tiếp cần có địa điểm hoặc phòng khám");
         }
 
         // Apply same guard as approveBooking for ONLINE_CHAT
@@ -282,7 +310,13 @@ public class BookingServiceImpl implements BookingService {
         appointment.setReminderSent(false);
 
         booking.setAppointment(appointmentRepository.save(appointment));
-        return mapToResponse(bookingRequestRepository.save(booking));
+        BookingRequest saved = bookingRequestRepository.save(booking);
+        notifyPatient(
+                saved,
+                "Lịch khám đã được xác nhận",
+                "Bác sĩ " + resolveDoctorName(saved.getDoctor()) + " đã xác nhận lịch hẹn của bạn."
+        );
+        return mapToResponse(saved);
     }
 
     @Override
@@ -301,7 +335,13 @@ public class BookingServiceImpl implements BookingService {
             appointmentRepository.save(appointment);
         }
 
-        return mapToResponse(bookingRequestRepository.save(request));
+        BookingRequest saved = bookingRequestRepository.save(request);
+        notifyPatient(
+                saved,
+                "Yêu cầu đặt lịch bị từ chối",
+                "Bác sĩ " + resolveDoctorName(saved.getDoctor()) + " đã từ chối yêu cầu đặt lịch của bạn."
+        );
+        return mapToResponse(saved);
     }
 
     @Override
@@ -331,7 +371,9 @@ public class BookingServiceImpl implements BookingService {
             appointmentRepository.save(appointment);
         }
 
-        return mapToResponse(bookingRequestRepository.save(booking));
+        BookingRequest saved = bookingRequestRepository.save(booking);
+        notifyBookingCancelled(saved, currentUser);
+        return mapToResponse(saved);
     }
 
     @Override
@@ -340,6 +382,7 @@ public class BookingServiceImpl implements BookingService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User doctor = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        ensureDoctorIsApproved(doctor);
 
         BookingRequest request = bookingRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("BookingRequest", "id", id.toString()));
@@ -360,7 +403,13 @@ public class BookingServiceImpl implements BookingService {
             appointmentRepository.save(appointment);
         }
         
-        return mapToResponse(bookingRequestRepository.save(request));
+        BookingRequest saved = bookingRequestRepository.save(request);
+        notifyPatient(
+                saved,
+                "Phiên tư vấn đã hoàn tất",
+                "Bác sĩ " + resolveDoctorName(saved.getDoctor()) + " đã đánh dấu phiên tư vấn là hoàn tất."
+        );
+        return mapToResponse(saved);
     }
 
     @Override
@@ -369,6 +418,7 @@ public class BookingServiceImpl implements BookingService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User doctor = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        ensureDoctorIsApproved(doctor);
 
         BookingRequest request = bookingRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("BookingRequest", "id", id.toString()));
@@ -382,7 +432,13 @@ public class BookingServiceImpl implements BookingService {
         }
 
         request.setStatus(BookingStatus.RESTRICTED);
-        return mapToResponse(bookingRequestRepository.save(request));
+        BookingRequest saved = bookingRequestRepository.save(request);
+        notifyPatient(
+                saved,
+                "Phiên tư vấn bị hạn chế nhắn tin",
+                "Bác sĩ " + resolveDoctorName(saved.getDoctor()) + " đã tạm hạn chế nhắn tin trong phiên tư vấn."
+        );
+        return mapToResponse(saved);
     }
 
     @Override
@@ -391,6 +447,7 @@ public class BookingServiceImpl implements BookingService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User doctor = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        ensureDoctorIsApproved(doctor);
 
         BookingRequest request = bookingRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("BookingRequest", "id", id.toString()));
@@ -404,13 +461,20 @@ public class BookingServiceImpl implements BookingService {
         }
 
         request.setStatus(BookingStatus.ACTIVE);
-        return mapToResponse(bookingRequestRepository.save(request));
+        BookingRequest saved = bookingRequestRepository.save(request);
+        notifyPatient(
+                saved,
+                "Phiên tư vấn đã mở lại nhắn tin",
+                "Bác sĩ " + resolveDoctorName(saved.getDoctor()) + " đã mở lại nhắn tin trong phiên tư vấn."
+        );
+        return mapToResponse(saved);
     }
 
     private BookingRequest getBookingForTriage(Long bookingId) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User doctor = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+        ensureDoctorIsApproved(doctor);
 
         BookingRequest request = bookingRequestRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("BookingRequest", "id", bookingId.toString()));
@@ -429,6 +493,9 @@ public class BookingServiceImpl implements BookingService {
     private BookingRequest getBookingForDoctorAction(Long bookingId, User currentUser) {
         if (currentUser.getRole() != Role.DOCTOR && currentUser.getRole() != Role.ADMIN) {
             throw new AccessDeniedException("Chỉ bác sĩ mới có thể xử lý yêu cầu đặt lịch");
+        }
+        if (currentUser.getRole() == Role.DOCTOR) {
+            ensureDoctorIsApproved(currentUser);
         }
 
         BookingRequest booking = bookingRequestRepository.findById(bookingId)
@@ -455,6 +522,10 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("Bạn không có quyền truy cập phòng tư vấn này.");
         }
 
+        if (request.getRequestType() != BookingRequestType.ONLINE_CHAT) {
+            throw new BadRequestException("Phòng tư vấn chỉ khả dụng cho yêu cầu tư vấn trực tuyến.");
+        }
+
         if (request.getStatus() != BookingStatus.APPROVED
                 && request.getStatus() != BookingStatus.ACTIVE
                 && request.getStatus() != BookingStatus.COMPLETED
@@ -463,6 +534,9 @@ public class BookingServiceImpl implements BookingService {
         }
 
         ConsultationThread thread = request.getThread();
+        if (thread == null) {
+            throw new BadRequestException("Yêu cầu tư vấn chưa có phòng chat. Vui lòng thử lại sau.");
+        }
 
         return ConsultationThreadResponse.builder()
                 .id(thread.getId())
@@ -477,19 +551,87 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
-    private DoctorSummaryResponse toDoctorSummary(User user) {
-        DoctorVerification verification = doctorVerificationRepository.findByUserId(user.getId()).orElse(null);
+    private void notifyBookingCreated(BookingRequest booking) {
+        String patientName = resolvePatientName(booking);
+        String requestLabel = booking.getRequestType() == BookingRequestType.ONLINE_CHAT
+                ? "tư vấn trực tuyến"
+                : "khám trực tiếp";
+        notificationService.createNotificationForUser(
+                booking.getDoctor(),
+                "Có yêu cầu " + requestLabel + " mới",
+                patientName + " vừa gửi yêu cầu " + requestLabel + ".",
+                NotificationType.APPOINTMENT,
+                "BOOKING_REQUEST",
+                booking.getId()
+        );
+    }
+
+    private void notifyPatient(BookingRequest booking, String title, String message) {
+        notificationService.createNotificationForUser(
+                booking.getPatient(),
+                title,
+                message,
+                NotificationType.APPOINTMENT,
+                "BOOKING_REQUEST",
+                booking.getId()
+        );
+    }
+
+    private void notifyDoctor(BookingRequest booking, String title, String message) {
+        notificationService.createNotificationForUser(
+                booking.getDoctor(),
+                title,
+                message,
+                NotificationType.APPOINTMENT,
+                "BOOKING_REQUEST",
+                booking.getId()
+        );
+    }
+
+    private void notifyBookingCancelled(BookingRequest booking, User actor) {
+        boolean cancelledByPatient = booking.getPatient().getId().equals(actor.getId());
+        if (cancelledByPatient) {
+            notifyDoctor(
+                    booking,
+                    "Bệnh nhân đã hủy lịch",
+                    resolvePatientName(booking) + " đã hủy yêu cầu đặt lịch."
+            );
+            return;
+        }
+
+        notifyPatient(
+                booking,
+                "Yêu cầu đặt lịch đã bị hủy",
+                "Yêu cầu đặt lịch với bác sĩ " + resolveDoctorName(booking.getDoctor()) + " đã bị hủy."
+        );
+    }
+
+    private DoctorSummaryResponse toDoctorSummary(DoctorVerification verification) {
+        User user = verification.getUser();
         return DoctorSummaryResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .avatarUrl(user.getAvatarUrl())
-                .certificationNumber(maskCertificationNumber(verification != null ? verification.getCertificationNumber() : null))
-                .specialty(verification != null ? verification.getSpecialty() : null)
-                .hospitalName(verification != null ? verification.getHospitalName() : null)
+                .certificationNumber(maskCertificationNumber(verification.getCertificationNumber()))
+                .specialty(verification.getSpecialty())
+                .hospitalName(verification.getHospitalName())
                 .documentUrl(null)
-                .approvedAt(verification != null ? verification.getUpdatedAt() : null)
+                .approvedAt(verification.getUpdatedAt())
                 .build();
+    }
+
+    private void ensureDoctorIsApproved(User doctor) {
+        if (doctor.getRole() != Role.DOCTOR) {
+            throw new AccessDeniedException("Chỉ bác sĩ mới có thể thao tác trong khu vực phòng khám");
+        }
+        if (!Boolean.TRUE.equals(doctor.getIsActive())) {
+            throw new AccessDeniedException("Tài khoản bác sĩ đã bị khóa");
+        }
+        boolean approved = doctorVerificationRepository.existsByUserIdAndStatus(doctor.getId(), VerificationStatus.APPROVED);
+        if (!approved) {
+            throw new AccessDeniedException("Hồ sơ bác sĩ chưa được phê duyệt hoặc đã bị thu hồi");
+        }
     }
 
     private BookingResponse mapToResponse(BookingRequest request) {

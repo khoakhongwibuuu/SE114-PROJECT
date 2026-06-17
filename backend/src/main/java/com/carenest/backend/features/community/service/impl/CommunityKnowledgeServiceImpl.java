@@ -210,6 +210,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         return chatGroupRepository.searchGroups(keyword, null)
                 .stream()
                 .filter(group -> !group.isPrivate())
+                .filter(group -> !membershipRepository.existsByGroupIdAndUserId(group.getId(), currentUser.getId()))
                 .map(group -> toGroupResponse(group, currentUser.getId()))
                 .toList();
     }

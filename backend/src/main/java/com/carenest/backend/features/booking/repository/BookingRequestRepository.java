@@ -30,6 +30,13 @@ public interface BookingRequestRepository extends JpaRepository<BookingRequest, 
         Long threadId, BookingRequestType requestType, List<BookingStatus> statuses
     );
 
+    @Query("SELECT b FROM BookingRequest b WHERE b.thread.id = :threadId AND b.requestType = :requestType AND b.status IN :statuses ORDER BY b.createdAt DESC")
+    java.util.Optional<BookingRequest> findLatestThreadBookingForMessageGate(
+        @Param("threadId") Long threadId,
+        @Param("requestType") BookingRequestType requestType,
+        @Param("statuses") List<BookingStatus> statuses
+    );
+
     @Query("SELECT b FROM BookingRequest b WHERE (b.patient.id = :userId OR b.doctor.id = :userId) AND b.requestType = :requestType AND b.status IN :statuses ORDER BY b.updatedAt DESC")
     List<BookingRequest> findConsultationInboxForUser(
         @Param("userId") Long userId,

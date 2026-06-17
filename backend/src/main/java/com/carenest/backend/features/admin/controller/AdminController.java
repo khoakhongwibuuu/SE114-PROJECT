@@ -2,16 +2,20 @@ package com.carenest.backend.features.admin.controller;
 
 import com.carenest.backend.core.api.ApiResponse;
 import com.carenest.backend.core.api.PageResponse;
+import com.carenest.backend.features.admin.dto.request.AdminUserRoleUpdateRequest;
 import com.carenest.backend.features.admin.dto.request.AdminUserStatusUpdateRequest;
 import com.carenest.backend.features.admin.dto.response.AdminDashboardStatsResponse;
+import com.carenest.backend.features.admin.dto.response.AdminUserRoleUpdateResponse;
 import com.carenest.backend.features.admin.dto.response.AdminUserStatusUpdateResponse;
 import com.carenest.backend.features.admin.dto.response.AdminUserSummaryResponse;
 import com.carenest.backend.features.admin.service.AdminService;
+import com.carenest.backend.features.auth.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -44,8 +48,19 @@ public class AdminController {
     @Operation(summary = "Update user status (ACTIVE/BANNED)")
     public ApiResponse<AdminUserStatusUpdateResponse> updateUserStatus(
             @PathVariable Long userId,
-            @RequestBody @Valid AdminUserStatusUpdateRequest request) {
-        AdminUserStatusUpdateResponse response = adminService.updateUserStatus(userId, request);
+            @RequestBody @Valid AdminUserStatusUpdateRequest request,
+            @AuthenticationPrincipal User currentAdmin) {
+        AdminUserStatusUpdateResponse response = adminService.updateUserStatus(userId, request, currentAdmin);
         return ApiResponse.success("User status updated successfully", response);
+    }
+
+    @PatchMapping("/users/{userId}/role")
+    @Operation(summary = "Update user role (USER/ADMIN)")
+    public ApiResponse<AdminUserRoleUpdateResponse> updateUserRole(
+            @PathVariable Long userId,
+            @RequestBody @Valid AdminUserRoleUpdateRequest request,
+            @AuthenticationPrincipal User currentAdmin) {
+        AdminUserRoleUpdateResponse response = adminService.updateUserRole(userId, request, currentAdmin);
+        return ApiResponse.success("User role updated successfully", response);
     }
 }

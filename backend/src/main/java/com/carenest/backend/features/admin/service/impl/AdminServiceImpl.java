@@ -3,8 +3,10 @@ package com.carenest.backend.features.admin.service.impl;
 import com.carenest.backend.core.api.PageResponse;
 import com.carenest.backend.core.exception.BadRequestException;
 import com.carenest.backend.core.exception.ResourceNotFoundException;
+import com.carenest.backend.features.admin.dto.request.AdminUserRoleUpdateRequest;
 import com.carenest.backend.features.admin.dto.request.AdminUserStatusUpdateRequest;
 import com.carenest.backend.features.admin.dto.response.AdminDashboardStatsResponse;
+import com.carenest.backend.features.admin.dto.response.AdminUserRoleUpdateResponse;
 import com.carenest.backend.features.admin.dto.response.AdminUserStatusUpdateResponse;
 import com.carenest.backend.features.admin.dto.response.AdminUserSummaryResponse;
 import com.carenest.backend.features.admin.service.AdminService;
@@ -12,14 +14,16 @@ import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.repository.UserRepository;
 import com.carenest.backend.features.community.repository.ReportTicketRepository;
+import com.carenest.backend.features.community.enums.ReportStatus;
 import com.carenest.backend.features.doctorverification.enums.VerificationStatus;
 import com.carenest.backend.features.doctorverification.repository.DoctorVerificationRepository;
+import com.carenest.backend.features.notification.enums.NotificationType;
+import com.carenest.backend.features.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +36,7 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final DoctorVerificationRepository verificationRepository;
     private final ReportTicketRepository reportRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -39,14 +44,14 @@ public class AdminServiceImpl implements AdminService {
         long totalUsers = userRepository.count();
         long totalDoctors = userRepository.countByRole(Role.DOCTOR);
         long pendingEkycCount = verificationRepository.countByStatus(VerificationStatus.PENDING);
-        long moderationQueueCount = reportRepository.count(); // All reports are essentially pending until handled
+        long moderationQueueCount = reportRepository.countByStatus(ReportStatus.PENDING);
 
         return AdminDashboardStatsResponse.builder()
                 .totalUsers(totalUsers)
                 .totalDoctors(totalDoctors)
                 .pendingEkycCount(pendingEkycCount)
                 .moderationQueueCount(moderationQueueCount)
-                .trend(List.of(10L, 12L, 15L, 18L, 25L, 30L)) // Mock trend data
+                .trend(List.of())
                 .build();
     }
 
@@ -69,20 +74,30 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional
-    public AdminUserStatusUpdateResponse updateUserStatus(Long userId, AdminUserStatusUpdateRequest request) {
-        User currentAdmin = getCurrentAdmin();
+    public AdminUserStatusUpdateResponse updateUserStatus(Long userId, AdminUserStatusUpdateRequest request, User currentAdmin) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
         
         boolean isActive = !"BANNED".equalsIgnoreCase(request.getStatus());
-        if (!isActive && currentAdmin.getId().equals(user.getId())) {
-            throw new BadRequestException("Admin khong the tu khoa tai khoan cua chinh minh");
+        if (!isActive && currentAdmin != null && user.getId().equals(currentAdmin.getId())) {
+            throw new BadRequestException("Admin không thể tự khóa tài khoản của chính mình");
         }
         if (!isActive && user.getRole() == Role.ADMIN && userRepository.countByRoleAndIsActiveTrue(Role.ADMIN) <= 1) {
-            throw new BadRequestException("Khong the khoa admin hoat dong cuoi cung cua he thong");
+            throw new BadRequestException("Không thể khóa admin hoạt động cuối cùng của hệ thống");
         }
+
         user.setIsActive(isActive);
         userRepository.save(user);
+        notificationService.createNotificationForUser(
+                user,
+                isActive ? "Tài khoản đã được mở lại" : "Tài khoản đã bị khóa",
+                isActive
+                        ? "Tài khoản CareNest của bạn đã được quản trị viên mở lại."
+                        : "Tài khoản CareNest của bạn đã bị quản trị viên khóa.",
+                NotificationType.SYSTEM,
+                "ADMIN_USER_STATUS",
+                user.getId()
+        );
         
         return AdminUserStatusUpdateResponse.builder()
                 .id(user.getId())
@@ -90,9 +105,52 @@ public class AdminServiceImpl implements AdminService {
                 .build();
     }
 
-    private User getCurrentAdmin() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
+    @Override
+    @Transactional
+    public AdminUserRoleUpdateResponse updateUserRole(Long userId, AdminUserRoleUpdateRequest request, User currentAdmin) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
+        Role targetRole = parseManageableRole(request.getRole());
+
+        if (currentAdmin != null && user.getId().equals(currentAdmin.getId()) && targetRole != Role.ADMIN) {
+            throw new BadRequestException("Admin không thể tự hạ quyền quản trị của chính mình");
+        }
+        if (user.getRole() == Role.ADMIN && targetRole != Role.ADMIN && userRepository.countByRoleAndIsActiveTrue(Role.ADMIN) <= 1) {
+            throw new BadRequestException("Không thể hạ quyền admin hoạt động cuối cùng của hệ thống");
+        }
+        if (targetRole == Role.ADMIN && !user.getIsActive()) {
+            throw new BadRequestException("Không thể cấp quyền admin cho tài khoản đang bị khóa");
+        }
+
+        user.setRole(targetRole);
+        userRepository.save(user);
+        notificationService.createNotificationForUser(
+                user,
+                targetRole == Role.ADMIN ? "Bạn đã được cấp quyền admin" : "Quyền admin đã được gỡ",
+                targetRole == Role.ADMIN
+                        ? "Bạn đã được cấp quyền truy cập khu vực quản trị CareNest."
+                        : "Quyền truy cập khu vực quản trị CareNest của bạn đã được gỡ.",
+                NotificationType.SYSTEM,
+                "ADMIN_USER_ROLE",
+                user.getId()
+        );
+
+        return AdminUserRoleUpdateResponse.builder()
+                .id(user.getId())
+                .role(user.getRole().name())
+                .build();
+    }
+
+    private Role parseManageableRole(String rawRole) {
+        String normalized = rawRole == null ? "" : rawRole.trim().replace("ROLE_", "").toUpperCase();
+        try {
+            Role role = Role.valueOf(normalized);
+            if (role == Role.DOCTOR) {
+                throw new BadRequestException("Quyền bác sĩ phải được xử lý qua luồng xác thực bác sĩ");
+            }
+            return role;
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Role không hợp lệ. Chỉ hỗ trợ USER hoặc ADMIN");
+        }
     }
 }

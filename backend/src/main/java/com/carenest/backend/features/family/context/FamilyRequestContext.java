@@ -15,7 +15,7 @@ public final class FamilyRequestContext {
     private static final ThreadLocal<FamilyRole> ROLE      = new ThreadLocal<>();
 
     private FamilyRequestContext() {
-        // Utility class â€” not instantiable
+        // Utility class — not instantiable
     }
 
     /** Store the validated familyId and the current user's role in that family. */

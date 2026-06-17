@@ -19,12 +19,12 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
 
-    @Operation(summary = "Láº¥y dá»¯ liá»‡u Dashboard", description = "Láº¥y tá»•ng quan cÃ´ng viá»‡c hÃ´m nay cá»§a gia Ä‘Ã¬nh")
+    @Operation(summary = "Lấy dữ liệu Dashboard", description = "Lấy tổng quan công việc hôm nay của gia đình")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "ThÃ nh cÃ´ng"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Lá»—i dá»¯ liá»‡u Ä‘áº§u vÃ o (VÃ­ dá»¥: ID khÃ´ng há»£p lá»‡)"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "KhÃ´ng cÃ³ quyá»n truy cáº­p (Token khÃ´ng há»£p lá»‡ hoáº·c háº¿t háº¡n)"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "NgÆ°á»i dÃ¹ng khÃ´ng thuá»™c gia Ä‘Ã¬nh nÃ y")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Thành công"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Lỗi dữ liệu đầu vào (Ví dụ: ID không hợp lệ)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Không có quyền truy cập (Token không hợp lệ hoặc hết hạn)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Người dùng không thuộc gia đình này")
     })
     @GetMapping({"", "/today"})
     public ResponseEntity<com.carenest.backend.core.api.ApiResponse<DashboardResponse>> getDashboardOverview(
@@ -32,6 +32,6 @@ public class DashboardController {
             @RequestParam(value = "profileId", required = false) Long profileId) {
         Long resolvedFamilyId = familyId != null ? familyId : FamilyRequestContext.getFamilyId();
         DashboardResponse response = dashboardService.getDashboardOverview(resolvedFamilyId, profileId);
-        return ResponseEntity.ok(ApiResponse.success("Láº¥y dá»¯ liá»‡u Dashboard thÃ nh cÃ´ng", response));
+        return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu Dashboard thành công", response));
     }
 }

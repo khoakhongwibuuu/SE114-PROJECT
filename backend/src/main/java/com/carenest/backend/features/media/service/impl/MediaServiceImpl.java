@@ -53,14 +53,14 @@ public class MediaServiceImpl implements MediaService {
         Path target = root.resolve(relativePath).normalize();
 
         if (!target.startsWith(root)) {
-            throw new BadRequestException("ÄÆ°á»ng dáº«n táº£i lÃªn khÃ´ng há»£p lá»‡");
+            throw new BadRequestException("Đường dẫn tải lên không hợp lệ");
         }
 
         try {
             Files.createDirectories(target.getParent());
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new BadRequestException("KhÃ´ng thá»ƒ lÆ°u tá»‡p Ä‘Ã£ táº£i lÃªn");
+            throw new BadRequestException("Không thể lưu tệp đã tải lên");
         }
 
         String url = ServletUriComponentsBuilder.fromCurrentContextPath()
@@ -78,16 +78,16 @@ public class MediaServiceImpl implements MediaService {
 
     private void validateImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new BadRequestException("Vui lÃ²ng chá»n áº£nh cáº§n táº£i lÃªn");
+            throw new BadRequestException("Vui lòng chọn ảnh cần tải lên");
         }
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
-            throw new BadRequestException("Chá»‰ há»— trá»£ áº£nh JPEG, PNG hoáº·c WEBP");
+            throw new BadRequestException("Chỉ hỗ trợ ảnh JPEG, PNG hoặc WEBP");
         }
 
         if (file.getSize() > maxImageSizeBytes) {
-            throw new BadRequestException("áº¢nh táº£i lÃªn quÃ¡ lá»›n");
+            throw new BadRequestException("Ảnh tải lên quá lớn");
         }
     }
 

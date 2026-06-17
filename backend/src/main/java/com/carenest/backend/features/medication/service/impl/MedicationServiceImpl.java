@@ -232,7 +232,7 @@ public class MedicationServiceImpl implements MedicationService {
         if (newStatus == MedicationLogStatus.TAKEN) {
             log.setTakenTime(Instant.now());
 
-            // TÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng trÃ¡Â»Â« thuÃ¡Â»â€˜c trong tÃ¡Â»Â§ cÃ¡Â»Â§a gia Ã„â€˜ÃƒÂ¬nh khi Ã„â€˜ÃƒÂ¡nh dÃ¡ÂºÂ¥u Ã„â€˜ÃƒÂ£ uÃ¡Â»â€˜ng thuÃ¡Â»â€˜c
+            // Tự động trừ thuốc trong tủ của gia đình khi đánh dấu đã uống thuốc
             HealthProfile profile = log.getMedication().getHealthProfile();
             if (profile.getFamily() != null) {
                 Long familyId = profile.getFamily().getId();
@@ -249,7 +249,7 @@ public class MedicationServiceImpl implements MedicationService {
         } else if (newStatus == MedicationLogStatus.PENDING) {
             log.setTakenTime(null);
 
-            // TÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng cÃ¡Â»â„¢ng trÃ¡ÂºÂ£ lÃ¡ÂºÂ¡i thuÃ¡Â»â€˜c vÃƒÂ o tÃ¡Â»Â§ gia Ã„â€˜ÃƒÂ¬nh nÃ¡ÂºÂ¿u trÃ†Â°Ã¡Â»â€ºc Ã„â€˜ÃƒÂ³ Ã„â€˜ÃƒÂ£ Ã„â€˜ÃƒÂ¡nh dÃ¡ÂºÂ¥u TAKEN
+            // Tự động cộng trả lại thuốc vào tủ gia đình nếu trước đó đã đánh dấu TAKEN
             if (oldStatus == MedicationLogStatus.TAKEN) {
                 HealthProfile profile = log.getMedication().getHealthProfile();
                 if (profile.getFamily() != null) {
@@ -278,12 +278,12 @@ public class MedicationServiceImpl implements MedicationService {
 
     private int parseDosageQuantity(String dosage) {
         if (dosage == null || dosage.trim().isEmpty()) {
-            return 1; // MÃ¡ÂºÂ·c Ã„â€˜Ã¡Â»â€¹nh 1 nÃ¡ÂºÂ¿u trÃ¡Â»â€˜ng
+            return 1; // Mặc định 1 nếu trống
         }
 
         String clean = dosage.trim().replaceAll(",", ".");
 
-        // KhÃ¡Â»â€ºp sÃ¡Â»â€˜ hoÃ¡ÂºÂ·c phÃƒÂ¢n sÃ¡Â»â€˜ Ã¡Â»Å¸ Ã„â€˜Ã¡ÂºÂ§u chuÃ¡Â»â€”i (vÃƒÂ­ dÃ¡Â»Â¥: "1", "2.5", "1/2", "0.5")
+        // Khớp số hoặc phân số ở đầu chuỗi (ví dụ: "1", "2.5", "1/2", "0.5")
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^(\\d+(?:\\.\\d+)?|\\d+/\\d+)");
         java.util.regex.Matcher matcher = pattern.matcher(clean);
 
@@ -307,7 +307,7 @@ public class MedicationServiceImpl implements MedicationService {
                 }
             }
         }
-        return 1; // Fallback mÃ¡ÂºÂ·c Ã„â€˜Ã¡Â»â€¹nh lÃƒÂ  1 nÃ¡ÂºÂ¿u khÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y sÃ¡Â»â€˜
+        return 1; // Fallback mặc định là 1 nếu không tìm thấy số
     }
 
     private void generateLogsForMedication(Medication medication) {
@@ -404,13 +404,13 @@ public class MedicationServiceImpl implements MedicationService {
     @Override
     @Transactional
     public void createBatchFromOcr(BatchCreateMedicationRequest request) {
-        // [QUY TÃ¡ÂºÂ®C 3]: XÃƒÂ¡c nhÃ¡ÂºÂ­n bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t sÃ¡Â»Å¸ hÃ¡Â»Â¯u HealthProfile vÃƒÂ  Family
+        // [QUY TẮC 3]: Xác nhận bảo mật sở hữu HealthProfile và Family
         familySecurityUtil.checkHealthProfileBelongsToFamily(request.getHealthProfileId(), request.getFamilyId());
 
         HealthProfile profile = healthProfileRepository.findById(request.getHealthProfileId())
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ sức khỏe", request.getHealthProfileId()));
 
-        // TÃ¡Â»Â§ thuÃ¡Â»â€˜c (Module 9)
+        // Tủ thuốc (Module 9)
         MedicineCabinet cabinet = medicineCabinetRepository.findByFamilyId(request.getFamilyId())
                 .orElseGet(() -> {
                     MedicineCabinet newCabinet = MedicineCabinet.builder()
@@ -420,9 +420,9 @@ public class MedicationServiceImpl implements MedicationService {
                     return medicineCabinetRepository.save(newCabinet);
                 });
 
-        // VÃƒÂ²ng lÃ¡ÂºÂ·p Transactional lÃ†Â°u hÃƒÂ ng loÃ¡ÂºÂ¡t
+        // Vòng lặp Transactional lưu hàng loạt
         for (ParsedMedicationDto dto : request.getMedications()) {
-            // 1. Ã„ÂÃ¡Â»â€œng bÃ¡Â»â„¢ TÃ¡Â»Â§ thuÃ¡Â»â€˜c
+            // 1. Đồng bộ Tủ thuốc
             CabinetMedicine cabMed = cabinetMedicineRepository.findByCabinetIdAndMedicineNameIgnoreCase(cabinet.getId(), dto.getMedicineName())
                     .orElse(CabinetMedicine.builder()
                             .cabinet(cabinet)
@@ -434,7 +434,7 @@ public class MedicationServiceImpl implements MedicationService {
             cabMed.setQuantity(cabMed.getQuantity() + (dto.getTotalQuantity() != null ? dto.getTotalQuantity() : 0));
             cabinetMedicineRepository.save(cabMed);
 
-            // 2. TÃ¡ÂºÂ¡o KÃ¡ÂºÂ¿ hoÃ¡ÂºÂ¡ch uÃ¡Â»â€˜ng thuÃ¡Â»â€˜c (Medication Plan)
+            // 2. Tạo Kế hoạch uống thuốc (Medication Plan)
             Medication medication = Medication.builder()
                     .healthProfile(profile)
                     .medicineName(dto.getMedicineName())
@@ -450,7 +450,7 @@ public class MedicationServiceImpl implements MedicationService {
                     .build();
             medication = medicationRepository.save(medication);
 
-            // 3. Sinh KÃ¡ÂºÂ¿ hoÃ¡ÂºÂ¡ch nhÃ¡ÂºÂ¯c nhÃ¡Â»Å¸ (MedicationLog)
+            // 3. Sinh Kế hoạch nhắc nhở (MedicationLog)
             generateLogsForMedication(medication);
         }
 

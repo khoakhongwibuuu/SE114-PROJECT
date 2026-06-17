@@ -3,8 +3,10 @@ package com.carenest.backend.features.community.controller;
 import com.carenest.backend.core.api.ApiResponse;
 import com.carenest.backend.core.api.PageResponse;
 import com.carenest.backend.features.community.dto.request.CreateGroupPostRequest;
+import com.carenest.backend.features.community.dto.request.UpdateGroupMemberRoleRequest;
 import com.carenest.backend.features.community.dto.response.ChatGroupPreviewResponse;
 import com.carenest.backend.features.community.dto.response.ChatGroupResponse;
+import com.carenest.backend.features.community.dto.response.GroupMemberResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostInteractionResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostCommentResponse;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -72,6 +75,19 @@ public class CommunityController {
         return ApiResponse.success("Đã rời nhóm", null);
     }
 
+    @GetMapping("/{id}/members")
+    public ApiResponse<List<GroupMemberResponse>> getGroupMembers(@PathVariable("id") Long id) {
+        return ApiResponse.success(communityKnowledgeService.getGroupMembers(id));
+    }
+
+    @PatchMapping("/{id}/members/{targetUserId}/role")
+    public ApiResponse<GroupMemberResponse> updateGroupMemberRole(
+            @PathVariable("id") Long id,
+            @PathVariable("targetUserId") Long targetUserId,
+            @Valid @RequestBody UpdateGroupMemberRoleRequest request) {
+        return ApiResponse.success("Đã cập nhật quyền thành viên", communityKnowledgeService.updateGroupMemberRole(id, targetUserId, request));
+    }
+
     @GetMapping("/{id}/posts")
     public ApiResponse<PageResponse<GroupPostResponse>> getGroupPosts(
             @PathVariable("id") Long id,
@@ -85,12 +101,6 @@ public class CommunityController {
             @PathVariable("id") Long id,
             @Valid @RequestBody CreateGroupPostRequest request) {
         return ApiResponse.success("Đã gửi bài viết chờ duyệt", communityKnowledgeService.createGroupPost(id, request));
-    }
-
-    @DeleteMapping("/posts/{postId}")
-    public ApiResponse<Void> deleteGroupPost(@PathVariable("postId") Long postId) {
-        communityKnowledgeService.deleteGroupPost(postId);
-        return ApiResponse.success("Đã gỡ bài viết", null);
     }
 
     @GetMapping("/{id}/posts/my")
@@ -111,6 +121,19 @@ public class CommunityController {
     public ApiResponse<Void> approveGroupPost(@PathVariable("postId") Long postId) {
         communityKnowledgeService.approveGroupPost(postId);
         return ApiResponse.success("Đã duyệt bài viết", null);
+    }
+
+    @PatchMapping("/posts/{postId}")
+    public ApiResponse<GroupPostResponse> updateGroupPost(
+            @PathVariable("postId") Long postId,
+            @Valid @RequestBody CreateGroupPostRequest request) {
+        return ApiResponse.success("Đã cập nhật bài viết và gửi lại chờ duyệt", communityKnowledgeService.updateGroupPost(postId, request));
+    }
+
+    @DeleteMapping("/posts/{postId}")
+    public ApiResponse<Void> deleteGroupPost(@PathVariable("postId") Long postId) {
+        communityKnowledgeService.deleteGroupPost(postId);
+        return ApiResponse.success("Đã xóa bài viết", null);
     }
 
     @PostMapping("/posts/{postId}/reject")

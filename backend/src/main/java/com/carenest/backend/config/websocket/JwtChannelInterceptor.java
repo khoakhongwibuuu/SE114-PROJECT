@@ -1,6 +1,11 @@
 package com.carenest.backend.config.websocket;
 
 import com.carenest.backend.config.security.JwtService;
+import com.carenest.backend.features.auth.entity.User;
+import com.carenest.backend.features.auth.enums.Role;
+import com.carenest.backend.features.auth.repository.UserRepository;
+import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
+import com.carenest.backend.features.family.repository.FamilyMemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -16,11 +21,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
-/**
- * Cháº·n vÃ  xÃ¡c thá»±c JWT Token khi Client gá»­i gÃ³i tin STOMP CONNECT.
- * WebSocket khÃ´ng há»— trá»£ HTTP Authorization header tiÃªu chuáº©n,
- * nÃªn token pháº£i Ä‘Æ°á»£c Ä‘Ã­nh vÃ o STOMP Connect Headers.
- */
+import java.security.Principal;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -28,61 +30,106 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
+    private final UserGroupMembershipRepository userGroupMembershipRepository;
+    private final FamilyMemberRepository familyMemberRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor =
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        if (accessor == null) {
+            return message;
+        }
 
-        // Chá»‰ kiá»ƒm tra khi Client gá»­i gÃ³i CONNECT
-        if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
-            String authHeader = accessor.getFirstNativeHeader("Authorization");
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            authenticateConnect(accessor);
+        }
 
-            // BÆ°á»›c 1: Kiá»ƒm tra header
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                log.warn("[WS] CONNECT bá»‹ tá»« chá»‘i: Thiáº¿u hoáº·c sai format Authorization header.");
-                throw new AccessDeniedException("Unauthorized WebSocket connection: Missing token.");
-            }
-
-            // BÆ°á»›c 2: BÃ³c JWT
-            String jwt = authHeader.substring(7);
-
-            // BÆ°á»›c 3: Láº¥y username (email) tá»« token
-            String username;
-            try {
-                username = jwtService.extractUsername(jwt);
-            } catch (Exception e) {
-                log.warn("[WS] CONNECT bá»‹ tá»« chá»‘i: KhÃ´ng Ä‘á»c Ä‘Æ°á»£c token â€” {}", e.getMessage());
-                throw new AccessDeniedException("Unauthorized WebSocket connection: Malformed token.");
-            }
-
-            if (username == null) {
-                throw new AccessDeniedException("Unauthorized WebSocket connection: Invalid token payload.");
-            }
-
-            // BÆ°á»›c 4: Load user vÃ  validate token
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            if (!jwtService.isTokenValid(jwt, userDetails)) {
-                log.warn("[WS] CONNECT bá»‹ tá»« chá»‘i cho '{}': Token háº¿t háº¡n hoáº·c khÃ´ng há»£p lá»‡.", username);
-                throw new AccessDeniedException("Unauthorized WebSocket connection: Token expired or invalid.");
-            }
-            if (!isAccountAllowed(userDetails)) {
-                log.warn("[WS] CONNECT bá»‹ tá»« chá»‘i cho '{}': TÃ i khoáº£n Ä‘Ã£ bá»‹ vÃ´ hiá»‡u hÃ³a hoáº·c khÃ³a.", username);
-                throw new AccessDeniedException("Unauthorized WebSocket connection: Account disabled or locked.");
-            }
-
-            // BÆ°á»›c 5: GÃ¡n Authentication vÃ o STOMP session
-            // Tá»« Ä‘Ã¢y @AuthenticationPrincipal trong @MessageMapping sáº½ hoáº¡t Ä‘á»™ng
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-            accessor.setUser(authToken);
-            SecurityContextHolder.getContext().setAuthentication(authToken);
-
-            log.info("[WS] CONNECT thÃ nh cÃ´ng: user='{}'", username);
+        if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+            validateTopicSubscription(accessor);
         }
 
         return message;
+    }
+
+    private void authenticateConnect(StompHeaderAccessor accessor) {
+        String authHeader = accessor.getFirstNativeHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.warn("[WS] CONNECT rejected: missing Authorization bearer token.");
+            throw new AccessDeniedException("Unauthorized WebSocket connection: Missing token.");
+        }
+
+        String jwt = authHeader.substring(7);
+        String username;
+        try {
+            username = jwtService.extractUsername(jwt);
+        } catch (Exception e) {
+            log.warn("[WS] CONNECT rejected: malformed token - {}", e.getMessage());
+            throw new AccessDeniedException("Unauthorized WebSocket connection: Malformed token.");
+        }
+
+        if (username == null) {
+            throw new AccessDeniedException("Unauthorized WebSocket connection: Invalid token payload.");
+        }
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        if (!jwtService.isTokenValid(jwt, userDetails)) {
+            log.warn("[WS] CONNECT rejected for '{}': token expired or invalid.", username);
+            throw new AccessDeniedException("Unauthorized WebSocket connection: Token expired or invalid.");
+        }
+        if (!isAccountAllowed(userDetails)) {
+            log.warn("[WS] CONNECT rejected for '{}': account is disabled or locked.", username);
+            throw new AccessDeniedException("Unauthorized WebSocket connection: Account disabled or locked.");
+        }
+
+        UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        accessor.setUser(authToken);
+        SecurityContextHolder.getContext().setAuthentication(authToken);
+        log.info("[WS] CONNECT accepted: user='{}'", username);
+    }
+
+    private void validateTopicSubscription(StompHeaderAccessor accessor) {
+        String destination = accessor.getDestination();
+        if (destination == null || destination.isBlank()) {
+            return;
+        }
+
+        User user = resolveUser(accessor.getUser());
+        if (user == null) {
+            throw new AccessDeniedException("Unauthorized WebSocket subscription.");
+        }
+
+        if (destination.startsWith("/topic/group/")) {
+            Long groupId = parseId(destination, "/topic/group/");
+            boolean isMember = userGroupMembershipRepository.existsByGroupIdAndUserId(groupId, user.getId());
+            if (!isMember && user.getRole() != Role.ADMIN) {
+                throw new AccessDeniedException("Forbidden WebSocket group subscription.");
+            }
+            return;
+        }
+
+        if (destination.startsWith("/topic/family/")) {
+            Long familyId = parseId(destination, "/topic/family/");
+            boolean isMember = familyMemberRepository.existsByFamilyIdAndUserId(familyId, user.getId());
+            if (!isMember) {
+                throw new AccessDeniedException("Forbidden WebSocket family subscription.");
+            }
+        }
+    }
+
+    private User resolveUser(Principal principal) {
+        if (principal instanceof UsernamePasswordAuthenticationToken token) {
+            Object tokenPrincipal = token.getPrincipal();
+            if (tokenPrincipal instanceof User user) {
+                return user;
+            }
+            if (tokenPrincipal instanceof UserDetails userDetails) {
+                return userRepository.findByEmail(userDetails.getUsername()).orElse(null);
+            }
+        }
+        return principal != null ? userRepository.findByEmail(principal.getName()).orElse(null) : null;
     }
 
     private boolean isAccountAllowed(UserDetails userDetails) {
@@ -90,5 +137,13 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                 && userDetails.isAccountNonLocked()
                 && userDetails.isAccountNonExpired()
                 && userDetails.isCredentialsNonExpired();
+    }
+
+    private Long parseId(String destination, String prefix) {
+        try {
+            return Long.parseLong(destination.substring(prefix.length()));
+        } catch (NumberFormatException ex) {
+            throw new AccessDeniedException("Invalid WebSocket topic destination.");
+        }
     }
 }

@@ -16,19 +16,19 @@ import java.time.Instant;
 @AllArgsConstructor
 public class AppointmentCreateRequest {
 
-    @NotNull(message = "Vui lÃ²ng chá»n há»“ sÆ¡ sá»©c khá»e")
+    @NotNull(message = "Vui lòng chọn hồ sơ sức khỏe")
     private Long healthProfileId;
 
-    @Size(max = 200, message = "TÃªn bÃ¡c sÄ© khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 200 kÃ½ tá»±")
+    @Size(max = 200, message = "Tên bác sĩ không được vượt quá 200 ký tự")
     private String doctorName;
 
-    @Size(max = 200, message = "TÃªn bá»‡nh viá»‡n khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 200 kÃ½ tá»±")
+    @Size(max = 200, message = "Tên bệnh viện không được vượt quá 200 ký tự")
     private String hospitalName;
 
     private String address;
 
-    @NotNull(message = "Vui lÃ²ng chá»n ngÃ y khÃ¡m")
-    @FutureOrPresent(message = "NgÃ y khÃ¡m khÃ´ng Ä‘Æ°á»£c náº±m trong quÃ¡ khá»©")
+    @NotNull(message = "Vui lòng chọn ngày khám")
+    @FutureOrPresent(message = "Ngày khám không được nằm trong quá khứ")
     private Instant appointmentDate;
 
     private String notes;

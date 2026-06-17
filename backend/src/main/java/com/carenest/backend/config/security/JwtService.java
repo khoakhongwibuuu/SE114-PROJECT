@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,13 +18,13 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${application.security.jwt.secret-key:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+    @Value("${app.jwt.secret:${application.security.jwt.secret-key:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}}")
     private String secretKey;
 
-    @Value("${application.security.jwt.expiration:86400000}")
+    @Value("${app.jwt.access-token-expiration:${application.security.jwt.expiration:86400000}}")
     private long jwtExpiration;
 
-    @Value("${application.security.jwt.refresh-token.expiration:604800000}")
+    @Value("${app.jwt.refresh-token-expiration:${application.security.jwt.refresh-token.expiration:604800000}}")
     private long refreshExpiration;
 
     public String extractUsername(String token) {
@@ -80,7 +80,12 @@ public class JwtService {
     }
 
     private javax.crypto.SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secretKey);
+        } catch (RuntimeException ex) {
+            keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }
