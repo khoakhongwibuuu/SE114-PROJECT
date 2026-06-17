@@ -96,13 +96,6 @@ class CommunityRepository(
         }
     }
 
-    suspend fun deleteGroupPost(postId: Long) {
-        val response = api.deleteGroupPost(postId)
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "KhÃ´ng thá»ƒ gá»¡ bÃ i viáº¿t")
-        }
-    }
-
     suspend fun likeGroupPost(postId: Long): Result<GroupPostInteractionResponse> {
         return try {
             val response = api.likeGroupPost(postId)
@@ -239,6 +232,87 @@ class CommunityRepository(
         val response = api.reportPost(postId, com.example.carenest.feature.community.data.remote.ReportPostRequest(reason))
         if (!response.isSuccessful) {
             throw IllegalStateException(response.body()?.message ?: "Không thể báo cáo bài viết")
+        }
+    }
+
+    suspend fun createGroupRequest(request: com.example.carenest.feature.community.domain.model.CreateGroupCreationRequest): com.example.carenest.feature.community.domain.model.GroupCreationRequest {
+        val response = api.createGroupRequest(request)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể tạo yêu cầu")
+        }
+        return response.body()?.data ?: throw IllegalStateException("Lỗi dữ liệu")
+    }
+
+    suspend fun getMyGroupRequests(): List<com.example.carenest.feature.community.domain.model.GroupCreationRequest> {
+        val response = api.getMyGroupRequests()
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Khong the lay trang thai yeu cau")
+        }
+        return response.body()?.data.orEmpty()
+    }
+
+    suspend fun getAdminGroupRequests(): List<com.example.carenest.feature.community.domain.model.GroupCreationRequest> {
+        val response = api.getAdminGroupRequests()
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể lấy danh sách yêu cầu")
+        }
+        return response.body()?.data.orEmpty()
+    }
+
+    suspend fun approveGroupRequest(id: Long) {
+        val response = api.approveGroupRequest(id)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể duyệt yêu cầu")
+        }
+    }
+
+    suspend fun rejectGroupRequest(id: Long, reason: String) {
+        val response = api.rejectGroupRequest(id, reason)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể từ chối yêu cầu")
+        }
+    }
+
+    suspend fun getMembers(id: Long): List<com.example.carenest.feature.community.domain.model.GroupMember> {
+        val response = api.getMembers(id)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể lấy danh sách thành viên")
+        }
+        return response.body()?.data.orEmpty()
+    }
+
+    suspend fun updatePost(postId: Long, title: String, content: String, tags: String?) {
+        val response = api.updatePost(postId, com.example.carenest.feature.community.domain.model.CreateGroupPostRequest(title = title, content = content, tags = tags))
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể cập nhật bài viết")
+        }
+    }
+
+    suspend fun deletePost(postId: Long) {
+        val response = api.deletePost(postId)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể xoá bài viết")
+        }
+    }
+
+    suspend fun freezeGroup(id: Long) {
+        val response = api.freezeGroup(id)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể đóng băng nhóm")
+        }
+    }
+
+    suspend fun unfreezeGroup(id: Long) {
+        val response = api.unfreezeGroup(id)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể mở đóng băng nhóm")
+        }
+    }
+
+    suspend fun updateMemberRole(groupId: Long, userId: Long, role: String) {
+        val response = api.updateMemberRole(groupId, userId, com.example.carenest.feature.community.domain.model.UpdateGroupRoleRequest(role))
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.body()?.message ?: "Không thể cập nhật quyền")
         }
     }
 }

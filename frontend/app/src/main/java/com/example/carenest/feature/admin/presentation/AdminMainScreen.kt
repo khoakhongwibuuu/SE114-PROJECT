@@ -60,6 +60,7 @@ private enum class AdminTab(
 @Composable
 fun AdminMainScreen(
     onLogout: () -> Unit = {},
+    onNavigateToGroupRequests: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val currentTab = AdminTab.entries[selectedTab]
@@ -76,6 +77,9 @@ fun AdminMainScreen(
                     )
                 },
                 actions = {
+                    androidx.compose.material3.IconButton(onClick = onNavigateToGroupRequests) {
+                        Icon(Icons.Default.Group, contentDescription = "Yêu cầu nhóm", tint = Color.White)
+                    }
                     androidx.compose.material3.TextButton(onClick = onLogout) {
                         Text(text = "Đăng xuất", color = Color.White)
                     }

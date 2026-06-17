@@ -21,11 +21,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.PersonSearch
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
@@ -34,6 +36,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
@@ -72,15 +75,24 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private enum class GroupTab(val label: String) {
-    MINE("Nhóm của bạn"),
+    MINE("Nhóm của tôi"),
     DISCOVER("Tất cả"),
+}
+
+private enum class DiscoverGroupFilter(val label: String) {
+    ALL("Tất cả"),
+    COMMUNITY("Cộng đồng"),
+    CLINIC("Phòng khám số"),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatGroupDirectoryPane(
     refreshTrigger: Int = 0,
+    canCreateGroupRequest: Boolean = false,
     onOpenGroup: (ChatGroup) -> Unit = {},
+    onOpenGroupPosts: (ChatGroup) -> Unit = onOpenGroup,
+    onNavigateToCreateGroupRequest: () -> Unit = {}
 ) {
     val application = LocalContext.current.applicationContext as CareNestApplication
     val viewModel: ChatGroupDirectoryViewModel = viewModel(
@@ -88,20 +100,21 @@ fun ChatGroupDirectoryPane(
     )
     val state by viewModel.uiState.collectAsState()
     var activeTab by remember { mutableStateOf(GroupTab.MINE) }
+    var discoverFilter by remember { mutableStateOf(DiscoverGroupFilter.ALL) }
     var showPreview by remember { mutableStateOf(false) }
     var selectedGroupForPreview by remember { mutableStateOf<ChatGroup?>(null) }
     val previewSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val context = LocalContext.current
-
-    LaunchedEffect(state.error) {
-        state.error?.let { err ->
-            android.widget.Toast.makeText(context, err, android.widget.Toast.LENGTH_SHORT).show()
-            viewModel.clearError()
-        }
-    }
 
     LaunchedEffect(refreshTrigger) {
         viewModel.refresh()
+    }
+
+    val filteredDiscoverGroups = remember(state.discoverGroups, discoverFilter) {
+        when (discoverFilter) {
+            DiscoverGroupFilter.ALL -> state.discoverGroups
+            DiscoverGroupFilter.COMMUNITY -> state.discoverGroups.filterNot { it.private }
+            DiscoverGroupFilter.CLINIC -> state.discoverGroups.filter { it.private }
+        }
     }
 
     Column(
@@ -173,60 +186,96 @@ fun ChatGroupDirectoryPane(
             }
         }
 
-        when {
-            state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = PrimaryBlue)
-            }
+        if (!state.error.isNullOrBlank() && !state.hasBlockingError) {
+            InlineCommunityErrorBanner(
+                message = state.error!!,
+                onDismiss = viewModel::clearError,
+                onRetry = viewModel::refresh
+            )
+        }
 
-            activeTab == GroupTab.MINE -> {
-                ChatGroupList(
-                    groups = state.myGroups,
-                    emptyIcon = Icons.Default.Groups,
-                    emptyTitle = "Bạn chưa tham gia nhóm nào",
-                    emptyText = "Bạn chưa tham gia nhóm nào. Hãy chuyển sang tab \"Tất cả\" để khám phá nhé!",
-                    itemContent = { group ->
-                        MyGroupItem(
-                            group = group,
-                            onClick = {
-                                onOpenGroup(
-                                    group.copy(
-                                        name = group.name.ifBlank { "Phòng chat cộng đồng" },
-                                        latestMessage = group.latestMessage.sanitizeGroupSubtitle()
-                                    )
-                                )
-                            }
-                        )
-                    },
-                )
-            }
+        if (activeTab == GroupTab.DISCOVER) {
+            DiscoverFilterRow(
+                selected = discoverFilter,
+                onSelected = { discoverFilter = it }
+            )
+        }
 
-            else -> {
-                ChatGroupList(
-                    groups = state.discoverGroups,
-                    emptyIcon = Icons.Default.PersonSearch,
-                    emptyTitle = "Không tìm thấy nhóm phù hợp",
-                    emptyText = state.error ?: "Hãy thử đổi từ khóa tìm kiếm hoặc quay lại sau.",
-                    itemContent = { group ->
-                        DiscoverGroupItem(
-                            group = group,
-                            joining = state.joiningGroupId == group.id,
-                            onPreview = {
-                                selectedGroupForPreview = group
-                                showPreview = true
-                                viewModel.loadGroupPreview(group.id)
-                            },
-                            onJoin = {
-                                viewModel.join(group) { joined ->
-                                    onOpenGroup(
-                                        joined.copy(
-                                            name = joined.name.ifBlank { "Phòng chat cộng đồng" },
-                                            latestMessage = joined.latestMessage.sanitizeGroupSubtitle()
+        Box(modifier = Modifier.weight(1f)) {
+            when {
+                state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = PrimaryBlue)
+                }
+
+                state.hasBlockingError -> {
+                    BlockingErrorState(
+                        message = state.error ?: "Không thể tải danh sách hội nhóm.",
+                        onRetry = viewModel::refresh
+                    )
+                }
+
+                activeTab == GroupTab.MINE -> {
+                    ChatGroupList(
+                        groups = state.myGroups,
+                        emptyIcon = Icons.Default.Groups,
+                        emptyTitle = "Bạn chưa tham gia nhóm nào",
+                        emptyText = "Chuyển sang tab \"Tất cả\" để tìm cộng đồng phù hợp rồi tham gia.",
+                        itemContent = { group ->
+                            MyGroupItem(
+                                group = group,
+                                onClick = {
+                                    onOpenGroupPosts(
+                                        group.copy(
+                                            name = group.name.ifBlank { "Nhóm cộng đồng" },
+                                            latestMessage = group.latestMessage.orDefaultGroupSubtitle()
                                         )
                                     )
                                 }
-                            },
-                        )
-                    },
+                            )
+                        },
+                    )
+                }
+
+                else -> {
+                    ChatGroupList(
+                        groups = filteredDiscoverGroups,
+                        emptyIcon = Icons.Default.PersonSearch,
+                        emptyTitle = "Không tìm thấy nhóm phù hợp",
+                        emptyText = "Thử từ khóa khác hoặc đổi bộ lọc để xem thêm nhóm.",
+                        itemContent = { group ->
+                            DiscoverGroupItem(
+                                group = group,
+                                joining = state.joiningGroupId == group.id,
+                                onPreview = {
+                                    selectedGroupForPreview = group
+                                    showPreview = true
+                                    viewModel.loadGroupPreview(group.id)
+                                },
+                                onJoin = {
+                                    viewModel.join(group) { joined ->
+                                        onOpenGroupPosts(
+                                            joined.copy(
+                                                name = joined.name.ifBlank { "Nhóm cộng đồng" },
+                                                latestMessage = joined.latestMessage.orDefaultGroupSubtitle()
+                                            )
+                                        )
+                                    }
+                                },
+                            )
+                        },
+                    )
+                }
+            }
+
+            if (canCreateGroupRequest) {
+                ExtendedFloatingActionButton(
+                    text = { Text("Tạo hội nhóm", color = Color.White, fontWeight = FontWeight.Bold) },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null, tint = Color.White) },
+                    onClick = onNavigateToCreateGroupRequest,
+                    containerColor = PrimaryBlue,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
                 )
             }
         }
@@ -288,7 +337,7 @@ fun ChatGroupDirectoryPane(
                         ?: basicGroup.description
                         ?: "Không gian trao đổi kinh nghiệm chăm sóc sức khỏe trong cộng đồng CareNest."
                     val rules = preview?.rules
-                        ?: "Tôn trọng thành viên khác, không đăng nội dung sai lệch y khoa và luôn giữ hội nhóm là nơi trao đổi an toàn."
+                        ?: "Tôn trọng thành viên khác, không đăng nội dung sai lệch y khoa và giữ hội nhóm là nơi trao đổi an toàn."
                     val joined = preview?.joined ?: basicGroup.joined
 
                     Text(groupName, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
@@ -296,7 +345,7 @@ fun ChatGroupDirectoryPane(
                     Text(
                         text = buildString {
                             append("$memberCount thành viên")
-                            if (!leadDoctorName.isNullOrBlank()) append(" · Host: $leadDoctorName")
+                            if (!leadDoctorName.isNullOrBlank()) append(" • Host: $leadDoctorName")
                         },
                         fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -318,7 +367,12 @@ fun ChatGroupDirectoryPane(
                             .padding(12.dp),
                         verticalAlignment = Alignment.Top,
                     ) {
-                        Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFFB45309), modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.Shield,
+                            contentDescription = null,
+                            tint = Color(0xFFB45309),
+                            modifier = Modifier.size(18.dp)
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = rules,
@@ -334,49 +388,186 @@ fun ChatGroupDirectoryPane(
                             if (joined) {
                                 showPreview = false
                                 viewModel.clearPreview()
-                                onOpenGroup(
+                                onOpenGroupPosts(
                                     basicGroup.copy(
-                                        name = basicGroup.name.ifBlank { "Phòng chat cộng đồng" },
-                                        latestMessage = basicGroup.latestMessage.sanitizeGroupSubtitle()
+                                        name = basicGroup.name.ifBlank { "Nhóm cộng đồng" },
+                                        latestMessage = basicGroup.latestMessage.orDefaultGroupSubtitle()
                                     )
                                 )
+                            } else if (preview != null) {
+                                viewModel.joinFromPreview(preview) { joinedGroup ->
+                                    showPreview = false
+                                    viewModel.clearPreview()
+                                    onOpenGroupPosts(
+                                        joinedGroup.copy(
+                                            name = joinedGroup.name.ifBlank { "Nhóm cộng đồng" },
+                                            latestMessage = joinedGroup.latestMessage.orDefaultGroupSubtitle()
+                                        )
+                                    )
+                                }
                             } else {
-                                if (preview != null) {
-                                    viewModel.joinFromPreview(preview) { joinedGroup ->
-                                        showPreview = false
-                                        viewModel.clearPreview()
-                                        onOpenGroup(
-                                            joinedGroup.copy(
-                                                name = joinedGroup.name.ifBlank { "Phòng chat cộng đồng" },
-                                                latestMessage = joinedGroup.latestMessage.sanitizeGroupSubtitle()
-                                            )
+                                viewModel.join(basicGroup) { joinedGroup ->
+                                    showPreview = false
+                                    viewModel.clearPreview()
+                                    onOpenGroupPosts(
+                                        joinedGroup.copy(
+                                            name = joinedGroup.name.ifBlank { "Nhóm cộng đồng" },
+                                            latestMessage = joinedGroup.latestMessage.orDefaultGroupSubtitle()
                                         )
-                                    }
-                                } else {
-                                    viewModel.join(basicGroup) { joinedGroup ->
-                                        showPreview = false
-                                        viewModel.clearPreview()
-                                        onOpenGroup(
-                                            joinedGroup.copy(
-                                                name = joinedGroup.name.ifBlank { "Phòng chat cộng đồng" },
-                                                latestMessage = joinedGroup.latestMessage.sanitizeGroupSubtitle()
-                                            )
-                                        )
-                                    }
+                                    )
                                 }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                     ) {
                         if (state.joiningGroupId == basicGroup.id) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
                         } else {
-                            Text(if (joined) "Vào phòng chat" else "Tham gia nhóm", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color.White)
+                            Text(
+                                if (joined) "Xem bài viết" else "Tham gia nhóm",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiscoverFilterRow(
+    selected: DiscoverGroupFilter,
+    onSelected: (DiscoverGroupFilter) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        DiscoverGroupFilter.entries.forEach { filter ->
+            val isSelected = filter == selected
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(if (isSelected) Color(0xFFEFF6FF) else Color.White)
+                    .clickable { onSelected(filter) }
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = filter.label,
+                    color = if (isSelected) PrimaryBlue else Color(0xFF64748B),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InlineCommunityErrorBanner(
+    message: String,
+    onDismiss: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7ED)),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Dữ liệu chưa được làm mới",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF9A3412),
+                    fontSize = 13.sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = message,
+                    color = Color(0xFF9A3412),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp
+                )
+            }
+            IconButton(onClick = onRetry) {
+                Icon(Icons.Default.Refresh, contentDescription = "Thử lại", tint = Color(0xFF9A3412))
+            }
+            IconButton(onClick = onDismiss) {
+                Icon(Icons.Default.Close, contentDescription = "Đóng", tint = Color(0xFF9A3412))
+            }
+        }
+    }
+}
+
+@Composable
+private fun BlockingErrorState(
+    message: String,
+    onRetry: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Card(
+            shape = RoundedCornerShape(8.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(Icons.Default.Groups, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(40.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Không thể tải hội nhóm",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0F172A),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = message,
+                    fontSize = 14.sp,
+                    color = Color(0xFF64748B),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onRetry,
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Thử lại", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -393,20 +584,40 @@ private fun ChatGroupList(
 ) {
     if (groups.isEmpty()) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 20.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Card(shape = RoundedCornerShape(8.dp), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
+            Card(
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 28.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 28.dp, vertical = 28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(emptyIcon, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(46.dp))
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(emptyTitle, fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A), textAlign = TextAlign.Center)
+                    Text(
+                        emptyTitle,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A),
+                        textAlign = TextAlign.Center
+                    )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(emptyText, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF64748B), textAlign = TextAlign.Center)
+                    Text(
+                        emptyText,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0xFF64748B),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
@@ -424,12 +635,16 @@ private fun ChatGroupList(
 @Composable
 private fun MyGroupItem(group: ChatGroup, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             GroupAvatar(group = group)
@@ -450,11 +665,16 @@ private fun MyGroupItem(group: ChatGroup, onClick: () -> Unit) {
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(formatGroupTime(group.latestActivityAt), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
+                    Text(
+                        formatGroupTime(group.latestActivityAt),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF94A3B8)
+                    )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    (group.latestMessage ?: "Nhóm vừa được tạo").sanitizeGroupSubtitle(),
+                    group.latestMessage.orDefaultGroupSubtitle(),
                     fontSize = 13.sp,
                     color = Color(0xFF64748B),
                     maxLines = 1,
@@ -473,29 +693,63 @@ private fun DiscoverGroupItem(
     onJoin: () -> Unit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onPreview),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onPreview),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             GroupAvatar(group = group)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(group.name, fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    group.name,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0F172A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Spacer(modifier = Modifier.height(5.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("${group.memberCount} thành viên", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
+                    Text(
+                        "${group.memberCount} thành viên",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF64748B)
+                    )
                     if (!group.leadDoctorName.isNullOrBlank()) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF0EA5E9), modifier = Modifier.size(14.dp))
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF0EA5E9),
+                            modifier = Modifier.size(14.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(group.leadDoctorName, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            group.leadDoctorName,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF64748B),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
                 group.category?.takeIf { it.isNotBlank() }?.let { category ->
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
-                        modifier = Modifier.clip(RoundedCornerShape(999.dp)).background(Color(0xFFEEF6FF)).padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(Color(0xFFEEF6FF))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Text(category, fontSize = 10.sp, fontWeight = FontWeight.Black, color = PrimaryBlue)
                     }
@@ -587,11 +841,8 @@ private fun formatGroupTime(value: String?): String {
     }
 }
 
-private fun String?.sanitizeGroupSubtitle(): String {
+private fun String?.orDefaultGroupSubtitle(): String {
     val raw = this?.trim().orEmpty()
     if (raw.isBlank()) return "Nhóm vừa được tạo"
     return raw
-        .replace("NhÃ³m vá»«a Ä‘Æ°á»£c táº¡o", "Nhóm vừa được tạo")
-        .replace("NhÃ³m vÃ«a Ä‘Æ°á»£c táº¡o", "Nhóm vừa được tạo")
-        .replace("Ã¢â‚¬Â¢", "•")
 }

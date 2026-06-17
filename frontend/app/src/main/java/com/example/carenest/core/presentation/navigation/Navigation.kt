@@ -135,20 +135,20 @@ fun MainNavigation() {
         entry<Register> {
             RegisterScreen(
                 viewModel = authViewModel,
-                onNavigateToLogin = { backStack.removeLastOrNull() }
+                onNavigateToLogin = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
         entry<ForgotPassword> {
             ForgotPasswordScreen(
                 viewModel = authViewModel,
-                onNavigateToLogin = { backStack.removeLastOrNull() }
+                onNavigateToLogin = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
         entry<MedicalAppointment> {
             val key = it as MedicalAppointment
             com.example.carenest.feature.appointment.presentation.AppointmentListScreen(
                 profileId = key.profileId,
-                onBack = { backStack.removeLastOrNull() },
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                 onAddAppointment = { backStack.add(AddAppointment(key.profileId)) }
             )
         }
@@ -156,7 +156,7 @@ fun MainNavigation() {
             val key = it as AddAppointment
             com.example.carenest.feature.appointment.presentation.AddAppointmentScreen(
                 profileId = key.profileId,
-                onBack = { backStack.removeLastOrNull() }
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
         entry<VaccinationTracker> {
@@ -164,7 +164,7 @@ fun MainNavigation() {
             com.example.carenest.feature.health.presentation.VaccinationTrackerScreen(
                 profileId = key.profileId,
                 viewModel = vaccinationViewModel,
-                onNavigateBack = { backStack.removeLastOrNull() },
+                onNavigateBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                 onAddVaccination = { profileId -> backStack.add(AddVaccinationSchedule(profileId = profileId)) },
                 onEditDose = { profileId, recordId, doseId -> 
                     backStack.add(AddVaccinationSchedule(profileId = profileId, vaccineId = recordId, doseId = doseId)) 
@@ -178,7 +178,7 @@ fun MainNavigation() {
                 vaccineId = key.vaccineId,
                 doseId = key.doseId,
                 viewModel = vaccinationViewModel,
-                onNavigateBack = { backStack.removeLastOrNull() }
+                onNavigateBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
         entry<MainDashboard> {
@@ -205,6 +205,7 @@ fun MainNavigation() {
               onNavigateToDoctorProfile = { doctorId -> 
                   backStack.add(DoctorProfile(doctorId)) 
               },
+              onNavigateToCreateGroupRequest = { backStack.add(CreateGroupRequestForm) },
               onLogout = {
                   scope.launch {
                       application.secureSessionManager.clearAll()
@@ -234,20 +235,31 @@ fun MainNavigation() {
                   backStack.clear()
                   backStack.add(Login)
                 }
-              }
+              },
+              onNavigateToGroupRequests = { backStack.add(AdminGroupRequests) }
             )
           }
         }
         entry<AddMedicine> {
           AddMedicineScreen(
             viewModel = medicineViewModel,
-            onBack = { backStack.removeLastOrNull() },
+            onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
             onOpenOcrScanner = { backStack.add(OcrScanner) }
           )
         }
+        entry<CreateGroupRequestForm> {
+            com.example.carenest.feature.community.presentation.CreateGroupRequestScreen(
+                onNavigateBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
+            )
+        }
+        entry<AdminGroupRequests> {
+            com.example.carenest.feature.admin.presentation.AdminGroupRequestsScreen(
+                onNavigateBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
+            )
+        }
         entry<MedicineSchedule> {
           MedicineScheduleScreen(
-            onBack = { backStack.removeLastOrNull() },
+            onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
             onAddSchedule = { backStack.add(AddMedicineSchedule) },
             viewModel = medicineViewModel
           )
@@ -256,7 +268,7 @@ fun MainNavigation() {
           AddMedicineScheduleScreen(
             dashboardViewModel = dashboardViewModel,
             medicineViewModel = medicineViewModel,
-            onBack = { backStack.removeLastOrNull() }
+            onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
           )
         }
         entry<ChatRoom> {
@@ -264,7 +276,7 @@ fun MainNavigation() {
           ChatScreen(
             groupId = key.id,
             groupName = key.name,
-            onBack = { backStack.removeLastOrNull() }
+            onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
           )
         }
         entry<DoctorProfile> {
@@ -273,26 +285,35 @@ fun MainNavigation() {
                 doctorId = key.doctorId,
                 onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) },
                 onNavigateToPatientBookingCenter = { backStack.add(PatientBookingCenter) },
-                onBack = { backStack.removeLastOrNull() }
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
         
         entry<GroupPostDetail> {
-          val key = it as GroupPostDetail
-          com.example.carenest.feature.community.presentation.GroupPostDetailScreen(
-            groupId = key.groupId,
-            groupName = key.groupName,
-            onBack = { backStack.removeLastOrNull() },
-            onNavigateToCreatePost = { id -> backStack.add(CreateGroupPost(id)) },
-            onNavigateToDoctorProfile = { doctorId -> backStack.add(DoctorProfile(doctorId)) }
-          )
+            val key = it as GroupPostDetail
+            com.example.carenest.feature.community.presentation.GroupPostDetailScreen(
+                groupId = key.groupId,
+                groupName = key.groupName,
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+                onNavigateToCreatePost = { groupId -> backStack.add(CreateGroupPost(groupId)) },
+                onNavigateToDoctorProfile = { doctorId -> backStack.add(DoctorProfile(doctorId)) },
+                onNavigateToManageGroup = { groupId, groupName -> backStack.add(GroupGovernance(groupId, groupName)) }
+            )
+        }
+        entry<GroupGovernance> {
+            val key = it as GroupGovernance
+            com.example.carenest.feature.community.presentation.GroupGovernanceScreen(
+                groupId = key.groupId,
+                groupName = key.groupName,
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
+            )
         }
         entry<CreateGroupPost> {
           val key = it as CreateGroupPost
           com.example.carenest.feature.community.presentation.CreateGroupPostScreen(
             groupId = key.groupId,
-            onBack = { backStack.removeLastOrNull() },
-            onPostSuccess = { backStack.removeLastOrNull() }
+            onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+            onPostSuccess = { if (backStack.size > 1) backStack.removeLastOrNull() }
           )
         }
         entry<FamilyChatRoom> {
@@ -301,22 +322,22 @@ fun MainNavigation() {
             familyId = key.id,
             familyName = key.name,
             memberCount = key.memberCount,
-            onBack = { backStack.removeLastOrNull() }
+            onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
           )
         }
         entry<OcrScanner> {
           OcrScannerScreen(
             dashboardViewModel = dashboardViewModel,
             medicineViewModel = medicineViewModel,
-            onBack = { backStack.removeLastOrNull() }
+            onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
           )
         }
         entry<AppointmentSchedule> {
-            AppointmentScheduleScreen(onBack = { backStack.removeLastOrNull() })
+            AppointmentScheduleScreen(onBack = { if (backStack.size > 1) backStack.removeLastOrNull() })
         }
         entry<VaccineSchedule> {
             VaccineScheduleScreen(
-                onBack = { backStack.removeLastOrNull() },
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                 onAddVaccine = { profileId, editId -> 
                     backStack.add(AddVaccine(profileId, editId)) 
                 }
@@ -326,7 +347,7 @@ fun MainNavigation() {
             AddVaccineScreen(
                 profileId = args.profileId,
                 editVaccineId = args.editVaccineId,
-                onBack = { backStack.removeLastOrNull() }
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
         entry<NotificationsCenter> {
@@ -336,7 +357,7 @@ fun MainNavigation() {
             NotificationsCenterScreen(
                 profileId = null,
                 viewModel = viewModel,
-                onBack = { backStack.removeLastOrNull() }
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
         entry<DoctorVerification> {
@@ -345,7 +366,7 @@ fun MainNavigation() {
             )
             DoctorVerificationScreen(
                 viewModel = viewModel,
-                onBack = { backStack.removeLastOrNull() }
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
         entry<UserMedical> {
@@ -356,7 +377,7 @@ fun MainNavigation() {
             UserMedicalScreen(
                 profileId = key.profileId,
                 viewModel = viewModel,
-                onBack = { backStack.removeLastOrNull() },
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                 onNavigateToMedicineSchedule = { backStack.add(MedicineSchedule) },
                 onNavigateToAppointmentList = { backStack.add(MedicalAppointment(key.profileId)) },
                 onNavigateToVaccinationTracker = { backStack.add(VaccinationTracker(key.profileId)) }
@@ -364,18 +385,18 @@ fun MainNavigation() {
         }
         entry<Policy> {
             PolicyScreen(
-                onBack = { backStack.removeLastOrNull() }
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
         entry<DoctorWorkspace> {
             com.example.carenest.feature.booking.presentation.doctorworkspace.DoctorWorkspaceScreen(
-                onBack = { backStack.removeLastOrNull() },
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                 onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) }
             )
         }
         entry<PatientBookingCenter> {
             com.example.carenest.feature.booking.presentation.patient.PatientBookingCenterScreen(
-                onBack = { backStack.removeLastOrNull() },
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                 onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) }
             )
         }
@@ -389,7 +410,7 @@ fun MainNavigation() {
             com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomScreen(
                 bookingId = args.bookingId,
                 viewModel = viewModel,
-                onBack = { backStack.removeLastOrNull() }
+                onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }
             )
         }
       },

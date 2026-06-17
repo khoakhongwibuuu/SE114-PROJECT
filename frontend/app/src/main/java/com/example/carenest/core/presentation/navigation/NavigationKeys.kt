@@ -36,9 +36,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class GroupPostDetail(val groupId: Long, val groupName: String) : NavKey
 @Serializable data class CreateGroupPost(val groupId: Long) : NavKey
+@Serializable data class GroupGovernance(val groupId: Long, val groupName: String) : NavKey
 
 @Serializable data class DoctorProfile(val doctorId: Long) : NavKey
 
 @Serializable data object DoctorWorkspace : NavKey
 
 @Serializable data class ConsultationRoom(val bookingId: Long) : NavKey
+
+@Serializable data object CreateGroupRequestForm : NavKey
+@Serializable data object AdminGroupRequests : NavKey

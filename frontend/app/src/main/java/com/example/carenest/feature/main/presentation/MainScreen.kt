@@ -80,6 +80,7 @@ fun MainScreen(
     onNavigateToMedicalRecord: (Long) -> Unit = {},
     onNavigateToFamilyChat: (Long, String, Int) -> Unit = { _, _, _ -> },
     onNavigateToDoctorProfile: (Long) -> Unit = {},
+    onNavigateToCreateGroupRequest: () -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
     authViewModel: AuthViewModel,
@@ -115,9 +116,11 @@ fun MainScreen(
     val currentUser by dashboardViewModel.currentUser.collectAsState()
     val authCurrentUser by authViewModel.currentUser.collectAsState()
     val currentRole by application.secureSessionManager.userRoleFlow.collectAsState()
-    val canAccessDoctorUi = (authCurrentUser?.role ?: currentUser?.role ?: currentRole)
-        ?.let { it == "DOCTOR" || it == "ADMIN" }
-        ?: false
+    val normalizedRole = (authCurrentUser?.role ?: currentUser?.role ?: currentRole)
+        ?.removePrefix("ROLE_")
+        ?.uppercase()
+    val canAccessDoctorUi = normalizedRole == "DOCTOR" || normalizedRole == "ADMIN"
+    val canCreateGroupRequest = normalizedRole == "DOCTOR"
 
     LaunchedEffect(Unit) {
         authViewModel.refreshCurrentUser()
@@ -247,10 +250,12 @@ fun MainScreen(
 
                 TAB_COMMUNITY -> CommunityScreen(
                     canCreateArticle = canAccessDoctorUi,
+                    canCreateGroupRequest = canCreateGroupRequest,
                     refreshTrigger = communityRefreshTrigger,
                     onOpenGroup = { onItemClick(ChatRoom(it.id, it.name)) },
                     onOpenGroupPosts = { group -> onItemClick(GroupPostDetail(group.id, group.name)) },
-                    onNavigateToDoctorProfile = onNavigateToDoctorProfile
+                    onNavigateToDoctorProfile = onNavigateToDoctorProfile,
+                    onNavigateToCreateGroupRequest = onNavigateToCreateGroupRequest
                 )
 
                 TAB_CHAT -> ChatHubScreen(
