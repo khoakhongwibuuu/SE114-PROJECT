@@ -61,10 +61,10 @@ fun DoctorWorkspaceScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("PhÃ²ng khÃ¡m sá»‘", fontWeight = FontWeight.Bold) },
+                title = { Text("Phòng khám số", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Trá»Ÿ vá»")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Trở về")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -89,13 +89,13 @@ fun DoctorWorkspaceScreen(
                         Text(uiState.error.orEmpty(), color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(onClick = { viewModel.loadBookings() }) {
-                            Text("Thá»­ láº¡i")
+                            Text("Thử lại")
                         }
                     }
                 }
                 uiState.bookings.isEmpty() -> {
                     Text(
-                        text = "ChÆ°a cÃ³ yÃªu cáº§u khÃ¡m nÃ o",
+                        text = "Chưa có yêu cầu khám nào",
                         color = Color(0xFF64748B),
                         modifier = Modifier.align(Alignment.Center)
                     )
@@ -113,7 +113,7 @@ fun DoctorWorkspaceScreen(
                                     viewModel.approveBooking(
                                         id = booking.id,
                                         onSuccess = {
-                                            scope.launch { snackbarHostState.showSnackbar("ÄÃ£ cháº¥p nháº­n yÃªu cáº§u") }
+                                            scope.launch { snackbarHostState.showSnackbar("Đã chấp nhận yêu cầu") }
                                         },
                                         onError = { message ->
                                             scope.launch { snackbarHostState.showSnackbar(message) }
@@ -125,7 +125,7 @@ fun DoctorWorkspaceScreen(
                                         id = booking.id,
                                         reason = reason,
                                         onSuccess = {
-                                            scope.launch { snackbarHostState.showSnackbar("ÄÃ£ tá»« chá»‘i yÃªu cáº§u") }
+                                            scope.launch { snackbarHostState.showSnackbar("Đã từ chối yêu cầu") }
                                         },
                                         onError = { message ->
                                             scope.launch { snackbarHostState.showSnackbar(message) }
@@ -153,7 +153,7 @@ fun DoctorWorkspaceScreen(
                     confirmedLocation = confirmedLocation,
                     confirmedNote = confirmedNote,
                     onSuccess = {
-                        scope.launch { snackbarHostState.showSnackbar("ÄÃ£ xÃ¡c nháº­n lá»‹ch khÃ¡m") }
+                        scope.launch { snackbarHostState.showSnackbar("Đã xác nhận lịch khám") }
                     },
                     onError = { message ->
                         scope.launch { snackbarHostState.showSnackbar(message) }
@@ -205,13 +205,13 @@ private fun ConfirmScheduleDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("XÃ¡c nháº­n lá»‹ch cá»¥ thá»ƒ") },
+        title = { Text("Xác nhận lịch cụ thể") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = selectedDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
                     onValueChange = {},
-                    label = { Text("NgÃ y háº¹n") },
+                    label = { Text("Ngày hẹn") },
                     readOnly = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -220,7 +220,7 @@ private fun ConfirmScheduleDialog(
                 OutlinedTextField(
                     value = selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")),
                     onValueChange = {},
-                    label = { Text("Giá» háº¹n") },
+                    label = { Text("Giờ hẹn") },
                     readOnly = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -229,13 +229,13 @@ private fun ConfirmScheduleDialog(
                 OutlinedTextField(
                     value = confirmedLocation,
                     onValueChange = { confirmedLocation = it },
-                    label = { Text("Äá»‹a Ä‘iá»ƒm / phÃ²ng khÃ¡m") },
+                    label = { Text("Địa điểm / phòng khám") },
                     isError = requiresLocation && confirmedLocation.isBlank(),
                     modifier = Modifier.fillMaxWidth()
                 )
                 if (requiresLocation && confirmedLocation.isBlank()) {
                     Text(
-                        "KhÃ¡m trá»±c tiáº¿p cáº§n cÃ³ Ä‘á»‹a Ä‘iá»ƒm hoáº·c phÃ²ng khÃ¡m",
+                        "Khám trực tiếp cần có địa điểm hoặc phòng khám",
                         color = MaterialTheme.colorScheme.error,
                         fontSize = 12.sp
                     )
@@ -243,13 +243,13 @@ private fun ConfirmScheduleDialog(
                 OutlinedTextField(
                     value = confirmedNote,
                     onValueChange = { confirmedNote = it },
-                    label = { Text("HÆ°á»›ng dáº«n thÃªm") },
+                    label = { Text("Hướng dẫn thêm") },
                     minLines = 2,
                     modifier = Modifier.fillMaxWidth()
                 )
                 if (isScheduledInPast) {
                     Text(
-                        "Thá»i gian háº¹n pháº£i á»Ÿ tÆ°Æ¡ng lai",
+                        "Thời gian hẹn phải ở tương lai",
                         color = MaterialTheme.colorScheme.error,
                         fontSize = 12.sp
                     )
@@ -270,12 +270,12 @@ private fun ConfirmScheduleDialog(
                 },
                 enabled = canConfirm
             ) {
-                Text("LÆ°u lá»‹ch")
+                Text("Lưu lịch")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("ÄÃ³ng")
+                Text("Đóng")
             }
         }
     )
@@ -296,12 +296,12 @@ fun BookingRequestCard(
         var rejectReason by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showRejectDialog = false },
-            title = { Text("Tá»« chá»‘i yÃªu cáº§u") },
+            title = { Text("Từ chối yêu cầu") },
             text = {
                 OutlinedTextField(
                     value = rejectReason,
                     onValueChange = { rejectReason = it },
-                    placeholder = { Text("Nháº­p lÃ½ do tá»« chá»‘i...") },
+                    placeholder = { Text("Nhập lý do từ chối...") },
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -315,12 +315,12 @@ fun BookingRequestCard(
                     },
                     enabled = rejectReason.isNotBlank() && !isBusy
                 ) {
-                    Text("XÃ¡c nháº­n")
+                    Text("Xác nhận")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRejectDialog = false }) {
-                    Text("Há»§y")
+                    Text("Hủy")
                 }
             }
         )
@@ -365,20 +365,20 @@ fun BookingRequestCard(
                         color = Color(0xFF0F172A)
                     )
                     Text(
-                        text = if (booking.requestType == BookingRequestType.ONLINE_CHAT) "TÆ° váº¥n trá»±c tuyáº¿n" else "KhÃ¡m trá»±c tiáº¿p",
+                        text = if (booking.requestType == BookingRequestType.ONLINE_CHAT) "Tư vấn trực tuyến" else "Khám trực tiếp",
                         fontSize = 13.sp,
                         color = PrimaryBlue
                     )
                 }
 
                 val (statusColor, statusText, statusBg) = when (booking.status) {
-                    BookingStatus.PENDING -> Triple(Color(0xFFEAB308), "Chá» duyá»‡t", Color(0xFFFEF9C3))
-                    BookingStatus.APPROVED -> Triple(Color(0xFF22C55E), "ÄÃ£ duyá»‡t", Color(0xFFDCFCE7))
-                    BookingStatus.REJECTED -> Triple(Color(0xFFEF4444), "Tá»« chá»‘i", Color(0xFFFEE2E2))
-                    BookingStatus.ACTIVE -> Triple(Color(0xFF3B82F6), "Äang khÃ¡m", Color(0xFFDBEAFE))
-                    BookingStatus.COMPLETED -> Triple(Color(0xFF64748B), "HoÃ n thÃ nh", Color(0xFFF1F5F9))
-                    BookingStatus.CANCELLED -> Triple(Color(0xFFEF4444), "ÄÃ£ há»§y", Color(0xFFFEE2E2))
-                    BookingStatus.RESTRICTED -> Triple(Color(0xFFF59E0B), "Háº¡n cháº¿", Color(0xFFFEF3C7))
+                    BookingStatus.PENDING -> Triple(Color(0xFFEAB308), "Chờ duyệt", Color(0xFFFEF9C3))
+                    BookingStatus.APPROVED -> Triple(Color(0xFF22C55E), "Đã duyệt", Color(0xFFDCFCE7))
+                    BookingStatus.REJECTED -> Triple(Color(0xFFEF4444), "Từ chối", Color(0xFFFEE2E2))
+                    BookingStatus.ACTIVE -> Triple(Color(0xFF3B82F6), "Đang khám", Color(0xFFDBEAFE))
+                    BookingStatus.COMPLETED -> Triple(Color(0xFF64748B), "Hoàn thành", Color(0xFFF1F5F9))
+                    BookingStatus.CANCELLED -> Triple(Color(0xFFEF4444), "Đã hủy", Color(0xFFFEE2E2))
+                    BookingStatus.RESTRICTED -> Triple(Color(0xFFF59E0B), "Hạn chế", Color(0xFFFEF3C7))
                 }
 
                 Box(
@@ -393,44 +393,44 @@ fun BookingRequestCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text("LÃ½ do khÃ¡m:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
+            Text("Lý do khám:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
             Text(booking.note, fontSize = 14.sp, color = Color(0xFF0F172A))
 
             booking.healthProfileName?.takeIf { it.isNotBlank() }?.let {
                 Spacer(modifier = Modifier.height(8.dp))
-                BookingInfoLine("Há»“ sÆ¡ sá»©c khá»e", it)
+                BookingInfoLine("Hồ sơ sức khỏe", it)
             }
 
             if (!booking.preferredTimeNote.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Thá»i gian mong muá»‘n:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
+                Text("Thời gian mong muốn:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
                 Text(booking.preferredTimeNote, fontSize = 14.sp, color = Color(0xFF0F172A))
             }
 
             booking.scheduledAt?.takeIf { it.isNotBlank() }?.let {
                 Spacer(modifier = Modifier.height(8.dp))
-                BookingInfoLine("Lá»‹ch Ä‘Ã£ xÃ¡c nháº­n", compactIsoTime(it))
+                BookingInfoLine("Lịch đã xác nhận", compactIsoTime(it))
             }
 
             booking.confirmedLocation?.takeIf { it.isNotBlank() }?.let {
                 Spacer(modifier = Modifier.height(8.dp))
-                BookingInfoLine("Äá»‹a Ä‘iá»ƒm", it)
+                BookingInfoLine("Địa điểm", it)
             }
 
             booking.confirmedNote?.takeIf { it.isNotBlank() }?.let {
                 Spacer(modifier = Modifier.height(8.dp))
-                BookingInfoLine("Ghi chÃº bÃ¡c sÄ©", it)
+                BookingInfoLine("Ghi chú bác sĩ", it)
             }
 
             if (booking.status == BookingStatus.REJECTED && !booking.rejectReason.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("LÃ½ do tá»« chá»‘i:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFEF4444))
+                Text("Lý do từ chối:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFEF4444))
                 Text(booking.rejectReason, fontSize = 14.sp, color = Color(0xFF0F172A))
             }
 
             if (booking.status == BookingStatus.CANCELLED && !booking.cancellationReason.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("LÃ½ do há»§y:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFEF4444))
+                Text("Lý do hủy:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFEF4444))
                 Text(booking.cancellationReason, fontSize = 14.sp, color = Color(0xFF0F172A))
             }
 
@@ -443,7 +443,7 @@ fun BookingRequestCard(
                     ) {
                         Icon(Icons.Default.Close, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Tá»« chá»‘i", color = Color(0xFFEF4444))
+                        Text("Từ chối", color = Color(0xFFEF4444))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -466,15 +466,15 @@ fun BookingRequestCard(
                         } else {
                             Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (booking.requestType == BookingRequestType.OFFLINE_CLINIC) "XÃ¡c nháº­n lá»‹ch" else "Cháº¥p nháº­n")
+                            Text(if (booking.requestType == BookingRequestType.OFFLINE_CLINIC) "Xác nhận lịch" else "Chấp nhận")
                         }
                     }
                 }
             } else if (booking.requestType == BookingRequestType.ONLINE_CHAT && booking.status.canOpenConsultationRoom()) {
                 val buttonText = if (booking.status == BookingStatus.APPROVED || booking.status == BookingStatus.ACTIVE) {
-                    "VÃ o phÃ²ng tÆ° váº¥n riÃªng tÆ°"
+                    "Vào phòng tư vấn riêng tư"
                 } else {
-                    "Xem lá»‹ch sá»­ tÆ° váº¥n"
+                    "Xem lịch sử tư vấn"
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(

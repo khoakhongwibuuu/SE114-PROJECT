@@ -82,7 +82,7 @@ class DashboardViewModel(
 
     fun fetchCurrentUser() {
         viewModelScope.launch(Dispatchers.IO) {
-            runCatching { authApi.getMe().requireData("KhÃ´ng thá»ƒ táº£i thÃ´ng tin tÃ i khoáº£n") }
+            runCatching { authApi.getMe().requireData("Không thể tải thông tin tài khoản") }
                 .getOrNull()
                 ?.let { user ->
                     secureSessionManager.saveUserIdSync(user.id)
@@ -99,7 +99,7 @@ class DashboardViewModel(
 
             val familiesResult = familyRepository.getMyFamilyList()
             val families = familiesResult.getOrElse { error ->
-                _dashboardState.value = DashboardState.Error(error.message ?: "KhÃ´ng thá»ƒ táº£i dá»¯ liá»‡u trang chá»§.")
+                _dashboardState.value = DashboardState.Error(error.message ?: "Không thể tải dữ liệu trang chủ.")
                 return@launch
             }
 
@@ -112,7 +112,7 @@ class DashboardViewModel(
                     data = DashboardResponse(),
                     tasks = emptyList(),
                     unreadCount = 0,
-                    aiSummaryText = "Báº¡n chÆ°a cÃ³ gia Ä‘Ã¬nh nÃ o. HÃ£y táº¡o hoáº·c tham gia gia Ä‘Ã¬nh Ä‘á»ƒ báº¯t Ä‘áº§u."
+                    aiSummaryText = "Bạn chưa có gia đình nào. Hãy tạo hoặc tham gia gia đình để bắt đầu."
                 )
                 return@launch
             }
@@ -126,7 +126,7 @@ class DashboardViewModel(
 
             val detailResult = familyRepository.getFamilyById(activeFamily.id)
             val familyDetail = detailResult.getOrElse { error ->
-                _dashboardState.value = DashboardState.Error(error.message ?: "KhÃ´ng thá»ƒ táº£i gia Ä‘Ã¬nh Ä‘ang hoáº¡t Ä‘á»™ng.")
+                _dashboardState.value = DashboardState.Error(error.message ?: "Không thể tải gia đình đang hoạt động.")
                 return@launch
             }
 
@@ -161,7 +161,7 @@ class DashboardViewModel(
 
             val dashboardResult = runCatching {
                 dashboardApi.getDashboard(activeFamilyId, activeProfileId)
-                    .requireData("KhÃ´ng thá»ƒ táº£i dá»¯ liá»‡u trang chá»§")
+                    .requireData("Không thể tải dữ liệu trang chủ")
             }
             val backendData = dashboardResult.getOrNull()
             val dashboardWarning = dashboardResult.exceptionOrNull()?.message
@@ -240,44 +240,44 @@ class DashboardViewModel(
             DashboardTask(
                 id = "family_overview",
                 type = "FAMILY",
-                title = "Gia Ä‘Ã¬nh Ä‘ang hoáº¡t Ä‘á»™ng",
+                title = "Gia đình đang hoạt động",
                 subtitle = familyDetail.name,
                 memberName = targetName,
-                badge = if (targetName != null) "Äang theo dÃµi" else "Cáº£ nhÃ "
+                badge = if (targetName != null) "Đang theo dõi" else "Cả nhà"
             )
         )
     }
 
     private fun decorateDashboardTask(task: DashboardTask): DashboardTask {
         val normalizedType = task.type?.uppercase()
-        val fallbackSubtitle = listOfNotNull(task.memberName, task.description).joinToString(" â€¢ ")
+        val fallbackSubtitle = listOfNotNull(task.memberName, task.description).joinToString(" • ")
         return when (normalizedType) {
             "MEDICATION" -> task.copy(
-                subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Lá»‹ch uá»‘ng thuá»‘c hÃ´m nay" } },
+                subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Lịch uống thuốc hôm nay" } },
                 icon = "pill",
                 iconBgColor = 0xFFE0F2FE,
                 iconColor = 0xFF0EA5E9,
-                badge = task.badge ?: "Thuá»‘c"
+                badge = task.badge ?: "Thuốc"
             )
 
             "VACCINATION" -> task.copy(
-                subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Lá»‹ch tiÃªm chá»§ng sáº¯p tá»›i" } },
+                subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Lịch tiêm chủng sắp tới" } },
                 icon = "syringe",
                 iconBgColor = 0xFFF3E8FF,
                 iconColor = 0xFF8B5CF6,
-                badge = task.badge ?: task.subtitle.ifBlank { "TiÃªm" }
+                badge = task.badge ?: task.subtitle.ifBlank { "Tiêm" }
             )
 
             "APPOINTMENT" -> task.copy(
-                subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Lá»‹ch khÃ¡m hÃ´m nay" } },
+                subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Lịch khám hôm nay" } },
                 icon = "calendar_month",
                 iconBgColor = 0xFFE0F7FA,
                 iconColor = 0xFF0097A7,
-                badge = task.badge ?: "KhÃ¡m"
+                badge = task.badge ?: "Khám"
             )
 
             else -> task.copy(
-                subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Viá»‡c cáº§n theo dÃµi" } },
+                subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Việc cần theo dõi" } },
                 icon = task.icon.ifBlank { "check_circle" },
                 iconBgColor = if (task.iconBgColor == 0xFFFFFFFF) 0xFFF1F5F9 else task.iconBgColor,
                 iconColor = if (task.iconColor == 0xFF000000) 0xFF64748B else task.iconColor
@@ -287,33 +287,33 @@ class DashboardViewModel(
 
     private fun buildHealthSummary(tasks: List<DashboardTask>): String {
         return if (tasks.isEmpty()) {
-            "HÃ´m nay chÆ°a cÃ³ viá»‡c sá»©c khá»e cáº§n xá»­ lÃ½. Báº¡n váº«n nÃªn kiá»ƒm tra lá»‹ch thuá»‘c, lá»‹ch khÃ¡m vÃ  tiÃªm chá»§ng Ä‘á»‹nh ká»³."
+            "Hôm nay chưa có việc sức khỏe cần xử lý. Bạn vẫn nên kiểm tra lịch thuốc, lịch khám và tiêm chủng định kỳ."
         } else {
             val medicationCount = tasks.count { it.type?.uppercase() == "MEDICATION" }
             val vaccineCount = tasks.count { it.type?.uppercase() == "VACCINATION" }
             val appointmentCount = tasks.count { it.type?.uppercase() == "APPOINTMENT" }
             val parts = buildList {
-                if (medicationCount > 0) add("$medicationCount lá»‹ch thuá»‘c")
-                if (vaccineCount > 0) add("$vaccineCount lá»‹ch tiÃªm")
-                if (appointmentCount > 0) add("$appointmentCount lá»‹ch khÃ¡m")
+                if (medicationCount > 0) add("$medicationCount lịch thuốc")
+                if (vaccineCount > 0) add("$vaccineCount lịch tiêm")
+                if (appointmentCount > 0) add("$appointmentCount lịch khám")
             }
             if (parts.isEmpty()) {
-                "HÃ´m nay gia Ä‘Ã¬nh cÃ³ ${tasks.size} viá»‡c cáº§n theo dÃµi. HÃ£y xá»­ lÃ½ tá»«ng viá»‡c Ä‘á»ƒ khÃ´ng bá» sÃ³t."
+                "Hôm nay gia đình có ${tasks.size} việc cần theo dõi. Hãy xử lý từng việc để không bỏ sót."
             } else {
-                "HÃ´m nay gia Ä‘Ã¬nh cÃ³ ${parts.joinToString(", ")} cáº§n theo dÃµi. HÃ£y xá»­ lÃ½ tá»«ng viá»‡c Ä‘á»ƒ khÃ´ng bá» sÃ³t."
+                "Hôm nay gia đình có ${parts.joinToString(", ")} cần theo dõi. Hãy xử lý từng việc để không bỏ sót."
             }
         }
     }
 
     private fun roleLabel(role: String): String {
         return when (role.uppercase()) {
-            "OWNER" -> "Chá»§ há»™"
-            "FATHER" -> "Bá»‘"
-            "MOTHER" -> "Máº¹"
+            "OWNER" -> "Chủ hộ"
+            "FATHER" -> "Bố"
+            "MOTHER" -> "Mẹ"
             "OLDER_BROTHER" -> "Anh"
-            "OLDER_SISTER" -> "Chá»‹"
+            "OLDER_SISTER" -> "Chị"
             "YOUNGER" -> "Em"
-            else -> "ThÃ nh viÃªn"
+            else -> "Thành viên"
         }
     }
 }
