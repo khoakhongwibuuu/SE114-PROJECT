@@ -11,13 +11,21 @@
 ---
 
 ## 🌟 Tổng quan dự án (Overview)
-**CareNest** là một siêu ứng dụng (Super App) quản lý sức khỏe gia đình đa người dùng (Multi-tenant/Multi-family) tiên tiến, kết hợp giữa Mobile App và Backend mạnh mẽ. Dự án được thiết kế để giải quyết bài toán quản lý y tế phức tạp trong gia đình thông qua việc tích hợp Trí tuệ nhân tạo (AI) và tự động hóa quy trình nghiệp vụ.
+**CareNest** là ứng dụng quản lý sức khỏe gia đình đa người dùng, kết hợp Spring Boot backend với Android app Jetpack Compose. Trọng tâm hiện tại là đưa các luồng MVP chạy ổn với dữ liệu thật cho 3 role `patient`, `doctor`, `admin`, trước khi mở lại các tính năng AI nâng cao.
 
-Hệ thống không chỉ dừng lại ở việc lưu trữ dữ liệu mà còn chủ động hỗ trợ người dùng thông qua:
-*   **AI Health Advisor:** Trợ lý ảo tư vấn sức khỏe dựa trên hồ sơ y tế thực tế của từng thành viên.
-*   **Smart OCR:** Tự động nhận diện đơn thuốc từ ảnh chụp để lên lịch nhắc nhở uống thuốc.
-*   **Smart Automation:** Tự động rải lịch tiêm chủng, điều chỉnh lịch uống thuốc thông minh và cảnh báo tương tác thuốc.
-*   **Real-time Family Chat:** Hộp chat box gia đình thời gian thực dựa trên giao thức STOMP WebSocket bảo mật cao.
+MVP hiện tập trung vào:
+*   **Auth & Profile:** đăng ký, đăng nhập, refresh token, hồ sơ cá nhân và hồ sơ sức khỏe.
+*   **Family & Health Core:** gia đình, thành viên, thuốc, lịch uống, tiêm chủng, tăng trưởng, lịch khám.
+*   **Digital Clinic:** hồ sơ bác sĩ, booking online/offline, doctor workspace, consultation room.
+*   **Community & Chat:** family chat, hội nhóm, bài viết nhóm, moderation cơ bản.
+*   **Notification:** unread count, mark read, điều hướng về đúng luồng nghiệp vụ.
+
+> AI Chatbot và OCR đang được để ở **phase cuối**. Trong mã nguồn hiện tại, hai tính năng này được tắt mặc định và không nên coi là luồng MVP đã hoàn tất.
+
+### Trạng thái triển khai hiện tại
+*   **Frontend chính:** `frontend/app` (Jetpack Compose).
+*   **Frontend legacy/reference:** `frontend/CareNestApp` (React Native), không phải luồng phát triển chính.
+*   **AI/OCR:** disabled mặc định bằng feature flag, chỉ bật khi đã có provider thật, contract rõ và bước xác nhận dữ liệu an toàn.
 
 ---
 
@@ -28,7 +36,7 @@ Hệ thống được xây dựng trên nền tảng công nghệ mạnh mẽ, c
 *   **Core:** Java 17, Spring Boot 3.3.5
 *   **Persistence:** Spring Data JPA, Hibernate, PostgreSQL 16
 *   **Caching & Fast Data:** Redis 7 (Refresh Token, Metadata Caching)
-*   **Intelligence:** Spring AI, Google Gemini LLM API
+*   **Intelligence (phase cuối):** provider AI qua env/config, disabled mặc định trong MVP
 *   **Real-time:** Spring Boot WebSocket (STOMP Broker, SimpMessagingTemplate)
 *   **Mapping & Tooling:** MapStruct (Entity-DTO), Lombok, Validation API
 *   **Infrastructure:** Docker & Docker Compose
@@ -41,6 +49,10 @@ Hệ thống được xây dựng trên nền tảng công nghệ mạnh mẽ, c
 *   **Real-time Client:** STOMP over WebSocket (NaikSoftware)
 *   **Network:** Retrofit 2 & OkHttp (với cơ chế interceptor cho Auth Token)
 *   **Storage:** Jetpack DataStore (Preferences)
+
+### Lưu ý về phạm vi MVP
+*   Những phần AI/OCR trong tài liệu legacy không phản ánh trạng thái release hiện tại.
+*   Khi chưa cấu hình provider thật, backend sẽ trả lỗi có chủ đích cho AI/OCR và Android sẽ hiển thị trạng thái tạm tắt thay vì chạy mock trong luồng thật.
 
 ---
 
@@ -59,10 +71,11 @@ Kiến trúc phân quyền phức tạp được giải quyết thông qua `Fami
 *   **N+1 Query Resolution:** Giải quyết triệt để vấn đề hiệu năng tại màn hình Dashboard tổng quát bằng kỹ thuật `JOIN FETCH` trong Spring Data JPA.
 *   **Hybrid Caching:** Tích hợp Redis làm lớp đệm cho các thông tin ít thay đổi. Sử dụng cơ chế `Programmatic Cache Eviction` để đảm bảo dữ liệu luôn nhất quán (Consistency) ngay khi có cập nhật.
 
-### 🤖 AI Hybrid Architecture
-Ứng dụng mô hình chuẩn **"Human-in-the-loop"**:
-*   **Context Injection:** Bơm dữ liệu y tế thực tế vào Prompt giúp Gemini phản hồi chính xác với tình trạng bệnh nhân.
-*   **OCR Engine:** Kết hợp xử lý ảnh và LLM để bóc tách thông tin đơn thuốc, sau đó cho phép người dùng xác nhận lại trước khi lưu trữ chính thức.
+### 🤖 AI/OCR (Phase cuối)
+Kiến trúc AI/OCR vẫn được giữ sẵn dưới dạng feature flag và env contract:
+*   **AI Chat:** chỉ nên bật khi đã cấu hình provider thật, mô hình thật và có ràng buộc safety/structured JSON rõ ràng.
+*   **OCR:** chỉ nên bật khi đã có pipeline ảnh thật và bước xác nhận dữ liệu trước khi lưu vào medication thật.
+*   **MVP hiện tại:** AI/OCR mặc định tắt, không được coi là tiêu chí PASS của runtime MVP.
 
 ### 📅 Automation Tasks
 *   **Auto-rescheduling:** Thuật toán tự động tịnh tiến ngày tiêm chủng dựa trên ngày tiêm thực tế của các mũi trước đó.
@@ -73,9 +86,9 @@ Kiến trúc phân quyền phức tạp được giải quyết thông qua `Fami
 ## 🚀 Hướng dẫn chạy dự án (Getting Started)
 
 ### 1. Yêu cầu hệ thống (Prerequisites)
-*   **Java 17** (Dành cho Spring Boot và Android Build)
-*   **Docker & Docker Compose** (Dành cho Database)
-*   **Android Studio** (Koala / Ladybug hoặc mới nhất)
+*   **Java 17** (cho Spring Boot và Android build)
+*   **Docker & Docker Compose** (cho PostgreSQL + Redis nếu chạy runtime local)
+*   **Android Studio** (để chạy `frontend/app`)
 
 ### 2. Clone Repo
 ```bash
@@ -85,27 +98,32 @@ cd SE114-PROJECT
 
 ### 3. Thiết lập Backend (Spring Boot)
 
-**Khởi động Database & Redis (bằng Docker):**
+**Thiết lập biến môi trường:**
+1. Copy `.env.example` thành `.env`.
+2. Điền các giá trị bắt buộc như `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `JWT_SECRET`.
+3. Giữ `APP_FEATURE_AI_CHAT_ENABLED=false` và `APP_FEATURE_OCR_ENABLED=false` nếu bạn đang chạy đúng phạm vi MVP hiện tại.
+
+**Khởi động Database, Redis và backend container (bằng Docker Compose ở root repo):**
 ```bash
-cd backend
-docker-compose up -d
+docker compose up -d
 ```
 
-**Cấu hình biến môi trường (nếu cần sử dụng tính năng AI):**
-Trong thư mục `backend`, copy file `.env.example` thành `.env` và điền `GEMINI_API_KEY` của bạn.
+**Hoặc chạy Spring Boot Server từ source:**
+Nếu bạn chỉ muốn chạy service Spring Boot từ source, hãy đảm bảo PostgreSQL đang ở `localhost:5433` và Redis ở `localhost:6379` theo cấu hình mặc định trong `backend/src/main/resources/application.yml`.
 
-**Chạy Spring Boot Server:**
 Bạn có thể mở thư mục `backend` bằng **IntelliJ IDEA** và chạy class `CarenestApplication`. Hoặc dùng dòng lệnh:
 ```bash
 # Trên Windows
+cd backend
 .\mvnw.cmd spring-boot:run
 
 # Trên MacOS/Linux
+cd backend
 ./mvnw spring-boot:run
 ```
 *(Backend sẽ chạy ở cổng `http://localhost:8080/api/v1`)*
 
-### 4. Thiết lập Frontend (Android App)
+### 4. Thiết lập Frontend Android (`frontend/app`)
 
 **Cấu hình IP máy tính:**
 Để ứng dụng Android (chạy trên điện thoại hoặc máy ảo) kết nối được với Backend đang chạy trên máy tính, bạn cần cấu hình IP nội bộ:
@@ -130,6 +148,11 @@ Nếu bạn không muốn mở Android Studio, chỉ cần cắm điện thoại
 # Trên MacOS/Linux
 ./gradlew :app:installDebug
 ```
+
+### 5. Ghi chú AI/OCR
+*   `AI_ENABLED`, `OCR_ENABLED`, `APP_FEATURE_AI_CHAT_ENABLED`, `APP_FEATURE_OCR_ENABLED` đều có trong `.env.example`.
+*   Chỉ bật các cờ này khi đã có provider thật, model thật và kế hoạch xác minh dữ liệu đầu ra.
+*   Nếu chỉ muốn chạy MVP, để toàn bộ cờ AI/OCR ở `false`.
 
 ---
 
