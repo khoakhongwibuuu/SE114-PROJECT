@@ -3,6 +3,7 @@ package com.example.carenest.feature.booking.presentation.consultation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.booking.data.remote.ConsultationSocketEvent
 import com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient
 import com.example.carenest.feature.booking.domain.model.ConsultationMessage
@@ -44,7 +45,7 @@ class ConsultationRoomViewModel(
                 loadMessages(thread.id)
                 connectWebSocket(thread.id)
             }.onFailure { e ->
-                _state.update { it.copy(isLoading = false, error = e.message ?: "Lỗi khi vào phòng tư vấn") }
+                _state.update { it.copy(isLoading = false, error = e.userMessage("Không thể vào phòng tư vấn")) }
             }
         }
     }
@@ -55,7 +56,7 @@ class ConsultationRoomViewModel(
             result.onSuccess { msgs ->
                 _state.update { it.copy(isLoading = false, messages = msgs) }
             }.onFailure { e ->
-                _state.update { it.copy(isLoading = false, error = e.message ?: "Lỗi khi tải tin nhắn") }
+                _state.update { it.copy(isLoading = false, error = e.userMessage("Không thể tải tin nhắn tư vấn")) }
             }
         }
     }
@@ -107,7 +108,7 @@ class ConsultationRoomViewModel(
         val request = SendConsultationMessageRequest(content = normalized)
         val payload = gson.toJson(request)
         val queued = webSocketClient.send(threadId, payload) { error ->
-            _state.update { it.copy(error = error.message ?: "Không thể gửi tin nhắn") }
+            _state.update { it.copy(error = error.userMessage("Không thể gửi tin nhắn")) }
         }
         if (!queued) {
             _state.update { it.copy(error = "Phòng tư vấn chưa sẵn sàng để gửi tin nhắn") }
@@ -127,7 +128,7 @@ class ConsultationRoomViewModel(
                 )}
                 onDone()
             }.onFailure { e ->
-                _state.update { it.copy(isActionLoading = false, error = e.message) }
+                _state.update { it.copy(isActionLoading = false, error = e.userMessage("Không thể kết thúc phiên tư vấn")) }
             }
         }
     }
@@ -143,7 +144,7 @@ class ConsultationRoomViewModel(
                     actionSuccess = "Đã hạn chế nhắn tin trong phiên này."
                 )}
             }.onFailure { e ->
-                _state.update { it.copy(isActionLoading = false, error = e.message) }
+                _state.update { it.copy(isActionLoading = false, error = e.userMessage("Không thể hạn chế nhắn tin")) }
             }
         }
     }
@@ -159,7 +160,7 @@ class ConsultationRoomViewModel(
                     actionSuccess = "Đã hủy hạn chế nhắn tin thành công."
                 )}
             }.onFailure { e ->
-                _state.update { it.copy(isActionLoading = false, error = e.message) }
+                _state.update { it.copy(isActionLoading = false, error = e.userMessage("Không thể hủy hạn chế nhắn tin")) }
             }
         }
     }
