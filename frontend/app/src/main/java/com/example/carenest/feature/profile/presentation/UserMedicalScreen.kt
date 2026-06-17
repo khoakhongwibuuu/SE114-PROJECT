@@ -3,6 +3,7 @@ package com.example.carenest.feature.profile.presentation
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,7 +37,6 @@ import java.time.ZoneId
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,8 +50,6 @@ fun UserMedicalScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(profileId) {
@@ -61,18 +59,17 @@ fun UserMedicalScreen(
 
     LaunchedEffect(state.successMessage, state.error) {
         state.successMessage?.let {
-            snackbarHostState.showSnackbar(it)
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
             viewModel.clearMessages()
         }
         state.error?.let {
-            snackbarHostState.showSnackbar(it)
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
             viewModel.clearMessages()
         }
     }
 
     Scaffold(
         containerColor = Color(0xFFF8FAFC),
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -169,9 +166,7 @@ fun UserMedicalScreen(
                                     val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("Không thể mở ứng dụng cuộc gọi")
-                                    }
+                                    Toast.makeText(context, "Không thể mở ứng dụng cuộc gọi", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         )
@@ -267,12 +262,7 @@ private fun InfoTabContent(
                         label = { Text("Nhóm máu") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedBloodType) },
                         leadingIcon = { Icon(Icons.Default.Bloodtype, contentDescription = null, tint = PrimaryBlue) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(
-                                type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                                enabled = true
-                            ),
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
                         shape = RoundedCornerShape(12.dp)
                     )
                     ExposedDropdownMenu(

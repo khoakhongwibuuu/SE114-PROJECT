@@ -1,5 +1,6 @@
 package com.example.carenest.feature.chat.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,7 +51,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,8 +67,6 @@ import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.chat.domain.model.ChatMessage
 import com.example.carenest.feature.chat.presentation.components.MessageBubble
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 private val ChatBlue = Color(0xFF1A73E8)
 private val ChatBackIcon = Color(0xFF0369A1)
@@ -80,7 +78,8 @@ fun ChatScreen(
     groupName: String,
     onBack: () -> Unit,
 ) {
-    val application = LocalContext.current.applicationContext as CareNestApplication
+    val context = LocalContext.current
+    val application = context.applicationContext as CareNestApplication
     val viewModel: ChatViewModel = viewModel(
         key = "chat-$groupId",
         factory = ChatViewModelFactory(groupId = groupId, repository = application.chatRepository),
@@ -89,26 +88,15 @@ fun ChatScreen(
     val currentRole by application.secureSessionManager.userRoleFlow.collectAsState()
     val normalizedAppRole = currentRole?.removePrefix("ROLE_")?.uppercase()
     val normalizedGroupRole = state.myRole?.uppercase()
-    val hasExplicitMembership = normalizedGroupRole != null
-    val canLeaveGroup = hasExplicitMembership && (normalizedAppRole == "ADMIN" || normalizedGroupRole != "HOST")
-    val leaveGroupHint = if (hasExplicitMembership && !canLeaveGroup) {
-        "Bạn đang là trưởng nhóm. Hãy liên hệ admin hệ thống nếu cần rời nhóm hoặc chuyển quyền trưởng nhóm."
-    } else {
-        null
-    }
-    val canOpenOptions = canLeaveGroup || leaveGroupHint != null
     val canSend = state.inputText.isNotBlank() && state.slowCountdown == 0 && !state.isSending
     val canManageMembers = normalizedAppRole == "ADMIN" || normalizedGroupRole == "HOST"
     val isFallbackMode = !state.isConnected && state.error?.contains("Đã lưu", ignoreCase = true) == true
-    val scope = rememberCoroutineScope()
-
     var showOptions by remember { mutableStateOf(false) }
     var selectedMessageForOptions by remember { mutableStateOf<ChatMessage?>(null) }
     var showReportDialog by remember { mutableStateOf<ChatMessage?>(null) }
     var reportReason by remember { mutableStateOf("") }
     var showKickConfirmation by remember { mutableStateOf<ChatMessage?>(null) }
-    var actionMessage by remember { mutableStateOf<String?>(null) }
-    var actionMessageIsError by remember { mutableStateOf(false) }
+    var kickReason by remember { mutableStateOf("") }
 
     if (showOptions) {
         ModalBottomSheet(
@@ -133,55 +121,31 @@ fun ChatScreen(
                     color = Color(0xFF64748B),
                 )
                 Spacer(modifier = Modifier.height(18.dp))
-                if (canLeaveGroup) {
-                    ChatOptionRow(
-                        icon = {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ExitToApp,
-                                contentDescription = null,
-                                tint = Color(0xFFDC2626),
-                            )
-                        },
-                        title = "Rời nhóm",
-                        subtitle = "Rời khỏi phòng trò chuyện cộng đồng này.",
-                        titleColor = Color(0xFFDC2626),
-                        onClick = {
-                            showOptions = false
-                            viewModel.leaveGroup(
-                                onSuccess = {
-                                    scope.launch {
-                                        actionMessage = "Đã rời nhóm thành công. Đang quay lại danh sách hội nhóm."
-                                        actionMessageIsError = false
-                                        delay(700)
-                                        onBack()
-                                    }
-                                },
-                                onError = { err ->
-                                    actionMessage = err
-                                    actionMessageIsError = true
-                                },
-                            )
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                if (leaveGroupHint != null) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFFFFFBEB),
-                        shape = RoundedCornerShape(16.dp),
-                    ) {
-                        Text(
-                            text = leaveGroupHint,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF92400E),
-                            lineHeight = 18.sp,
-                            fontWeight = FontWeight.Medium,
+                ChatOptionRow(
+                    icon = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = null,
+                            tint = Color(0xFFDC2626),
                         )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+                    },
+                    title = "Rời nhóm",
+                    subtitle = "Rời khỏi phòng trò chuyện cộng đồng này.",
+                    titleColor = Color(0xFFDC2626),
+                    onClick = {
+                        showOptions = false
+                        viewModel.leaveGroup(
+                            onSuccess = {
+                                Toast.makeText(context, "Đã rời nhóm thành công.", Toast.LENGTH_SHORT).show()
+                                onBack()
+                            },
+                            onError = { err ->
+                                Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    },
+                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -268,7 +232,7 @@ fun ChatScreen(
                         value = reportReason,
                         onValueChange = { reportReason = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Lý do vi phạm...") },
+                        placeholder = { Text("Lý do vi phạm...") }
                     )
                 }
             },
@@ -282,15 +246,13 @@ fun ChatScreen(
                             messageId = reportMessageId,
                             reason = reason,
                             onSuccess = {
-                                actionMessage = "Đã gửi báo cáo tin nhắn thành công."
-                                actionMessageIsError = false
+                                Toast.makeText(context, "Đã gửi báo cáo tin nhắn thành công.", Toast.LENGTH_SHORT).show()
                             },
                             onError = { err ->
-                                actionMessage = err
-                                actionMessageIsError = true
-                            },
+                                Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+                            }
                         )
-                    },
+                    }
                 ) {
                     Text("Gửi báo cáo", color = PrimaryBlue)
                 }
@@ -299,14 +261,17 @@ fun ChatScreen(
                 TextButton(onClick = { showReportDialog = null }) {
                     Text("Hủy", color = Color(0xFF64748B))
                 }
-            },
+            }
         )
     }
 
     val kickMsg = showKickConfirmation
     if (kickMsg != null) {
         AlertDialog(
-            onDismissRequest = { showKickConfirmation = null },
+            onDismissRequest = {
+                showKickConfirmation = null
+                kickReason = ""
+            },
             title = { Text("Mời khỏi nhóm", fontWeight = FontWeight.Bold) },
             text = {
                 Text("Bạn có chắc chắn muốn mời thành viên ${kickMsg.senderName} rời khỏi nhóm trò chuyện này không?")
@@ -315,24 +280,23 @@ fun ChatScreen(
                 TextButton(
                     onClick = {
                         showKickConfirmation = null
+                        kickReason = ""
                         val userId = kickMsg.senderId
                         if (userId != null) {
                             viewModel.kickMember(
                                 userId = userId,
+                                reason = kickReason.trim().ifBlank { "Điều phối thành viên từ phòng chat nhóm" },
                                 onSuccess = {
-                                    actionMessage = "Đã mời thành viên rời nhóm thành công."
-                                    actionMessageIsError = false
+                                    Toast.makeText(context, "Đã mời thành viên rời nhóm thành công.", Toast.LENGTH_SHORT).show()
                                 },
                                 onError = { err ->
-                                    actionMessage = err
-                                    actionMessageIsError = true
-                                },
+                                    Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+                                }
                             )
                         } else {
-                            actionMessage = "Không thể xác định ID thành viên."
-                            actionMessageIsError = true
+                            Toast.makeText(context, "Không thể xác định ID thành viên.", Toast.LENGTH_SHORT).show()
                         }
-                    },
+                    }
                 ) {
                     Text("Mời rời nhóm", color = Color(0xFFDC2626))
                 }
@@ -341,7 +305,7 @@ fun ChatScreen(
                 TextButton(onClick = { showKickConfirmation = null }) {
                     Text("Hủy", color = Color(0xFF64748B))
                 }
-            },
+            }
         )
     }
 
@@ -386,29 +350,21 @@ fun ChatScreen(
                     },
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (state.isConnected) Color(0xFF94A3B8) else Color(0xFF0F766E),
+                    color = when {
+                        state.isConnected -> Color(0xFF94A3B8)
+                        isFallbackMode -> Color(0xFF0F766E)
+                        else -> Color(0xFF0F766E)
+                    },
                 )
             }
 
-            if (canOpenOptions) {
-                IconButton(onClick = { showOptions = true }) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = "Tùy chọn nhóm",
-                        tint = Color(0xFF0F172A),
-                    )
-                }
-            } else {
-                Spacer(modifier = Modifier.size(48.dp))
+            IconButton(onClick = { showOptions = true }) {
+                Icon(
+                    Icons.Default.MoreVert,
+                    contentDescription = "Tùy chọn nhóm",
+                    tint = Color(0xFF0F172A),
+                )
             }
-        }
-
-        actionMessage?.let { message ->
-            ChatFeedbackBanner(
-                text = message,
-                isError = actionMessageIsError,
-                onDismiss = { actionMessage = null },
-            )
         }
 
         HorizontalDivider(color = Color(0xFFE2E8F0))
@@ -445,6 +401,44 @@ fun ChatScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(color = PrimaryBlue)
+                }
+            }
+
+            state.messages.isEmpty() && !state.error.isNullOrBlank() && !isFallbackMode -> {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        Icons.Default.Shield,
+                        contentDescription = null,
+                        tint = Color(0xFFDC2626),
+                        modifier = Modifier.size(42.dp),
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Không thể tải lịch sử tin nhắn",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A),
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = state.error.orEmpty(),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color(0xFF64748B),
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(onClick = viewModel::retryInitialLoad) {
+                        Text("Thử lại", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -493,7 +487,7 @@ fun ChatScreen(
                     items(state.messages, key = { it.id }) { message ->
                         MessageBubble(
                             msg = message,
-                            onLongClick = { selectedMessageForOptions = it },
+                            onLongClick = { selectedMessageForOptions = it }
                         )
                     }
                 }
@@ -600,42 +594,6 @@ fun ChatScreen(
 
 private fun ChatMessage.serverMessageId(): Long? {
     return id.toLongOrNull()?.takeIf { it > 0L }
-}
-
-@Composable
-private fun ChatFeedbackBanner(
-    text: String,
-    isError: Boolean,
-    onDismiss: () -> Unit,
-) {
-    val containerColor = if (isError) Color(0xFFFEE2E2) else Color(0xFFDCFCE7)
-    val textColor = if (isError) Color(0xFFB91C1C) else Color(0xFF166534)
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        color = containerColor,
-        shape = RoundedCornerShape(14.dp),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = text,
-                color = textColor,
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = onDismiss) {
-                Text("Đóng", color = textColor)
-            }
-        }
-    }
 }
 
 @Composable

@@ -3,8 +3,18 @@ package com.example.carenest.feature.booking.presentation.doctorworkspace
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -13,12 +23,37 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,11 +66,18 @@ import com.example.carenest.feature.booking.domain.model.BookingRequestType
 import com.example.carenest.feature.booking.domain.model.BookingResponse
 import com.example.carenest.feature.booking.domain.model.BookingStatus
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
+private data class DoctorBookingBadgeUi(
+    val label: String,
+    val textColor: Color,
+    val backgroundColor: Color
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +123,7 @@ fun DoctorWorkspaceScreen(
                 uiState.isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = PrimaryBlue)
                 }
+
                 uiState.error != null -> {
                     Column(
                         modifier = Modifier.align(Alignment.Center),
@@ -93,6 +136,7 @@ fun DoctorWorkspaceScreen(
                         }
                     }
                 }
+
                 uiState.bookings.isEmpty() -> {
                     Text(
                         text = "Chưa có yêu cầu khám nào",
@@ -100,6 +144,7 @@ fun DoctorWorkspaceScreen(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
+
                 else -> {
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),
@@ -173,10 +218,15 @@ private fun ConfirmScheduleDialog(
 ) {
     val context = LocalContext.current
     val zoneId = ZoneId.systemDefault()
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    var selectedTime by remember { mutableStateOf(LocalTime.now().plusHours(1).withMinute(0)) }
-    var confirmedLocation by remember { mutableStateOf(booking.confirmedLocation.orEmpty()) }
-    var confirmedNote by remember { mutableStateOf(booking.confirmedNote.orEmpty()) }
+    val initialDateTime = remember(booking.scheduledAt) {
+        booking.scheduledAt?.let {
+            runCatching { Instant.parse(it).atZone(zoneId).toLocalDateTime() }.getOrNull()
+        } ?: LocalDateTime.now().plusDays(1).withHour(9).withMinute(0)
+    }
+    var selectedDate by remember(booking.id) { mutableStateOf(initialDateTime.toLocalDate()) }
+    var selectedTime by remember(booking.id) { mutableStateOf(initialDateTime.toLocalTime().withSecond(0).withNano(0)) }
+    var confirmedLocation by remember(booking.id) { mutableStateOf(booking.confirmedLocation.orEmpty()) }
+    var confirmedNote by remember(booking.id) { mutableStateOf(booking.confirmedNote.orEmpty()) }
     val scheduledAtLocal = LocalDateTime.of(selectedDate, selectedTime)
     val isScheduledInPast = !scheduledAtLocal.isAfter(LocalDateTime.now())
     val requiresLocation = booking.requestType == BookingRequestType.OFFLINE_CLINIC
@@ -185,7 +235,9 @@ private fun ConfirmScheduleDialog(
     val datePickerDialog = remember(selectedDate) {
         DatePickerDialog(
             context,
-            { _, year, month, dayOfMonth -> selectedDate = LocalDate.of(year, month + 1, dayOfMonth) },
+            { _, year, month, dayOfMonth ->
+                selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+            },
             selectedDate.year,
             selectedDate.monthValue - 1,
             selectedDate.dayOfMonth
@@ -205,7 +257,15 @@ private fun ConfirmScheduleDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Xác nhận lịch cụ thể") },
+        title = {
+            Text(
+                if (booking.status == BookingStatus.APPROVED) {
+                    "Cập nhật lịch đã xác nhận"
+                } else {
+                    "Xác nhận lịch cụ thể"
+                }
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -213,33 +273,61 @@ private fun ConfirmScheduleDialog(
                     onValueChange = {},
                     label = { Text("Ngày hẹn") },
                     readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { datePickerDialog.show() }
+                    modifier = Modifier.fillMaxWidth()
                 )
+                TextButton(
+                    onClick = { datePickerDialog.show() },
+                    modifier = Modifier.align(Alignment.Start)
+                ) {
+                    Text("Chọn ngày")
+                }
+
                 OutlinedTextField(
                     value = selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")),
                     onValueChange = {},
                     label = { Text("Giờ hẹn") },
                     readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { timePickerDialog.show() }
+                    modifier = Modifier.fillMaxWidth()
                 )
+                TextButton(
+                    onClick = { timePickerDialog.show() },
+                    modifier = Modifier.align(Alignment.Start)
+                ) {
+                    Text("Chọn giờ")
+                }
+
                 OutlinedTextField(
                     value = confirmedLocation,
                     onValueChange = { confirmedLocation = it },
-                    label = { Text("Địa điểm / phòng khám") },
+                    label = {
+                        Text(
+                            if (booking.requestType == BookingRequestType.ONLINE_CHAT) {
+                                "Nền tảng / địa điểm"
+                            } else {
+                                "Địa điểm / phòng khám"
+                            }
+                        )
+                    },
+                    placeholder = {
+                        Text(
+                            if (booking.requestType == BookingRequestType.ONLINE_CHAT) {
+                                "Ví dụ: Google Meet hoặc số phòng khám nếu khám trực tiếp sau tư vấn"
+                            } else {
+                                "Ví dụ: Phòng khám Nhi, tầng 2"
+                            }
+                        )
+                    },
                     isError = requiresLocation && confirmedLocation.isBlank(),
                     modifier = Modifier.fillMaxWidth()
                 )
                 if (requiresLocation && confirmedLocation.isBlank()) {
                     Text(
-                        "Khám trực tiếp cần có địa điểm hoặc phòng khám",
+                        "Khám trực tiếp cần có địa điểm hoặc phòng khám.",
                         color = MaterialTheme.colorScheme.error,
                         fontSize = 12.sp
                     )
                 }
+
                 OutlinedTextField(
                     value = confirmedNote,
                     onValueChange = { confirmedNote = it },
@@ -249,7 +337,7 @@ private fun ConfirmScheduleDialog(
                 )
                 if (isScheduledInPast) {
                     Text(
-                        "Thời gian hẹn phải ở tương lai",
+                        "Thời gian hẹn phải nằm trong tương lai.",
                         color = MaterialTheme.colorScheme.error,
                         fontSize = 12.sp
                     )
@@ -259,9 +347,7 @@ private fun ConfirmScheduleDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val scheduledAt = scheduledAtLocal.atZone(zoneId)
-                        .toInstant()
-                        .toString()
+                    val scheduledAt = scheduledAtLocal.atZone(zoneId).toInstant().toString()
                     onConfirm(
                         scheduledAt,
                         confirmedLocation.takeIf { it.isNotBlank() },
@@ -326,6 +412,13 @@ fun BookingRequestCard(
         )
     }
 
+    val badge = doctorBookingBadgeUi(booking.status)
+    val requestTypeLabel = if (booking.requestType == BookingRequestType.ONLINE_CHAT) {
+        "Tư vấn trực tuyến"
+    } else {
+        "Khám trực tiếp"
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -336,10 +429,11 @@ fun BookingRequestCard(
                 if (booking.patientAvatarUrl != null) {
                     AsyncImage(
                         model = booking.patientAvatarUrl,
-                        contentDescription = "Avatar",
+                        contentDescription = "Avatar bệnh nhân",
                         modifier = Modifier
                             .size(40.dp)
-                            .clip(CircleShape)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
                 } else {
                     Box(
@@ -365,29 +459,24 @@ fun BookingRequestCard(
                         color = Color(0xFF0F172A)
                     )
                     Text(
-                        text = if (booking.requestType == BookingRequestType.ONLINE_CHAT) "Tư vấn trực tuyến" else "Khám trực tiếp",
+                        text = requestTypeLabel,
                         fontSize = 13.sp,
                         color = PrimaryBlue
                     )
                 }
 
-                val (statusColor, statusText, statusBg) = when (booking.status) {
-                    BookingStatus.PENDING -> Triple(Color(0xFFEAB308), "Chờ duyệt", Color(0xFFFEF9C3))
-                    BookingStatus.APPROVED -> Triple(Color(0xFF22C55E), "Đã duyệt", Color(0xFFDCFCE7))
-                    BookingStatus.REJECTED -> Triple(Color(0xFFEF4444), "Từ chối", Color(0xFFFEE2E2))
-                    BookingStatus.ACTIVE -> Triple(Color(0xFF3B82F6), "Đang khám", Color(0xFFDBEAFE))
-                    BookingStatus.COMPLETED -> Triple(Color(0xFF64748B), "Hoàn thành", Color(0xFFF1F5F9))
-                    BookingStatus.CANCELLED -> Triple(Color(0xFFEF4444), "Đã hủy", Color(0xFFFEE2E2))
-                    BookingStatus.RESTRICTED -> Triple(Color(0xFFF59E0B), "Hạn chế", Color(0xFFFEF3C7))
-                }
-
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .background(statusBg)
+                        .background(badge.backgroundColor)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text(statusText, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        badge.label,
+                        color = badge.textColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
 
@@ -414,12 +503,20 @@ fun BookingRequestCard(
 
             booking.confirmedLocation?.takeIf { it.isNotBlank() }?.let {
                 Spacer(modifier = Modifier.height(8.dp))
-                BookingInfoLine("Địa điểm", it)
+                BookingInfoLine(
+                    if (booking.requestType == BookingRequestType.ONLINE_CHAT) "Nền tảng / địa điểm" else "Địa điểm",
+                    it
+                )
             }
 
             booking.confirmedNote?.takeIf { it.isNotBlank() }?.let {
                 Spacer(modifier = Modifier.height(8.dp))
                 BookingInfoLine("Ghi chú bác sĩ", it)
+            }
+
+            if (booking.appointmentId != null && booking.status == BookingStatus.APPROVED) {
+                Spacer(modifier = Modifier.height(8.dp))
+                BookingInfoLine("Đồng bộ lịch", "Đã ghi vào Lịch tái khám (#${booking.appointmentId})")
             }
 
             if (booking.status == BookingStatus.REJECTED && !booking.rejectReason.isNullOrBlank()) {
@@ -437,10 +534,7 @@ fun BookingRequestCard(
             if (booking.status == BookingStatus.PENDING) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(
-                        onClick = { showRejectDialog = true },
-                        enabled = !isBusy
-                    ) {
+                    TextButton(onClick = { showRejectDialog = true }, enabled = !isBusy) {
                         Icon(Icons.Default.Close, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Từ chối", color = Color(0xFFEF4444))
@@ -470,6 +564,14 @@ fun BookingRequestCard(
                         }
                     }
                 }
+            } else if (booking.status == BookingStatus.APPROVED && booking.requestType == BookingRequestType.OFFLINE_CLINIC) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = "Lịch khám trực tiếp đã được chốt. Bệnh nhân sẽ thấy lịch này trong Lịch tái khám.",
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
             } else if (booking.requestType == BookingRequestType.ONLINE_CHAT && booking.status.canOpenConsultationRoom()) {
                 val buttonText = if (booking.status == BookingStatus.APPROVED || booking.status == BookingStatus.ACTIVE) {
                     "Vào phòng tư vấn riêng tư"
@@ -486,6 +588,18 @@ fun BookingRequestCard(
                 }
             }
         }
+    }
+}
+
+private fun doctorBookingBadgeUi(status: BookingStatus): DoctorBookingBadgeUi {
+    return when (status) {
+        BookingStatus.PENDING -> DoctorBookingBadgeUi("Chờ duyệt", Color(0xFFEAB308), Color(0xFFFEF9C3))
+        BookingStatus.APPROVED -> DoctorBookingBadgeUi("Đã xác nhận", Color(0xFF22C55E), Color(0xFFDCFCE7))
+        BookingStatus.REJECTED -> DoctorBookingBadgeUi("Đã từ chối", Color(0xFFEF4444), Color(0xFFFEE2E2))
+        BookingStatus.ACTIVE -> DoctorBookingBadgeUi("Đang tư vấn", Color(0xFF3B82F6), Color(0xFFDBEAFE))
+        BookingStatus.COMPLETED -> DoctorBookingBadgeUi("Hoàn tất", Color(0xFF64748B), Color(0xFFF1F5F9))
+        BookingStatus.CANCELLED -> DoctorBookingBadgeUi("Đã hủy", Color(0xFFEF4444), Color(0xFFFEE2E2))
+        BookingStatus.RESTRICTED -> DoctorBookingBadgeUi("Bị hạn chế", Color(0xFFF59E0B), Color(0xFFFEF3C7))
     }
 }
 

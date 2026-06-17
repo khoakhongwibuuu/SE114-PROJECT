@@ -1,74 +1,69 @@
 package com.example.carenest.feature.medical.presentation
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
 import com.example.carenest.core.data.network.requireSuccess
-import com.example.carenest.core.data.network.userMessage
-
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.medical.data.remote.CabinetMedicineResponse
 import com.example.carenest.feature.medical.data.remote.CheckInRequest
-import com.example.carenest.feature.medical.data.remote.CreateCabinetRequest
 import com.example.carenest.feature.medical.data.remote.CreateCabinetMedicineRequest
+import com.example.carenest.feature.medical.data.remote.CreateCabinetRequest
 import com.example.carenest.feature.medical.data.remote.CreateMedicationScheduleRequest
 import com.example.carenest.feature.medical.data.remote.MedicationLogResponse
 import com.example.carenest.feature.medical.data.remote.MedicationScheduleResponse
 import com.example.carenest.feature.medical.data.remote.MedicineApi
 import com.example.carenest.feature.medical.data.remote.UpdateCabinetMedicineRequest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-// ── Cabinet State ──────────────────────────────────────────────────────────
 sealed class CabinetState {
-    object Loading : CabinetState()
+    data object Loading : CabinetState()
     data class Success(
         val cabinetId: Long,
         val medicines: List<CabinetMedicineResponse>
     ) : CabinetState()
+
     data class Error(val message: String) : CabinetState()
 }
 
-// ── Daily Schedule State ───────────────────────────────────────────────────
 data class DoseSection(
-    val session: String,   // "MORNING" | "NOON" | "EVENING"
+    val session: String,
     val label: String,
     val items: List<MedicationLogResponse>
 )
 
 sealed class ScheduleState {
-    object Loading : ScheduleState()
+    data object Loading : ScheduleState()
     data class Success(
         val profileName: String,
         val sections: List<DoseSection>,
         val takenCount: Int,
         val totalCount: Int
     ) : ScheduleState()
+
     data class Error(val message: String) : ScheduleState()
-    object Empty : ScheduleState()
+    data object Empty : ScheduleState()
 }
 
-
-// ── MedicineViewModel ──────────────────────────────────────────────────────
 class MedicineViewModel(
     private val medicineApi: MedicineApi,
     private val secureSessionManager: SecureSessionManager
 ) : ViewModel() {
 
-    // ── Cabinet ─────────────────────────────────────────────────────────────
     private val _cabinetState = MutableStateFlow<CabinetState>(CabinetState.Loading)
     val cabinetState: StateFlow<CabinetState> = _cabinetState.asStateFlow()
 
@@ -78,11 +73,9 @@ class MedicineViewModel(
     private val _selectedFilter = MutableStateFlow("Tất cả")
     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
 
-    // ── Daily Schedule ───────────────────────────────────────────────────────
     private val _scheduleState = MutableStateFlow<ScheduleState>(ScheduleState.Loading)
     val scheduleState: StateFlow<ScheduleState> = _scheduleState.asStateFlow()
 
-    // ── Long-term schedules (for form data) ─────────────────────────────────
     private val _schedules = MutableStateFlow<List<MedicationScheduleResponse>>(emptyList())
     val schedules: StateFlow<List<MedicationScheduleResponse>> = _schedules.asStateFlow()
 
@@ -92,7 +85,6 @@ class MedicineViewModel(
     private val _actionMessage = MutableStateFlow<String?>(null)
     val actionMessage: StateFlow<String?> = _actionMessage.asStateFlow()
 
-    // ── Init ─────────────────────────────────────────────────────────────────
     init {
         viewModelScope.launch {
             secureSessionManager.familyIdFlow.collect { familyId ->
@@ -102,8 +94,6 @@ class MedicineViewModel(
             }
         }
     }
-
-    // ── Cabinet operations ───────────────────────────────────────────────────
 
     fun fetchCabinet(familyId: String? = null) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -126,7 +116,7 @@ class MedicineViewModel(
                     _cabinetState.value = CabinetState.Error("Không thể tải tủ thuốc")
                 }
             } catch (e: Exception) {
-                _cabinetState.value = CabinetState.Error(e.userMessage("Không thể tải tủ thuốc"))
+                _cabinetState.value = CabinetState.Error(e.localizedMessage ?: "Lỗi kết nối")
             }
         }
     }
@@ -150,7 +140,6 @@ class MedicineViewModel(
                     return@launch
                 }
                 var cabinetId = currentState.cabinetId
-                // If cabinet doesn't exist yet, create one
                 if (cabinetId == 0L) {
                     val fid = secureSessionManager.familyIdFlow.value ?: run {
                         _isActionLoading.value = false
@@ -196,7 +185,7 @@ class MedicineViewModel(
                     }
                 }
             } catch (e: Exception) {
-                val errorMsg = e.userMessage("Không thể thêm thuốc vào tủ")
+                val errorMsg = e.localizedMessage ?: "Lỗi kết nối mạng"
                 withContext(Dispatchers.Main) {
                     onError(errorMsg)
                 }
@@ -212,13 +201,14 @@ class MedicineViewModel(
             try {
                 val cabinetId = (cabinetState.value as? CabinetState.Success)?.cabinetId ?: return@launch
                 val response = medicineApi.updateCabinetMedicine(
-                    cabinetId, medicineId,
+                    cabinetId,
+                    medicineId,
                     UpdateCabinetMedicineRequest(quantity = newQuantity)
                 )
                 response.requireData("Không thể cập nhật số lượng thuốc")
                 fetchCabinet()
             } catch (e: Exception) {
-                _actionMessage.value = e.userMessage("Không thể cập nhật số lượng thuốc")
+                _actionMessage.value = e.localizedMessage ?: "Không thể cập nhật số lượng thuốc"
             } finally {
                 _isActionLoading.value = false
             }
@@ -233,21 +223,31 @@ class MedicineViewModel(
                 response.requireSuccess("Không thể xóa thuốc")
                 fetchCabinet()
             } catch (e: Exception) {
-                _actionMessage.value = e.userMessage("Không thể xóa thuốc")
+                _actionMessage.value = e.localizedMessage ?: "Không thể xóa thuốc"
             }
         }
     }
 
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
+    }
 
-    // ── Filter ────────────────────────────────────────────────────────────────
-    fun onSearchQueryChanged(query: String) { _searchQuery.value = query }
-    fun onFilterSelected(filter: String) { _selectedFilter.value = filter }
-    fun clearActionMessage() { _actionMessage.value = null }
+    fun onFilterSelected(filter: String) {
+        _selectedFilter.value = filter
+    }
+
+    fun clearActionMessage() {
+        _actionMessage.value = null
+    }
 
     fun filteredMedicines(): List<CabinetMedicineResponse> {
         val all = (cabinetState.value as? CabinetState.Success)?.medicines ?: return emptyList()
-        val q = _searchQuery.value
-        var result = if (q.isBlank()) all else all.filter { it.medicineName.contains(q, ignoreCase = true) }
+        val query = _searchQuery.value
+        var result = if (query.isBlank()) {
+            all
+        } else {
+            all.filter { it.medicineName.contains(query, ignoreCase = true) }
+        }
         result = when (_selectedFilter.value) {
             "Sắp hết hạn" -> result.filter { it.isExpiring }
             "Hết hàng" -> result.filter { it.quantity <= 0 }
@@ -256,8 +256,6 @@ class MedicineViewModel(
         }
         return result
     }
-
-    // ── Daily Schedule ────────────────────────────────────────────────────────
 
     fun fetchTodaySchedule(profileId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -281,7 +279,7 @@ class MedicineViewModel(
                     _scheduleState.value = ScheduleState.Error("Không thể tải lịch thuốc")
                 }
             } catch (e: Exception) {
-                _scheduleState.value = ScheduleState.Error(e.userMessage("Không thể tải lịch thuốc"))
+                _scheduleState.value = ScheduleState.Error(e.localizedMessage ?: "Lỗi kết nối")
             }
         }
     }
@@ -313,18 +311,10 @@ class MedicineViewModel(
         val raw = value.trim()
         if (raw.isEmpty()) return null
 
-        runCatching {
-            return Instant.parse(raw).atZone(ZoneId.systemDefault()).toLocalTime()
-        }
-        runCatching {
-            return OffsetDateTime.parse(raw).toLocalTime()
-        }
-        runCatching {
-            return LocalDateTime.parse(raw).toLocalTime()
-        }
-        runCatching {
-            return LocalTime.parse(raw, DateTimeFormatter.ofPattern("HH:mm"))
-        }
+        runCatching { return Instant.parse(raw).atZone(ZoneId.systemDefault()).toLocalTime() }
+        runCatching { return OffsetDateTime.parse(raw).toLocalTime() }
+        runCatching { return LocalDateTime.parse(raw).toLocalTime() }
+        runCatching { return LocalTime.parse(raw, DateTimeFormatter.ofPattern("HH:mm")) }
 
         val match = Regex("""\b([01]\d|2[0-3]):([0-5]\d)\b""").find(raw)
         return match?.value?.let { LocalTime.parse(it, DateTimeFormatter.ofPattern("HH:mm")) }
@@ -332,30 +322,33 @@ class MedicineViewModel(
 
     fun toggleDose(logId: Long, currentTaken: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            // Optimistic update
             val current = _scheduleState.value as? ScheduleState.Success ?: return@launch
             _scheduleState.value = current.copy(
                 sections = current.sections.map { section ->
-                    section.copy(items = section.items.map { item ->
-                        if (item.id == logId) item.copy(status = if (!currentTaken) "TAKEN" else "PENDING") else item
-                    })
+                    section.copy(
+                        items = section.items.map { item ->
+                            if (item.id == logId) {
+                                item.copy(status = if (!currentTaken) "TAKEN" else "PENDING")
+                            } else {
+                                item
+                            }
+                        }
+                    )
                 },
                 takenCount = if (!currentTaken) current.takenCount + 1 else current.takenCount - 1
             )
             try {
-                val response = medicineApi.checkInDose(logId, CheckInRequest(
-                    status = if (!currentTaken) "TAKEN" else "PENDING"
-                ))
+                val response = medicineApi.checkInDose(
+                    logId,
+                    CheckInRequest(status = if (!currentTaken) "TAKEN" else "PENDING")
+                )
                 response.requireSuccess("Không thể cập nhật trạng thái uống thuốc")
-            } catch (e: Exception) {
-                // Revert on failure — re-fetch with the correct active profile id
+            } catch (_: Exception) {
                 val profileId = secureSessionManager.getActiveProfileId() ?: return@launch
                 fetchTodaySchedule(profileId)
             }
         }
     }
-
-    // ── Long-term schedule (for AddMedicineScheduleScreen form data) ──────────
 
     fun fetchSchedules(profileId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -365,7 +358,7 @@ class MedicineViewModel(
                     _schedules.value = response.requireData("Không thể tải lịch thuốc").content
                 }
             } catch (e: Exception) {
-                _actionMessage.value = e.userMessage("Không thể tải danh sách lịch thuốc")
+                _actionMessage.value = e.localizedMessage ?: "Không thể tải danh sách lịch thuốc"
             }
         }
     }
@@ -415,7 +408,7 @@ class MedicineViewModel(
                     }
                 }
             } catch (e: Exception) {
-                val errorMsg = e.userMessage("Không thể tạo lịch thuốc")
+                val errorMsg = e.localizedMessage ?: "Lỗi kết nối"
                 withContext(Dispatchers.Main) {
                     onError(errorMsg)
                 }
@@ -438,7 +431,7 @@ class MedicineViewModel(
                     fetchSchedules(resolvedProfileId)
                 }
             } catch (e: Exception) {
-                _actionMessage.value = e.userMessage("Không thể xóa lịch thuốc")
+                _actionMessage.value = e.localizedMessage ?: "Không thể xóa lịch thuốc"
             }
         }
     }

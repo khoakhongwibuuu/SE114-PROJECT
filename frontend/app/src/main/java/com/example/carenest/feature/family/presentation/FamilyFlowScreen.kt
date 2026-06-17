@@ -1,4 +1,6 @@
 package com.example.carenest.feature.family.presentation
+
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,9 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,7 +20,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,7 +39,6 @@ import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.family.domain.model.FamilySummary
 import com.example.carenest.feature.medical.presentation.MedicineScreen
 import com.example.carenest.feature.medical.presentation.MedicineViewModel
-import kotlinx.coroutines.launch
 
 private enum class FamilyTab(val label: String) {
     MEMBERS("Thành viên"),
@@ -57,13 +54,12 @@ fun FamilyFlowScreen(
     onNavigateToAddMedicine: () -> Unit = {},
     onNavigateToMedicineSchedule: () -> Unit = {},
     onNavigateToAddSchedule: () -> Unit = {},
+    onNavigateToOcrScanner: () -> Unit = {},
     onOpenFamilyChat: (FamilySummary) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
     val familyViewModel: FamilyViewModel = viewModel(
         factory = FamilyViewModelFactory(application.familyRepository),
     )
@@ -79,11 +75,9 @@ fun FamilyFlowScreen(
     var currentScreen by rememberSaveable { mutableStateOf("picker") }
     var managementMode by rememberSaveable { mutableStateOf<String?>(null) }
 
-    // Back on MEMBERS non-picker sub-screen: return to picker
     BackHandler(enabled = activeTab == FamilyTab.MEMBERS && currentScreen != "picker") {
         currentScreen = "picker"
     }
-    // Back on MEDICINE or CHAT tab: return to MEMBERS instead of propagating to NavDisplay
     BackHandler(enabled = activeTab == FamilyTab.MEDICINE || activeTab == FamilyTab.CHAT) {
         activeTabName = FamilyTab.MEMBERS.name
     }
@@ -100,11 +94,11 @@ fun FamilyFlowScreen(
     fun openTab(tab: FamilyTab) {
         val requiresFamily = tab == FamilyTab.MEDICINE || tab == FamilyTab.CHAT
         if (requiresFamily && familyUiState.myFamilies.isEmpty()) {
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    "Hãy tạo hoặc tham gia gia đình trước khi dùng tính năng này."
-                )
-            }
+            Toast.makeText(
+                context,
+                "Hãy tạo hoặc tham gia gia đình trước khi dùng tính năng này.",
+                Toast.LENGTH_SHORT,
+            ).show()
             activeTabName = FamilyTab.MEMBERS.name
             currentScreen = "picker"
             return
@@ -177,6 +171,7 @@ fun FamilyFlowScreen(
                     onAddMedicineClick = onNavigateToAddMedicine,
                     onScheduleClick = onNavigateToMedicineSchedule,
                     onAddScheduleClick = onNavigateToAddSchedule,
+                    onOcrClick = onNavigateToOcrScanner,
                 )
 
                 FamilyTab.CHAT -> FamilyChatDirectoryPane(
@@ -190,13 +185,5 @@ fun FamilyFlowScreen(
                 )
             }
         }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .navigationBarsPadding()
-                .padding(16.dp)
-        )
     }
 }

@@ -1,6 +1,7 @@
 package com.example.carenest.feature.medical.presentation
 
 import android.app.DatePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,18 +14,19 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.DocumentScanner
@@ -34,19 +36,16 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,16 +59,14 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import kotlinx.coroutines.launch
 
 @Composable
 fun AddMedicineScreen(
     viewModel: MedicineViewModel,
     onBack: () -> Unit,
+    onOpenOcrScanner: () -> Unit = {},
 ) {
     val isActionLoading by viewModel.isActionLoading.collectAsState()
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
     var name by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("viên") }
@@ -77,10 +74,10 @@ fun AddMedicineScreen(
     var selectedExpiryDate by remember { mutableStateOf<LocalDate?>(null) }
     val quantityValue = quantity.toIntOrNull()
     val canSubmit = name.isNotBlank() &&
-            quantityValue != null &&
-            quantityValue >= 1 &&
-            selectedExpiryDate != null &&
-            !isActionLoading
+        quantityValue != null &&
+        quantityValue >= 1 &&
+        selectedExpiryDate != null &&
+        !isActionLoading
     val units = listOf("viên", "gói", "chai", "tuýp", "hộp")
     val context = LocalContext.current
     val dateFormatter = remember { DateTimeFormatter.ISO_LOCAL_DATE }
@@ -98,22 +95,18 @@ fun AddMedicineScreen(
             },
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
+            calendar.get(Calendar.DAY_OF_MONTH),
         ).apply {
             datePicker.minDate = System.currentTimeMillis()
         }
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .windowInsetsPadding(WindowInsets.ime),
+            .statusBarsPadding()
+            .windowInsetsPadding(WindowInsets.ime),
     ) {
         Row(
             modifier = Modifier
@@ -144,6 +137,7 @@ fun AddMedicineScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0xFFF1F5F9))
+                    .clickable(onClick = onOpenOcrScanner)
                     .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -165,24 +159,16 @@ fun AddMedicineScreen(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "OCR đang tạm tắt trong MVP, sẽ hoàn thiện ở phase cuối",
+                        text = "OCR đang tạm tắt trong MVP. Chạm để xem trạng thái tính năng.",
                         color = Color(0xFF64748B),
                         fontSize = 12.sp,
                     )
                 }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(Color(0xFFE2E8F0))
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                ) {
-                    Text(
-                        text = "Phase cuối",
-                        color = Color(0xFF475569),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "Mở thông tin OCR",
+                    tint = Color(0xFF94A3B8),
+                )
             }
 
             Row(
@@ -287,14 +273,12 @@ fun AddMedicineScreen(
                         unit = unit,
                         expiryDate = expiryDate,
                         onSuccess = {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Đã thêm thuốc thành công")
-                                onBack()
-                            }
+                            Toast.makeText(context, "Đã thêm thuốc thành công", Toast.LENGTH_SHORT).show()
+                            onBack()
                         },
                         onError = { error ->
-                            scope.launch { snackbarHostState.showSnackbar(error) }
-                        }
+                            Toast.makeText(context, "Lỗi: $error", Toast.LENGTH_LONG).show()
+                        },
                     )
                 },
                 enabled = canSubmit,
@@ -316,15 +300,5 @@ fun AddMedicineScreen(
                 }
             }
         }
-
-        }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(16.dp)
-        )
     }
 }

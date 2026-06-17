@@ -53,9 +53,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-import com.example.carenest.feature.admin.presentation.components.AdminTransientBanner
 import com.example.carenest.feature.community.data.repository.CommunityRepository
 import com.example.carenest.feature.community.domain.model.GroupCreationRequest
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,7 +87,7 @@ class AdminGroupRequestsViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = e.userMessage("Không thể tải danh sách yêu cầu"),
+                    error = e.localizedMessage ?: "Không thể tải danh sách yêu cầu",
                 )
             }
         }
@@ -109,7 +107,7 @@ class AdminGroupRequestsViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     actingRequestId = null,
-                    error = e.userMessage("Không thể duyệt yêu cầu"),
+                    error = e.localizedMessage ?: "Không thể duyệt yêu cầu",
                 )
             }
         }
@@ -129,7 +127,7 @@ class AdminGroupRequestsViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     actingRequestId = null,
-                    error = e.userMessage("Không thể từ chối yêu cầu"),
+                    error = e.localizedMessage ?: "Không thể từ chối yêu cầu",
                 )
             }
         }
@@ -203,20 +201,20 @@ fun AdminGroupRequestsScreen(
                 .padding(padding),
         ) {
             state.message?.let { message ->
-                AdminTransientBanner(
-                    message = message,
-                    isError = false,
+                BannerCard(
+                    text = message,
+                    containerColor = Color(0xFFDCFCE7),
+                    textColor = Color(0xFF166534),
                     onDismiss = viewModel::clearMessage,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
 
             state.error?.let { error ->
-                AdminTransientBanner(
-                    message = error,
-                    isError = true,
+                BannerCard(
+                    text = error,
+                    containerColor = Color(0xFFFEE2E2),
+                    textColor = Color(0xFFB91C1C),
                     onDismiss = viewModel::clearError,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
 
@@ -310,6 +308,39 @@ fun AdminGroupRequestsScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun BannerCard(
+    text: String,
+    containerColor: Color,
+    textColor: Color,
+    onDismiss: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = text,
+                color = textColor,
+                modifier = Modifier.weight(1f),
+                lineHeight = 20.sp,
+            )
+            TextButton(onClick = onDismiss) {
+                Text("Đóng", color = textColor)
+            }
+        }
     }
 }
 

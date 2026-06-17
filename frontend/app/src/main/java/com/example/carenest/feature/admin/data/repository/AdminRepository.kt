@@ -6,6 +6,7 @@ import com.example.carenest.core.data.network.requireSuccess
 import com.example.carenest.feature.admin.data.AdminApi
 import com.example.carenest.feature.admin.data.AdminDashboardStatsResponse
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
+import com.example.carenest.feature.admin.data.AdminUserAuditLogItem
 import com.example.carenest.feature.admin.data.AdminUserRoleUpdateRequest
 import com.example.carenest.feature.admin.data.AdminUserRoleUpdateResponse
 import com.example.carenest.feature.admin.data.AdminUserStatusUpdateRequest
@@ -13,11 +14,14 @@ import com.example.carenest.feature.admin.data.AdminUserStatusUpdateResponse
 import com.example.carenest.feature.admin.data.AdminUserSummaryResponse
 
 class AdminRepository(
-    private val api: AdminApi,
+    private val api: AdminApi
 ) {
     suspend fun getDashboardStats(): AdminDashboardStatsResponse {
         val response = api.getDashboardStats()
-        return response.requireData("Không thể tải thống kê quản trị", "Không nhận được dữ liệu thống kê")
+        return response.requireData(
+            fallback = "Không thể tải thống kê quản trị",
+            missingDataMessage = "Không nhận được dữ liệu thống kê"
+        )
     }
 
     suspend fun getUsers(page: Int, size: Int, search: String?): List<AdminUserSummaryResponse> {
@@ -25,44 +29,50 @@ class AdminRepository(
         return response.requireData("Không thể tải danh sách người dùng").content
     }
 
-    suspend fun updateUserStatus(userId: Long, status: String): AdminUserStatusUpdateResponse {
-        val response = api.updateUserStatus(
-            userId = userId,
-            request = AdminUserStatusUpdateRequest(status = status),
-        )
-        return response.requireData("Không thể cập nhật trạng thái người dùng", "Không nhận được trạng thái mới")
+    suspend fun getUserAuditLogs(): List<AdminUserAuditLogItem> {
+        return api.getUserAuditLogs().requireList("Không thể tải nhật ký override người dùng")
     }
 
-    suspend fun updateUserRole(userId: Long, role: String): AdminUserRoleUpdateResponse {
+    suspend fun updateUserStatus(userId: Long, status: String, reason: String): AdminUserStatusUpdateResponse {
+        val response = api.updateUserStatus(
+            userId = userId,
+            request = AdminUserStatusUpdateRequest(status = status, reason = reason)
+        )
+        return response.requireData(
+            fallback = "Không thể cập nhật trạng thái người dùng",
+            missingDataMessage = "Không nhận được trạng thái mới"
+        )
+    }
+
+    suspend fun updateUserRole(userId: Long, role: String, reason: String): AdminUserRoleUpdateResponse {
         val response = api.updateUserRole(
             userId = userId,
-            request = AdminUserRoleUpdateRequest(role = role),
+            request = AdminUserRoleUpdateRequest(role = role, reason = reason)
         )
-        return response.requireData("Không thể cập nhật quyền người dùng", "Không nhận được quyền mới")
+        return response.requireData(
+            fallback = "Không thể cập nhật quyền người dùng",
+            missingDataMessage = "Không nhận được quyền mới"
+        )
     }
 
     suspend fun getPendingReports(page: Int, size: Int): List<AdminReportSummaryResponse> {
-        val response = api.getReports(status = "PENDING", page = page, size = size)
-        return response.requireList("Không thể tải danh sách báo cáo")
+        return api.getReports(status = "PENDING", page = page, size = size)
+            .requireList("Không thể tải danh sách báo cáo")
     }
 
     suspend fun deletePost(postId: Long) {
-        val response = api.deletePost(postId)
-        response.requireSuccess("Không thể xóa bài viết vi phạm")
+        api.deletePost(postId).requireSuccess("Không thể xóa bài viết vi phạm")
     }
 
     suspend fun deleteComment(commentId: Long) {
-        val response = api.deleteComment(commentId)
-        response.requireSuccess("Không thể xóa bình luận vi phạm")
+        api.deleteComment(commentId).requireSuccess("Không thể xóa bình luận vi phạm")
     }
 
     suspend fun deleteMessage(messageId: Long) {
-        val response = api.deleteMessage(messageId)
-        response.requireSuccess("Không thể xóa tin nhắn vi phạm")
+        api.deleteMessage(messageId).requireSuccess("Không thể xóa tin nhắn vi phạm")
     }
 
     suspend fun dismissReport(reportId: Long) {
-        val response = api.dismissReport(reportId)
-        response.requireSuccess("Không thể bỏ qua báo cáo")
+        api.dismissReport(reportId).requireSuccess("Không thể bỏ qua báo cáo")
     }
 }

@@ -5,11 +5,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.ekyc.data.repository.EkycRepository
 import com.example.carenest.feature.ekyc.domain.model.DoctorVerificationResponse
 import com.example.carenest.feature.ekyc.domain.model.VerificationStatus
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +40,6 @@ data class EkycUiState(
 
 class EkycViewModel(
     private val repository: EkycRepository,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EkycUiState())
     val uiState: StateFlow<EkycUiState> = _uiState.asStateFlow()
@@ -55,7 +52,7 @@ class EkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, message = null) }
             try {
-                val verification = withContext(ioDispatcher) {
+                val verification = withContext(Dispatchers.IO) {
                     repository.getMyVerification()
                 }
                 _uiState.update {
@@ -70,7 +67,7 @@ class EkycViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.userMessage("Không thể tải trạng thái hồ sơ"))
+                    it.copy(isLoading = false, error = e.localizedMessage ?: "Không thể tải trạng thái hồ sơ")
                 }
             }
         }
@@ -109,7 +106,7 @@ class EkycViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, error = null, message = "Đang tải ảnh chứng chỉ...") }
             try {
-                val documentUrl = withContext(ioDispatcher) {
+                val documentUrl = withContext(Dispatchers.IO) {
                     snapshot.selectedCertificateUri?.let { uri ->
                         repository.uploadCertificate(context.applicationContext, uri)
                     } ?: snapshot.uploadedDocumentUrl.orEmpty()
@@ -117,7 +114,7 @@ class EkycViewModel(
 
                 _uiState.update { it.copy(uploadedDocumentUrl = documentUrl, message = "Đang gửi hồ sơ xác thực...") }
 
-                val verification = withContext(ioDispatcher) {
+                val verification = withContext(Dispatchers.IO) {
                     repository.submitVerification(
                         certificationNumber = snapshot.certificationNumber.trim(),
                         specialty = snapshot.specialty.trim(),
@@ -140,7 +137,7 @@ class EkycViewModel(
                     it.copy(
                         isSubmitting = false,
                         message = null,
-                        error = e.userMessage("Không thể gửi hồ sơ xác thực bác sĩ"),
+                        error = e.localizedMessage ?: "Không thể gửi hồ sơ xác thực bác sĩ",
                     )
                 }
             }

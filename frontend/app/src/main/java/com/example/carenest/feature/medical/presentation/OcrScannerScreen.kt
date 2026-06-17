@@ -36,7 +36,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 
 @Suppress("UNUSED_PARAMETER")
@@ -120,7 +119,7 @@ fun OcrScannerScreen(
                 Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFFE65100))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Tính năng OCR sẽ được hoàn thiện ở phase cuối. MVP hiện không chụp ảnh, chọn ảnh hoặc lưu dữ liệu tự động.",
+                    text = "Tính năng OCR sẽ được hoàn thiện ở phase cuối. MVP hiện chưa chụp ảnh, chọn ảnh hoặc lưu dữ liệu tự động.",
                     color = Color(0xFFE65100),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
@@ -149,7 +148,7 @@ fun OcrScannerScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Không có dữ liệu mẫu nào được tạo hoặc lưu vào hồ sơ thật từ màn này.",
+                text = "Màn này không tạo dữ liệu mẫu và cũng không ghi gì vào hồ sơ thuốc thật.",
                 color = Color(0xFF64748B),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,

@@ -26,6 +26,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -64,7 +65,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun FamilyPickerScreen(
     viewModel: FamilyViewModel,
-    onNavigateToManagement: (mode: String?) -> Unit
+    onNavigateToManagement: (mode: String?) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val sheetState = rememberModalBottomSheetState()
@@ -84,12 +85,12 @@ fun FamilyPickerScreen(
                     .background(CardBackground)
                     .padding(horizontal = AppSpacing.xl, vertical = AppSpacing.lg),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "Gia đình của tôi",
                     style = CareNestTextStyles.titleXl,
-                    color = TextPrimary
+                    color = TextPrimary,
                 )
                 Box(
                     modifier = Modifier
@@ -97,24 +98,32 @@ fun FamilyPickerScreen(
                         .clip(CircleShape)
                         .background(PrimaryBlue)
                         .clickable { showBottomSheet = true },
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CareNestIcon(name = "add", contentDescription = "Thêm", tint = Color.White)
                 }
             }
-        }
+        },
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(PageBackground)
-                .padding(padding)
+                .padding(padding),
         ) {
             when {
                 uiState.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = PrimaryBlue
+                        color = PrimaryBlue,
+                    )
+                }
+
+                !uiState.error.isNullOrBlank() && uiState.myFamilies.isEmpty() -> {
+                    FamilyPickerErrorState(
+                        message = uiState.error.orEmpty(),
+                        onRetry = viewModel::loadFamilies,
+                        onOpenActions = { showBottomSheet = true },
                     )
                 }
 
@@ -125,14 +134,23 @@ fun FamilyPickerScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = AppSpacing.lg, vertical = AppSpacing.xl)
+                        contentPadding = PaddingValues(horizontal = AppSpacing.lg, vertical = AppSpacing.xl),
                     ) {
+                        if (!uiState.error.isNullOrBlank()) {
+                            item {
+                                InlineFamilyErrorCard(
+                                    message = uiState.error.orEmpty(),
+                                    onRetry = viewModel::loadFamilies,
+                                )
+                            }
+                        }
+
                         item {
                             Text(
                                 text = "ĐANG THAM GIA",
                                 style = CareNestTextStyles.overline,
                                 color = Color(0xFF94A3B8),
-                                modifier = Modifier.padding(bottom = AppSpacing.md)
+                                modifier = Modifier.padding(bottom = AppSpacing.md),
                             )
                         }
 
@@ -143,7 +161,7 @@ fun FamilyPickerScreen(
                                 onPress = {
                                     viewModel.selectFamily(family.id)
                                     onNavigateToManagement(null)
-                                }
+                                },
                             )
                         }
 
@@ -157,20 +175,20 @@ fun FamilyPickerScreen(
                                     .background(Color.Transparent)
                                     .border(1.5.dp, Color(0xFFE2E8F0), RoundedCornerShape(AppRadius.xl))
                                     .padding(vertical = AppSpacing.lg),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     CareNestIcon(
                                         name = "add_circle",
                                         contentDescription = null,
                                         tint = PrimaryBlue,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(20.dp),
                                     )
                                     Spacer(modifier = Modifier.width(AppSpacing.sm))
                                     Text(
                                         text = "Thêm gia đình",
                                         style = CareNestTextStyles.labelMd,
-                                        color = PrimaryBlue
+                                        color = PrimaryBlue,
                                     )
                                 }
                             }
@@ -185,19 +203,19 @@ fun FamilyPickerScreen(
                 onDismissRequest = { showBottomSheet = false },
                 sheetState = sheetState,
                 containerColor = CardBackground,
-                dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFFE2E8F0)) }
+                dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFFE2E8F0)) },
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = AppSpacing.x2, vertical = AppSpacing.lg)
-                        .padding(bottom = AppSpacing.x2)
+                        .padding(bottom = AppSpacing.x2),
                 ) {
                     Text(
                         text = "Thêm gia đình",
                         style = CareNestTextStyles.titleLg,
                         color = TextPrimary,
-                        modifier = Modifier.padding(bottom = AppSpacing.lg)
+                        modifier = Modifier.padding(bottom = AppSpacing.lg),
                     )
 
                     BottomSheetOption(
@@ -205,14 +223,14 @@ fun FamilyPickerScreen(
                         iconBgColor = PrimaryFixed,
                         iconColor = PrimaryBlue,
                         title = "Tạo gia đình mới",
-                        subtitle = "Bạn sẽ là Chủ hộ của gia đình này",
+                        subtitle = "Bạn sẽ là chủ hộ của gia đình này",
                         onClick = {
                             scope.launch {
                                 sheetState.hide()
                                 showBottomSheet = false
                                 onNavigateToManagement("create")
                             }
-                        }
+                        },
                     )
 
                     Spacer(modifier = Modifier.height(AppSpacing.sm))
@@ -222,16 +240,114 @@ fun FamilyPickerScreen(
                         iconBgColor = Color(0xFFF0FDF4),
                         iconColor = Color(0xFF16A34A),
                         title = "Tham gia bằng mã",
-                        subtitle = "Nhập code hoặc quét QR từ Chủ hộ",
+                        subtitle = "Nhập code hoặc quét QR từ chủ hộ",
                         onClick = {
                             scope.launch {
                                 sheetState.hide()
                                 showBottomSheet = false
                                 onNavigateToManagement("join")
                             }
-                        }
+                        },
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FamilyPickerErrorState(
+    message: String,
+    onRetry: () -> Unit,
+    onOpenActions: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = AppSpacing.x3),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(96.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFFFF1F2)),
+            contentAlignment = Alignment.Center,
+        ) {
+            CareNestIcon(
+                name = "notifications_active",
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = Color(0xFFDC2626),
+            )
+        }
+        Spacer(modifier = Modifier.height(AppSpacing.xl))
+        Text(
+            text = "Không thể tải danh sách gia đình",
+            style = CareNestTextStyles.titleLg,
+            color = TextPrimary,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.sm))
+        Text(
+            text = message,
+            style = CareNestTextStyles.bodyMd,
+            color = TextSecondary,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(AppSpacing.x2))
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+            shape = RoundedCornerShape(AppRadius.xl),
+            contentPadding = PaddingValues(horizontal = 28.dp, vertical = 14.dp),
+        ) {
+            Text("Thử lại", style = CareNestTextStyles.labelLg, color = Color.White)
+        }
+        Spacer(modifier = Modifier.height(AppSpacing.sm))
+        OutlinedButton(
+            onClick = onOpenActions,
+            shape = RoundedCornerShape(AppRadius.xl),
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        ) {
+            Text("Tạo hoặc tham gia gia đình", style = CareNestTextStyles.labelLg, color = PrimaryBlue)
+        }
+    }
+}
+
+@Composable
+private fun InlineFamilyErrorCard(
+    message: String,
+    onRetry: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = AppSpacing.md),
+        shape = RoundedCornerShape(AppRadius.lg),
+        color = Color(0xFFFFF7F7),
+    ) {
+        Column(
+            modifier = Modifier.padding(AppSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+        ) {
+            Text(
+                text = "Lần tải gần nhất chưa thành công.",
+                style = CareNestTextStyles.labelLg,
+                color = Color(0xFFB91C1C),
+            )
+            Text(
+                text = message,
+                style = CareNestTextStyles.bodySm,
+                color = Color(0xFF7F1D1D),
+            )
+            OutlinedButton(
+                onClick = onRetry,
+                shape = RoundedCornerShape(AppRadius.full),
+                border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+            ) {
+                Text("Tải lại danh sách", color = Color(0xFFB91C1C))
             }
         }
     }
@@ -244,41 +360,41 @@ fun FamilyPickerEmptyState(onStart: () -> Unit) {
             .fillMaxSize()
             .padding(horizontal = AppSpacing.x3),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Box(
             modifier = Modifier
                 .size(96.dp)
                 .clip(CircleShape)
                 .background(Color(0xFFF1F5F9)),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             CareNestIcon(
                 name = "home",
                 contentDescription = null,
                 modifier = Modifier.size(52.dp),
-                tint = Color(0xFF94A3B8)
+                tint = Color(0xFF94A3B8),
             )
         }
         Spacer(modifier = Modifier.height(AppSpacing.xl))
         Text(
             text = "Chưa có gia đình nào",
             style = CareNestTextStyles.titleLg,
-            color = TextPrimary
+            color = TextPrimary,
         )
         Spacer(modifier = Modifier.height(AppSpacing.sm))
         Text(
-            text = "Tạo gia đình mới hoặc tham gia bằng mã mời từ chủ hộ nhé!",
+            text = "Tạo gia đình mới hoặc tham gia bằng mã mời từ chủ hộ.",
             style = CareNestTextStyles.bodyMd,
             color = TextSecondary,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(AppSpacing.x2))
         Button(
             onClick = onStart,
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
             shape = RoundedCornerShape(AppRadius.xl),
-            contentPadding = PaddingValues(horizontal = 28.dp, vertical = 14.dp)
+            contentPadding = PaddingValues(horizontal = 28.dp, vertical = 14.dp),
         ) {
             Text("Bắt đầu ngay", style = CareNestTextStyles.labelLg, color = Color.White)
         }
@@ -300,18 +416,18 @@ fun FamilyCard(item: FamilySummary, isActive: Boolean, onPress: () -> Unit) {
         shape = RoundedCornerShape(20.dp),
         color = bgColor,
         border = BorderStroke(1.5.dp, borderColor),
-        shadowElevation = if (isActive) 0.dp else AppElevation.sm
+        shadowElevation = if (isActive) 0.dp else AppElevation.sm,
     ) {
         Row(
             modifier = Modifier.padding(AppSpacing.lg),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
                     .size(52.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .background(iconBgColor),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CareNestIcon(name = "home", contentDescription = null, tint = iconColor, modifier = Modifier.size(28.dp))
             }
@@ -320,13 +436,13 @@ fun FamilyCard(item: FamilySummary, isActive: Boolean, onPress: () -> Unit) {
                 Text(
                     text = item.name,
                     style = CareNestTextStyles.labelLg.copy(fontSize = 16.sp),
-                    color = if (isActive) PrimaryBlue else TextPrimary
+                    color = if (isActive) PrimaryBlue else TextPrimary,
                 )
                 Spacer(modifier = Modifier.height(AppSpacing.xs))
                 Text(
                     text = "${item.memberCount} thành viên • ${item.ownerName}",
                     style = CareNestTextStyles.bodySm,
-                    color = TextSecondary
+                    color = TextSecondary,
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
@@ -359,12 +475,12 @@ fun RoleBadge(role: String) {
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(if (isOwner) PrimaryFixed else SurfaceHigh)
-            .padding(horizontal = AppSpacing.sm, vertical = 3.dp)
+            .padding(horizontal = AppSpacing.sm, vertical = 3.dp),
     ) {
         Text(
             text = label,
             style = CareNestTextStyles.labelSm.copy(fontSize = 11.sp),
-            color = if (isOwner) PrimaryBlue else TextSecondary
+            color = if (isOwner) PrimaryBlue else TextSecondary,
         )
     }
 }
@@ -376,21 +492,21 @@ fun BottomSheetOption(
     iconColor: Color,
     title: String,
     subtitle: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
                 .size(52.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(iconBgColor),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             CareNestIcon(name = iconName, contentDescription = null, tint = iconColor, modifier = Modifier.size(24.dp))
         }

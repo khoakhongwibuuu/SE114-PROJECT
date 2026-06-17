@@ -3,13 +3,11 @@ package com.example.carenest.feature.appointment.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
-import com.example.carenest.core.data.network.userMessage
-import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.appointment.data.remote.AppointmentApi
 import com.example.carenest.feature.appointment.data.remote.CreateAppointmentRequest
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,10 +17,16 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
+private const val INVALID_PROFILE_MESSAGE = "Chưa chọn hồ sơ sức khỏe hợp lệ"
+private const val LOAD_APPOINTMENTS_ERROR = "Không thể tải lịch hẹn"
+private const val CREATE_APPOINTMENT_ERROR = "Không thể tạo lịch hẹn"
+private const val CANCEL_APPOINTMENT_ERROR = "Không thể hủy lịch hẹn"
+private const val DEFAULT_APPOINTMENT_TITLE = "Khám bệnh"
+
 sealed class AppointmentState {
-    object Loading : AppointmentState()
+    data object Loading : AppointmentState()
     data class Error(val message: String) : AppointmentState()
-    object Empty : AppointmentState()
+    data object Empty : AppointmentState()
     data class Success(
         val upcomingAppointments: List<AppointmentItem.Upcoming>,
         val appointmentHistory: List<AppointmentItem.History>
@@ -53,13 +57,14 @@ sealed class AppointmentItem {
         override val doctorName: String?,
         override val appointmentDate: String,
         override val status: String,
+        val location: String?,
         val displayDate: String
     ) : AppointmentItem()
 }
 
 class AppointmentViewModel(
     private val api: AppointmentApi,
-    private val sessionManager: SecureSessionManager
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     private val _appointmentState = MutableStateFlow<AppointmentState>(AppointmentState.Loading)
@@ -69,20 +74,15 @@ class AppointmentViewModel(
     val isActionLoading: StateFlow<Boolean> = _isActionLoading.asStateFlow()
 
     fun fetchAppointments(profileId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             if (profileId <= 0L) {
-                _appointmentState.value = AppointmentState.Error("Chưa chọn hồ sơ sức khỏe hợp lệ")
+                _appointmentState.value = AppointmentState.Error(INVALID_PROFILE_MESSAGE)
                 return@launch
             }
 
             _appointmentState.value = AppointmentState.Loading
             try {
-                val response = api.getAppointments(profileId)
-                val responses = if (response.isSuccessful) {
-                    response.requireList("Không thể tải lịch hẹn")
-                } else {
-                    throw IllegalStateException(response.errorMessage("Không thể tải lịch hẹn"))
-                }
+                val responses = api.getAppointments(profileId).requireList(LOAD_APPOINTMENTS_ERROR)
                 if (responses.isEmpty()) {
                     _appointmentState.value = AppointmentState.Empty
                     return@launch
@@ -95,7 +95,7 @@ class AppointmentViewModel(
                 for (res in responses) {
                     val date = parseAppointmentDate(res.appointmentDate)
                     val status = res.status.uppercase()
-                    val title = res.hospitalName?.takeIf { it.isNotBlank() } ?: "Khám bệnh"
+                    val title = res.hospitalName?.takeIf { it.isNotBlank() } ?: DEFAULT_APPOINTMENT_TITLE
 
                     if (date != null && date.isAfter(now) && status == "SCHEDULED") {
                         upcoming.add(
@@ -118,6 +118,7 @@ class AppointmentViewModel(
                                 doctorName = res.doctorName,
                                 appointmentDate = res.appointmentDate,
                                 status = status,
+                                location = res.address,
                                 displayDate = "${date.dayOfMonth.toString().padStart(2, '0')}/${date.monthValue.toString().padStart(2, '0')}/${date.year}"
                             )
                         )
@@ -136,7 +137,7 @@ class AppointmentViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _appointmentState.value = AppointmentState.Error(e.userMessage("Không thể tải lịch hẹn"))
+                _appointmentState.value = AppointmentState.Error(e.message ?: LOAD_APPOINTMENTS_ERROR)
             }
         }
     }
@@ -151,15 +152,15 @@ class AppointmentViewModel(
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             if (profileId <= 0L) {
-                onError("Chưa chọn hồ sơ sức khỏe hợp lệ")
+                onError(INVALID_PROFILE_MESSAGE)
                 return@launch
             }
 
             _isActionLoading.value = true
             try {
-                val response = api.createAppointment(
+                api.createAppointment(
                     CreateAppointmentRequest(
                         healthProfileId = profileId,
                         hospitalName = hospitalName,
@@ -168,12 +169,11 @@ class AppointmentViewModel(
                         address = address,
                         notes = notes
                     )
-                )
-                response.requireData("Không thể tạo lịch hẹn")
+                ).requireData(CREATE_APPOINTMENT_ERROR)
                 onSuccess()
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                onError(e.userMessage("Không thể tạo lịch hẹn"))
+                onError(e.message ?: CREATE_APPOINTMENT_ERROR)
             } finally {
                 _isActionLoading.value = false
             }
@@ -181,24 +181,17 @@ class AppointmentViewModel(
     }
 
     fun cancelAppointment(appointmentId: Long, profileId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             if (profileId <= 0L) {
-                _appointmentState.value = AppointmentState.Error("Chưa chọn hồ sơ sức khỏe hợp lệ")
+                _appointmentState.value = AppointmentState.Error(INVALID_PROFILE_MESSAGE)
                 return@launch
             }
 
             try {
-                val response = api.cancelAppointment(appointmentId)
-                response.requireData("Không thể hủy lịch hẹn")
-                if (!response.isSuccessful) {
-                    _appointmentState.value = AppointmentState.Error(
-                        response.errorMessage("Không thể hủy lịch hẹn")
-                    )
-                    return@launch
-                }
+                api.cancelAppointment(appointmentId).requireData(CANCEL_APPOINTMENT_ERROR)
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                _appointmentState.value = AppointmentState.Error(e.userMessage("Không thể hủy lịch hẹn"))
+                _appointmentState.value = AppointmentState.Error(e.message ?: CANCEL_APPOINTMENT_ERROR)
             }
         }
     }
@@ -223,13 +216,12 @@ class AppointmentViewModel(
 }
 
 class AppointmentViewModelFactory(
-    private val api: AppointmentApi,
-    private val sessionManager: SecureSessionManager
+    private val api: AppointmentApi
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AppointmentViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return AppointmentViewModel(api, sessionManager) as T
+            return AppointmentViewModel(api) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -6,10 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireSuccess
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.notifications.data.remote.NotificationApi
 import com.example.carenest.feature.notifications.domain.model.NotificationItem
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,27 +28,21 @@ data class NotificationsUiState(
     val notifications: List<NotificationItem> = emptyList(),
     val unreadCount: Int = 0,
     val groupedNotifications: Map<String, List<NotificationItem>> = emptyMap(),
-    val error: String? = null,
-    val message: String? = null,
+    val error: String? = null
 )
 
 class NotificationsCenterViewModel(
-    private val notificationApi: NotificationApi,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val notificationApi: NotificationApi
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationsUiState())
     val uiState: StateFlow<NotificationsUiState> = _uiState.asStateFlow()
 
-    fun clearTransientMessage() {
-        _uiState.update { it.copy(error = null, message = null) }
-    }
-
     fun loadNotifications(_profileId: Long?) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, message = null) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val (listResponse, countResponse) = withContext(ioDispatcher) {
+                val (listResponse, countResponse) = withContext(Dispatchers.IO) {
                     notificationApi.getNotifications() to notificationApi.getUnreadCount()
                 }
                 if (listResponse.isSuccessful) {
@@ -64,7 +56,7 @@ class NotificationsCenterViewModel(
                                 .coerceAtMost(Int.MAX_VALUE.toLong())
                                 .toInt()
                         }.getOrElse { error ->
-                            countError = error.userMessage("Không thể tải số thông báo chưa đọc")
+                            countError = error.message ?: "Không thể tải số thông báo chưa đọc"
                             sortedList.count { notification -> !notification.isRead }
                         }
                     } else {
@@ -77,15 +69,14 @@ class NotificationsCenterViewModel(
                             notifications = sortedList,
                             unreadCount = unreadCount,
                             groupedNotifications = groupNotifications(sortedList),
-                            error = countError,
-                            message = null,
+                            error = countError
                         )
                     }
                 } else {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = listResponse.errorMessage("Không thể tải danh sách thông báo"),
+                            error = listResponse.errorMessage("Không thể tải danh sách thông báo")
                         )
                     }
                 }
@@ -93,7 +84,7 @@ class NotificationsCenterViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.userMessage("Lỗi kết nối mạng"),
+                        error = e.localizedMessage ?: "Lỗi kết nối mạng"
                     )
                 }
             }
@@ -107,14 +98,14 @@ class NotificationsCenterViewModel(
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isActionLoading = true, error = null, message = null) }
+            _uiState.update { it.copy(isActionLoading = true, error = null) }
             try {
-                val response = withContext(ioDispatcher) {
+                val response = withContext(Dispatchers.IO) {
                     notificationApi.markAsRead(notificationId)
                 }
                 if (response.isSuccessful) {
                     response.requireData("Không thể đánh dấu thông báo đã đọc")
-                    val countResponse = withContext(ioDispatcher) {
+                    val countResponse = withContext(Dispatchers.IO) {
                         notificationApi.getUnreadCount()
                     }
                     val fallbackCount = (_uiState.value.unreadCount - 1).coerceAtLeast(0)
@@ -129,14 +120,13 @@ class NotificationsCenterViewModel(
                             }.getOrDefault(fallbackCount)
                         } else {
                             fallbackCount
-                        },
-                        message = "Đã đánh dấu thông báo là đã đọc",
+                        }
                     )
                 } else {
                     _uiState.update {
                         it.copy(
                             isActionLoading = false,
-                            error = response.errorMessage("Không thể đánh dấu thông báo đã đọc"),
+                            error = response.errorMessage("Không thể đánh dấu thông báo đã đọc")
                         )
                     }
                 }
@@ -144,7 +134,7 @@ class NotificationsCenterViewModel(
                 _uiState.update {
                     it.copy(
                         isActionLoading = false,
-                        error = e.userMessage("Lỗi kết nối mạng"),
+                        error = e.localizedMessage ?: "Lỗi kết nối mạng"
                     )
                 }
             }
@@ -160,43 +150,31 @@ class NotificationsCenterViewModel(
         viewModelScope.launch {
             val previousState = _uiState.value
             val updatedList = previousState.notifications.map { it.copy(isRead = true) }
-            applyNotificationList(
-                updatedList,
-                unreadCount = 0,
-                isActionLoading = true,
-                error = null,
-                message = null,
-            )
+            applyNotificationList(updatedList, unreadCount = 0, isActionLoading = true, error = null)
 
             try {
-                val response = withContext(ioDispatcher) {
+                val response = withContext(Dispatchers.IO) {
                     notificationApi.markAllAsRead()
                 }
                 if (response.isSuccessful) {
                     response.requireSuccess("Không thể đánh dấu tất cả thông báo đã đọc")
-                    applyNotificationList(
-                        updatedList,
-                        unreadCount = 0,
-                        isActionLoading = false,
-                        error = null,
-                        message = "Đã đánh dấu tất cả thông báo là đã đọc",
-                    )
+                    applyNotificationList(updatedList, unreadCount = 0, isActionLoading = false, error = null)
                 } else {
                     _uiState.value = previousState.copy(
                         isActionLoading = false,
-                        error = response.errorMessage("Không thể đánh dấu tất cả thông báo đã đọc"),
+                        error = response.errorMessage("Không thể đánh dấu tất cả thông báo đã đọc")
                     )
                 }
             } catch (e: Exception) {
                 _uiState.value = previousState.copy(
                     isActionLoading = false,
-                    error = e.userMessage("Lỗi kết nối mạng"),
+                    error = e.localizedMessage ?: "Lỗi kết nối mạng"
                 )
             }
         }
     }
 
-    private fun updateNotificationReadState(notificationId: Long, unreadCount: Int?, message: String?) {
+    private fun updateNotificationReadState(notificationId: Long, unreadCount: Int?) {
         val updatedList = _uiState.value.notifications.map { item ->
             if (item.id == notificationId) item.copy(isRead = true) else item
         }
@@ -204,8 +182,7 @@ class NotificationsCenterViewModel(
             list = updatedList,
             unreadCount = unreadCount ?: updatedList.count { notification -> !notification.isRead },
             isActionLoading = false,
-            error = null,
-            message = message,
+            error = null
         )
     }
 
@@ -213,8 +190,7 @@ class NotificationsCenterViewModel(
         list: List<NotificationItem>,
         unreadCount: Int = list.count { notification -> !notification.isRead },
         isActionLoading: Boolean = _uiState.value.isActionLoading,
-        error: String?,
-        message: String? = _uiState.value.message,
+        error: String?
     ) {
         _uiState.update {
             it.copy(
@@ -222,8 +198,7 @@ class NotificationsCenterViewModel(
                 unreadCount = unreadCount,
                 groupedNotifications = groupNotifications(list),
                 isActionLoading = isActionLoading,
-                error = error,
-                message = message,
+                error = error
             )
         }
     }
@@ -278,7 +253,7 @@ internal fun parseIsoDate(value: String?): Date? {
         "yyyy-MM-dd'T'HH:mm:ss.SSSX",
         "yyyy-MM-dd'T'HH:mm:ssX",
         "yyyy-MM-dd'T'HH:mm:ss.SSS",
-        "yyyy-MM-dd'T'HH:mm:ss",
+        "yyyy-MM-dd'T'HH:mm:ss"
     )
 
     for (pattern in patterns) {
@@ -294,7 +269,7 @@ internal fun parseIsoDate(value: String?): Date? {
 }
 
 class NotificationsCenterViewModelFactory(
-    private val notificationApi: NotificationApi,
+    private val notificationApi: NotificationApi
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(NotificationsCenterViewModel::class.java)) {

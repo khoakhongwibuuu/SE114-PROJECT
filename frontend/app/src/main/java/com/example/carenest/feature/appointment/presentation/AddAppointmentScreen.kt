@@ -2,6 +2,7 @@ package com.example.carenest.feature.appointment.presentation
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,8 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,15 +37,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,7 +58,6 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,11 +68,9 @@ fun AddAppointmentScreen(
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
-    val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     val vm: AppointmentViewModel = viewModel ?: viewModel(
-        factory = AppointmentViewModelFactory(application.appointmentApi, application.secureSessionManager)
+        factory = AppointmentViewModelFactory(application.appointmentApi)
     )
 
     val isActionLoading by vm.isActionLoading.collectAsState()
@@ -84,20 +79,32 @@ fun AddAppointmentScreen(
     var doctor by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
-
-    var selectedDateTime by remember { mutableStateOf(LocalDateTime.now()) }
-
-    val activeProfileId = remember(profileId) {
-        profileId.takeIf { it > 0L }
+    var selectedDateTime by remember {
+        mutableStateOf(
+            LocalDateTime.now()
+                .plusHours(1)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0)
+        )
     }
 
+    val activeProfileId = remember(profileId) { profileId.takeIf { it > 0L } }
     val hasActiveProfile = activeProfileId != null && activeProfileId > 0L
-    val canSubmit = facility.isNotBlank() && doctor.isNotBlank() && !isActionLoading && hasActiveProfile
+    val isFutureSchedule = selectedDateTime.isAfter(LocalDateTime.now())
+    val canSubmit = facility.isNotBlank() &&
+        doctor.isNotBlank() &&
+        hasActiveProfile &&
+        isFutureSchedule &&
+        !isActionLoading
 
     val datePickerDialog = DatePickerDialog(
         context,
         { _, year, month, dayOfMonth ->
-            selectedDateTime = selectedDateTime.withYear(year).withMonth(month + 1).withDayOfMonth(dayOfMonth)
+            selectedDateTime = selectedDateTime
+                .withYear(year)
+                .withMonth(month + 1)
+                .withDayOfMonth(dayOfMonth)
         },
         selectedDateTime.year,
         selectedDateTime.monthValue - 1,
@@ -107,95 +114,98 @@ fun AddAppointmentScreen(
     val timePickerDialog = TimePickerDialog(
         context,
         { _, hourOfDay, minute ->
-            selectedDateTime = selectedDateTime.withHour(hourOfDay).withMinute(minute)
+            selectedDateTime = selectedDateTime
+                .withHour(hourOfDay)
+                .withMinute(minute)
         },
         selectedDateTime.hour,
         selectedDateTime.minute,
         true
     )
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF8FAFC))
+            .statusBarsPadding()
     ) {
-        Column(
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = PrimaryBlue)
-                }
-                Text(text = "Lịch hẹn mới", color = Color(0xFF0F172A), fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+            IconButton(onClick = onBack) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Quay lại",
+                    tint = PrimaryBlue
+                )
             }
-
-            ScrollViewContent(
-                facility = facility,
-                onFacilityChange = { facility = it },
-                doctor = doctor,
-                onDoctorChange = { doctor = it },
-                address = address,
-                onAddressChange = { address = it },
-                notes = notes,
-                onNotesChange = { notes = it },
-                selectedDateTime = selectedDateTime,
-                onDateClick = { datePickerDialog.show() },
-                onTimeClick = { timePickerDialog.show() },
-                canSubmit = canSubmit,
-                hasActiveProfile = hasActiveProfile,
-                isActionLoading = isActionLoading,
-                onSubmit = {
-                    val targetProfileId = activeProfileId ?: return@ScrollViewContent
-                    val isoDate = selectedDateTime.atZone(ZoneId.systemDefault()).toInstant().toString()
-                    vm.createAppointment(
-                        profileId = targetProfileId,
-                        hospitalName = facility,
-                        doctorName = doctor,
-                        isoDate = isoDate,
-                        address = address.takeIf { it.isNotBlank() },
-                        notes = notes.takeIf { it.isNotBlank() },
-                        onSuccess = {
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Đã lưu lịch hẹn")
-                                onBack()
-                            }
-                        },
-                        onError = { message ->
-                            scope.launch {
-                                snackbarHostState.showSnackbar(message)
-                            }
-                        }
-                    )
-                }
+            Text(
+                text = "Lịch hẹn mới",
+                color = Color(0xFF0F172A),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 8.dp)
             )
         }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(16.dp)
+        ScrollViewContent(
+            facility = facility,
+            onFacilityChange = { facility = it },
+            doctor = doctor,
+            onDoctorChange = { doctor = it },
+            address = address,
+            onAddressChange = { address = it },
+            notes = notes,
+            onNotesChange = { notes = it },
+            selectedDateTime = selectedDateTime,
+            onDateClick = { datePickerDialog.show() },
+            onTimeClick = { timePickerDialog.show() },
+            canSubmit = canSubmit,
+            hasActiveProfile = hasActiveProfile,
+            isFutureSchedule = isFutureSchedule,
+            isActionLoading = isActionLoading,
+            onSubmit = {
+                val targetProfileId = activeProfileId ?: return@ScrollViewContent
+                val isoDate = selectedDateTime.atZone(ZoneId.systemDefault()).toInstant().toString()
+                vm.createAppointment(
+                    profileId = targetProfileId,
+                    hospitalName = facility,
+                    doctorName = doctor,
+                    isoDate = isoDate,
+                    address = address.takeIf { it.isNotBlank() },
+                    notes = notes.takeIf { it.isNotBlank() },
+                    onSuccess = {
+                        Toast.makeText(context, "Đã lưu lịch hẹn", Toast.LENGTH_SHORT).show()
+                        onBack()
+                    },
+                    onError = { message ->
+                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                    }
+                )
+            }
         )
     }
 }
 
 @Composable
 private fun ColumnScope.ScrollViewContent(
-    facility: String, onFacilityChange: (String) -> Unit,
-    doctor: String, onDoctorChange: (String) -> Unit,
-    address: String, onAddressChange: (String) -> Unit,
-    notes: String, onNotesChange: (String) -> Unit,
+    facility: String,
+    onFacilityChange: (String) -> Unit,
+    doctor: String,
+    onDoctorChange: (String) -> Unit,
+    address: String,
+    onAddressChange: (String) -> Unit,
+    notes: String,
+    onNotesChange: (String) -> Unit,
     selectedDateTime: LocalDateTime,
     onDateClick: () -> Unit,
     onTimeClick: () -> Unit,
     canSubmit: Boolean,
     hasActiveProfile: Boolean,
+    isFutureSchedule: Boolean,
     isActionLoading: Boolean,
     onSubmit: () -> Unit
 ) {
@@ -209,16 +219,37 @@ private fun ColumnScope.ScrollViewContent(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         Column {
-            Text("HEALTHCARE SCHEDULING", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = PrimaryBlue, letterSpacing = 1.sp)
-            Text("Tạo lịch hẹn mới", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF0F172A), modifier = Modifier.padding(top = 8.dp))
-            Text("Sắp xếp các buổi khám bệnh của gia đình với dữ liệu thật từ hệ thống CareNest.", fontSize = 13.sp, color = Color(0xFF64748B), modifier = Modifier.padding(top = 8.dp))
+            Text(
+                "ĐIỀU PHỐI LỊCH KHÁM",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = PrimaryBlue,
+                letterSpacing = 1.sp
+            )
+            Text(
+                "Tạo lịch hẹn mới",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF0F172A),
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Text(
+                "Sắp xếp các buổi khám của gia đình với dữ liệu thật từ hệ thống CareNest.",
+                fontSize = 13.sp,
+                color = Color(0xFF64748B),
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
 
-        // Section: Facility & Doctor
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("PHÒNG KHÁM / BỆNH VIỆN", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF475569))
             Row(
-                modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x66E2E8F0)).padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0x66E2E8F0))
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Default.LocalHospital, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
@@ -227,7 +258,9 @@ private fun ColumnScope.ScrollViewContent(
                     value = facility,
                     onValueChange = onFacilityChange,
                     placeholder = { Text("Tên phòng khám...", color = Color(0xFF94A3B8)) },
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
@@ -241,7 +274,12 @@ private fun ColumnScope.ScrollViewContent(
             Spacer(modifier = Modifier.height(8.dp))
             Text("BÁC SĨ CHUYÊN KHOA", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF475569))
             Row(
-                modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x66E2E8F0)).padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0x66E2E8F0))
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Default.MedicalServices, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
@@ -250,7 +288,9 @@ private fun ColumnScope.ScrollViewContent(
                     value = doctor,
                     onValueChange = onDoctorChange,
                     placeholder = { Text("Tên bác sĩ...", color = Color(0xFF94A3B8)) },
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
@@ -262,37 +302,60 @@ private fun ColumnScope.ScrollViewContent(
             }
         }
 
-        // Section: Date & Time
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("NGÀY KHÁM", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF475569))
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x66E2E8F0)).clickable(onClick = onDateClick).padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x66E2E8F0))
+                        .clickable(onClick = onDateClick)
+                        .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(selectedDateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), color = Color(0xFF1E293B), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        selectedDateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                        color = Color(0xFF1E293B),
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("GIỜ KHÁM", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF475569))
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x66E2E8F0)).clickable(onClick = onTimeClick).padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x66E2E8F0))
+                        .clickable(onClick = onTimeClick)
+                        .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(selectedDateTime.format(DateTimeFormatter.ofPattern("HH:mm")), color = Color(0xFF1E293B), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        selectedDateTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        color = Color(0xFF1E293B),
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
 
-        // Section: Address
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("ĐỊA CHỈ", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF475569))
             Row(
-                modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x66E2E8F0)).padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0x66E2E8F0))
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
@@ -301,7 +364,9 @@ private fun ColumnScope.ScrollViewContent(
                     value = address,
                     onValueChange = onAddressChange,
                     placeholder = { Text("Địa chỉ phòng khám...", color = Color(0xFF94A3B8)) },
-                    modifier = Modifier.weight(1f).height(56.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
@@ -313,14 +378,15 @@ private fun ColumnScope.ScrollViewContent(
             }
         }
 
-        // Section: Notes
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("GHI CHÚ THÊM", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF475569))
             OutlinedTextField(
                 value = notes,
                 onValueChange = onNotesChange,
-                placeholder = { Text("Ghi chú các triệu chứng hoặc điều cần hỏi bác sĩ...", color = Color(0xFF94A3B8)) },
-                modifier = Modifier.fillMaxWidth().height(120.dp),
+                placeholder = { Text("Ghi chú triệu chứng hoặc điều cần hỏi bác sĩ...", color = Color(0xFF94A3B8)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = Color(0x66E2E8F0),
@@ -339,14 +405,25 @@ private fun ColumnScope.ScrollViewContent(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
             )
+        } else if (!isFutureSchedule) {
+            Text(
+                text = "Thời gian lịch hẹn phải ở tương lai.",
+                color = Color(0xFFC62828),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
 
-        // Submit
         Button(
             onClick = onSubmit,
-            modifier = Modifier.fillMaxWidth().height(60.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp),
             shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3498DB), disabledContainerColor = Color(0xFF3498DB).copy(alpha = 0.5f)),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF3498DB),
+                disabledContainerColor = Color(0xFF3498DB).copy(alpha = 0.5f)
+            ),
             enabled = canSubmit
         ) {
             if (isActionLoading) {

@@ -28,6 +28,7 @@ data class AdminUserSummaryResponse(
 
 data class AdminUserStatusUpdateRequest(
     val status: String,
+    val reason: String,
 )
 
 data class AdminUserStatusUpdateResponse(
@@ -37,6 +38,7 @@ data class AdminUserStatusUpdateResponse(
 
 data class AdminUserRoleUpdateRequest(
     val role: String,
+    val reason: String,
 )
 
 data class AdminUserRoleUpdateResponse(
@@ -69,6 +71,22 @@ data class AdminReportSummaryResponse(
     }
 }
 
+data class AdminUserAuditLogItem(
+    val id: Long,
+    val action: String,
+    val actorId: Long? = null,
+    val actorName: String? = null,
+    val targetUserId: Long? = null,
+    val targetUserName: String? = null,
+    val targetUserEmail: String? = null,
+    val previousRole: String? = null,
+    val newRole: String? = null,
+    val previousStatus: String? = null,
+    val newStatus: String? = null,
+    val reason: String? = null,
+    val createdAt: String? = null,
+)
+
 enum class AdminContentType {
     POST,
     COMMENT,
@@ -85,6 +103,9 @@ interface AdminApi {
         @Query("size") size: Int = 20,
         @Query("search") search: String? = null,
     ): Response<ApiResponse<PageResponse<AdminUserSummaryResponse>>>
+
+    @GET("/api/v1/admin/user-audit-logs")
+    suspend fun getUserAuditLogs(): Response<ApiResponse<List<AdminUserAuditLogItem>>>
 
     @PATCH("/api/v1/admin/users/{userId}/status")
     suspend fun updateUserStatus(

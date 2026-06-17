@@ -6,18 +6,18 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
-import com.example.carenest.core.data.network.userMessage
+import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.feature.auth.domain.model.UpdateCurrentUserRequest
 import com.example.carenest.feature.auth.domain.model.UserInfo
-import com.example.carenest.feature.profile.domain.port.ProfileSessionPort
-import kotlinx.coroutines.CoroutineDispatcher
+import com.example.carenest.feature.family.data.repository.FamilyRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Calendar
 
 data class ProfileState(
     val isEditing: Boolean = false,
@@ -35,15 +35,15 @@ data class ProfileState(
     val medReminder: Boolean = true,
     val apptReminder: Boolean = true,
     val role: String = "USER",
-    val memberRole: String = "Chủ gia đình",
+    val memberRole: String = "Thành viên CareNest",
     val error: String? = null,
-    val successMessage: String? = null,
+    val successMessage: String? = null
 )
 
 class ProfileViewModel(
     private val authApi: AuthApi,
-    private val sessionManager: ProfileSessionPort,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val sessionManager: SecureSessionManager,
+    private val repository: FamilyRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProfileState())
     val state = _state.asStateFlow()
@@ -77,7 +77,7 @@ class ProfileViewModel(
             is ProfileEvent.EmergencyPhoneChanged -> _state.update { it.copy(emergencyPhone = event.phone) }
             is ProfileEvent.BirthdayChanged -> {
                 val year = event.birthday.takeLast(4).toIntOrNull()
-                val age = year?.let { (2026 - it).coerceAtLeast(0).toString() }.orEmpty()
+                val age = year?.let { currentYear() - it }?.coerceAtLeast(0)?.toString().orEmpty()
                 _state.update { it.copy(birthday = event.birthday, age = age) }
             }
 
@@ -90,7 +90,7 @@ class ProfileViewModel(
                     it.copy(
                         isUploadingAvatar = false,
                         avatarUri = event.uri,
-                        successMessage = "Ảnh đại diện đã được cập nhật.",
+                        successMessage = "Ảnh đại diện đã được cập nhật."
                     )
                 }
             }
@@ -102,7 +102,7 @@ class ProfileViewModel(
     fun loadCurrentUser() {
         viewModelScope.launch {
             runCatching {
-                withContext(ioDispatcher) { authApi.getMe() }
+                withContext(Dispatchers.IO) { authApi.getMe() }
             }.onSuccess { response ->
                 if (response.isSuccessful) {
                     runCatching {
@@ -111,7 +111,7 @@ class ProfileViewModel(
                         applyUserInfo(user)
                     }.onFailure { error ->
                         _state.update {
-                            it.copy(error = error.userMessage("Không thể tải thông tin tài khoản"))
+                            it.copy(error = error.localizedMessage ?: "Không thể tải thông tin tài khoản")
                         }
                     }
                 } else {
@@ -121,7 +121,7 @@ class ProfileViewModel(
                 }
             }.onFailure { error ->
                 _state.update {
-                    it.copy(error = error.userMessage("Không thể tải thông tin tài khoản"))
+                    it.copy(error = error.localizedMessage ?: "Không thể tải thông tin tài khoản")
                 }
             }
         }
@@ -132,15 +132,15 @@ class ProfileViewModel(
         _state.update { it.copy(isSaving = true, error = null, successMessage = null) }
 
         runCatching {
-            withContext(ioDispatcher) {
+            withContext(Dispatchers.IO) {
                 authApi.updateCurrentUser(
                     UpdateCurrentUserRequest(
                         fullName = current.fullName.ifBlank { "Người dùng CareNest" },
                         phone = current.phone.ifBlank { null },
                         dateOfBirth = current.birthday.toApiDateOrNull(),
                         gender = current.gender.takeIf { it.isNotBlank() },
-                        avatarUrl = current.avatarUri?.toString(),
-                    ),
+                        avatarUrl = current.avatarUri?.toString()
+                    )
                 )
             }
         }.onSuccess { response ->
@@ -148,7 +148,7 @@ class ProfileViewModel(
                 runCatching {
                     response.requireData(
                         fallback = "Không thể cập nhật thông tin tài khoản",
-                        missingDataMessage = "Không nhận được thông tin tài khoản đã cập nhật",
+                        missingDataMessage = "Không nhận được thông tin tài khoản đã cập nhật"
                     )
                 }.onSuccess { user ->
                     applyUserInfo(user)
@@ -156,14 +156,14 @@ class ProfileViewModel(
                         it.copy(
                             isSaving = false,
                             isEditing = false,
-                            successMessage = "Thông tin của bạn đã được cập nhật.",
+                            successMessage = "Thông tin của bạn đã được cập nhật."
                         )
                     }
                 }.onFailure { error ->
                     _state.update {
                         it.copy(
                             isSaving = false,
-                            error = error.userMessage("Không thể cập nhật thông tin tài khoản"),
+                            error = error.localizedMessage ?: "Không thể cập nhật thông tin tài khoản"
                         )
                     }
                 }
@@ -171,7 +171,7 @@ class ProfileViewModel(
                 _state.update {
                     it.copy(
                         isSaving = false,
-                        error = response.errorMessage("Không thể cập nhật thông tin tài khoản"),
+                        error = response.errorMessage("Không thể cập nhật thông tin tài khoản")
                     )
                 }
             }
@@ -179,7 +179,7 @@ class ProfileViewModel(
             _state.update {
                 it.copy(
                     isSaving = false,
-                    error = error.userMessage("Không thể cập nhật thông tin tài khoản"),
+                    error = error.localizedMessage ?: "Không thể cập nhật thông tin tài khoản"
                 )
             }
         }
@@ -197,7 +197,7 @@ class ProfileViewModel(
                 age = user.dateOfBirth?.extractAge().orEmpty(),
                 gender = user.gender ?: "OTHER",
                 avatarUri = user.avatarUrl?.let(Uri::parse),
-                role = user.role.normalizedRole(),
+                role = user.role.normalizedRole()
             )
         }
     }
@@ -222,8 +222,10 @@ class ProfileViewModel(
 
     private fun String.extractAge(): String {
         val year = substringBefore("-").toIntOrNull() ?: return ""
-        return (2026 - year).coerceAtLeast(0).toString()
+        return (currentYear() - year).coerceAtLeast(0).toString()
     }
+
+    private fun currentYear(): Int = Calendar.getInstance().get(Calendar.YEAR)
 }
 
 private fun String.normalizedRole(): String = removePrefix("ROLE_").uppercase()
@@ -246,12 +248,13 @@ sealed interface ProfileEvent {
 
 class ProfileViewModelFactory(
     private val authApi: AuthApi,
-    private val sessionManager: ProfileSessionPort,
+    private val sessionManager: SecureSessionManager,
+    private val repository: FamilyRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ProfileViewModel(authApi, sessionManager) as T
+            return ProfileViewModel(authApi, sessionManager, repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

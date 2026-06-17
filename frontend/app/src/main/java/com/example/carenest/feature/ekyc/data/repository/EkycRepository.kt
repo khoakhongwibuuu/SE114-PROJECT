@@ -1,25 +1,26 @@
 package com.example.carenest.feature.ekyc.data.repository
 
-import android.content.Context
-import android.net.Uri
-import android.provider.OpenableColumns
-import com.example.carenest.core.data.network.MediaApi
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
 import com.example.carenest.core.data.network.requireSuccess
+
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import com.example.carenest.core.data.network.MediaApi
 import com.example.carenest.feature.ekyc.data.remote.EkycApi
-import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import com.example.carenest.feature.ekyc.domain.model.DoctorVerificationResponse
-import com.example.carenest.feature.ekyc.domain.model.RejectVerificationRequest
 import com.example.carenest.feature.ekyc.domain.model.SubmitDoctorVerificationRequest
+import com.example.carenest.feature.ekyc.domain.model.RejectVerificationRequest
+import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class EkycRepository(
     private val ekycApi: EkycApi,
-    private val mediaApi: MediaApi,
+    private val mediaApi: MediaApi
 ) {
     suspend fun getMyVerification(): DoctorVerificationResponse? {
         val response = ekycApi.getMyVerificationStatus()
@@ -45,25 +46,22 @@ class EkycRepository(
         if (!response.isSuccessful) {
             throw IllegalStateException(response.errorMessage("Không thể tải ảnh chứng chỉ lên"))
         }
-        return response.requireData(
-            "Không thể tải ảnh chứng chỉ lên",
-            "Không nhận được URL ảnh chứng chỉ",
-        ).url
+        return response.requireData("Không thể tải ảnh chứng chỉ lên", "Không nhận được URL ảnh chứng chỉ").url
     }
 
     suspend fun submitVerification(
         certificationNumber: String,
         specialty: String,
         hospitalName: String,
-        documentUrl: String,
+        documentUrl: String
     ): DoctorVerificationResponse {
         val response = ekycApi.submitVerification(
             SubmitDoctorVerificationRequest(
                 certificationNumber = certificationNumber,
                 specialty = specialty,
                 hospitalName = hospitalName,
-                documentUrl = documentUrl,
-            ),
+                documentUrl = documentUrl
+            )
         )
         return response.requireData("Không thể gửi hồ sơ xác thực bác sĩ", "Không nhận được trạng thái hồ sơ")
     }

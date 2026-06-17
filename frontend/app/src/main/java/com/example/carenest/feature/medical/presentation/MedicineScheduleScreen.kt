@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.WbTwilight
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,7 +52,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.feature.medical.data.remote.MedicationLogResponse
@@ -67,7 +68,12 @@ private val SESSION_CONFIGS = mapOf(
     "EVENING" to SessionConfig(Icons.Default.Bedtime, Color(0xFFEDE7F6), Color(0xFF7B1FA2)),
     "UNSCHEDULED" to SessionConfig(Icons.Default.AccessTime, Color(0xFFF1F5F9), Color(0xFF64748B)),
 )
-private val DEFAULT_SESSION_CONFIG = SessionConfig(Icons.Default.AccessTime, Color(0xFFF1F5F9), Color(0xFF64748B))
+
+private val DEFAULT_SESSION_CONFIG = SessionConfig(
+    Icons.Default.AccessTime,
+    Color(0xFFF1F5F9),
+    Color(0xFF64748B),
+)
 
 private val SESSION_LABELS = mapOf(
     "MORNING" to "Buổi sáng",
@@ -108,10 +114,11 @@ fun MedicineScheduleScreen(
                 .statusBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Header
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = onBack) {
@@ -129,23 +136,68 @@ fun MedicineScheduleScreen(
                 }
 
                 is ScheduleState.Error -> item {
-                    Text("⚠️ ${state.message}", color = Color(0xFFC62828), modifier = Modifier.padding(16.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7F7)),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = state.message,
+                                color = Color(0xFFC62828),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            resolvedProfileId?.let { safeProfileId ->
+                                Button(
+                                    onClick = { viewModel.fetchTodaySchedule(safeProfileId) },
+                                    shape = RoundedCornerShape(999.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                                ) {
+                                    Text("Thử lại", color = Color.White)
+                                }
+                            }
+                        }
+                    }
                 }
 
                 is ScheduleState.Empty -> item {
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                     ) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
-                            Text("Chưa có lịch thuốc nào cho hồ sơ đang chọn.", color = Color(0xFF64748B), fontSize = 13.sp)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = "Chưa có lịch thuốc nào cho hồ sơ đang chọn.",
+                                color = Color(0xFF64748B),
+                                fontSize = 13.sp,
+                            )
+                            Button(
+                                onClick = onAddSchedule,
+                                shape = RoundedCornerShape(999.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                            ) {
+                                Text("Tạo lịch đầu tiên", color = Color.White)
+                            }
                         }
                     }
                 }
 
                 is ScheduleState.Success -> {
-                    // Progress card
                     item {
                         Row(
                             modifier = Modifier
@@ -166,9 +218,13 @@ fun MedicineScheduleScreen(
                                     fontSize = 13.sp,
                                 )
                             }
-                            val progress = if (state.totalCount == 0) 0 else ((state.takenCount * 100f) / state.totalCount).toInt()
+                            val progress =
+                                if (state.totalCount == 0) 0 else ((state.takenCount * 100f) / state.totalCount).toInt()
                             Box(
-                                modifier = Modifier.size(56.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)),
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.2f)),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text("$progress%", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
@@ -176,18 +232,22 @@ fun MedicineScheduleScreen(
                         }
                     }
 
-                    // Dose sections
                     state.sections.forEach { section ->
                         val config = SESSION_CONFIGS[section.session] ?: DEFAULT_SESSION_CONFIG
                         val label = SESSION_LABELS[section.session] ?: section.session
 
                         item {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Box(
-                                    modifier = Modifier.size(30.dp).clip(RoundedCornerShape(10.dp)).background(config.iconContainer),
+                                    modifier = Modifier
+                                        .size(30.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(config.iconContainer),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(config.icon, contentDescription = null, tint = config.iconTint, modifier = Modifier.size(18.dp))
@@ -199,7 +259,9 @@ fun MedicineScheduleScreen(
 
                         item {
                             Card(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
                                 shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White),
                             ) {
@@ -228,7 +290,10 @@ fun MedicineScheduleScreen(
 
         FloatingActionButton(
             onClick = onAddSchedule,
-            modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(end = 20.dp, bottom = 20.dp),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 20.dp, bottom = 20.dp),
             containerColor = PrimaryBlue,
             contentColor = Color.White,
         ) {

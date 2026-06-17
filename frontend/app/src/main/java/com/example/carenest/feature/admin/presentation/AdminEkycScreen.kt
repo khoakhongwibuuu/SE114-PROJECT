@@ -1,5 +1,6 @@
 package com.example.carenest.feature.admin.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,8 +14,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -23,6 +26,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -34,15 +38,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.carenest.CareNestApplication
-import com.example.carenest.feature.admin.presentation.components.AdminTransientBanner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminEkycScreen() {
-    val application = LocalContext.current.applicationContext as CareNestApplication
+    val context = LocalContext.current
+    val application = context.applicationContext as CareNestApplication
     val viewModel: AdminEkycViewModel = viewModel(
         factory = AdminEkycViewModelFactory(application.ekycRepository),
     )
@@ -52,25 +57,18 @@ fun AdminEkycScreen() {
     var rejectTargetId by remember { mutableStateOf<Long?>(null) }
     var rejectionReason by remember { mutableStateOf("") }
 
+    LaunchedEffect(state.error, state.message) {
+        state.error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearTransientMessage()
+        }
+        state.message?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearTransientMessage()
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
-        state.message?.let { message ->
-            AdminTransientBanner(
-                message = message,
-                isError = false,
-                onDismiss = viewModel::clearTransientMessage,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
-
-        state.error?.let { error ->
-            AdminTransientBanner(
-                message = error,
-                isError = true,
-                onDismiss = viewModel::clearTransientMessage,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
-
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.White,
@@ -109,6 +107,14 @@ fun AdminEkycScreen() {
                         }
                     }
 
+                    !state.error.isNullOrBlank() && state.pendingList.isEmpty() -> {
+                        AdminVerificationErrorState(
+                            title = "Không thể tải danh sách chờ duyệt",
+                            message = state.error.orEmpty(),
+                            onRetry = viewModel::loadPending,
+                        )
+                    }
+
                     state.pendingList.isEmpty() -> {
                         EmptyListPlaceholder("Không có hồ sơ nào đang chờ duyệt.")
                     }
@@ -140,6 +146,14 @@ fun AdminEkycScreen() {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
                         }
+                    }
+
+                    !state.error.isNullOrBlank() && state.doctorList.isEmpty() -> {
+                        AdminVerificationErrorState(
+                            title = "Không thể tải danh sách bác sĩ",
+                            message = state.error.orEmpty(),
+                            onRetry = viewModel::loadDoctors,
+                        )
                     }
 
                     state.doctorList.isEmpty() -> {
@@ -192,6 +206,7 @@ fun AdminEkycScreen() {
                         showRejectDialog = false
                     },
                     enabled = rejectionReason.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                 ) {
                     Text("Gửi")
                 }
@@ -202,5 +217,37 @@ fun AdminEkycScreen() {
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun AdminVerificationErrorState(
+    title: String,
+    message: String,
+    onRetry: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = title,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0F172A),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = message,
+            color = Color(0xFFDC2626),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedButton(onClick = onRetry) {
+            Text("Thử lại", color = Color(0xFF1E3A8A))
+        }
     }
 }

@@ -3,11 +3,10 @@ package com.example.carenest.core.data.storage
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.example.carenest.feature.profile.domain.port.ProfileSessionPort
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class SecureSessionManager(private val context: Context) : ProfileSessionPort {
+class SecureSessionManager(private val context: Context) {
     companion object {
         private const val PREFS_NAME = "secure_carenest_session"
         private const val ACCESS_TOKEN_KEY = "access_token"
@@ -54,7 +53,7 @@ class SecureSessionManager(private val context: Context) : ProfileSessionPort {
     val activeProfileIdFlow: StateFlow<Long?> = _activeProfileIdFlow
 
     private val _userRoleFlow = MutableStateFlow(encryptedPrefs.getString(USER_ROLE_KEY, null))
-    override val userRoleFlow: StateFlow<String?> = _userRoleFlow
+    val userRoleFlow: StateFlow<String?> = _userRoleFlow
 
     private val _userEmailFlow = MutableStateFlow(encryptedPrefs.getString(USER_EMAIL_KEY, null))
     val userEmailFlow: StateFlow<String?> = _userEmailFlow
@@ -105,11 +104,11 @@ class SecureSessionManager(private val context: Context) : ProfileSessionPort {
         encryptedPrefs.edit().putLong(PROFILE_ID_KEY, profileId).apply()
     }
 
-    override fun saveUserIdSync(userId: Long) {
+    fun saveUserIdSync(userId: Long) {
         encryptedPrefs.edit().putLong(USER_ID_KEY, userId).apply()
     }
 
-    override fun saveUserRoleSync(role: String?) {
+    fun saveUserRoleSync(role: String?) {
         if (role.isNullOrBlank()) {
             encryptedPrefs.edit().remove(USER_ROLE_KEY).apply()
             _userRoleFlow.value = null

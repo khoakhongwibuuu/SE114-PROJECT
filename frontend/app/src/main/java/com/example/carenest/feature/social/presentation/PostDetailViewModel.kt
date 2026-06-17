@@ -5,12 +5,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.social.domain.model.Comment
-import com.example.carenest.feature.social.domain.model.Reaction
-import com.example.carenest.feature.social.domain.model.ReactionType
 import com.example.carenest.feature.social.domain.repository.SocialRepository
 import kotlinx.coroutines.flow.Flow
+import com.example.carenest.feature.social.domain.model.ReactionType
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +25,7 @@ sealed interface CommentMutationState {
 class PostDetailViewModel(
     private val repository: SocialRepository,
     private val postId: Long,
-    private val parentCommentId: Long? = null,
+    private val parentCommentId: Long? = null
 ) : ViewModel() {
     val commentsFlow: Flow<PagingData<Comment>> = repository
         .getPostComments(postId = postId, parentCommentId = parentCommentId)
@@ -43,8 +42,7 @@ class PostDetailViewModel(
                     _mutationState.value = CommentMutationState.Success(comment)
                 }
                 .onFailure { error ->
-                    _mutationState.value =
-                        CommentMutationState.Error(error.userMessage("Không thể gửi bình luận"))
+                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Không thể gửi bình luận")
                 }
         }
     }
@@ -52,16 +50,13 @@ class PostDetailViewModel(
     fun createReply(parentCommentId: Long, content: String) {
         viewModelScope.launch {
             _mutationState.value = CommentMutationState.Loading
-            repository.createComment(
-                postId = postId,
-                content = content,
-                parentCommentId = parentCommentId,
-            ).onSuccess { comment ->
-                _mutationState.value = CommentMutationState.Success(comment)
-            }.onFailure { error ->
-                _mutationState.value =
-                    CommentMutationState.Error(error.userMessage("Không thể gửi câu trả lời"))
-            }
+            repository.createComment(postId = postId, content = content, parentCommentId = parentCommentId)
+                .onSuccess { comment ->
+                    _mutationState.value = CommentMutationState.Success(comment)
+                }
+                .onFailure { error ->
+                    _mutationState.value = CommentMutationState.Error(error.localizedMessage ?: "Không thể gửi câu trả lời")
+                }
         }
     }
 
@@ -69,13 +64,15 @@ class PostDetailViewModel(
         _mutationState.value = CommentMutationState.Idle
     }
 
-    suspend fun reactToPost(): Result<Reaction> = repository.reactToPost(postId, ReactionType.LIKE)
+    suspend fun reactToPost(): Result<com.example.carenest.feature.social.domain.model.Reaction> {
+        return repository.reactToPost(postId, ReactionType.LIKE)
+    }
 }
 
 class PostDetailViewModelFactory(
     private val repository: SocialRepository,
     private val postId: Long,
-    private val parentCommentId: Long? = null,
+    private val parentCommentId: Long? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(PostDetailViewModel::class.java)) {
@@ -83,7 +80,7 @@ class PostDetailViewModelFactory(
             return PostDetailViewModel(
                 repository = repository,
                 postId = postId,
-                parentCommentId = parentCommentId,
+                parentCommentId = parentCommentId
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

@@ -3,7 +3,6 @@ package com.example.carenest.feature.admin.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.admin.data.AdminDashboardStatsResponse
 import com.example.carenest.feature.admin.data.repository.AdminRepository
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +42,7 @@ class AdminDashboardViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = error.userMessage("Không thể tải thống kê quản trị"),
+                        error = error.localizedMessage ?: "Không thể tải thống kê quản trị",
                     )
                 }
             }

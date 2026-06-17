@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
@@ -39,7 +38,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.CareNestApplication
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.presentation.theme.CardBackground
 import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
@@ -81,7 +79,7 @@ fun CreateGroupPostScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Trở về")
+                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Trở về")
             }
             Text(
                 text = "Đăng bài viết mới",
@@ -214,7 +212,7 @@ fun CreateGroupPostScreen(
                                 }
                                 onPostSuccess()
                             } catch (e: Exception) {
-                                error = e.userMessage("Không thể đăng bài viết")
+                                error = e.message ?: "Không thể đăng bài viết"
                             } finally {
                                 isLoading = false
                             }

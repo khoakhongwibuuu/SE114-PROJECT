@@ -30,10 +30,12 @@ import com.example.carenest.feature.auth.presentation.AuthViewModel
 import com.example.carenest.feature.auth.presentation.AuthViewModelFactory
 import com.example.carenest.feature.auth.presentation.ForgotPasswordScreen
 import com.example.carenest.feature.onboarding.presentation.OnboardingScreen
+import com.example.carenest.feature.notifications.presentation.NotificationDestination
 import com.example.carenest.feature.notifications.presentation.NotificationsCenterScreen
 import com.example.carenest.feature.notifications.presentation.NotificationOpenResult
 import com.example.carenest.feature.notifications.presentation.NotificationsCenterViewModel
 import com.example.carenest.feature.notifications.presentation.NotificationsCenterViewModelFactory
+import com.example.carenest.feature.notifications.presentation.resolveNotificationRouting
 import com.example.carenest.feature.notifications.domain.model.NotificationItem
 import com.example.carenest.feature.ekyc.presentation.DoctorVerificationScreen
 import com.example.carenest.feature.profile.presentation.UserMedicalScreen
@@ -110,49 +112,59 @@ fun MainNavigation() {
 
   val openNotificationTarget: (NotificationItem) -> NotificationOpenResult = { notification ->
     val role = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
-    val handled = when (val plan = resolveNotificationNavigationPlan(notification, role)) {
-      is NotificationNavigationPlan.OpenMainTab -> {
-        routeToMainTab(plan.target)
-        NotificationOpenResult.OPENED
-      }
-      NotificationNavigationPlan.OpenDoctorWorkspace -> {
-        closeNotificationsCenterIfVisible()
-        backStack.add(DoctorWorkspace)
-        NotificationOpenResult.OPENED
-      }
-      NotificationNavigationPlan.OpenPatientBookingCenter -> {
-        closeNotificationsCenterIfVisible()
-        backStack.add(PatientBookingCenter)
-        NotificationOpenResult.OPENED
-      }
-      NotificationNavigationPlan.OpenMedicineSchedule -> {
-        closeNotificationsCenterIfVisible()
-        backStack.add(MedicineSchedule)
-        NotificationOpenResult.OPENED
-      }
-      is NotificationNavigationPlan.OpenConsultationRoom -> {
-        closeNotificationsCenterIfVisible()
-        backStack.add(ConsultationRoom(plan.bookingId))
-        NotificationOpenResult.OPENED
-      }
-      NotificationNavigationPlan.OpenDoctorVerification -> {
-        authViewModel.refreshCurrentUser()
+    val decision = resolveNotificationRouting(notification, role)
+
+    if (decision.shouldRefreshUser) {
+      authViewModel.refreshCurrentUser()
+    }
+
+    val handled = when (decision.destination) {
+      NotificationDestination.DOCTOR_VERIFICATION -> {
         closeNotificationsCenterIfVisible()
         backStack.add(DoctorVerification)
         NotificationOpenResult.OPENED
       }
-      NotificationNavigationPlan.ConsumeAdminAccountUpdate -> {
-        authViewModel.refreshCurrentUser()
-        Toast.makeText(context, "Đã cập nhật trạng thái tài khoản", Toast.LENGTH_SHORT).show()
-        NotificationOpenResult.CONSUMED
+      NotificationDestination.DOCTOR_WORKSPACE -> {
+        closeNotificationsCenterIfVisible()
+        backStack.add(DoctorWorkspace)
+        NotificationOpenResult.OPENED
       }
-      NotificationNavigationPlan.Unhandled -> {
-        Toast.makeText(context, "Chưa hỗ trợ mở đích cho thông báo này", Toast.LENGTH_SHORT).show()
-        NotificationOpenResult.UNHANDLED
+      NotificationDestination.PATIENT_BOOKINGS -> {
+        closeNotificationsCenterIfVisible()
+        backStack.add(PatientBookingCenter)
+        NotificationOpenResult.OPENED
       }
-    }
-    if (handled == NotificationOpenResult.UNHANDLED && isBookingScopedNotification(notification.referenceType)) {
-      Toast.makeText(context, "Thông báo đặt lịch này không áp dụng cho tài khoản hiện tại.", Toast.LENGTH_SHORT).show()
+      NotificationDestination.FAMILY_TAB -> {
+        routeToMainTab(MainTabTarget.FAMILY)
+        NotificationOpenResult.OPENED
+      }
+      NotificationDestination.MEDICINE_SCHEDULE -> {
+        closeNotificationsCenterIfVisible()
+        backStack.add(MedicineSchedule)
+        NotificationOpenResult.OPENED
+      }
+      NotificationDestination.HOME_TAB -> {
+        routeToMainTab(MainTabTarget.HOME)
+        NotificationOpenResult.OPENED
+      }
+      NotificationDestination.PROFILE_TAB -> {
+        routeToMainTab(MainTabTarget.PROFILE)
+        NotificationOpenResult.OPENED
+      }
+      NotificationDestination.NONE -> {
+        if (decision.consumeOnly) {
+          val message = when (notification.referenceType?.uppercase()) {
+            "ADMIN_USER_ROLE" -> "Quyền tài khoản của bạn đã được cập nhật"
+            "ADMIN_USER_STATUS" -> "Trạng thái tài khoản của bạn đã được cập nhật"
+            else -> "Thông báo đã được cập nhật"
+          }
+          Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+          NotificationOpenResult.CONSUMED
+        } else {
+          Toast.makeText(context, "Thông báo này chưa có màn hình mở trực tiếp", Toast.LENGTH_SHORT).show()
+          NotificationOpenResult.UNHANDLED
+        }
+      }
     }
     if (handled == NotificationOpenResult.OPENED) {
       dashboardViewModel.fetchDashboard()
@@ -278,6 +290,7 @@ fun MainNavigation() {
               onNavigateToAddMedicine = { backStack.add(AddMedicine) },
               onNavigateToMedicineSchedule = { backStack.add(MedicineSchedule) },
               onNavigateToAddMedicineSchedule = { backStack.add(AddMedicineSchedule) },
+              onNavigateToOcrScanner = { backStack.add(OcrScanner) },
               onNavigateToAppointments = { profileId -> backStack.add(MedicalAppointment(profileId)) },
               onNavigateToVaccinations = { profileId -> backStack.add(VaccinationTracker(profileId)) },
               onNavigateToNotifications = { backStack.add(NotificationsCenter) },
@@ -332,7 +345,8 @@ fun MainNavigation() {
         entry<AddMedicine> {
           AddMedicineScreen(
             viewModel = medicineViewModel,
-            onBack = { backStack.removeLastOrNull() }
+            onBack = { backStack.removeLastOrNull() },
+            onOpenOcrScanner = { backStack.add(OcrScanner) }
           )
         }
         entry<MedicineSchedule> {
@@ -387,17 +401,9 @@ fun MainNavigation() {
           )
         }
         entry<CreateGroupRequest> {
-            val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
-            if (resolvedRole != AppRole.DOCTOR) {
-                LaunchedEffect(resolvedRole) {
-                    Toast.makeText(context, "Chỉ bác sĩ mới có thể gửi yêu cầu tạo hội nhóm.", Toast.LENGTH_SHORT).show()
-                    backStack.removeLastOrNull()
-                }
-            } else {
-                com.example.carenest.feature.community.presentation.CreateGroupRequestScreen(
-                    onNavigateBack = { backStack.removeLastOrNull() }
-                )
-            }
+            com.example.carenest.feature.community.presentation.CreateGroupRequestScreen(
+                onNavigateBack = { backStack.removeLastOrNull() }
+            )
         }
         entry<GroupGovernance> {
             val key = it as GroupGovernance
@@ -408,17 +414,9 @@ fun MainNavigation() {
             )
         }
         entry<AdminGroupRequests> {
-            val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
-            if (resolvedRole != AppRole.ADMIN) {
-                LaunchedEffect(resolvedRole) {
-                    Toast.makeText(context, "Chỉ quản trị viên mới có thể duyệt yêu cầu hội nhóm.", Toast.LENGTH_SHORT).show()
-                    backStack.removeLastOrNull()
-                }
-            } else {
-                com.example.carenest.feature.admin.presentation.AdminGroupRequestsScreen(
-                    onNavigateBack = { backStack.removeLastOrNull() }
-                )
-            }
+            com.example.carenest.feature.admin.presentation.AdminGroupRequestsScreen(
+                onNavigateBack = { backStack.removeLastOrNull() }
+            )
         }
         entry<FamilyChatRoom> {
           val key = it as FamilyChatRoom
@@ -487,54 +485,30 @@ fun MainNavigation() {
             )
         }
         entry<DoctorWorkspace> {
-            val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
-            if (resolvedRole != AppRole.DOCTOR) {
-                LaunchedEffect(resolvedRole) {
-                    Toast.makeText(context, "Chỉ bác sĩ đã được cấp quyền mới có thể vào phòng khám số.", Toast.LENGTH_SHORT).show()
-                    backStack.removeLastOrNull()
-                }
-            } else {
-                com.example.carenest.feature.booking.presentation.doctorworkspace.DoctorWorkspaceScreen(
-                    onBack = { backStack.removeLastOrNull() },
-                    onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) }
-                )
-            }
+            com.example.carenest.feature.booking.presentation.doctorworkspace.DoctorWorkspaceScreen(
+                onBack = { backStack.removeLastOrNull() },
+                onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) }
+            )
         }
         entry<PatientBookingCenter> {
-            val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
-            if (resolvedRole != AppRole.USER && resolvedRole != AppRole.DOCTOR) {
-                LaunchedEffect(resolvedRole) {
-                    Toast.makeText(context, "Lịch sử đặt khám không áp dụng cho tài khoản quản trị.", Toast.LENGTH_SHORT).show()
-                    backStack.removeLastOrNull()
-                }
-            } else {
-                com.example.carenest.feature.booking.presentation.patient.PatientBookingCenterScreen(
-                    onBack = { backStack.removeLastOrNull() },
-                    onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) },
-                    onNavigateToDoctorProfile = { doctorId -> backStack.add(DoctorProfile(doctorId)) }
-                )
-            }
+            com.example.carenest.feature.booking.presentation.patient.PatientBookingCenterScreen(
+                onBack = { backStack.removeLastOrNull() },
+                onNavigateToConsultationRoom = { bookingId -> backStack.add(ConsultationRoom(bookingId)) },
+                onNavigateToAppointments = { profileId -> backStack.add(MedicalAppointment(profileId)) }
+            )
         }
         entry<ConsultationRoom> { args ->
-            val resolvedRole = currentUserRole ?: application.secureSessionManager.getUserRole().toAppRole()
-            if (resolvedRole != AppRole.USER && resolvedRole != AppRole.DOCTOR) {
-                LaunchedEffect(resolvedRole) {
-                    Toast.makeText(context, "Phòng tư vấn riêng không áp dụng cho tài khoản quản trị.", Toast.LENGTH_SHORT).show()
-                    backStack.removeLastOrNull()
-                }
-            } else {
-                val viewModel: com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModel = viewModel(
-                    factory = com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModelFactory(
-                        repository = application.bookingRepository,
-                        webSocketClient = com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient(application.secureSessionManager)
-                    )
+            val viewModel: com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModel = viewModel(
+                factory = com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomViewModelFactory(
+                    repository = application.bookingRepository,
+                    webSocketClient = com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient(application.secureSessionManager)
                 )
-                com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomScreen(
-                    bookingId = args.bookingId,
-                    viewModel = viewModel,
-                    onBack = { backStack.removeLastOrNull() }
-                )
-            }
+            )
+            com.example.carenest.feature.booking.presentation.consultation.ConsultationRoomScreen(
+                bookingId = args.bookingId,
+                viewModel = viewModel,
+                onBack = { backStack.removeLastOrNull() }
+            )
         }
       },
   )

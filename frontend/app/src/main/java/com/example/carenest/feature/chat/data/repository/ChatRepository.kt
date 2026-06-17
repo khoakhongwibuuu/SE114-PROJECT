@@ -1,9 +1,9 @@
 package com.example.carenest.feature.chat.data.repository
 
-import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireSuccess
+import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.chat.data.remote.ChatSocketEvent
 import com.example.carenest.feature.chat.data.remote.ChatWebSocketClient
 import com.example.carenest.feature.chat.domain.model.ChatGroupPreview
@@ -26,7 +26,7 @@ class ChatRepository(
     private val api: CommunityApi,
     private val webSocketClient: ChatWebSocketClient,
     private val secureSessionManager: SecureSessionManager,
-    private val gson: Gson = Gson(),
+    private val gson: Gson = Gson()
 ) {
     suspend fun loadHistory(groupId: Long): List<ChatMessage> {
         val response = api.groupMessages(groupId)
@@ -73,8 +73,8 @@ class ChatRepository(
         response.requireSuccess("Không thể rời nhóm")
     }
 
-    suspend fun kickMember(groupId: Long, userId: Long) {
-        val response = api.kickMember(groupId, userId)
+    suspend fun kickMember(groupId: Long, userId: Long, reason: String) {
+        val response = api.kickMember(groupId, userId, reason)
         response.requireSuccess("Không thể mời thành viên rời nhóm")
     }
 
@@ -92,7 +92,7 @@ class ChatRepository(
                     text = payload,
                     isMe = false,
                     senderName = "Thành viên",
-                    timestamp = System.currentTimeMillis(),
+                    timestamp = System.currentTimeMillis()
                 )
             }
     }
@@ -105,7 +105,7 @@ class ChatRepository(
             senderName = user?.name ?: "Thành viên",
             senderId = user?.userId,
             senderRole = user?.role,
-            timestamp = createdAt.toEpochMillisOrNow(),
+            timestamp = createdAt.toEpochMillisOrNow()
         )
     }
 

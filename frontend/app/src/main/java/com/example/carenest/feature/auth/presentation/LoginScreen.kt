@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -78,7 +79,7 @@ fun LoginScreen(
     viewModel: AuthViewModel,
     onNavigateToRegister: () -> Unit,
     onLoginSuccess: () -> Unit,
-    onNavigateToForgotPassword: () -> Unit = {}
+    onNavigateToForgotPassword: () -> Unit = {},
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -100,7 +101,7 @@ fun LoginScreen(
                 .fillMaxSize()
                 .background(LegacyBackground)
                 .windowInsetsPadding(WindowInsets.ime)
-                .padding(paddingValues)
+                .padding(paddingValues),
         ) {
             Box(
                 modifier = Modifier
@@ -108,7 +109,7 @@ fun LoginScreen(
                     .align(Alignment.TopEnd)
                     .offset(x = 60.dp, y = (-30).dp)
                     .clip(CircleShape)
-                    .background(LegacyPrimaryContainer.copy(alpha = 0.12f))
+                    .background(LegacyPrimaryContainer.copy(alpha = 0.12f)),
             )
             Box(
                 modifier = Modifier
@@ -117,7 +118,7 @@ fun LoginScreen(
                     .padding(bottom = 100.dp)
                     .offset(x = (-60).dp)
                     .clip(CircleShape)
-                    .background(LegacyTertiaryContainer.copy(alpha = 0.10f))
+                    .background(LegacyTertiaryContainer.copy(alpha = 0.10f)),
             )
 
             Column(
@@ -126,23 +127,23 @@ fun LoginScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp)
                     .padding(top = 40.dp, bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(bottom = 40.dp)
+                    modifier = Modifier.padding(bottom = 40.dp),
                 ) {
                     Image(
                         painter = painterResource(R.drawable.carenest_logo_full),
                         contentDescription = "CareNest",
                         modifier = Modifier.size(172.dp),
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Fit,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Chào mừng bạn quay trở lại",
                         fontSize = 14.sp,
-                        color = LegacyOnSurfaceVariant
+                        color = LegacyOnSurfaceVariant,
                     )
                 }
 
@@ -150,75 +151,94 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = LegacySurface.copy(alpha = 0.9f)),
                     shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         AuthField(
                             label = "Email",
                             value = email,
                             onValueChange = { email = it },
                             placeholder = "email@vi-du.com",
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
-                            keyboardType = KeyboardType.Email
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Email,
+                                    contentDescription = null,
+                                    tint = LegacyOutline,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                            keyboardType = KeyboardType.Email,
                         )
                         AuthField(
                             label = "Mật khẩu",
                             value = password,
                             onValueChange = { password = it },
                             placeholder = "••••••••",
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = LegacyOutline, modifier = Modifier.size(20.dp)) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = LegacyOutline,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
                             trailingIcon = {
                                 IconButton(onClick = { showPassword = !showPassword }) {
                                     Icon(
                                         if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                         contentDescription = null,
                                         tint = LegacyOutline,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(20.dp),
                                     )
                                 }
                             },
-                            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation()
+                            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                         )
 
                         TextButton(
                             onClick = onNavigateToForgotPassword,
                             modifier = Modifier.align(Alignment.End),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         ) {
                             Text(
                                 text = "Quên mật khẩu?",
                                 color = LegacyPrimary,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
                             )
                         }
 
                         PrimaryPillButton(
                             text = if (isLoading) "Đang đăng nhập..." else "Đăng nhập",
                             loading = isLoading,
-                        enabled = !isLoading,
-                        onClick = { viewModel.login(email, password) },
-                        icon = {
-                            Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                        }
-                    )
+                            enabled = !isLoading,
+                            onClick = { viewModel.login(email, password) },
+                            icon = {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Login,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                        )
 
                         if (authState is AuthState.Error) {
                             Text(
                                 text = (authState as AuthState.Error).error,
                                 color = LegacyError,
                                 fontSize = 12.sp,
-                                modifier = Modifier.padding(start = 4.dp)
+                                modifier = Modifier.padding(start = 4.dp),
                             )
                         }
 
                         DividerRow()
 
                         OutlinePillButton(
-                            text = "Google chưa hỗ trợ",
+                            text = "Google sẽ mở ở phase sau",
                             enabled = false,
                             onClick = {},
                             leading = {
@@ -226,16 +246,22 @@ fun LoginScreen(
                                     text = "G",
                                     color = Color(0xFF4285F4),
                                     fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
                                 )
-                            }
+                            },
+                        )
+                        Text(
+                            text = "MVP hiện chỉ hỗ trợ đăng nhập bằng email và mật khẩu.",
+                            color = LegacyOnSurfaceVariant,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp),
                         )
                     }
                 }
 
                 Row(
                     modifier = Modifier.padding(top = 32.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("Chưa có tài khoản?", fontSize = 14.sp, color = LegacyOnSurfaceVariant)
                     Text(
@@ -243,7 +269,7 @@ fun LoginScreen(
                         fontSize = 14.sp,
                         color = LegacyPrimary,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable(onClick = onNavigateToRegister)
+                        modifier = Modifier.clickable(onClick = onNavigateToRegister),
                     )
                 }
             }
@@ -260,7 +286,7 @@ internal fun AuthField(
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
-    visualTransformation: VisualTransformation = VisualTransformation.None
+    visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
@@ -268,7 +294,7 @@ internal fun AuthField(
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             color = LegacyOnSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp)
+            modifier = Modifier.padding(start = 4.dp),
         )
         OutlinedTextField(
             value = value,
@@ -289,11 +315,11 @@ internal fun AuthField(
                 unfocusedBorderColor = Color.Transparent,
                 focusedTextColor = LegacyOnSurface,
                 unfocusedTextColor = LegacyOnSurface,
-                cursorColor = LegacyPrimary
+                cursorColor = LegacyPrimary,
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                .height(56.dp),
         )
     }
 }
@@ -304,7 +330,7 @@ internal fun PrimaryPillButton(
     loading: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
-    icon: @Composable (() -> Unit)? = null
+    icon: @Composable (() -> Unit)? = null,
 ) {
     Button(
         onClick = onClick,
@@ -313,17 +339,17 @@ internal fun PrimaryPillButton(
         colors = ButtonDefaults.buttonColors(containerColor = LegacyPrimary),
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(52.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
         ) {
             if (loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     color = Color.White,
-                    strokeWidth = 2.dp
+                    strokeWidth = 2.dp,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -343,26 +369,25 @@ internal fun DividerRow() {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(
             modifier = Modifier
                 .weight(1f)
                 .height(1.dp)
-                .background(LegacyOutlineVariant.copy(alpha = 0.25f))
+                .background(LegacyOutlineVariant.copy(alpha = 0.25f)),
         )
         Text(
             text = "HOẶC",
             fontSize = 11.sp,
             color = LegacyOutline,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 1.5.sp
         )
         Box(
             modifier = Modifier
                 .weight(1f)
                 .height(1.dp)
-                .background(LegacyOutlineVariant.copy(alpha = 0.25f))
+                .background(LegacyOutlineVariant.copy(alpha = 0.25f)),
         )
     }
 }
@@ -372,7 +397,7 @@ internal fun OutlinePillButton(
     text: String,
     enabled: Boolean = true,
     onClick: () -> Unit,
-    leading: @Composable (() -> Unit)? = null
+    leading: @Composable (() -> Unit)? = null,
 ) {
     Button(
         onClick = onClick,
@@ -380,19 +405,21 @@ internal fun OutlinePillButton(
         shape = RoundedCornerShape(999.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,
-            contentColor = LegacyOnSurface
+            contentColor = LegacyOnSurface,
+            disabledContainerColor = Color(0xFFF5F7FA),
+            disabledContentColor = LegacyOnSurfaceVariant,
         ),
         border = androidx.compose.foundation.BorderStroke(1.5.dp, LegacyOutlineVariant.copy(alpha = 0.31f)),
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(52.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (leading != null) {
                 leading()
                 Spacer(modifier = Modifier.width(10.dp))
             }
-            Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = LegacyOnSurface)
+            Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

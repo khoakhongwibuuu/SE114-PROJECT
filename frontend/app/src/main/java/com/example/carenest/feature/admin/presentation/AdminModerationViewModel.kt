@@ -7,12 +7,10 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.admin.data.AdminContentType
 import com.example.carenest.feature.admin.data.AdminReportPagingSource
 import com.example.carenest.feature.admin.data.AdminReportSummaryResponse
 import com.example.carenest.feature.admin.data.repository.AdminRepository
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +33,6 @@ data class AdminModerationUiState(
 
 class AdminModerationViewModel(
     private val repository: AdminRepository,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AdminModerationUiState())
     val uiState: StateFlow<AdminModerationUiState> = _uiState.asStateFlow()
@@ -62,7 +59,7 @@ class AdminModerationViewModel(
 
         viewModelScope.launch {
             runCatching {
-                withContext(ioDispatcher) {
+                withContext(Dispatchers.IO) {
                     when (action) {
                         ModerationAction.DELETE_CONTENT -> deleteReportedContent(report)
                         ModerationAction.DISMISS -> repository.dismissReport(report.id)
@@ -82,7 +79,7 @@ class AdminModerationViewModel(
                 _uiState.update {
                     it.copy(
                         hiddenReportIds = it.hiddenReportIds - report.id,
-                        error = error.userMessage("Không thể xử lý báo cáo"),
+                        error = error.localizedMessage ?: "Không thể xử lý báo cáo",
                         message = null,
                     )
                 }
