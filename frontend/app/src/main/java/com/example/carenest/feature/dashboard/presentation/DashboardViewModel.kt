@@ -95,7 +95,9 @@ class DashboardViewModel(
 
     fun fetchDashboard() {
         viewModelScope.launch(Dispatchers.IO) {
-            _dashboardState.value = DashboardState.Loading
+            if (_dashboardState.value !is DashboardState.Success) {
+                _dashboardState.value = DashboardState.Loading
+            }
 
             val familiesResult = familyRepository.getMyFamilyList()
             val families = familiesResult.getOrElse { error ->
@@ -171,9 +173,7 @@ class DashboardViewModel(
                 members = mappedMembers
             )
 
-            val tasks = mergedDashboard.todayTasks.ifEmpty {
-                buildFallbackTasks(familyDetail, activeProfileId)
-            }
+            val tasks = mergedDashboard.todayTasks
 
             _dashboardState.value = DashboardState.Success(
                 data = mergedDashboard,
