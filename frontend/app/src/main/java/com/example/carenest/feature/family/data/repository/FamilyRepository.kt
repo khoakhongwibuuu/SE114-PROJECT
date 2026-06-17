@@ -6,6 +6,7 @@ import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
 import com.example.carenest.core.data.network.requireSuccess
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.model.HealthProfile
 import com.example.carenest.model.MedicalCondition
@@ -229,7 +230,7 @@ class FamilyRepository(
             }
             runCatching {
                 detailsResponse.body().requireSuccess("Không thể cập nhật thông tin hồ sơ")
-            }.onFailure { return Result.failure(Exception(it.message ?: "Không thể cập nhật thông tin hồ sơ", it)) }
+            }.onFailure { return Result.failure(Exception(it.userMessage("Không thể cập nhật thông tin hồ sơ"), it)) }
             val medResponse = familyApi.updateProfileMedicalInfo(
                 profileId,
                 UpdateMedicalInfoRequest(
@@ -243,7 +244,7 @@ class FamilyRepository(
             }
             runCatching {
                 medResponse.body().requireSuccess("Không thể cập nhật thông tin y tế")
-            }.onFailure { return Result.failure(Exception(it.message ?: "Không thể cập nhật thông tin y tế", it)) }
+            }.onFailure { return Result.failure(Exception(it.userMessage("Không thể cập nhật thông tin y tế"), it)) }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
