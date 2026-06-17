@@ -374,7 +374,7 @@ fun ProfileScreen(
                         SettingsRow(icon = Icons.Default.LocalHospital, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF3B82F6), label = "Phòng khám của tôi", onClick = onNavigateToDoctorWorkspace)
                         HorizontalDivider(color = Color(0xFFF1F5F9))
                     }
-                    SettingsRow(icon = Icons.Default.EventNote, iconBg = Color(0xFFF0FDF4), iconTint = Color(0xFF22C55E), label = "Lịch sử đặt khám", onClick = onNavigateToPatientBookingCenter)
+                    SettingsRow(icon = Icons.Default.History, iconBg = Color(0xFFF0FDF4), iconTint = Color(0xFF22C55E), label = "Lịch sử đặt khám", onClick = onNavigateToPatientBookingCenter)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
                     SettingsRow(icon = Icons.Default.Language, iconBg = Color(0xFFF5F3FF), iconTint = Color(0xFF7C3AED), label = "Ngôn ngữ", value = "Tiếng Việt", enabled = false)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
@@ -545,7 +545,10 @@ fun SelectField(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1E293B),
-                    modifier = Modifier.menuAnchor()
+                    modifier = Modifier.menuAnchor(
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                        enabled = editable
+                    )
                 )
                 ExposedDropdownMenu(
                     expanded = expanded,

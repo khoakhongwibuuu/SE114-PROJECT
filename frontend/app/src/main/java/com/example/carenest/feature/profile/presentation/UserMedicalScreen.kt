@@ -262,7 +262,12 @@ private fun InfoTabContent(
                         label = { Text("Nhóm máu") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedBloodType) },
                         leadingIcon = { Icon(Icons.Default.Bloodtype, contentDescription = null, tint = PrimaryBlue) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(
+                                type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                enabled = true
+                            ),
                         shape = RoundedCornerShape(12.dp)
                     )
                     ExposedDropdownMenu(
