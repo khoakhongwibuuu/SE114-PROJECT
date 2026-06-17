@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.requireData
+import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.feature.auth.domain.model.UserInfo
@@ -99,7 +100,7 @@ class DashboardViewModel(
 
             val familiesResult = familyRepository.getMyFamilyList()
             val families = familiesResult.getOrElse { error ->
-                _dashboardState.value = DashboardState.Error(error.message ?: "Không thể tải dữ liệu trang chủ.")
+                _dashboardState.value = DashboardState.Error(error.userMessage("Không thể tải dữ liệu trang chủ."))
                 return@launch
             }
 
@@ -126,7 +127,7 @@ class DashboardViewModel(
 
             val detailResult = familyRepository.getFamilyById(activeFamily.id)
             val familyDetail = detailResult.getOrElse { error ->
-                _dashboardState.value = DashboardState.Error(error.message ?: "Không thể tải gia đình đang hoạt động.")
+                _dashboardState.value = DashboardState.Error(error.userMessage("Không thể tải gia đình đang hoạt động."))
                 return@launch
             }
 
@@ -164,7 +165,7 @@ class DashboardViewModel(
                     .requireData("Không thể tải dữ liệu trang chủ")
             }
             val backendData = dashboardResult.getOrNull()
-            val dashboardWarning = dashboardResult.exceptionOrNull()?.message
+            val dashboardWarning = dashboardResult.exceptionOrNull()?.userMessage("Không thể tải dữ liệu tổng quan mới nhất")
 
             val mergedDashboard = (backendData ?: DashboardResponse()).copy(
                 families = mappedFamilies,

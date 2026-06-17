@@ -63,7 +63,8 @@ class DoctorWorkspaceViewModel(
                 _uiState.update { it.copy(bookings = updatedBookings, busyBookingIds = it.busyBookingIds - id, error = null) }
                 onSuccess()
             } else {
-                val message = result.exceptionOrNull()?.message ?: "Có lỗi xảy ra"
+                val message = result.exceptionOrNull()?.userMessage("Không thể chấp nhận yêu cầu")
+                    ?: "Không thể chấp nhận yêu cầu"
                 _uiState.update { it.copy(error = message, busyBookingIds = it.busyBookingIds - id) }
                 onError(message)
             }
