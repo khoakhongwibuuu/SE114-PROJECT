@@ -13,23 +13,24 @@ import com.example.carenest.feature.booking.data.remote.CancelBookingRequest
 import com.example.carenest.feature.booking.data.remote.ConfirmBookingScheduleRequest
 import com.example.carenest.feature.booking.domain.model.CreateBookingRequest
 import com.example.carenest.feature.booking.domain.model.RejectBookingRequest
+import com.example.carenest.feature.booking.domain.port.BookingDataSource
 import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import org.json.JSONObject
 
 class BookingRepository(
     private val bookingApi: BookingApi
-) {
-    suspend fun getDoctors(): List<DoctorSummary> {
+) : BookingDataSource {
+    override suspend fun getDoctors(): List<DoctorSummary> {
         val response = bookingApi.getDoctors()
         return response.requireList("Không thể tải danh sách bác sĩ")
     }
 
-    suspend fun getMyBookings(): List<BookingResponse> {
+    override suspend fun getMyBookings(): List<BookingResponse> {
         val response = bookingApi.getPatientBookings()
         return response.requireList("Không thể tải lịch sử đặt khám")
     }
 
-    suspend fun getDoctorBookings(): List<BookingResponse> {
+    override suspend fun getDoctorBookings(): List<BookingResponse> {
         val response = bookingApi.getDoctorBookings()
         return response.requireList("Không thể tải yêu cầu đặt khám của bác sĩ")
     }
@@ -59,7 +60,7 @@ class BookingRepository(
         return body?.data ?: throw IllegalStateException(body?.message ?: "Thiếu dữ liệu phản hồi khi tạo yêu cầu")
     }
 
-    suspend fun confirmSchedule(
+    override suspend fun confirmSchedule(
         bookingId: Long,
         scheduledAtIso: String,
         confirmedLocation: String?,
@@ -76,7 +77,7 @@ class BookingRepository(
         return response.requireData("Không thể xác nhận lịch", "Thiếu dữ liệu phản hồi khi xác nhận lịch")
     }
 
-    suspend fun rejectBooking(
+    override suspend fun rejectBooking(
         bookingId: Long,
         rejectionReason: String
     ): BookingResponse {
@@ -107,7 +108,7 @@ class BookingRepository(
         }
     }
 
-    suspend fun approveBooking(bookingId: Long): Result<BookingResponse> {
+    override suspend fun approveBooking(bookingId: Long): Result<BookingResponse> {
         return try {
             val response = bookingApi.approveBooking(bookingId)
             Result.success(response.requireData("Không thể chấp nhận yêu cầu"))
@@ -116,7 +117,7 @@ class BookingRepository(
         }
     }
 
-    suspend fun provisionConsultationThread(bookingId: Long): Result<com.example.carenest.feature.booking.domain.model.ConsultationThreadResponse> {
+    override suspend fun provisionConsultationThread(bookingId: Long): Result<com.example.carenest.feature.booking.domain.model.ConsultationThreadResponse> {
         return try {
             val response = bookingApi.provisionConsultationThread(bookingId)
             Result.success(response.requireData("Không thể mở phòng tư vấn"))
@@ -125,7 +126,7 @@ class BookingRepository(
         }
     }
 
-    suspend fun getConsultationMessages(threadId: Long): Result<List<com.example.carenest.feature.booking.domain.model.ConsultationMessage>> {
+    override suspend fun getConsultationMessages(threadId: Long): Result<List<com.example.carenest.feature.booking.domain.model.ConsultationMessage>> {
         return try {
             val response = bookingApi.getConsultationMessages(threadId)
             Result.success(response.requireList("Không thể tải tin nhắn tư vấn"))
@@ -134,7 +135,7 @@ class BookingRepository(
         }
     }
 
-    suspend fun completeConsultation(bookingId: Long): Result<BookingResponse> {
+    override suspend fun completeConsultation(bookingId: Long): Result<BookingResponse> {
         return try {
             val response = bookingApi.completeConsultation(bookingId)
             Result.success(response.requireData("Không thể kết thúc phiên tư vấn"))
@@ -143,7 +144,7 @@ class BookingRepository(
         }
     }
 
-    suspend fun restrictMessaging(bookingId: Long): Result<BookingResponse> {
+    override suspend fun restrictMessaging(bookingId: Long): Result<BookingResponse> {
         return try {
             val response = bookingApi.restrictMessaging(bookingId)
             Result.success(response.requireData("Không thể hạn chế nhắn tin"))
@@ -152,7 +153,7 @@ class BookingRepository(
         }
     }
 
-    suspend fun unrestrictMessaging(bookingId: Long): Result<BookingResponse> {
+    override suspend fun unrestrictMessaging(bookingId: Long): Result<BookingResponse> {
         return try {
             val response = bookingApi.unrestrictMessaging(bookingId)
             Result.success(response.requireData("Không thể bỏ hạn chế nhắn tin"))

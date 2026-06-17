@@ -5,11 +5,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.booking.data.remote.ConsultationSocketEvent
-import com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient
-import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.example.carenest.feature.booking.domain.model.ConsultationMessage
 import com.example.carenest.feature.booking.domain.model.ConsultationThreadResponse
 import com.example.carenest.feature.booking.domain.model.SendConsultationMessageRequest
+import com.example.carenest.feature.booking.domain.port.BookingDataSource
+import com.example.carenest.feature.booking.domain.port.ConsultationSocketGateway
 import com.google.gson.Gson
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,8 +30,8 @@ data class ConsultationRoomState(
 )
 
 class ConsultationRoomViewModel(
-    private val repository: BookingRepository,
-    private val webSocketClient: ConsultationWebSocketClient,
+    private val repository: BookingDataSource,
+    private val webSocketClient: ConsultationSocketGateway,
     private val gson: Gson = Gson(),
 ) : ViewModel() {
 
@@ -226,8 +226,8 @@ class ConsultationRoomViewModel(
 }
 
 class ConsultationRoomViewModelFactory(
-    private val repository: BookingRepository,
-    private val webSocketClient: ConsultationWebSocketClient,
+    private val repository: BookingDataSource,
+    private val webSocketClient: ConsultationSocketGateway,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ConsultationRoomViewModel::class.java)) {
