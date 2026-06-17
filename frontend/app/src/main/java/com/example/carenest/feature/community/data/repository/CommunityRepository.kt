@@ -246,7 +246,7 @@ class CommunityRepository(
     suspend fun getMyGroupRequests(): List<com.example.carenest.feature.community.domain.model.GroupCreationRequest> {
         val response = api.getMyGroupRequests()
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Khong the lay trang thai yeu cau")
+            throw IllegalStateException(response.body()?.message ?: "Không thể lấy trạng thái yêu cầu")
         }
         return response.body()?.data.orEmpty()
     }

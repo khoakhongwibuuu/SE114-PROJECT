@@ -799,7 +799,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     private void ensureGroupWritable(ChatGroup group, String actionLabel) {
         if (group.isFrozen()) {
-            throw new BadRequestException("Nhom dang tam khoa, khong the " + actionLabel);
+            throw new BadRequestException("Nhóm đang tạm khóa, không thể " + actionLabel);
         }
     }
 
@@ -924,10 +924,10 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     private void ensureDoctorAccess(User currentUser) {
         if (currentUser.getRole() != Role.DOCTOR) {
-            throw new AccessDeniedException("Chi bac si moi co the truy cap tinh nang nay");
+            throw new AccessDeniedException("Chỉ bác sĩ mới có thể truy cập tính năng này");
         }
         if (!Boolean.TRUE.equals(currentUser.getIsActive())) {
-            throw new BadRequestException("Tai khoan bac si da bi khoa");
+            throw new BadRequestException("Tài khoản bác sĩ đã bị khóa");
         }
     }
 
