@@ -71,19 +71,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DatabaseSeeder implements CommandLineRunner {
 
-    private static final String ADMIN_EMAIL = "admin@gmail.com";
-    private static final String PATIENT_PRIMARY_EMAIL = "kiet@gmail.com";
-    private static final String PATIENT_SECONDARY_EMAIL = "doletuankiet06@gmail.com";
-    private static final String DOCTOR_PEDIATRIC_EMAIL = "bacsinhikhoa@gmail.com";
-    private static final String DOCTOR_GENERAL_EMAIL = "bacsidakhoa@gmail.com";
-    private static final String QA_MODERATOR_EMAIL = "qa.moderator@gmail.com";
-    private static final String QA_MODERATOR_PASSWORD = "QaModerator123!";
-
     private static final String FAMILY_A_CODE = "FAMA1234";
     private static final String FAMILY_B_CODE = "FAMB5678";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final QaDemoSeedProperties seedProperties;
     private final DoctorVerificationRepository verificationRepository;
     private final ChatGroupRepository chatGroupRepository;
     private final UserGroupMembershipRepository membershipRepository;
@@ -105,14 +98,20 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        log.info("Starting QA database seeder for dev/qa profile...");
+        if (!seedProperties.isEnabled()) {
+            log.info("QA demo seed is disabled.");
+            return;
+        }
 
-        User admin = seedUser(ADMIN_EMAIL, "Password123!", "Admin", Role.ADMIN);
-        User patient1 = seedUser(PATIENT_PRIMARY_EMAIL, "Kiet13012006", "Kiet Tuan", Role.USER);
-        User patient2 = seedUser(PATIENT_SECONDARY_EMAIL, "Kiet13012006", "Tuan Kiet", Role.USER);
-        User doctor1 = seedUser(DOCTOR_PEDIATRIC_EMAIL, "Bacsinhikhoa", "Bac si Nhi Khoa", Role.DOCTOR);
-        User doctor2 = seedUser(DOCTOR_GENERAL_EMAIL, "Bacsidakhoa", "Bac si Da Khoa", Role.DOCTOR);
-        User qaModerator = seedUser(QA_MODERATOR_EMAIL, QA_MODERATOR_PASSWORD, "QA Moderator", Role.USER);
+        log.info("Starting QA database seeder for dev/qa profile...");
+        String defaultPassword = seedProperties.requireDefaultPassword();
+
+        User admin = seedUser(seedProperties.getAdminEmail(), defaultPassword, seedProperties.getAdminFullName(), Role.ADMIN);
+        User patient1 = seedUser(seedProperties.getPatientPrimaryEmail(), defaultPassword, seedProperties.getPatientPrimaryFullName(), Role.USER);
+        User patient2 = seedUser(seedProperties.getPatientSecondaryEmail(), defaultPassword, seedProperties.getPatientSecondaryFullName(), Role.USER);
+        User doctor1 = seedUser(seedProperties.getDoctorPediatricEmail(), defaultPassword, seedProperties.getDoctorPediatricFullName(), Role.DOCTOR);
+        User doctor2 = seedUser(seedProperties.getDoctorGeneralEmail(), defaultPassword, seedProperties.getDoctorGeneralFullName(), Role.DOCTOR);
+        User qaModerator = seedUser(seedProperties.getModeratorEmail(), defaultPassword, seedProperties.getModeratorFullName(), Role.USER);
 
         ensureDoctorVerification(doctor1, "Nhi khoa", "VNC-123456");
         ensureDoctorVerification(doctor2, "Da khoa", "VNC-789012");

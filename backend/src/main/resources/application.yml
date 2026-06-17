@@ -68,6 +68,22 @@ app:
   media:
     upload-dir: ${MEDIA_UPLOAD_DIR:uploads/media}
     max-image-size-bytes: ${MEDIA_MAX_IMAGE_SIZE_BYTES:5242880}
+  seed:
+    qa-demo:
+      enabled: ${APP_SEED_QA_DEMO_ENABLED:false}
+      default-password: ${APP_SEED_QA_DEMO_DEFAULT_PASSWORD:}
+      admin-email: ${APP_SEED_QA_DEMO_ADMIN_EMAIL:admin.demo@carenest.local}
+      patient-primary-email: ${APP_SEED_QA_DEMO_PATIENT_PRIMARY_EMAIL:patient.one.demo@carenest.local}
+      patient-secondary-email: ${APP_SEED_QA_DEMO_PATIENT_SECONDARY_EMAIL:patient.two.demo@carenest.local}
+      doctor-pediatric-email: ${APP_SEED_QA_DEMO_DOCTOR_PEDIATRIC_EMAIL:doctor.pediatrics.demo@carenest.local}
+      doctor-general-email: ${APP_SEED_QA_DEMO_DOCTOR_GENERAL_EMAIL:doctor.general.demo@carenest.local}
+      moderator-email: ${APP_SEED_QA_DEMO_MODERATOR_EMAIL:moderator.demo@carenest.local}
+      admin-full-name: ${APP_SEED_QA_DEMO_ADMIN_FULL_NAME:Demo Admin}
+      patient-primary-full-name: ${APP_SEED_QA_DEMO_PATIENT_PRIMARY_FULL_NAME:Demo Patient One}
+      patient-secondary-full-name: ${APP_SEED_QA_DEMO_PATIENT_SECONDARY_FULL_NAME:Demo Patient Two}
+      doctor-pediatric-full-name: ${APP_SEED_QA_DEMO_DOCTOR_PEDIATRIC_FULL_NAME:Demo Pediatric Doctor}
+      doctor-general-full-name: ${APP_SEED_QA_DEMO_DOCTOR_GENERAL_FULL_NAME:Demo General Doctor}
+      moderator-full-name: ${APP_SEED_QA_DEMO_MODERATOR_FULL_NAME:Demo Moderator}
 
 server:
   port: 8080
