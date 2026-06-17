@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.userMessage
-import com.example.carenest.feature.family.data.repository.FamilyRepository
+import com.example.carenest.feature.family.domain.port.FamilyDataSource
 import com.example.carenest.feature.family.domain.model.FamilyDetailResponse
 import com.example.carenest.feature.family.domain.model.FamilyInvitationItem
 import com.example.carenest.feature.family.domain.model.FamilyJoinCodeResponse
@@ -33,7 +33,7 @@ data class FamilyUiState(
     val message: String? = null
 )
 
-class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
+class FamilyViewModel(private val repository: FamilyDataSource) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FamilyUiState())
     val uiState: StateFlow<FamilyUiState> = _uiState.asStateFlow()
@@ -318,7 +318,7 @@ private fun copyQrImageToCache(context: Context, uri: Uri): File {
 }
 
 class FamilyViewModelFactory(
-    private val repository: FamilyRepository
+    private val repository: FamilyDataSource
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(FamilyViewModel::class.java)) {
