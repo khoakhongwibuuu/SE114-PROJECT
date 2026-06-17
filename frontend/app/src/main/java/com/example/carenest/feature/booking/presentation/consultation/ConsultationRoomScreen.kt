@@ -71,7 +71,7 @@ import com.example.carenest.feature.booking.domain.model.BookingStatus
 fun ConsultationRoomScreen(
     bookingId: Long,
     viewModel: ConsultationRoomViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
@@ -127,13 +127,13 @@ fun ConsultationRoomScreen(
                                     .size(36.dp)
                                     .clip(CircleShape)
                                     .background(Color(0xFFE2E8F0)),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 AsyncImage(
                                     model = counterpartAvatar,
                                     contentDescription = "Avatar",
                                     modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
+                                    contentScale = ContentScale.Crop,
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
@@ -154,7 +154,7 @@ fun ConsultationRoomScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White,
                     titleContentColor = Color(0xFF1E293B),
-                    navigationIconContentColor = Color(0xFF1E293B)
+                    navigationIconContentColor = Color(0xFF1E293B),
                 ),
                 actions = {
                     val thread = state.thread
@@ -167,13 +167,13 @@ fun ConsultationRoomScreen(
                     if (controllableThread != null) {
                         IconButton(
                             onClick = { showDoctorMenu = true },
-                            enabled = !state.isActionLoading
+                            enabled = !state.isActionLoading,
                         ) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Tùy chọn", tint = Color(0xFF1E293B))
                         }
                         DropdownMenu(
                             expanded = showDoctorMenu,
-                            onDismissRequest = { showDoctorMenu = false }
+                            onDismissRequest = { showDoctorMenu = false },
                         ) {
                             if (controllableThread.status != BookingStatus.RESTRICTED) {
                                 DropdownMenuItem(
@@ -181,7 +181,7 @@ fun ConsultationRoomScreen(
                                     onClick = {
                                         showDoctorMenu = false
                                         showRestrictDialog = true
-                                    }
+                                    },
                                 )
                             } else {
                                 DropdownMenuItem(
@@ -192,7 +192,7 @@ fun ConsultationRoomScreen(
                                         if (activeBookingId != null) {
                                             viewModel.unrestrictMessaging(activeBookingId)
                                         }
-                                    }
+                                    },
                                 )
                             }
                             DropdownMenuItem(
@@ -200,20 +200,20 @@ fun ConsultationRoomScreen(
                                 onClick = {
                                     showDoctorMenu = false
                                     showEndSessionDialog = true
-                                }
+                                },
                             )
                         }
                     }
-                }
+                },
             )
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = Color(0xFFF8FAFC),
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .imePadding()
+                .imePadding(),
         ) {
             val threadSnapshot = state.thread
             when {
@@ -230,7 +230,7 @@ fun ConsultationRoomScreen(
                             .fillMaxWidth()
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Text("Không thể vào phòng tư vấn", fontWeight = FontWeight.Bold, color = Color(0xFFB91C1C))
                         Spacer(modifier = Modifier.height(8.dp))
@@ -238,7 +238,7 @@ fun ConsultationRoomScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
                             onClick = { viewModel.loadRoom(bookingId) },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                         ) {
                             Text("Thử lại", color = Color.White, fontWeight = FontWeight.Bold)
                         }
@@ -250,13 +250,13 @@ fun ConsultationRoomScreen(
                     if (!state.isConnected && !thread.status.isReadOnlyConsultation()) {
                         Surface(
                             color = Color(0xFFFFF7ED),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(
                                 text = "Đang mất kết nối phòng tư vấn. Tin nhắn mới có thể chưa gửi hoặc nhận được.",
                                 color = Color(0xFF9A3412),
                                 fontSize = 13.sp,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                             )
                         }
                     }
@@ -265,7 +265,7 @@ fun ConsultationRoomScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(16.dp),
-                            reverseLayout = true
+                            reverseLayout = true,
                         ) {
                             items(state.messages.size) { index ->
                                 val msg = state.messages.reversed()[index]
@@ -275,7 +275,7 @@ fun ConsultationRoomScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp),
-                                    horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start
+                                    horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start,
                                 ) {
                                     if (!isMe) {
                                         AsyncImage(
@@ -284,7 +284,7 @@ fun ConsultationRoomScreen(
                                             modifier = Modifier
                                                 .size(32.dp)
                                                 .clip(CircleShape),
-                                            contentScale = ContentScale.Crop
+                                            contentScale = ContentScale.Crop,
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                     }
@@ -296,15 +296,15 @@ fun ConsultationRoomScreen(
                                                 color = if (isMe) PrimaryBlue else Color.White,
                                                 shape = RoundedCornerShape(16.dp).copy(
                                                     bottomEnd = if (isMe) CornerSize(0.dp) else CornerSize(16.dp),
-                                                    bottomStart = if (!isMe) CornerSize(0.dp) else CornerSize(16.dp)
-                                                )
+                                                    bottomStart = if (!isMe) CornerSize(0.dp) else CornerSize(16.dp),
+                                                ),
                                             )
-                                            .padding(12.dp)
+                                            .padding(12.dp),
                                     ) {
                                         Text(
                                             text = msg.content,
                                             color = if (isMe) Color.White else Color(0xFF1E293B),
-                                            fontSize = 15.sp
+                                            fontSize = 15.sp,
                                         )
                                     }
                                 }
@@ -330,17 +330,17 @@ fun ConsultationRoomScreen(
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(bottom = 16.dp, top = 8.dp)
+                                        .padding(bottom = 16.dp, top = 8.dp),
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(16.dp),
-                                        verticalAlignment = Alignment.Top
+                                        verticalAlignment = Alignment.Top,
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Info,
                                             contentDescription = "Info",
                                             tint = bannerIconColor,
-                                            modifier = Modifier.size(24.dp)
+                                            modifier = Modifier.size(24.dp),
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column {
@@ -348,14 +348,14 @@ fun ConsultationRoomScreen(
                                                 text = bannerTitle,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = bannerTextColor,
-                                                fontSize = 14.sp
+                                                fontSize = 14.sp,
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = bannerDesc,
                                                 color = bannerTextColor,
                                                 fontSize = 13.sp,
-                                                lineHeight = 20.sp
+                                                lineHeight = 20.sp,
                                             )
                                         }
                                     }
@@ -367,7 +367,7 @@ fun ConsultationRoomScreen(
                     Surface(
                         color = Color.White,
                         shadowElevation = 8.dp,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         var messageText by remember { mutableStateOf("") }
                         val isReadOnly = thread.status.isReadOnlyConsultation()
@@ -376,14 +376,14 @@ fun ConsultationRoomScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             if (isReadOnly) {
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
                                         .background(Color(0xFFF1F5F9), shape = RoundedCornerShape(24.dp))
-                                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
                                 ) {
                                     Text(
                                         text = when (thread.status) {
@@ -392,7 +392,7 @@ fun ConsultationRoomScreen(
                                             else -> "Không thể nhắn tin"
                                         },
                                         color = Color(0xFF94A3B8),
-                                        fontSize = 15.sp
+                                        fontSize = 15.sp,
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -400,12 +400,12 @@ fun ConsultationRoomScreen(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .background(Color(0xFFE2E8F0), shape = CircleShape),
-                                    contentAlignment = Alignment.Center
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.Send,
                                         contentDescription = "Send disabled",
-                                        tint = Color(0xFF94A3B8)
+                                        tint = Color(0xFF94A3B8),
                                     )
                                 }
                             } else {
@@ -419,9 +419,9 @@ fun ConsultationRoomScreen(
                                         focusedBorderColor = PrimaryBlue,
                                         unfocusedBorderColor = Color(0xFFCBD5E1),
                                         focusedContainerColor = Color.White,
-                                        unfocusedContainerColor = Color(0xFFF8FAFC)
+                                        unfocusedContainerColor = Color(0xFFF8FAFC),
                                     ),
-                                    maxLines = 3
+                                    maxLines = 3,
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 IconButton(
@@ -438,13 +438,13 @@ fun ConsultationRoomScreen(
                                         .size(48.dp)
                                         .background(
                                             if (messageText.isNotBlank() && state.isConnected) PrimaryBlue else Color(0xFFE2E8F0),
-                                            shape = CircleShape
-                                        )
+                                            shape = CircleShape,
+                                        ),
                                 ) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.Send,
                                         contentDescription = "Send",
-                                        tint = if (messageText.isNotBlank() && state.isConnected) Color.White else Color(0xFF94A3B8)
+                                        tint = if (messageText.isNotBlank() && state.isConnected) Color.White else Color(0xFF94A3B8),
                                     )
                                 }
                             }
@@ -470,14 +470,14 @@ fun ConsultationRoomScreen(
                         }
                     },
                     enabled = !state.isActionLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E)),
                 ) { Text("Kết thúc") }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showEndSessionDialog = false }) { Text("Hủy") }
             },
             containerColor = Color.White,
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         )
     }
 
@@ -496,14 +496,14 @@ fun ConsultationRoomScreen(
                         }
                     },
                     enabled = !state.isActionLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
                 ) { Text("Hạn chế") }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showRestrictDialog = false }) { Text("Hủy") }
             },
             containerColor = Color.White,
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         )
     }
 }
