@@ -44,8 +44,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
-    private static final String BOOKING_WORKSPACE_REFERENCE = "BOOKING_WORKSPACE";
-    private static final String BOOKING_HISTORY_REFERENCE = "BOOKING_HISTORY";
 
     private final BookingRequestRepository bookingRequestRepository;
     private final ConsultationThreadRepository consultationThreadRepository;
@@ -563,7 +561,7 @@ public class BookingServiceImpl implements BookingService {
                 "Có yêu cầu " + requestLabel + " mới",
                 patientName + " vừa gửi yêu cầu " + requestLabel + ".",
                 NotificationType.APPOINTMENT,
-                BOOKING_WORKSPACE_REFERENCE,
+                "BOOKING_REQUEST",
                 booking.getId()
         );
     }
@@ -574,7 +572,7 @@ public class BookingServiceImpl implements BookingService {
                 title,
                 message,
                 NotificationType.APPOINTMENT,
-                BOOKING_HISTORY_REFERENCE,
+                "BOOKING_REQUEST",
                 booking.getId()
         );
     }
@@ -585,7 +583,7 @@ public class BookingServiceImpl implements BookingService {
                 title,
                 message,
                 NotificationType.APPOINTMENT,
-                BOOKING_WORKSPACE_REFERENCE,
+                "BOOKING_REQUEST",
                 booking.getId()
         );
     }

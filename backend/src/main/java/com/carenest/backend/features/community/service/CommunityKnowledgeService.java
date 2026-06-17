@@ -14,6 +14,7 @@ import com.carenest.backend.features.community.dto.response.ArticleResponse;
 import com.carenest.backend.features.community.dto.response.ChatGroupPreviewResponse;
 import com.carenest.backend.features.community.dto.response.ChatGroupResponse;
 import com.carenest.backend.features.community.dto.response.GroupCreationRequestResponse;
+import com.carenest.backend.features.community.dto.response.GroupGovernanceAuditLogResponse;
 import com.carenest.backend.features.community.dto.response.GroupMemberResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostCommentResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostInteractionResponse;
@@ -80,11 +81,13 @@ public interface CommunityKnowledgeService {
 
     List<GroupMemberResponse> getGroupMembers(Long groupId);
 
+    List<GroupGovernanceAuditLogResponse> getGroupGovernanceAuditLogs(Long groupId);
+
     GroupMemberResponse updateGroupMemberRole(Long groupId, Long targetUserId, UpdateGroupMemberRoleRequest request);
 
-    void kickMember(Long groupId, Long targetUserId);
+    void kickMember(Long groupId, Long targetUserId, String reason);
 
-    void freezeGroup(Long groupId);
+    void freezeGroup(Long groupId, String reason);
 
-    void unfreezeGroup(Long groupId);
+    void unfreezeGroup(Long groupId, String reason);
 }

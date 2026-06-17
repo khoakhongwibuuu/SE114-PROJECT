@@ -115,14 +115,18 @@ public class AdminModerationController {
     }
 
     @PostMapping("/groups/{groupId}/freeze")
-    public ApiResponse<Void> freezeGroup(@PathVariable("groupId") Long groupId) {
-        communityKnowledgeService.freezeGroup(groupId);
+    public ApiResponse<Void> freezeGroup(
+            @PathVariable("groupId") Long groupId,
+            @RequestParam("reason") String reason) {
+        communityKnowledgeService.freezeGroup(groupId, reason);
         return ApiResponse.success("Da tam khoa nhom", null);
     }
 
     @PostMapping("/groups/{groupId}/unfreeze")
-    public ApiResponse<Void> unfreezeGroup(@PathVariable("groupId") Long groupId) {
-        communityKnowledgeService.unfreezeGroup(groupId);
+    public ApiResponse<Void> unfreezeGroup(
+            @PathVariable("groupId") Long groupId,
+            @RequestParam("reason") String reason) {
+        communityKnowledgeService.unfreezeGroup(groupId, reason);
         return ApiResponse.success("Da mo khoa nhom", null);
     }
 

@@ -19,6 +19,7 @@ import com.carenest.backend.features.community.dto.response.ArticleResponse;
 import com.carenest.backend.features.community.dto.response.ChatGroupPreviewResponse;
 import com.carenest.backend.features.community.dto.response.ChatGroupResponse;
 import com.carenest.backend.features.community.dto.response.GroupCreationRequestResponse;
+import com.carenest.backend.features.community.dto.response.GroupGovernanceAuditLogResponse;
 import com.carenest.backend.features.community.dto.response.GroupMemberResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostResponse;
 import com.carenest.backend.features.community.dto.response.GroupPostInteractionResponse;
@@ -544,32 +545,55 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<GroupGovernanceAuditLogResponse> getGroupGovernanceAuditLogs(Long groupId) {
+        User currentUser = getCurrentUser();
+        ChatGroup group = getChatGroupOrThrow(groupId);
+        boolean isSystemAdmin = currentUser.getRole() == Role.ADMIN;
+        boolean isHostOfThisGroup = membershipRepository.existsByGroupIdAndUserIdAndGroupRole(
+                group.getId(),
+                currentUser.getId(),
+                GroupRole.HOST
+        );
+        if (!isSystemAdmin && !isHostOfThisGroup) {
+            throw new AccessDeniedException("Bạn không có quyền xem nhật ký quản trị của nhóm này");
+        }
+
+        return groupGovernanceAuditLogRepository.findTop20ByGroupIdOrderByCreatedAtDesc(groupId)
+                .stream()
+                .map(log -> GroupGovernanceAuditLogResponse.builder()
+                        .id(log.getId())
+                        .action(log.getAction() != null ? log.getAction().name() : null)
+                        .actorId(log.getActor() != null ? log.getActor().getId() : null)
+                        .actorName(log.getActor() != null ? log.getActor().getFullName() : null)
+                        .targetUserId(log.getTargetUser() != null ? log.getTargetUser().getId() : null)
+                        .targetUserName(log.getTargetUser() != null ? log.getTargetUser().getFullName() : null)
+                        .previousRole(log.getPreviousRole() != null ? log.getPreviousRole().name() : null)
+                        .newRole(log.getNewRole() != null ? log.getNewRole().name() : null)
+                        .note(log.getNote())
+                        .createdAt(log.getCreatedAt())
+                        .build())
+                .toList();
+    }
+
+    @Override
     @Transactional
     public GroupMemberResponse updateGroupMemberRole(Long groupId, Long targetUserId, UpdateGroupMemberRoleRequest request) {
         User currentUser = getCurrentUser();
         ChatGroup group = getChatGroupOrThrow(groupId);
         ensureCanManageGroupMembers(group, currentUser);
+        String normalizedReason = requireNormalizedText(request.getReason(), "Lý do thay đổi vai trò không được để trống");
 
-        UserGroupMembership actorMembership = membershipRepository.findByGroupIdAndUserId(groupId, currentUser.getId())
-                .orElse(null);
         UserGroupMembership targetMembership = membershipRepository.findByGroupIdAndUserId(groupId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("UserGroupMembership", "targetUserId", targetUserId.toString()));
         GroupRole previousRole = targetMembership.getGroupRole();
         GroupRole targetRole = parseGroupRole(request.getRole());
         boolean isSystemAdmin = currentUser.getRole() == Role.ADMIN;
-        boolean isActorHost = actorMembership != null && actorMembership.getGroupRole() == GroupRole.HOST;
-        boolean isHostTransferByHost = !isSystemAdmin
-                && isActorHost
-                && !currentUser.getId().equals(targetUserId)
-                && targetRole == GroupRole.HOST
-                && previousRole != GroupRole.HOST;
 
         if (currentUser.getId().equals(targetUserId) && targetMembership.getGroupRole() == GroupRole.HOST && targetRole != GroupRole.HOST) {
             throw new BadRequestException("Host không thể tự hạ quyền của chính mình");
         }
-        if ((targetMembership.getGroupRole() == GroupRole.HOST || targetRole == GroupRole.HOST)
-                && !isSystemAdmin
-                && !isHostTransferByHost) {
+        if ((targetMembership.getGroupRole() == GroupRole.HOST || targetRole == GroupRole.HOST) && !isSystemAdmin) {
             throw new AccessDeniedException("Chỉ Admin hệ thống mới có quyền thay đổi vai trò Host");
         }
 
@@ -580,21 +604,26 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
         targetMembership.setGroupRole(targetRole);
         UserGroupMembership savedMembership = membershipRepository.save(targetMembership);
-        if (isHostTransferByHost && actorMembership != null) {
-            actorMembership.setGroupRole(GroupRole.MEMBER);
-            membershipRepository.save(actorMembership);
-        }
-        if (isSystemAdmin && previousRole != targetRole) {
-            saveGovernanceAudit(group, currentUser, targetMembership.getUser(), GroupGovernanceAuditAction.ADMIN_ROLE_OVERRIDE, previousRole, targetRole, null);
+        if (previousRole != targetRole) {
+            saveGovernanceAudit(
+                    group,
+                    currentUser,
+                    targetMembership.getUser(),
+                    isSystemAdmin ? GroupGovernanceAuditAction.ADMIN_ROLE_OVERRIDE : GroupGovernanceAuditAction.ROLE_UPDATED,
+                    previousRole,
+                    targetRole,
+                    normalizedReason
+            );
         }
         return toGroupMemberResponse(savedMembership);
     }
 
     @Override
     @Transactional
-    public void kickMember(Long groupId, Long targetUserId) {
+    public void kickMember(Long groupId, Long targetUserId, String reason) {
         User currentUser = getCurrentUser();
         ChatGroup group = getChatGroupOrThrow(groupId);
+        String normalizedReason = requireNormalizedText(reason, "Lý do mời thành viên rời nhóm không được để trống");
         UserGroupMembership targetMembership = membershipRepository.findByGroupIdAndUserId(groupId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("UserGroupMembership", "targetUserId", targetUserId.toString()));
 
@@ -623,34 +652,42 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
         }
 
         membershipRepository.delete(targetMembership);
-        if (isSystemAdmin) {
-            saveGovernanceAudit(group, currentUser, targetMembership.getUser(), GroupGovernanceAuditAction.ADMIN_MEMBER_REMOVED, targetMembership.getGroupRole(), null, null);
-        }
+        saveGovernanceAudit(
+                group,
+                currentUser,
+                targetMembership.getUser(),
+                isSystemAdmin ? GroupGovernanceAuditAction.ADMIN_MEMBER_REMOVED : GroupGovernanceAuditAction.MEMBER_REMOVED,
+                targetMembership.getGroupRole(),
+                null,
+                normalizedReason
+        );
     }
 
     @Override
     @Transactional
-    public void freezeGroup(Long groupId) {
+    public void freezeGroup(Long groupId, String reason) {
         User currentUser = getCurrentUser();
         ensureAdminAccess(currentUser);
+        String normalizedReason = requireNormalizedText(reason, "Lý do tạm khóa nhóm không được để trống");
         ChatGroup group = getChatGroupOrThrow(groupId);
         if (!group.isFrozen()) {
             group.setFrozen(true);
             chatGroupRepository.save(group);
-            saveGovernanceAudit(group, currentUser, null, GroupGovernanceAuditAction.GROUP_FROZEN, null, null, null);
+            saveGovernanceAudit(group, currentUser, null, GroupGovernanceAuditAction.GROUP_FROZEN, null, null, normalizedReason);
         }
     }
 
     @Override
     @Transactional
-    public void unfreezeGroup(Long groupId) {
+    public void unfreezeGroup(Long groupId, String reason) {
         User currentUser = getCurrentUser();
         ensureAdminAccess(currentUser);
+        String normalizedReason = requireNormalizedText(reason, "Lý do mở lại nhóm không được để trống");
         ChatGroup group = getChatGroupOrThrow(groupId);
         if (group.isFrozen()) {
             group.setFrozen(false);
             chatGroupRepository.save(group);
-            saveGovernanceAudit(group, currentUser, null, GroupGovernanceAuditAction.GROUP_UNFROZEN, null, null, null);
+            saveGovernanceAudit(group, currentUser, null, GroupGovernanceAuditAction.GROUP_UNFROZEN, null, null, normalizedReason);
         }
     }
 
@@ -799,7 +836,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     private void ensureGroupWritable(ChatGroup group, String actionLabel) {
         if (group.isFrozen()) {
-            throw new BadRequestException("Nhóm đang tạm khóa, không thể " + actionLabel);
+            throw new BadRequestException("Nhom dang tam khoa, khong the " + actionLabel);
         }
     }
 
@@ -924,10 +961,10 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
 
     private void ensureDoctorAccess(User currentUser) {
         if (currentUser.getRole() != Role.DOCTOR) {
-            throw new AccessDeniedException("Chỉ bác sĩ mới có thể truy cập tính năng này");
+            throw new AccessDeniedException("Chi bac si moi co the truy cap tinh nang nay");
         }
         if (!Boolean.TRUE.equals(currentUser.getIsActive())) {
-            throw new BadRequestException("Tài khoản bác sĩ đã bị khóa");
+            throw new BadRequestException("Tai khoan bac si da bi khoa");
         }
     }
 

@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ConsultationMessageServiceImpl implements ConsultationMessageService {
-    private static final String CONSULTATION_ROOM_REFERENCE = "CONSULTATION_ROOM";
 
     private final ConsultationMessageRepository consultationMessageRepository;
     private final ConsultationThreadRepository consultationThreadRepository;
@@ -112,7 +111,7 @@ public class ConsultationMessageServiceImpl implements ConsultationMessageServic
                 "Tin nhắn tư vấn mới",
                 displayName(message.getSender()) + ": " + preview(message.getContent()),
                 NotificationType.CHAT,
-                CONSULTATION_ROOM_REFERENCE,
+                "BOOKING_REQUEST",
                 booking.getId()
         );
     }

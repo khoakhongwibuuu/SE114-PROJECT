@@ -83,7 +83,7 @@ public class ChatServiceImpl implements ChatService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", senderId));
         ensureCanEnterGroup(groupId, sender);
         if (group.isFrozen()) {
-            throw new BadRequestException("Nhóm đang tạm khóa, không thể gửi tin nhắn mới");
+            throw new BadRequestException("Nhom dang tam khoa, khong the gui tin nhan moi");
         }
 
         String trimmedContent = normalizeContent(content);
