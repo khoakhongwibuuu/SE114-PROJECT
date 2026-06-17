@@ -38,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -378,6 +379,24 @@ fun GroupPostDetailScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+                val leaveGroupHint = state.leaveGroupHint
+                if (leaveGroupHint != null) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color(0xFFFFFBEB),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text(
+                            text = leaveGroupHint,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            color = Color(0xFF92400E),
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
