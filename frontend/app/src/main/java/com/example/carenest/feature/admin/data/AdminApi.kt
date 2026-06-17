@@ -35,9 +35,19 @@ data class AdminUserStatusUpdateResponse(
     val status: String,
 )
 
+data class AdminUserRoleUpdateRequest(
+    val role: String,
+)
+
+data class AdminUserRoleUpdateResponse(
+    val id: Long,
+    val role: String,
+)
+
 data class AdminReportSummaryResponse(
     val id: Long,
     val postId: Long? = null,
+    val messageId: Long? = null,
     val commentId: Long? = null,
     val contentType: String = "POST",
     val reporterId: Long? = null,
@@ -53,6 +63,7 @@ data class AdminReportSummaryResponse(
     fun normalizedContentType(): AdminContentType {
         return when (contentType.trim().uppercase()) {
             "COMMENT" -> AdminContentType.COMMENT
+            "MESSAGE" -> AdminContentType.MESSAGE
             else -> AdminContentType.POST
         }
     }
@@ -61,6 +72,7 @@ data class AdminReportSummaryResponse(
 enum class AdminContentType {
     POST,
     COMMENT,
+    MESSAGE,
 }
 
 interface AdminApi {
@@ -80,6 +92,12 @@ interface AdminApi {
         @Body request: AdminUserStatusUpdateRequest,
     ): Response<ApiResponse<AdminUserStatusUpdateResponse>>
 
+    @PATCH("/api/v1/admin/users/{userId}/role")
+    suspend fun updateUserRole(
+        @Path("userId") userId: Long,
+        @Body request: AdminUserRoleUpdateRequest,
+    ): Response<ApiResponse<AdminUserRoleUpdateResponse>>
+
     @GET("/api/v1/admin/reports")
     suspend fun getReports(
         @Query("status") status: String = "PENDING",
@@ -95,6 +113,11 @@ interface AdminApi {
     @DELETE("/api/v1/admin/comments/{commentId}")
     suspend fun deleteComment(
         @Path("commentId") commentId: Long,
+    ): Response<ApiResponse<Unit>>
+
+    @DELETE("/api/v1/admin/messages/{messageId}")
+    suspend fun deleteMessage(
+        @Path("messageId") messageId: Long,
     ): Response<ApiResponse<Unit>>
 
     @PATCH("/api/v1/admin/reports/{reportId}/dismiss")

@@ -2,6 +2,7 @@ package com.example.carenest.feature.admin.presentation
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,7 +38,11 @@ import com.example.carenest.CareNestApplication
 import com.example.carenest.feature.admin.data.AdminDashboardStatsResponse
 
 @Composable
-fun AdminDashboardScreen() {
+fun AdminDashboardScreen(
+    onOpenUsers: () -> Unit = {},
+    onOpenEkyc: () -> Unit = {},
+    onOpenModeration: () -> Unit = {},
+) {
     val application = LocalContext.current.applicationContext as CareNestApplication
     val viewModel: AdminDashboardViewModel = viewModel(
         factory = AdminDashboardViewModelFactory(application.adminRepository),
@@ -60,9 +65,6 @@ fun AdminDashboardScreen() {
 
         else -> {
             val stats = state.stats ?: AdminDashboardStatsResponse()
-            val trend = stats.trend.ifEmpty {
-                listOf(stats.totalUsers, stats.totalDoctors, stats.pendingEkycCount, stats.moderationQueueCount)
-            }
 
             Column(
                 modifier = Modifier
@@ -78,7 +80,12 @@ fun AdminDashboardScreen() {
                     color = Color(0xFF0F172A),
                 )
 
-                SummaryGrid(stats = stats)
+                SummaryGrid(
+                    stats = stats,
+                    onOpenUsers = onOpenUsers,
+                    onOpenEkyc = onOpenEkyc,
+                    onOpenModeration = onOpenModeration,
+                )
 
                 Card(
                     shape = RoundedCornerShape(24.dp),
@@ -100,7 +107,7 @@ fun AdminDashboardScreen() {
                             color = Color(0xFF64748B),
                         )
                         Spacer(modifier = Modifier.height(20.dp))
-                        TrendChart(values = trend)
+                        TrendChart(values = stats.trend)
                     }
                 }
             }
@@ -109,7 +116,12 @@ fun AdminDashboardScreen() {
 }
 
 @Composable
-private fun SummaryGrid(stats: AdminDashboardStatsResponse) {
+private fun SummaryGrid(
+    stats: AdminDashboardStatsResponse,
+    onOpenUsers: () -> Unit,
+    onOpenEkyc: () -> Unit,
+    onOpenModeration: () -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             SummaryCard(
@@ -117,12 +129,14 @@ private fun SummaryGrid(stats: AdminDashboardStatsResponse) {
                 value = stats.totalUsers.toString(),
                 accent = Color(0xFF2563EB),
                 modifier = Modifier.weight(1f),
+                onClick = onOpenUsers,
             )
             SummaryCard(
                 title = "Bác sĩ đang hoạt động",
                 value = stats.totalDoctors.toString(),
                 accent = Color(0xFF059669),
                 modifier = Modifier.weight(1f),
+                onClick = onOpenUsers,
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -131,12 +145,14 @@ private fun SummaryGrid(stats: AdminDashboardStatsResponse) {
                 value = stats.pendingEkycCount.toString(),
                 accent = Color(0xFFD97706),
                 modifier = Modifier.weight(1f),
+                onClick = onOpenEkyc,
             )
             SummaryCard(
                 title = "Báo cáo chờ xử lý",
                 value = stats.moderationQueueCount.toString(),
                 accent = Color(0xFFDC2626),
                 modifier = Modifier.weight(1f),
+                onClick = onOpenModeration,
             )
         }
     }
@@ -148,12 +164,13 @@ private fun SummaryCard(
     value: String,
     accent: Color,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Box(

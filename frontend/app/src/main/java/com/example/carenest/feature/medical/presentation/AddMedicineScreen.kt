@@ -1,5 +1,7 @@
 package com.example.carenest.feature.medical.presentation
 
+import android.app.DatePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,16 +47,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.carenest.core.presentation.theme.PrimaryBlue
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
 @Composable
 fun AddMedicineScreen(
@@ -67,8 +71,35 @@ fun AddMedicineScreen(
     var quantity by remember { mutableStateOf("") }
     var unit by remember { mutableStateOf("viên") }
     var expiryDate by remember { mutableStateOf("") }
-    val canSubmit = name.isNotBlank() && expiryDate.isNotBlank()
+    var selectedExpiryDate by remember { mutableStateOf<LocalDate?>(null) }
+    val quantityValue = quantity.toIntOrNull()
+    val canSubmit = name.isNotBlank() &&
+            quantityValue != null &&
+            quantityValue >= 1 &&
+            selectedExpiryDate != null &&
+            !isActionLoading
     val units = listOf("viên", "gói", "chai", "tuýp", "hộp")
+    val context = LocalContext.current
+    val dateFormatter = remember { DateTimeFormatter.ISO_LOCAL_DATE }
+    val datePickerDialog = remember(selectedExpiryDate) {
+        val initialDate = selectedExpiryDate ?: LocalDate.now()
+        val calendar = Calendar.getInstance().apply {
+            set(initialDate.year, initialDate.monthValue - 1, initialDate.dayOfMonth)
+        }
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val date = LocalDate.of(year, month + 1, dayOfMonth)
+                selectedExpiryDate = date
+                expiryDate = date.format(dateFormatter)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).apply {
+            datePicker.minDate = System.currentTimeMillis()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -105,8 +136,7 @@ fun AddMedicineScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFCFE5FF))
-                    .clickable(onClick = onOpenOcrScanner)
+                    .background(Color(0xFFF1F5F9))
                     .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -123,17 +153,17 @@ fun AddMedicineScreen(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Quét toa thuốc tự động",
-                        color = PrimaryBlue,
+                        color = Color(0xFF64748B),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "Dùng camera để nhận diện và điền thông tin",
-                        color = PrimaryBlue.copy(alpha = 0.78f),
+                        text = "OCR đang tạm tắt trong MVP, sẽ hoàn thiện ở phase cuối",
+                        color = Color(0xFF64748B),
                         fontSize = 12.sp,
                     )
                 }
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = PrimaryBlue)
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF94A3B8))
             }
 
             Row(
@@ -166,10 +196,16 @@ fun AddMedicineScreen(
                         value = quantity,
                         onValueChange = { quantity = it.filter(Char::isDigit) },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Số lượng") },
-                        placeholder = { Text("0") },
+                        label = { Text("Số lượng *") },
+                        placeholder = { Text("1") },
                         leadingIcon = { Icon(Icons.Default.FormatListNumbered, contentDescription = null) },
                         singleLine = true,
+                        isError = quantity.isNotBlank() && (quantityValue == null || quantityValue < 1),
+                        supportingText = {
+                            if (quantity.isNotBlank() && (quantityValue == null || quantityValue < 1)) {
+                                Text("Số lượng phải lớn hơn hoặc bằng 1")
+                            }
+                        },
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Đơn vị", color = Color(0xFF404751), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -198,12 +234,20 @@ fun AddMedicineScreen(
                     }
                     OutlinedTextField(
                         value = expiryDate,
-                        onValueChange = { expiryDate = it },
-                        modifier = Modifier.fillMaxWidth(),
+                        onValueChange = {},
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { datePickerDialog.show() },
                         label = { Text("Hạn sử dụng *") },
-                        placeholder = { Text("YYYY-MM-DD") },
+                        placeholder = { Text("Chọn ngày") },
                         leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                        readOnly = true,
                         singleLine = true,
+                    )
+                    Text(
+                        text = "Chọn ngày bằng lịch để tránh sai định dạng. Hạn dùng không được nằm trong quá khứ.",
+                        color = Color(0xFF64748B),
+                        fontSize = 12.sp,
                     )
                 }
             }
@@ -216,12 +260,11 @@ fun AddMedicineScreen(
                 .navigationBarsPadding()
                 .padding(16.dp),
         ) {
-            val context = LocalContext.current
             Button(
                 onClick = {
                     viewModel.addMedicine(
                         name = name,
-                        quantity = quantity.toIntOrNull() ?: 0,
+                        quantity = quantityValue ?: 0,
                         unit = unit,
                         expiryDate = expiryDate,
                         onSuccess = {
@@ -233,7 +276,7 @@ fun AddMedicineScreen(
                         }
                     )
                 },
-                enabled = canSubmit && !isActionLoading,
+                enabled = canSubmit,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),

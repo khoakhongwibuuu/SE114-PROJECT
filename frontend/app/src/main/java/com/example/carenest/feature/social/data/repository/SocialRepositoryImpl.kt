@@ -1,5 +1,8 @@
 package com.example.carenest.feature.social.data.repository
 
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -29,9 +32,9 @@ class SocialRepositoryImpl(
         return runCatching {
             val response = api.getGroups(page = page, limit = limit, search = search?.takeIf { it.isNotBlank() })
             if (!response.isSuccessful) {
-                throw IllegalStateException(response.body()?.message ?: "Khong the tai danh sach nhom")
+                throw IllegalStateException(response.errorMessage("Không thể tải danh sách nhóm"))
             }
-            response.body()?.data ?: throw IllegalStateException("Khong nhan duoc du lieu danh sach nhom")
+            response.requireData("Không thể tải danh sách nhóm", "Không nhận được dữ liệu danh sách nhóm")
         }
     }
 
@@ -65,9 +68,9 @@ class SocialRepositoryImpl(
         return runCatching {
             val response = api.reactToPost(postId = postId, request = ReactToPostRequest(reactionType = reactionType))
             if (!response.isSuccessful) {
-                throw IllegalStateException(response.body()?.message ?: "Khong the cap nhat cam xuc bai viet")
+                throw IllegalStateException(response.errorMessage("Không thể cập nhật cảm xúc bài viết"))
             }
-            response.body()?.data ?: throw IllegalStateException("Khong nhan duoc du lieu cam xuc bai viet")
+            response.requireData("Không thể cập nhật cảm xúc bài viết", "Không nhận được dữ liệu cảm xúc bài viết")
         }
     }
 
@@ -82,9 +85,9 @@ class SocialRepositoryImpl(
                 request = CreateCommentRequest(content = content, parentCommentId = parentCommentId)
             )
             if (!response.isSuccessful) {
-                throw IllegalStateException(response.body()?.message ?: "Khong the gui binh luan")
+                throw IllegalStateException(response.errorMessage("Không thể gửi bình luận"))
             }
-            response.body()?.data ?: throw IllegalStateException("Khong nhan duoc du lieu binh luan")
+            response.requireData("Không thể gửi bình luận", "Không nhận được dữ liệu bình luận")
         }
     }
 }

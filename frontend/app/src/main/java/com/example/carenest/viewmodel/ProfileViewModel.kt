@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 data class ProfileUiState(
     val isLoading: Boolean = false,
     val profileData: HealthProfile? = null,
-    val selectedTab: Int = 0, // 0: Thông tin, 1: Theo dõi, 2: Khẩn cấp
+    val selectedTab: Int = 0,
     val error: String? = null
 )
 
@@ -30,36 +30,19 @@ class ProfileViewModel(private val repository: FamilyRepository) : ViewModel() {
             result.onSuccess { data ->
                 _uiState.update { it.copy(isLoading = false, profileData = data) }
             }.onFailure { e ->
-                // _uiState.update { it.copy(isLoading = false, error = e.message) }
-                // Use mock data to show UI when backend has no data yet
-                _uiState.update { it.copy(isLoading = false, profileData = getMockHealthProfile()) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        profileData = null,
+                        error = e.message ?: "Không thể tải hồ sơ sức khỏe"
+                    )
+                }
             }
         }
     }
 
     fun selectTab(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
-    }
-
-    private fun getMockHealthProfile(): HealthProfile {
-        return HealthProfile(
-            id = 1,
-            name = "Nguyễn Văn A",
-            role = "Bản thân",
-            age = 36,
-            location = "TP.HCM",
-            avatarUrl = null,
-            isVerified = true,
-            bloodType = "O+",
-            allergies = listOf("Phấn hoa", "Hải sản"),
-            height = 170.0f,
-            weight = 65.5f,
-            bmi = 22.6f,
-            medicalHistory = listOf(
-                com.example.carenest.model.MedicalCondition("Huyết áp", "Hơi cao lúc mới dậy")
-            ),
-            emergencyContact = com.example.carenest.model.EmergencyContact("Vợ", "Vợ", "0987654321")
-        )
     }
 }
 

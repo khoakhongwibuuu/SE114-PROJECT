@@ -1,5 +1,10 @@
 package com.example.carenest.feature.ekyc.data.repository
 
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+import com.example.carenest.core.data.network.requireList
+import com.example.carenest.core.data.network.requireSuccess
+
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -23,9 +28,9 @@ class EkycRepository(
             return null
         }
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể tải trạng thái hồ sơ")
+            throw IllegalStateException(response.errorMessage("Không thể tải trạng thái hồ sơ"))
         }
-        return response.body()?.data
+        return response.requireData("Không thể tải trạng thái hồ sơ")
     }
 
     suspend fun uploadCertificate(context: Context, uri: Uri): String {
@@ -39,9 +44,9 @@ class EkycRepository(
         val response = mediaApi.upload(part, "doctor-verifications")
 
         if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể tải ảnh chứng chỉ lên")
+            throw IllegalStateException(response.errorMessage("Không thể tải ảnh chứng chỉ lên"))
         }
-        return response.body()?.data?.url ?: throw IllegalStateException("Không nhận được URL ảnh chứng chỉ")
+        return response.requireData("Không thể tải ảnh chứng chỉ lên", "Không nhận được URL ảnh chứng chỉ").url
     }
 
     suspend fun submitVerification(
@@ -58,49 +63,32 @@ class EkycRepository(
                 documentUrl = documentUrl
             )
         )
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể gửi hồ sơ xác thực bác sĩ")
-        }
-        return response.body()?.data ?: throw IllegalStateException("Không nhận được trạng thái hồ sơ")
+        return response.requireData("Không thể gửi hồ sơ xác thực bác sĩ", "Không nhận được trạng thái hồ sơ")
     }
 
     suspend fun getPendingVerifications(): List<DoctorVerificationResponse> {
         val response = ekycApi.getPendingVerifications()
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách chờ duyệt")
-        }
-        return response.body()?.data ?: emptyList()
+        return response.requireList("Không thể tải danh sách chờ duyệt")
     }
 
     suspend fun approveVerification(id: Long): DoctorVerificationResponse {
         val response = ekycApi.approveVerification(id)
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể phê duyệt hồ sơ")
-        }
-        return response.body()?.data ?: throw IllegalStateException("Không nhận được thông tin phản hồi")
+        return response.requireData("Không thể phê duyệt hồ sơ", "Không nhận được thông tin phản hồi")
     }
 
     suspend fun rejectVerification(id: Long, rejectionReason: String): DoctorVerificationResponse {
         val response = ekycApi.rejectVerification(id, RejectVerificationRequest(rejectionReason))
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể từ chối hồ sơ")
-        }
-        return response.body()?.data ?: throw IllegalStateException("Không nhận được thông tin phản hồi")
+        return response.requireData("Không thể từ chối hồ sơ", "Không nhận được thông tin phản hồi")
     }
 
     suspend fun getAllDoctors(): List<DoctorSummary> {
         val response = ekycApi.getAllDoctors()
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách bác sĩ")
-        }
-        return response.body()?.data ?: emptyList()
+        return response.requireList("Không thể tải danh sách bác sĩ")
     }
 
     suspend fun revokeDoctor(userId: Long) {
         val response = ekycApi.revokeDoctor(userId)
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể thu hồi quyền bác sĩ")
-        }
+        response.requireSuccess("Không thể thu hồi quyền bác sĩ")
     }
 }
 

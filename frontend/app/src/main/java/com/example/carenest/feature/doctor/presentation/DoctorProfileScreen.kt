@@ -110,7 +110,7 @@ fun DoctorProfileScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = uiState.error!!,
+                            text = uiState.error.orEmpty(),
                             color = MaterialTheme.colorScheme.error,
                             textAlign = TextAlign.Center
                         )
@@ -121,7 +121,7 @@ fun DoctorProfileScreen(
                     }
                 }
                 uiState.profile != null -> {
-                    val profile = uiState.profile!!
+                    val profile = uiState.profile ?: return@Box
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(bottom = 80.dp)

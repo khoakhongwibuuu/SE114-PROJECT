@@ -16,30 +16,24 @@ import com.example.carenest.feature.dashboard.data.remote.DashboardApi
 import com.example.carenest.core.data.network.RetrofitClient
 import com.example.carenest.feature.ekyc.data.remote.EkycApi
 import com.example.carenest.feature.ekyc.data.repository.EkycRepository
-import com.example.carenest.feature.chat.data.remote.AiChatApi
 import com.example.carenest.feature.medical.data.remote.MedicineApi
 import com.example.carenest.feature.appointment.data.remote.AppointmentApi
 import com.example.carenest.feature.notifications.data.remote.NotificationApi
 import com.example.carenest.feature.doctor.data.remote.DoctorApi
 import com.example.carenest.feature.doctor.data.repository.DoctorRepository
 
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-
 class CareNestApplication : Application() {
     lateinit var secureSessionManager: SecureSessionManager
     lateinit var authApi: AuthApi
     lateinit var dashboardApi: DashboardApi
     lateinit var vaccinationApi: com.example.carenest.feature.health.data.remote.VaccinationApi
+    lateinit var growthApi: com.example.carenest.feature.health.data.remote.GrowthApi
     lateinit var communityRepository: CommunityRepository
     lateinit var familyApi: com.example.carenest.feature.family.data.remote.FamilyApi
     lateinit var familyRepository: com.example.carenest.feature.family.data.repository.FamilyRepository
     lateinit var chatRepository: ChatRepository
     lateinit var familyChatRepository: com.example.carenest.feature.chat.data.repository.FamilyChatRepository
     lateinit var ekycRepository: EkycRepository
-    lateinit var aiChatApi: AiChatApi
     lateinit var medicineApi: MedicineApi
     lateinit var appointmentApi: AppointmentApi
     lateinit var notificationApi: NotificationApi
@@ -59,6 +53,7 @@ class CareNestApplication : Application() {
         authApi = retrofit.create(AuthApi::class.java)
         dashboardApi = retrofit.create(DashboardApi::class.java)
         vaccinationApi = retrofit.create(com.example.carenest.feature.health.data.remote.VaccinationApi::class.java)
+        growthApi = retrofit.create(com.example.carenest.feature.health.data.remote.GrowthApi::class.java)
         communityRepository = CommunityRepository(communityApi, mediaApi)
         familyApi = retrofit.create(com.example.carenest.feature.family.data.remote.FamilyApi::class.java)
         familyRepository = com.example.carenest.feature.family.data.repository.FamilyRepository(familyApi, secureSessionManager)
@@ -79,14 +74,5 @@ class CareNestApplication : Application() {
         doctorRepository = DoctorRepository(doctorApi)
         bookingRepository = BookingRepository(bookingApi)
 
-        val aiOkHttpClient = OkHttpClient.Builder()
-            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
-            .build()
-        val aiRetrofit = Retrofit.Builder()
-            .baseUrl(com.example.carenest.AppConfig.AI_BACKEND_URL)
-            .client(aiOkHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        aiChatApi = aiRetrofit.create(AiChatApi::class.java)
     }
 }

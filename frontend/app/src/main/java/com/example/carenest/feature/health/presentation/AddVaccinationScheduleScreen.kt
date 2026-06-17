@@ -34,6 +34,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.time.LocalDate
+import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +60,24 @@ fun AddVaccinationScheduleScreen(
     val displayFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
     val isEdit = doseId != null
+    var hasPrefilledEdit by remember(doseId) { mutableStateOf(false) }
+    val editingDose = remember(uiState.vaccinationGroups, vaccineId, doseId) {
+        uiState.vaccinationGroups
+            .flatMap { it.vaccinations }
+            .firstOrNull { dose -> dose.doseId == doseId && (vaccineId == null || dose.recordId == vaccineId) }
+    }
+    val canSubmit = !uiState.isSubmitting && (isEdit || vaccineName.isNotBlank())
+
+    LaunchedEffect(editingDose?.doseId) {
+        if (isEdit && editingDose != null && !hasPrefilledEdit) {
+            selectedDose = editingDose.doseNumber
+            isCompleted = true
+            clinicName = editingDose.clinicName.orEmpty()
+            notes = editingDose.notes.orEmpty()
+            selectedDate = parseIsoDate(editingDose.dateGiven ?: editingDose.plannedDate) ?: Date()
+            hasPrefilledEdit = true
+        }
+    }
     
     // Listen for submission success
     LaunchedEffect(uiState.submitSuccess) {
@@ -75,19 +95,27 @@ fun AddVaccinationScheduleScreen(
         }
     }
 
-    val calendar = Calendar.getInstance()
-    calendar.time = selectedDate
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val newCalendar = Calendar.getInstance()
-            newCalendar.set(year, month, dayOfMonth)
-            selectedDate = newCalendar.time
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
+    fun showDatePicker() {
+        val calendar = Calendar.getInstance().apply { time = selectedDate }
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val newCalendar = Calendar.getInstance()
+                newCalendar.set(year, month, dayOfMonth)
+                selectedDate = newCalendar.time
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).apply {
+            val todayMillis = LocalDate.now().toDateAtStartOfDay().time
+            if (isEdit || isCompleted) {
+                datePicker.maxDate = todayMillis
+            } else {
+                datePicker.minDate = todayMillis
+            }
+        }.show()
+    }
 
     Scaffold(
         topBar = {
@@ -118,15 +146,27 @@ fun AddVaccinationScheduleScreen(
                             Toast.makeText(context, "Vui lòng nhập tên vắc xin", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
+                        val selectedLocalDate = selectedDate.toLocalDate()
+                        val today = LocalDate.now()
+                        if ((isEdit || isCompleted) && selectedLocalDate.isAfter(today)) {
+                            Toast.makeText(context, "Ngày tiêm thực tế không được ở tương lai", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (!isEdit && !isCompleted && selectedLocalDate.isBefore(today)) {
+                            Toast.makeText(context, "Ngày dự kiến không được ở quá khứ", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
                         val dateStr = dateFormat.format(selectedDate)
+                        val trimmedClinicName = clinicName.trim().ifBlank { null }
+                        val trimmedNotes = notes.trim().ifBlank { null }
                         
-                        if (isEdit && doseId != null) {
+                        if (doseId != null) {
                             viewModel.administerDose(
                                 doseId = doseId,
                                 request = AdministerDoseRequest(
                                     dateAdministered = dateStr,
-                                    location = clinicName.ifBlank { null },
-                                    notes = notes.ifBlank { null }
+                                    location = trimmedClinicName,
+                                    notes = trimmedNotes
                                 ),
                                 onSuccess = {}
                             )
@@ -134,12 +174,12 @@ fun AddVaccinationScheduleScreen(
                             viewModel.createVaccinationPlan(
                                 profileId = profileId,
                                 request = CreateVaccinationRequest(
-                                    vaccineName = vaccineName,
+                                    vaccineName = vaccineName.trim(),
                                     doseNumber = selectedDose,
                                     status = if (isCompleted) "COMPLETED" else "PENDING",
                                     date = dateStr,
-                                    location = clinicName.ifBlank { null },
-                                    notes = notes.ifBlank { null }
+                                    location = trimmedClinicName,
+                                    notes = trimmedNotes
                                 ),
                                 onSuccess = {}
                             )
@@ -148,7 +188,7 @@ fun AddVaccinationScheduleScreen(
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                    enabled = !uiState.isSubmitting
+                    enabled = canSubmit
                 ) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -224,25 +264,37 @@ fun AddVaccinationScheduleScreen(
                     }
 
                     Text("TRẠNG THÁI", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(top = 24.dp, bottom = 10.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (isEdit) {
                         Row(
-                            modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(16.dp)).background(if (isCompleted) PrimaryBlue else Color(0xFFF1F5F9)).clickable { isCompleted = true },
+                            modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(16.dp)).background(PrimaryBlue),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (isCompleted) Color.White else Color(0xFF64748B), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Đã tiêm", color = if (isCompleted) Color.White else Color(0xFF475569), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("Ghi nhận là đã tiêm", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
-                        
-                        Row(
-                            modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(16.dp)).background(if (!isCompleted) PrimaryBlue else Color(0xFFF1F5F9)).clickable { isCompleted = false },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Default.DateRange, contentDescription = null, tint = if (!isCompleted) Color.White else Color(0xFF64748B), modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Lịch dự kiến", color = if (!isCompleted) Color.White else Color(0xFF475569), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    } else {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(16.dp)).background(if (isCompleted) PrimaryBlue else Color(0xFFF1F5F9)).clickable { isCompleted = true },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = if (isCompleted) Color.White else Color(0xFF64748B), modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Đã tiêm", color = if (isCompleted) Color.White else Color(0xFF475569), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
+
+                            Row(
+                                modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(16.dp)).background(if (!isCompleted) PrimaryBlue else Color(0xFFF1F5F9)).clickable { isCompleted = false },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Default.DateRange, contentDescription = null, tint = if (!isCompleted) Color.White else Color(0xFF64748B), modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Lịch dự kiến", color = if (!isCompleted) Color.White else Color(0xFF475569), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
                         }
                     }
                 }
@@ -259,7 +311,7 @@ fun AddVaccinationScheduleScreen(
                     
                     Text(if (isCompleted) "NGÀY TIÊM THỰC TẾ" else "NGÀY HẸN / DỰ KIẾN", fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, color = Color(0xFF64748B), modifier = Modifier.padding(bottom = 10.dp))
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFFF1F5F9)).clickable { datePickerDialog.show() }.padding(horizontal = 16.dp),
+                        modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFFF1F5F9)).clickable { showDatePicker() }.padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(Icons.Default.DateRange, contentDescription = null, tint = Color(0xFF64748B))
@@ -303,3 +355,12 @@ fun AddVaccinationScheduleScreen(
         }
     }
 }
+
+private fun Date.toLocalDate(): LocalDate =
+    toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+
+private fun LocalDate.toDateAtStartOfDay(): Date =
+    Date.from(atStartOfDay(ZoneId.systemDefault()).toInstant())
+
+private fun parseIsoDate(value: String?): Date? =
+    value?.let { runCatching { LocalDate.parse(it).toDateAtStartOfDay() }.getOrNull() }

@@ -1,5 +1,8 @@
 package com.example.carenest.feature.social.data.paging
 
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.example.carenest.feature.social.data.remote.SocialApi
@@ -17,11 +20,13 @@ class PostPagingSource(
         return runCatching {
             val response = api.getGroupPosts(groupId = groupId, page = page, limit = limit)
             if (!response.isSuccessful) {
-                throw IllegalStateException(response.body()?.message ?: "Khong the tai bai viet nhom")
+                throw IllegalStateException(response.errorMessage("Không thể tải bài viết nhóm"))
             }
 
-            val payload = response.body()?.data
-                ?: throw IllegalStateException("Khong nhan duoc du lieu bai viet nhom")
+            val payload = response.requireData(
+                fallback = "Không thể tải bài viết nhóm",
+                missingDataMessage = "Không nhận được dữ liệu bài viết nhóm"
+            )
 
             LoadResult.Page(
                 data = payload.items,

@@ -5,10 +5,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.feature.booking.data.remote.ConsultationSocketEvent
 import com.example.carenest.feature.booking.data.remote.ConsultationWebSocketClient
-import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.example.carenest.feature.booking.domain.model.ConsultationMessage
 import com.example.carenest.feature.booking.domain.model.ConsultationThreadResponse
 import com.example.carenest.feature.booking.domain.model.SendConsultationMessageRequest
+import com.example.carenest.feature.booking.data.repository.BookingRepository
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -85,7 +85,8 @@ class ConsultationRoomViewModel(
                             }
                             it.copy(messages = newList)
                         }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
             }
@@ -123,7 +124,7 @@ class ConsultationRoomViewModel(
                     thread = it.thread?.copy(status = updated.status),
                     isActionLoading = false,
                     actionSuccess = "Phiên tư vấn đã kết thúc."
-                ) }
+                )}
                 onDone()
             }.onFailure { e ->
                 _state.update { it.copy(isActionLoading = false, error = e.message) }
@@ -140,7 +141,7 @@ class ConsultationRoomViewModel(
                     thread = it.thread?.copy(status = updated.status),
                     isActionLoading = false,
                     actionSuccess = "Đã hạn chế nhắn tin trong phiên này."
-                ) }
+                )}
             }.onFailure { e ->
                 _state.update { it.copy(isActionLoading = false, error = e.message) }
             }
@@ -156,7 +157,7 @@ class ConsultationRoomViewModel(
                     thread = it.thread?.copy(status = updated.status),
                     isActionLoading = false,
                     actionSuccess = "Đã hủy hạn chế nhắn tin thành công."
-                ) }
+                )}
             }.onFailure { e ->
                 _state.update { it.copy(isActionLoading = false, error = e.message) }
             }

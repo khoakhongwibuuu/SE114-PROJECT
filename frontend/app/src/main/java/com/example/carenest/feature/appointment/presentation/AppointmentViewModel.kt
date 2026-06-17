@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
 import java.time.ZonedDateTime
 
 sealed class AppointmentState {
@@ -67,13 +69,18 @@ class AppointmentViewModel(
 
     fun fetchAppointments(profileId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
+            if (profileId <= 0L) {
+                _appointmentState.value = AppointmentState.Error("ChÆ°a chá»n há»“ sÆ¡ sá»©c khá»e há»£p lá»‡")
+                return@launch
+            }
+
             _appointmentState.value = AppointmentState.Loading
             try {
                 val response = api.getAppointments(profileId)
                 val responses = if (response.isSuccessful) {
-                    response.requireList("Không thể tải lịch hẹn")
+                    response.requireList("KhÃ´ng thá»ƒ táº£i lá»‹ch háº¹n")
                 } else {
-                    throw IllegalStateException(response.errorMessage("Không thể tải lịch hẹn"))
+                    throw IllegalStateException(response.errorMessage("KhÃ´ng thá»ƒ táº£i lá»‹ch háº¹n"))
                 }
                 if (responses.isEmpty()) {
                     _appointmentState.value = AppointmentState.Empty
@@ -85,20 +92,18 @@ class AppointmentViewModel(
                 val history = mutableListOf<AppointmentItem.History>()
 
                 for (res in responses) {
-                    val date = try {
-                        ZonedDateTime.parse(res.appointmentDate)
-                    } catch (_: Exception) {
-                        null
-                    }
+                    val date = parseAppointmentDate(res.appointmentDate)
+                    val status = res.status.uppercase()
+                    val title = res.hospitalName?.takeIf { it.isNotBlank() } ?: "KhÃ¡m bá»‡nh"
 
-                    if (date != null && date.isAfter(now) && res.status != "CANCELLED") {
+                    if (date != null && date.isAfter(now) && status == "SCHEDULED") {
                         upcoming.add(
                             AppointmentItem.Upcoming(
                                 id = res.id,
-                                title = res.hospitalName.takeIf { !it.isBlank() } ?: "Khám bệnh",
+                                title = title,
                                 doctorName = res.doctorName,
                                 appointmentDate = res.appointmentDate,
-                                status = res.status,
+                                status = status,
                                 location = res.address,
                                 dayOfWeek = mapDayOfWeek(date.dayOfWeek.value),
                                 dayOfMonth = date.dayOfMonth.toString().padStart(2, '0')
@@ -108,10 +113,10 @@ class AppointmentViewModel(
                         history.add(
                             AppointmentItem.History(
                                 id = res.id,
-                                title = res.hospitalName.takeIf { !it.isBlank() } ?: "Khám bệnh",
+                                title = title,
                                 doctorName = res.doctorName,
                                 appointmentDate = res.appointmentDate,
-                                status = res.status,
+                                status = status,
                                 displayDate = "${date.dayOfMonth.toString().padStart(2, '0')}/${date.monthValue.toString().padStart(2, '0')}/${date.year}"
                             )
                         )
@@ -130,7 +135,7 @@ class AppointmentViewModel(
                     )
                 }
             } catch (e: Exception) {
-                _appointmentState.value = AppointmentState.Error(e.message ?: "Không thể tải lịch hẹn")
+                _appointmentState.value = AppointmentState.Error(e.message ?: "KhÃ´ng thá»ƒ táº£i lá»‹ch háº¹n")
             }
         }
     }
@@ -146,6 +151,11 @@ class AppointmentViewModel(
         onError: (String) -> Unit
     ) {
         viewModelScope.launch(Dispatchers.IO) {
+            if (profileId <= 0L) {
+                onError("ChÆ°a chá»n há»“ sÆ¡ sá»©c khá»e há»£p lá»‡")
+                return@launch
+            }
+
             _isActionLoading.value = true
             try {
                 val response = api.createAppointment(
@@ -158,15 +168,15 @@ class AppointmentViewModel(
                         notes = notes
                     )
                 )
-                response.requireData("Không thể tạo lịch hẹn")
+                response.requireData("KhÃ´ng thá»ƒ táº¡o lá»‹ch háº¹n")
                 if (!response.isSuccessful) {
-                    onError(response.errorMessage("Không thể tạo lịch hẹn"))
+                    onError(response.errorMessage("KhÃ´ng thá»ƒ táº¡o lá»‹ch háº¹n"))
                     return@launch
                 }
                 onSuccess()
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                onError(e.message ?: "Không thể tạo lịch hẹn")
+                onError(e.message ?: "KhÃ´ng thá»ƒ táº¡o lá»‹ch háº¹n")
             } finally {
                 _isActionLoading.value = false
             }
@@ -175,20 +185,30 @@ class AppointmentViewModel(
 
     fun cancelAppointment(appointmentId: Long, profileId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
+            if (profileId <= 0L) {
+                _appointmentState.value = AppointmentState.Error("ChÆ°a chá»n há»“ sÆ¡ sá»©c khá»e há»£p lá»‡")
+                return@launch
+            }
+
             try {
                 val response = api.cancelAppointment(appointmentId)
-                response.requireData("Không thể hủy lịch hẹn")
+                response.requireData("KhÃ´ng thá»ƒ há»§y lá»‹ch háº¹n")
                 if (!response.isSuccessful) {
                     _appointmentState.value = AppointmentState.Error(
-                        response.errorMessage("Không thể hủy lịch hẹn")
+                        response.errorMessage("KhÃ´ng thá»ƒ há»§y lá»‹ch háº¹n")
                     )
                     return@launch
                 }
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                _appointmentState.value = AppointmentState.Error(e.message ?: "Không thể hủy lịch hẹn")
+                _appointmentState.value = AppointmentState.Error(e.message ?: "KhÃ´ng thá»ƒ há»§y lá»‹ch háº¹n")
             }
         }
+    }
+
+    private fun parseAppointmentDate(value: String): ZonedDateTime? {
+        return runCatching { ZonedDateTime.parse(value) }.getOrNull()
+            ?: runCatching { Instant.parse(value).atZone(ZoneId.systemDefault()) }.getOrNull()
     }
 
     private fun mapDayOfWeek(dayValue: Int): String {

@@ -1,33 +1,37 @@
 package com.example.carenest.feature.booking.data.repository
 
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+import com.example.carenest.core.data.network.requireList
+import com.example.carenest.core.data.network.userException
+
 import com.example.carenest.feature.booking.data.remote.BookingApi
 import com.example.carenest.feature.booking.domain.model.BookingResponse
 import com.example.carenest.feature.booking.domain.model.BookingRequestType
+import com.example.carenest.feature.booking.domain.model.DuplicateActiveConsultationException
 import com.example.carenest.feature.booking.data.remote.CancelBookingRequest
 import com.example.carenest.feature.booking.data.remote.ConfirmBookingScheduleRequest
 import com.example.carenest.feature.booking.domain.model.CreateBookingRequest
 import com.example.carenest.feature.booking.domain.model.RejectBookingRequest
 import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
+import org.json.JSONObject
 
 class BookingRepository(
     private val bookingApi: BookingApi
 ) {
     suspend fun getDoctors(): List<DoctorSummary> {
         val response = bookingApi.getDoctors()
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể tải danh sách bác sĩ")
-        }
-        return response.body()?.data.orEmpty()
+        return response.requireList("Không thể tải danh sách bác sĩ")
     }
 
     suspend fun getMyBookings(): List<BookingResponse> {
         val response = bookingApi.getPatientBookings()
-        return response.data.orEmpty()
+        return response.requireList("Không thể tải lịch sử đặt khám")
     }
 
     suspend fun getDoctorBookings(): List<BookingResponse> {
         val response = bookingApi.getDoctorBookings()
-        return response.data.orEmpty()
+        return response.requireList("Không thể tải yêu cầu đặt khám của bác sĩ")
     }
 
     suspend fun createBooking(
@@ -42,11 +46,17 @@ class BookingRepository(
                 doctorId = doctorId,
                 healthProfileId = healthProfileId,
                 requestType = type,
-                preferredSchedule = preferredSchedule?.takeIf { it.isNotBlank() },
+                preferredTimeNote = preferredSchedule?.takeIf { it.isNotBlank() },
                 note = patientNote?.takeIf { it.isNotBlank() } ?: ""
             )
         )
-        return response.data ?: throw IllegalStateException(response.message ?: "Thiếu dữ liệu phản hồi khi tạo yêu cầu")
+        if (!response.isSuccessful) {
+            val rawError = runCatching { response.errorBody()?.string() }.getOrNull()
+            parseDuplicateConsultation(rawError)?.let { throw it }
+            throw IllegalStateException(parseErrorMessage(rawError) ?: "Không thể gửi yêu cầu đặt lịch (${response.code()})")
+        }
+        val body = response.body()
+        return body?.data ?: throw IllegalStateException(body?.message ?: "Thiếu dữ liệu phản hồi khi tạo yêu cầu")
     }
 
     suspend fun confirmSchedule(
@@ -63,10 +73,7 @@ class BookingRepository(
                 confirmedNote = confirmedNote?.takeIf { it.isNotBlank() }
             )
         )
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể xác nhận lịch")
-        }
-        return response.body()?.data ?: throw IllegalStateException("Thiếu dữ liệu phản hồi khi xác nhận lịch")
+        return response.requireData("Không thể xác nhận lịch", "Thiếu dữ liệu phản hồi khi xác nhận lịch")
     }
 
     suspend fun rejectBooking(
@@ -77,7 +84,7 @@ class BookingRepository(
             id = bookingId,
             request = RejectBookingRequest(rejectionReason.trim())
         )
-        return response.data ?: throw IllegalStateException(response.message ?: "Thiếu dữ liệu phản hồi khi từ chối")
+        return response.requireData("Không thể từ chối yêu cầu")
     }
 
     suspend fun cancelBooking(
@@ -88,90 +95,98 @@ class BookingRepository(
             id = bookingId,
             request = CancelBookingRequest(cancellationReason?.takeIf { it.isNotBlank() })
         )
-        if (!response.isSuccessful) {
-            throw IllegalStateException(response.body()?.message ?: "Không thể hủy yêu cầu")
-        }
-        return response.body()?.data ?: throw IllegalStateException("Thiếu dữ liệu phản hồi khi hủy")
+        return response.requireData("Không thể hủy yêu cầu", "Thiếu dữ liệu phản hồi khi hủy")
     }
 
     suspend fun getConsultationInbox(): Result<List<com.example.carenest.feature.booking.domain.model.ConsultationThreadInboxResponse>> {
         return try {
             val response = bookingApi.getConsultationInbox()
-            Result.success(response.data.orEmpty())
+            Result.success(response.requireList("Không thể tải danh sách tư vấn"))
         } catch (e: Exception) {
-            Result.failure(extractErrorMessage(e))
+            Result.failure(e.userException("Không thể tải danh sách tư vấn"))
         }
     }
 
     suspend fun approveBooking(bookingId: Long): Result<BookingResponse> {
         return try {
             val response = bookingApi.approveBooking(bookingId)
-            Result.success(response.data ?: throw java.lang.IllegalStateException(response.message ?: "Thiếu dữ liệu"))
+            Result.success(response.requireData("Không thể chấp nhận yêu cầu"))
         } catch (e: Exception) {
-            Result.failure(extractErrorMessage(e))
+            Result.failure(e.userException("Không thể chấp nhận yêu cầu"))
         }
     }
 
     suspend fun provisionConsultationThread(bookingId: Long): Result<com.example.carenest.feature.booking.domain.model.ConsultationThreadResponse> {
         return try {
             val response = bookingApi.provisionConsultationThread(bookingId)
-            Result.success(response.data ?: throw java.lang.IllegalStateException(response.message ?: "Thiếu dữ liệu"))
+            Result.success(response.requireData("Không thể mở phòng tư vấn"))
         } catch (e: Exception) {
-            Result.failure(extractErrorMessage(e))
+            Result.failure(e.userException("Không thể mở phòng tư vấn"))
         }
     }
 
     suspend fun getConsultationMessages(threadId: Long): Result<List<com.example.carenest.feature.booking.domain.model.ConsultationMessage>> {
         return try {
             val response = bookingApi.getConsultationMessages(threadId)
-            Result.success(response.data.orEmpty())
+            Result.success(response.requireList("Không thể tải tin nhắn tư vấn"))
         } catch (e: Exception) {
-            Result.failure(extractErrorMessage(e))
+            Result.failure(e.userException("Không thể tải tin nhắn tư vấn"))
         }
     }
 
     suspend fun completeConsultation(bookingId: Long): Result<BookingResponse> {
         return try {
             val response = bookingApi.completeConsultation(bookingId)
-            Result.success(response.data ?: throw java.lang.IllegalStateException(response.message ?: "Thiếu dữ liệu"))
+            Result.success(response.requireData("Không thể kết thúc phiên tư vấn"))
         } catch (e: Exception) {
-            Result.failure(extractErrorMessage(e))
+            Result.failure(e.userException("Không thể kết thúc phiên tư vấn"))
         }
     }
 
     suspend fun restrictMessaging(bookingId: Long): Result<BookingResponse> {
         return try {
             val response = bookingApi.restrictMessaging(bookingId)
-            Result.success(response.data ?: throw java.lang.IllegalStateException(response.message ?: "Thiếu dữ liệu"))
+            Result.success(response.requireData("Không thể hạn chế nhắn tin"))
         } catch (e: Exception) {
-            Result.failure(extractErrorMessage(e))
+            Result.failure(e.userException("Không thể hạn chế nhắn tin"))
         }
     }
 
     suspend fun unrestrictMessaging(bookingId: Long): Result<BookingResponse> {
         return try {
             val response = bookingApi.unrestrictMessaging(bookingId)
-            Result.success(response.data ?: throw java.lang.IllegalStateException(response.message ?: "Thiếu dữ liệu"))
+            Result.success(response.requireData("Không thể bỏ hạn chế nhắn tin"))
         } catch (e: Exception) {
-            Result.failure(extractErrorMessage(e))
+            Result.failure(e.userException("Không thể bỏ hạn chế nhắn tin"))
         }
     }
+}
 
-    private fun extractErrorMessage(e: Exception): Exception {
-        if (e is retrofit2.HttpException) {
-            return try {
-                val errorBody = e.response()?.errorBody()?.string()
-                if (!errorBody.isNullOrBlank()) {
-                    val json = org.json.JSONObject(errorBody)
-                    val message = json.optString("message", "Lỗi từ máy chủ: ${e.code()}")
-                    Exception(message)
-                } else {
-                    Exception("HTTP ${e.code()} - ${e.message()}")
-                }
-            } catch (ex: Exception) {
-                Exception("HTTP ${e.code()} - ${e.message()}")
-            }
-        }
-        return e
-    }
+private fun parseDuplicateConsultation(rawError: String?): DuplicateActiveConsultationException? {
+    if (rawError.isNullOrBlank()) return null
+    return runCatching {
+        val json = JSONObject(rawError)
+        val data = json.optJSONObject("data") ?: return@runCatching null
+        if (data.optString("code") != "DUPLICATE_CONSULTATION") return@runCatching null
+        val existingBookingId = data.optLong("existingBookingId", -1L).takeIf { it > 0L }
+            ?: return@runCatching null
+        DuplicateActiveConsultationException(
+            message = json.optString("message").takeIf { it.isNotBlank() }
+                ?: "Bạn đang có một yêu cầu hoặc phiên tư vấn đang hoạt động với bác sĩ này.",
+            existingBookingId = existingBookingId,
+            status = data.optString("status").takeIf { it.isNotBlank() } ?: "ACTIVE"
+        )
+    }.getOrNull()
+}
+
+private fun parseErrorMessage(rawError: String?): String? {
+    if (rawError.isNullOrBlank()) return null
+    return runCatching {
+        val json = JSONObject(rawError)
+        sequenceOf(
+            json.optString("message"),
+            json.optString("error"),
+            json.optString("detail")
+        ).firstOrNull { it.isNotBlank() }
+    }.getOrNull()
 }

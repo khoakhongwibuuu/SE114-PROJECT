@@ -23,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
@@ -31,7 +30,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -181,7 +179,7 @@ fun HomeDashboardScreen(
 
                     Spacer(modifier = Modifier.height(AppSpacing.x2))
 
-                    AiAdvisorCard(text = state.aiSummaryText)
+                    HealthBriefCard(text = state.aiSummaryText)
 
                     Spacer(modifier = Modifier.height(AppSpacing.x8))
                 }
@@ -462,7 +460,12 @@ fun TasksSection(tasks: List<DashboardTask>, onTaskClick: (DashboardTask) -> Uni
                 ) {
                     Row(modifier = Modifier.padding(AppSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(52.dp).clip(RoundedCornerShape(18.dp)).background(Color(task.iconBgColor)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Assignment, contentDescription = null, tint = Color(task.iconColor), modifier = Modifier.size(24.dp))
+                            CareNestIcon(
+                                name = task.icon.ifBlank { "check_circle" },
+                                contentDescription = null,
+                                tint = Color(task.iconColor),
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                         Spacer(modifier = Modifier.width(AppSpacing.lg))
                         Column(modifier = Modifier.weight(1f)) {
@@ -489,7 +492,7 @@ fun TasksSection(tasks: List<DashboardTask>, onTaskClick: (DashboardTask) -> Uni
 }
 
 @Composable
-fun AiAdvisorCard(text: String) {
+fun HealthBriefCard(text: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppRadius.x2),
@@ -499,10 +502,10 @@ fun AiAdvisorCard(text: String) {
         Column(modifier = Modifier.padding(AppSpacing.xl)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.size(36.dp).clip(RoundedCornerShape(AppRadius.lg)).background(Color(0xFF0047AB)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.SmartToy, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(AppSpacing.sm + 2.dp))
-                Text("AI CỐ VẤN", style = CareNestTextStyles.overline.copy(letterSpacing = 1.sp), color = Color(0xFF0047AB))
+                Text("TÓM TẮT SỨC KHỎE", style = CareNestTextStyles.overline.copy(letterSpacing = 1.sp), color = Color(0xFF0047AB))
             }
             Spacer(modifier = Modifier.height(AppSpacing.md))
             Text("\"$text\"", style = CareNestTextStyles.bodyMd.copy(fontStyle = FontStyle.Italic, lineHeight = 22.sp), color = TextPrimary)

@@ -113,7 +113,7 @@ fun MessageBubble(
                     )
                     .combinedClickable(
                         onLongClick = { onLongClick(msg) },
-                        onClick = {}
+                        onClick = { onLongClick(msg) }
                     )
                     .padding(horizontal = 14.dp, vertical = 10.dp),
             ) {

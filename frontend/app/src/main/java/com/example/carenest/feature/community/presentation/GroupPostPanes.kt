@@ -84,11 +84,12 @@ fun ApprovedPostsPane(
     posts: List<GroupPost>,
     isLoading: Boolean,
     error: String?,
-    canRemovePosts: Boolean,
+    canModerate: Boolean,
     onNavigateToCreatePost: () -> Unit,
     onLikeClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit,
     onDoctorClick: (Long) -> Unit,
+    onReportClick: (GroupPost) -> Unit,
     onDeleteClick: (GroupPost) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -111,18 +112,22 @@ fun ApprovedPostsPane(
                         onLikeClick = onLikeClick,
                         onCommentClick = onCommentClick,
                         onDoctorClick = onDoctorClick,
-                        actionRow = if (canRemovePosts) {
-                            {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End
-                                ) {
+                        actionRow = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                if (canModerate) {
                                     TextButton(onClick = { onDeleteClick(post) }) {
                                         Text("Gỡ bài", color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
                                     }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                                TextButton(onClick = { onReportClick(post) }) {
+                                    Text("Báo cáo", color = Color(0xFFDC2626))
                                 }
                             }
-                        } else null
+                        }
                     )
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -150,7 +155,9 @@ fun MyGroupPostsPane(
     onNavigateToCreatePost: () -> Unit,
     onLikeClick: (Long) -> Unit,
     onCommentClick: (Long) -> Unit,
-    onDoctorClick: (Long) -> Unit
+    onDoctorClick: (Long) -> Unit,
+    onEditClick: (GroupPost) -> Unit,
+    onDeleteClick: (GroupPost) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         when {
@@ -172,7 +179,24 @@ fun MyGroupPostsPane(
                         showStatus = true,
                         onLikeClick = onLikeClick,
                         onCommentClick = onCommentClick,
-                        onDoctorClick = onDoctorClick
+                        onDoctorClick = onDoctorClick,
+                        actionRow = {
+                            HorizontalDivider(color = Color(0xFFE2E8F0), modifier = Modifier.padding(top = 8.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { onEditClick(post) }) {
+                                    Text("Chinh sua", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                TextButton(onClick = { onDeleteClick(post) }) {
+                                    Text("Xoa", color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
                     )
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -227,8 +251,9 @@ fun ModerationQueuePane(
             confirmButton = {
                 Button(
                     onClick = {
-                        if (rejectReason.isNotBlank()) {
-                            onReject(rejectPostId!!, rejectReason)
+                        val postId = rejectPostId
+                        if (postId != null && rejectReason.isNotBlank()) {
+                            onReject(postId, rejectReason)
                             rejectPostId = null
                             rejectReason = ""
                         }

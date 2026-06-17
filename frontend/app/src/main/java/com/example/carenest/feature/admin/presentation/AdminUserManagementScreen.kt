@@ -40,7 +40,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -64,7 +63,8 @@ fun AdminUserManagementScreen() {
     )
     val state by viewModel.uiState.collectAsState()
     val users = viewModel.users.collectAsLazyPagingItems()
-    val statusTarget = remember { mutableStateOf<AdminUserSummaryResponse?>(null) }
+    val roleTarget = androidx.compose.runtime.remember { mutableStateOf<AdminUserSummaryResponse?>(null) }
+    val statusTarget = androidx.compose.runtime.remember { mutableStateOf<AdminUserSummaryResponse?>(null) }
     val currentUserId = application.secureSessionManager.getUserId()
 
     LaunchedEffect(state.error, state.message) {
@@ -93,7 +93,7 @@ fun AdminUserManagementScreen() {
                 Icon(Icons.Default.Search, contentDescription = null)
             },
             placeholder = {
-                Text("Tim theo email hoac ten nguoi dung")
+                Text("Tìm theo email hoặc tên người dùng")
             },
             singleLine = true,
             shape = RoundedCornerShape(18.dp),
@@ -115,7 +115,7 @@ fun AdminUserManagementScreen() {
             users.loadState.refresh is LoadState.Error -> {
                 val error = (users.loadState.refresh as LoadState.Error).error
                 com.example.carenest.feature.admin.presentation.components.AdminErrorState(
-                    message = error.localizedMessage ?: "Khong the tai danh sach nguoi dung",
+                    message = error.localizedMessage ?: "Không thể tải danh sách người dùng",
                     onRetry = { users.retry() }
                 )
             }
@@ -123,7 +123,7 @@ fun AdminUserManagementScreen() {
             users.itemCount == 0 -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "Khong tim thay nguoi dung phu hop",
+                        text = "Không tìm thấy người dùng phù hợp",
                         color = Color(0xFF64748B),
                         style = MaterialTheme.typography.bodyLarge,
                     )
@@ -139,11 +139,15 @@ fun AdminUserManagementScreen() {
                     items(count = users.itemCount) { index ->
                         val user = users[index] ?: return@items
                         val status = state.optimisticStatuses[user.id] ?: user.status
+                        val role = state.optimisticRoles[user.id] ?: user.role
                         AdminUserRow(
                             user = user,
                             status = status,
+                            role = role,
                             isCurrentAdmin = user.id == currentUserId,
+                            isBusy = state.pendingUserIds.contains(user.id),
                             onToggleStatus = { statusTarget.value = user },
+                            onToggleAdminRole = { roleTarget.value = user },
                         )
                     }
 
@@ -164,6 +168,45 @@ fun AdminUserManagementScreen() {
         }
     }
 
+    roleTarget.value?.let { user ->
+        val currentRole = state.optimisticRoles[user.id] ?: user.role
+        val targetRole = if (currentRole.equals("ADMIN", ignoreCase = true)) "USER" else "ADMIN"
+        AlertDialog(
+            onDismissRequest = { roleTarget.value = null },
+            title = {
+                Text(
+                    text = if (targetRole == "ADMIN") "Cấp quyền admin" else "Gỡ quyền admin",
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    text = if (targetRole == "ADMIN") {
+                        "Người dùng này sẽ có quyền truy cập khu vực quản trị. Chỉ cấp quyền cho tài khoản vận hành đáng tin cậy."
+                    } else {
+                        "Người dùng này sẽ mất quyền truy cập khu vực quản trị. Hệ thống sẽ từ chối nếu đây là admin hoạt động cuối cùng."
+                    },
+                    color = Color(0xFF475569),
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.toggleAdminRole(user)
+                        roleTarget.value = null
+                    },
+                ) {
+                    Text(if (targetRole == "ADMIN") "Cấp quyền" else "Gỡ quyền")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { roleTarget.value = null }) {
+                    Text("Hủy")
+                }
+            },
+        )
+    }
+
     statusTarget.value?.let { user ->
         val currentStatus = state.optimisticStatuses[user.id] ?: user.status
         val isBanned = currentStatus.equals("BANNED", ignoreCase = true) ||
@@ -172,18 +215,16 @@ fun AdminUserManagementScreen() {
             onDismissRequest = { statusTarget.value = null },
             title = {
                 Text(
-                    text = if (isBanned) "Mo lai tai khoan" else "Khoa tai khoan",
+                    text = if (isBanned) "Mở lại tài khoản" else "Khóa tài khoản",
                     fontWeight = FontWeight.Bold,
                 )
             },
             text = {
                 Text(
                     text = if (isBanned) {
-                        "Nguoi dung se dang nhap va su dung CareNest tro lai."
-                    } else if (user.id == currentUserId) {
-                        "Ban khong the tu khoa tai khoan admin cua chinh minh."
+                        "Người dùng sẽ đăng nhập và sử dụng CareNest trở lại."
                     } else {
-                        "Nguoi dung se khong the dang nhap hoac su dung CareNest cho den khi duoc mo lai."
+                        "Người dùng sẽ không thể đăng nhập hoặc sử dụng các luồng CareNest cho đến khi được mở lại. Hệ thống sẽ từ chối nếu đây là admin hoạt động cuối cùng."
                     },
                     color = Color(0xFF475569),
                 )
@@ -194,14 +235,14 @@ fun AdminUserManagementScreen() {
                         viewModel.toggleUserStatus(user)
                         statusTarget.value = null
                     },
-                    enabled = user.id != currentUserId,
+                    enabled = !state.pendingUserIds.contains(user.id),
                 ) {
-                    Text(if (isBanned) "Mo lai" else "Khoa")
+                    Text(if (isBanned) "Mở lại" else "Khóa")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { statusTarget.value = null }) {
-                    Text("Huy")
+                    Text("Hủy")
                 }
             },
         )
@@ -212,8 +253,11 @@ fun AdminUserManagementScreen() {
 private fun AdminUserRow(
     user: AdminUserSummaryResponse,
     status: String,
+    role: String,
     isCurrentAdmin: Boolean,
+    isBusy: Boolean,
     onToggleStatus: () -> Unit,
+    onToggleAdminRole: () -> Unit,
 ) {
     val isBanned = status.equals("BANNED", ignoreCase = true) || status.equals("INACTIVE", ignoreCase = true)
     Card(
@@ -243,7 +287,7 @@ private fun AdminUserRow(
             Spacer(modifier = Modifier.size(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = user.fullName?.takeIf { it.isNotBlank() } ?: "Nguoi dung CareNest",
+                    text = user.fullName?.takeIf { it.isNotBlank() } ?: "Người dùng CareNest",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFF0F172A),
@@ -261,39 +305,50 @@ private fun AdminUserRow(
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     AssistChip(
-                        onClick = {},
-                        label = { Text(user.role) },
+                        onClick = onToggleAdminRole,
+                        enabled = !isBusy && !isBanned && !isCurrentAdmin,
+                        label = { Text(role) },
                         colors = AssistChipDefaults.assistChipColors(
-                            containerColor = Color(0xFFEEF2FF),
-                            labelColor = Color(0xFF3730A3),
+                            containerColor = if (role.equals("ADMIN", ignoreCase = true)) Color(0xFFFFF7ED) else Color(0xFFEEF2FF),
+                            labelColor = if (role.equals("ADMIN", ignoreCase = true)) Color(0xFFC2410C) else Color(0xFF3730A3),
                         ),
                     )
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(if (isBanned) "Da khoa" else "Hoat dong") },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = if (isBanned) Color(0xFFFEF2F2) else Color(0xFFECFDF5),
-                            labelColor = if (isBanned) Color(0xFFB91C1C) else Color(0xFF047857),
-                        ),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = if (isBanned) Color(0xFFFEF2F2) else Color(0xFFECFDF5),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 7.dp)
+                    ) {
+                        Text(
+                            text = if (isBanned) "Đã khóa" else "Hoạt động",
+                            color = if (isBanned) Color(0xFFB91C1C) else Color(0xFF047857),
+                            fontSize = 14.sp
+                        )
+                    }
                     if (isCurrentAdmin) {
                         AssistChip(
                             onClick = {},
                             enabled = false,
-                            label = { Text("Ban") },
+                            label = { Text("Bạn") },
                         )
                     }
                 }
             }
             IconButton(
                 onClick = onToggleStatus,
-                enabled = !isCurrentAdmin,
+                enabled = !isBusy && !isCurrentAdmin,
             ) {
-                Icon(
-                    imageVector = if (isBanned) Icons.Default.CheckCircle else Icons.Default.Block,
-                    contentDescription = if (isBanned) "Mo khoa nguoi dung" else "Khoa nguoi dung",
-                    tint = if (isBanned) Color(0xFF047857) else Color(0xFFB91C1C),
-                )
+                if (isBusy) {
+                    CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(
+                        imageVector = if (isBanned) Icons.Default.CheckCircle else Icons.Default.Block,
+                        contentDescription = if (isBanned) "Mở khóa người dùng" else "Khóa người dùng",
+                        tint = if (isBanned) Color(0xFF047857) else Color(0xFFB91C1C),
+                    )
+                }
             }
         }
     }

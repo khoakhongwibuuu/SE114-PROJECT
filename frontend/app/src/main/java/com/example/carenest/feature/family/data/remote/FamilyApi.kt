@@ -5,6 +5,7 @@ import com.example.carenest.feature.family.domain.model.CreateFamilyRequest
 import com.example.carenest.feature.family.domain.model.FamilyDetailResponse
 import com.example.carenest.feature.family.domain.model.FamilyInvitationItem
 import com.example.carenest.feature.family.domain.model.FamilyJoinCodeResponse
+import com.example.carenest.feature.family.domain.model.FamilyResponse
 import com.example.carenest.feature.family.domain.model.FamilySummary
 import com.example.carenest.feature.family.domain.model.InviteMemberRequest
 import com.example.carenest.feature.family.domain.model.JoinFamilyByCodeRequest
@@ -41,7 +42,7 @@ interface FamilyApi {
     suspend fun getFamilyProfile(@Path("id") profileId: Long): Response<ApiResponse<RawHealthProfileResponse>>
 
     @POST("/api/v1/families")
-    suspend fun createFamily(@Body request: CreateFamilyRequest): Response<ApiResponse<Unit>>
+    suspend fun createFamily(@Body request: CreateFamilyRequest): Response<ApiResponse<FamilyResponse>>
 
     @POST("/api/v1/families/join-by-code")
     suspend fun joinFamilyByCode(@Body request: JoinFamilyByCodeRequest): Response<ApiResponse<FamilyDetailResponse>>
@@ -67,7 +68,7 @@ interface FamilyApi {
 
     @PUT("/api/v1/invitations/{id}")
     suspend fun updateInvitationStatus(
-        @Path("id") inviteId: Int,
+        @Path("id") inviteId: Long,
         @Body request: UpdateInvitationRequest
     ): Response<ApiResponse<Unit>>
 
@@ -81,11 +82,11 @@ interface FamilyApi {
     suspend fun updateProfileDetails(
         @Path("id") profileId: Long,
         @Body request: UpdateProfileDetailsRequest
-    ): Response<ApiResponse<Unit>>
+    ): Response<ApiResponse<RawHealthProfileResponse>>
 
     @PUT("/api/v1/health-profiles/{id}/medical-info")
     suspend fun updateProfileMedicalInfo(
         @Path("id") profileId: Long,
         @Body request: UpdateMedicalInfoRequest
-    ): Response<ApiResponse<Unit>>
+    ): Response<ApiResponse<RawHealthProfileResponse>>
 }

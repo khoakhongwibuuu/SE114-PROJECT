@@ -1,6 +1,8 @@
 package com.example.carenest.feature.chat.data.repository
 
+import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
+
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.chat.data.remote.ChatSocketEvent
 import com.example.carenest.feature.chat.data.remote.FamilyChatWebSocketClient
@@ -19,8 +21,14 @@ class FamilyChatRepository(
     private val gson: Gson = Gson()
 ) {
     suspend fun loadHistory(familyId: Long, page: Int = 0, size: Int = 20): FamilyChatPageResponse {
-        return api.getChatHistory(familyId, page, size)
-            .requireData("Không thể tải lịch sử tin nhắn gia đình")
+        val response = api.getChatHistory(familyId, page, size)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(response.errorMessage("Không thể tải lịch sử tin nhắn gia đình"))
+        }
+        return response.requireData(
+            fallback = "Không thể tải lịch sử tin nhắn gia đình",
+            missingDataMessage = "Không nhận được phản hồi từ server"
+        )
     }
 
     fun mapToChatMessages(pageResponse: FamilyChatPageResponse): List<ChatMessage> {

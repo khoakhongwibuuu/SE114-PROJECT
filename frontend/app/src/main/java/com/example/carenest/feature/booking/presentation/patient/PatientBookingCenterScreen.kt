@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,14 +17,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.carenest.CareNestApplication
 import com.example.carenest.core.presentation.theme.PrimaryBlue
-import com.example.carenest.feature.booking.domain.model.BookingResponse
 import com.example.carenest.feature.booking.domain.model.BookingRequestType
+import com.example.carenest.feature.booking.domain.model.BookingResponse
 import com.example.carenest.feature.booking.domain.model.BookingStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,10 +50,10 @@ fun PatientBookingCenterScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Lịch sử đặt khám", fontWeight = FontWeight.Bold) },
+                title = { Text("Lá»‹ch sá»­ Ä‘áº·t khÃ¡m", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Trở về")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Trá»Ÿ vá»")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -74,18 +75,17 @@ fun PatientBookingCenterScreen(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(uiState.error!!, color = MaterialTheme.colorScheme.error)
+                        Text(uiState.error.orEmpty(), color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(onClick = { viewModel.loadBookings() }) {
-                            Text("Thử lại")
+                            Text("Thá»­ láº¡i")
                         }
                     }
                 }
                 uiState.bookings.isEmpty() -> {
-                    Text(
-                        text = "Chưa có lịch sử đặt khám",
-                        color = Color(0xFF64748B),
-                        modifier = Modifier.align(Alignment.Center)
+                    EmptyBookingHistoryState(
+                        modifier = Modifier.align(Alignment.Center),
+                        onFindDoctor = onBack
                     )
                 }
                 else -> {
@@ -102,6 +102,38 @@ fun PatientBookingCenterScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EmptyBookingHistoryState(
+    modifier: Modifier = Modifier,
+    onFindDoctor: () -> Unit
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "ChÆ°a cÃ³ lá»‹ch sá»­ Ä‘áº·t khÃ¡m",
+            color = Color(0xFF0F172A),
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Báº¡n cÃ³ thá»ƒ Ä‘áº·t lá»‹ch tá»« há»“ sÆ¡ bÃ¡c sÄ©. Khi cÃ³ yÃªu cáº§u, tráº¡ng thÃ¡i vÃ  phÃ²ng tÆ° váº¥n sáº½ hiá»ƒn thá»‹ táº¡i Ä‘Ã¢y.",
+            color = Color(0xFF64748B),
+            fontSize = 13.sp,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onFindDoctor,
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+        ) {
+            Text("Quay láº¡i")
         }
     }
 }
@@ -141,23 +173,22 @@ fun PatientBookingCard(
                         color = Color(0xFF0F172A)
                     )
                     Text(
-                        text = if (booking.requestType == BookingRequestType.ONLINE_CHAT) "Tư vấn trực tuyến" else "Khám trực tiếp",
+                        text = if (booking.requestType == BookingRequestType.ONLINE_CHAT) "TÆ° váº¥n trá»±c tuyáº¿n" else "KhÃ¡m trá»±c tiáº¿p",
                         fontSize = 13.sp,
                         color = PrimaryBlue
                     )
                 }
-                
-                // Status Badge
-                val (statusColor, statusText, statusBg) = when(booking.status) {
-                    BookingStatus.PENDING -> Triple(Color(0xFFEAB308), "Chờ duyệt", Color(0xFFFEF9C3))
-                    BookingStatus.APPROVED -> Triple(Color(0xFF22C55E), "Đã chấp nhận", Color(0xFFDCFCE7))
-                    BookingStatus.REJECTED -> Triple(Color(0xFFEF4444), "Đã từ chối", Color(0xFFFEE2E2))
-                    BookingStatus.ACTIVE -> Triple(Color(0xFF3B82F6), "Đang khám", Color(0xFFDBEAFE))
-                    BookingStatus.COMPLETED -> Triple(Color(0xFF64748B), "Hoàn thành", Color(0xFFF1F5F9))
-                    BookingStatus.CANCELLED -> Triple(Color(0xFFEF4444), "Đã hủy", Color(0xFFFEE2E2))
-                    BookingStatus.RESTRICTED -> Triple(Color(0xFFF59E0B), "Hạn chế", Color(0xFFFEF3C7))
+
+                val (statusColor, statusText, statusBg) = when (booking.status) {
+                    BookingStatus.PENDING -> Triple(Color(0xFFEAB308), "Chá» duyá»‡t", Color(0xFFFEF9C3))
+                    BookingStatus.APPROVED -> Triple(Color(0xFF22C55E), "ÄÃ£ cháº¥p nháº­n", Color(0xFFDCFCE7))
+                    BookingStatus.REJECTED -> Triple(Color(0xFFEF4444), "ÄÃ£ tá»« chá»‘i", Color(0xFFFEE2E2))
+                    BookingStatus.ACTIVE -> Triple(Color(0xFF3B82F6), "Äang khÃ¡m", Color(0xFFDBEAFE))
+                    BookingStatus.COMPLETED -> Triple(Color(0xFF64748B), "HoÃ n thÃ nh", Color(0xFFF1F5F9))
+                    BookingStatus.CANCELLED -> Triple(Color(0xFFEF4444), "ÄÃ£ há»§y", Color(0xFFFEE2E2))
+                    BookingStatus.RESTRICTED -> Triple(Color(0xFFF59E0B), "Háº¡n cháº¿", Color(0xFFFEF3C7))
                 }
-                
+
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
@@ -170,31 +201,52 @@ fun PatientBookingCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text("Ghi chú của bạn:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
+            Text("Ghi chÃº cá»§a báº¡n:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
             Text(booking.note, fontSize = 14.sp, color = Color(0xFF0F172A))
+
+            booking.healthProfileName?.takeIf { it.isNotBlank() }?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                BookingInfoLine("Há»“ sÆ¡ sá»©c khá»e", it)
+            }
 
             if (!booking.preferredTimeNote.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Thời gian mong muốn:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
+                Text("Thá»i gian mong muá»‘n:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
                 Text(booking.preferredTimeNote, fontSize = 14.sp, color = Color(0xFF0F172A))
             }
-            
+
+            booking.scheduledAt?.takeIf { it.isNotBlank() }?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                BookingInfoLine("Lá»‹ch Ä‘Ã£ xÃ¡c nháº­n", compactIsoTime(it))
+            }
+
+            booking.confirmedLocation?.takeIf { it.isNotBlank() }?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                BookingInfoLine("Äá»‹a Ä‘iá»ƒm", it)
+            }
+
+            booking.confirmedNote?.takeIf { it.isNotBlank() }?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                BookingInfoLine("HÆ°á»›ng dáº«n cá»§a bÃ¡c sÄ©", it)
+            }
+
             if (booking.status == BookingStatus.REJECTED && !booking.rejectReason.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Lý do từ chối:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFEF4444))
+                Text("LÃ½ do tá»« chá»‘i:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFEF4444))
                 Text(booking.rejectReason, fontSize = 14.sp, color = Color(0xFF0F172A))
             }
 
-            if (booking.requestType == BookingRequestType.ONLINE_CHAT &&
-                (booking.status == BookingStatus.APPROVED ||
-                 booking.status == BookingStatus.ACTIVE ||
-                 booking.status == BookingStatus.RESTRICTED ||
-                 booking.status == BookingStatus.COMPLETED)
-            ) {
+            if (booking.status == BookingStatus.CANCELLED && !booking.cancellationReason.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("LÃ½ do há»§y:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFEF4444))
+                Text(booking.cancellationReason, fontSize = 14.sp, color = Color(0xFF0F172A))
+            }
+
+            if (booking.requestType == BookingRequestType.ONLINE_CHAT && booking.status.canOpenConsultationRoom()) {
                 val buttonText = if (booking.status == BookingStatus.APPROVED || booking.status == BookingStatus.ACTIVE) {
-                    "Vào phòng tư vấn riêng tư"
+                    "VÃ o phÃ²ng tÆ° váº¥n riÃªng tÆ°"
                 } else {
-                    "Xem lịch sử tư vấn"
+                    "Xem lá»‹ch sá»­ tÆ° váº¥n"
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -207,4 +259,21 @@ fun PatientBookingCard(
             }
         }
     }
+}
+
+private fun BookingStatus.canOpenConsultationRoom(): Boolean {
+    return this == BookingStatus.APPROVED ||
+        this == BookingStatus.ACTIVE ||
+        this == BookingStatus.RESTRICTED ||
+        this == BookingStatus.COMPLETED
+}
+
+@Composable
+private fun BookingInfoLine(label: String, value: String) {
+    Text("$label:", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF334155))
+    Text(value, fontSize = 14.sp, color = Color(0xFF0F172A))
+}
+
+private fun compactIsoTime(value: String): String {
+    return value.replace("T", " ").replace("Z", "").take(16)
 }

@@ -104,6 +104,10 @@ class BookingCenterViewModel(
             _uiState.update { it.copy(error = "Vui lòng chọn bác sĩ") }
             return
         }
+        if (snapshot.patientNote.isBlank()) {
+            _uiState.update { it.copy(error = "Vui lòng mô tả ngắn nhu cầu hoặc triệu chứng trước khi gửi") }
+            return
+        }
 
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isSubmitting = true, error = null, message = null) }

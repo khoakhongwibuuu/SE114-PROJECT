@@ -136,7 +136,7 @@ fun AdminModerationScreen() {
     }
 
     deleteTarget?.let { report ->
-        val contentLabel = report.normalizedContentType().label()
+        val contentLabel = report.normalizedContentType().moderationLabel()
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
             title = { Text("Xóa $contentLabel", fontWeight = FontWeight.Bold) },
@@ -170,11 +170,11 @@ private fun ReportCard(
     onDismiss: () -> Unit,
 ) {
     val contentType = report.normalizedContentType()
-    val contentTypeLabel = contentType.label()
-    val contentBadgeColor = if (contentType == AdminContentType.COMMENT) {
-        Color(0xFFF5F3FF) to Color(0xFF7C3AED)
-    } else {
-        Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
+    val contentTypeLabel = contentType.moderationLabel()
+    val contentBadgeColor = when (contentType) {
+        AdminContentType.COMMENT -> Color(0xFFF5F3FF) to Color(0xFF7C3AED)
+        AdminContentType.MESSAGE -> Color(0xFFFFFBEB) to Color(0xFFB45309)
+        AdminContentType.POST -> Color(0xFFDBEAFE) to Color(0xFF1D4ED8)
     }
 
     Card(
@@ -213,7 +213,7 @@ private fun ReportCard(
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                 ) {
                     Text(
-                        text = if (contentType == AdminContentType.COMMENT) "Bình luận" else "Bài viết",
+                        text = contentTypeLabel,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = contentBadgeColor.second,
@@ -299,6 +299,14 @@ private fun EmptyModerationState() {
             color = Color(0xFF64748B),
             style = MaterialTheme.typography.bodyLarge,
         )
+    }
+}
+
+private fun AdminContentType.moderationLabel(): String {
+    return when (this) {
+        AdminContentType.COMMENT -> "binh luan"
+        AdminContentType.MESSAGE -> "tin nhan"
+        AdminContentType.POST -> "bai viet"
     }
 }
 

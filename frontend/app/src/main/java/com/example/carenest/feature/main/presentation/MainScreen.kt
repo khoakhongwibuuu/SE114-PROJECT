@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -44,8 +45,6 @@ import com.example.carenest.core.presentation.theme.SurfaceLowest
 import com.example.carenest.feature.auth.presentation.AuthViewModel
 import com.example.carenest.feature.booking.presentation.BookingCenterViewModel
 import com.example.carenest.feature.booking.presentation.BookingCenterViewModelFactory
-import com.example.carenest.feature.chat.presentation.AiChatViewModel
-import com.example.carenest.feature.chat.presentation.AiChatViewModelFactory
 import com.example.carenest.feature.community.presentation.CommunityScreen
 import com.example.carenest.feature.dashboard.presentation.DashboardViewModel
 import com.example.carenest.feature.family.presentation.FamilyFlowScreen
@@ -60,14 +59,20 @@ private const val TAB_COMMUNITY = 2
 private const val TAB_CHAT = 3
 private const val TAB_PROFILE = 4
 
+enum class MainTabTarget {
+    HOME,
+    FAMILY,
+    COMMUNITY,
+    CHAT,
+    PROFILE,
+}
+
 @Composable
 fun MainScreen(
     onItemClick: (Any) -> Unit,
     onNavigateToAddMedicine: () -> Unit = {},
     onNavigateToMedicineSchedule: () -> Unit = {},
     onNavigateToAddMedicineSchedule: () -> Unit = {},
-    onNavigateToAppointment: () -> Unit = {},
-    onNavigateToVaccine: () -> Unit = {},
     onNavigateToOcrScanner: () -> Unit = {},
     onNavigateToAppointments: (Long) -> Unit = {},
     onNavigateToVaccinations: (Long) -> Unit = {},
@@ -80,7 +85,8 @@ fun MainScreen(
     onNavigateToMedicalRecord: (Long) -> Unit = {},
     onNavigateToFamilyChat: (Long, String, Int) -> Unit = { _, _, _ -> },
     onNavigateToDoctorProfile: (Long) -> Unit = {},
-    onNavigateToCreateGroupRequest: () -> Unit = {},
+    tabTarget: MainTabTarget? = null,
+    onTabTargetHandled: () -> Unit = {},
     onLogout: () -> Unit = {},
     modifier: Modifier = Modifier,
     authViewModel: AuthViewModel,
@@ -95,9 +101,6 @@ fun MainScreen(
 
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
-    val aiChatViewModel: AiChatViewModel = viewModel(
-        factory = AiChatViewModelFactory(application.aiChatApi)
-    )
     val bookingCenterViewModel: BookingCenterViewModel = viewModel(
         factory = BookingCenterViewModelFactory(
             application.bookingRepository,
@@ -116,14 +119,32 @@ fun MainScreen(
     val currentUser by dashboardViewModel.currentUser.collectAsState()
     val authCurrentUser by authViewModel.currentUser.collectAsState()
     val currentRole by application.secureSessionManager.userRoleFlow.collectAsState()
-    val normalizedRole = (authCurrentUser?.role ?: currentUser?.role ?: currentRole)
-        ?.removePrefix("ROLE_")
-        ?.uppercase()
-    val canAccessDoctorUi = normalizedRole == "DOCTOR" || normalizedRole == "ADMIN"
-    val canCreateGroupRequest = normalizedRole == "DOCTOR"
+    val canAccessDoctorUi = (authCurrentUser?.role ?: currentUser?.role ?: currentRole)
+        ?.normalizedRole()
+        ?.let { it == "DOCTOR" || it == "ADMIN" }
+        ?: false
 
     LaunchedEffect(Unit) {
         authViewModel.refreshCurrentUser()
+    }
+
+    LaunchedEffect(tabTarget) {
+        val target = tabTarget ?: return@LaunchedEffect
+        selectedTab = when (target) {
+            MainTabTarget.HOME -> TAB_HOME
+            MainTabTarget.FAMILY -> TAB_FAMILY
+            MainTabTarget.COMMUNITY -> TAB_COMMUNITY
+            MainTabTarget.CHAT -> TAB_CHAT
+            MainTabTarget.PROFILE -> TAB_PROFILE
+        }
+        when (target) {
+            MainTabTarget.HOME -> homeRefreshTrigger++
+            MainTabTarget.FAMILY -> familyRefreshTrigger++
+            MainTabTarget.COMMUNITY -> communityRefreshTrigger++
+            MainTabTarget.PROFILE -> profileRefreshTrigger++
+            MainTabTarget.CHAT -> Unit
+        }
+        onTabTargetHandled()
     }
 
     DisposableEffect(lifecycleOwner, authViewModel, dashboardViewModel) {
@@ -148,6 +169,16 @@ fun MainScreen(
         } else {
             selectedTab = tabIndex
         }
+    }
+
+    fun resolveActiveProfileIdOrNotify(): Long? {
+        val profileId = currentProfileId ?: application.secureSessionManager.getActiveProfileId()
+        if (profileId == null || profileId <= 0L) {
+            Toast.makeText(context, "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước", Toast.LENGTH_SHORT).show()
+            selectedTab = TAB_FAMILY
+            return null
+        }
+        return profileId
     }
 
     // When user is on a non-home tab and presses Android system back, return to Home tab
@@ -219,19 +250,25 @@ fun MainScreen(
                     refreshTrigger = homeRefreshTrigger,
                     onNavigateToMedicine = onNavigateToMedicineSchedule,
                     onNavigateToAppointment = {
-                        val profileId = currentProfileId
-                            ?: application.secureSessionManager.getProfileId()
-                            ?: 0L
-                        onNavigateToAppointments(profileId)
+                        resolveActiveProfileIdOrNotify()?.let(onNavigateToAppointments)
                     },
                     onNavigateToVaccine = {
-                        val profileId = currentProfileId
-                            ?: application.secureSessionManager.getProfileId()
-                            ?: 0L
-                        onNavigateToVaccinations(profileId)
+                        resolveActiveProfileIdOrNotify()?.let(onNavigateToVaccinations)
                     },
                     onNavigateToNotifications = onNavigateToNotifications,
-                    onNavigateToTask = {}
+                    onNavigateToTask = { task ->
+                        when (task.type?.uppercase()) {
+                            "MEDICATION" -> onNavigateToMedicineSchedule()
+                            "VACCINATION" -> {
+                                val profileId = task.profileId?.takeIf { it > 0L } ?: resolveActiveProfileIdOrNotify()
+                                profileId?.let(onNavigateToVaccinations)
+                            }
+                            "APPOINTMENT" -> {
+                                val profileId = task.profileId?.takeIf { it > 0L } ?: resolveActiveProfileIdOrNotify()
+                                profileId?.let(onNavigateToAppointments)
+                            }
+                        }
+                    }
                 )
 
                 TAB_FAMILY -> FamilyFlowScreen(
@@ -250,17 +287,15 @@ fun MainScreen(
 
                 TAB_COMMUNITY -> CommunityScreen(
                     canCreateArticle = canAccessDoctorUi,
-                    canCreateGroupRequest = canCreateGroupRequest,
+                    canCreateGroupRequest = canAccessDoctorUi,
                     refreshTrigger = communityRefreshTrigger,
                     onOpenGroup = { onItemClick(ChatRoom(it.id, it.name)) },
                     onOpenGroupPosts = { group -> onItemClick(GroupPostDetail(group.id, group.name)) },
-                    onNavigateToDoctorProfile = onNavigateToDoctorProfile,
-                    onNavigateToCreateGroupRequest = onNavigateToCreateGroupRequest
+                    onNavigateToCreateGroupRequest = { onItemClick(com.example.carenest.core.presentation.navigation.CreateGroupRequest) },
+                    onNavigateToDoctorProfile = onNavigateToDoctorProfile
                 )
 
                 TAB_CHAT -> ChatHubScreen(
-                    aiChatViewModel = aiChatViewModel,
-                    onNavigateToAppointments = { onNavigateToAppointments(-1L) },
                     onNavigateToConsultationRoom = onNavigateToConsultationRoom
                 )
 
@@ -269,8 +304,7 @@ fun MainScreen(
                     refreshTrigger = profileRefreshTrigger,
                     onLogout = onLogout,
                     onNavigateToMedicalRecord = {
-                        val profileId = currentProfileId ?: application.secureSessionManager.getProfileId() ?: 0L
-                        onNavigateToMedicalRecord(profileId)
+                        resolveActiveProfileIdOrNotify()?.let(onNavigateToMedicalRecord)
                     },
                     onNavigateToDoctorVerification = onNavigateToDoctorVerification,
                     onNavigateToDoctorWorkspace = onNavigateToDoctorWorkspace,
@@ -281,6 +315,8 @@ fun MainScreen(
         }
     }
 }
+
+private fun String.normalizedRole(): String = removePrefix("ROLE_").uppercase()
 
 @Composable
 private fun NavLabel(text: String) {

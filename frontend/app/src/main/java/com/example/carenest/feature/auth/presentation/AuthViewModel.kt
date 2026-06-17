@@ -3,6 +3,9 @@ package com.example.carenest.feature.auth.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.errorMessage
+import com.example.carenest.core.data.network.requireData
+import com.example.carenest.core.data.network.requireSuccess
 import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.auth.domain.model.AppRole
 import com.example.carenest.feature.auth.data.remote.AuthApi
@@ -67,28 +70,22 @@ class AuthViewModel(
                 }
                 if (response.isSuccessful) {
                     val envelope = response.body()
-                    val auth = envelope?.data
-                    if (auth != null) {
+                    runCatching {
+                        val auth = envelope.requireData(
+                            fallback = "Đăng nhập thất bại",
+                            missingDataMessage = "Không nhận được dữ liệu đăng nhập"
+                        )
                         withContext(Dispatchers.IO) {
                             secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
                             auth.user?.let(::persistAuthenticatedUser)
                                 ?: pullCurrentUser()?.let(::persistAuthenticatedUser)
                         }
-                        _authState.value = AuthState.Success(envelope.message ?: "Đăng nhập thành công")
-                    } else {
-                        _authState.value = AuthState.Error("Không nhận được dữ liệu đăng nhập")
+                        _authState.value = AuthState.Success(envelope?.message ?: "Đăng nhập thành công")
+                    }.onFailure { error ->
+                        _authState.value = AuthState.Error(error.localizedMessage ?: "Đăng nhập thất bại")
                     }
                 } else {
-                    var errorMessage = "Đăng nhập thất bại: ${response.code()}"
-                    response.errorBody()?.string()?.let { errorJson ->
-                        try {
-                            val jsonObject = org.json.JSONObject(errorJson)
-                            if (jsonObject.has("message")) {
-                                errorMessage = jsonObject.getString("message")
-                            }
-                        } catch (e: Exception) { }
-                    }
-                    _authState.value = AuthState.Error(errorMessage)
+                    _authState.value = AuthState.Error(response.errorMessage("Đăng nhập thất bại"))
                 }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
@@ -106,6 +103,11 @@ class AuthViewModel(
                 val envelope = response.body()
                 val auth = envelope?.data
                 if (response.isSuccessful) {
+                    runCatching { envelope.requireSuccess("Đăng ký thất bại") }
+                        .onFailure { error ->
+                            _authState.value = AuthState.Error(error.localizedMessage ?: "Đăng ký thất bại")
+                            return@launch
+                        }
                     if (auth != null) {
                         withContext(Dispatchers.IO) {
                             secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
@@ -115,16 +117,7 @@ class AuthViewModel(
                     }
                     _authState.value = AuthState.Success(envelope?.message ?: "Đăng ký thành công")
                 } else {
-                    var errorMessage = "Đăng ký thất bại: ${response.code()}"
-                    response.errorBody()?.string()?.let { errorJson ->
-                        try {
-                            val jsonObject = org.json.JSONObject(errorJson)
-                            if (jsonObject.has("message")) {
-                                errorMessage = jsonObject.getString("message")
-                            }
-                        } catch (e: Exception) { }
-                    }
-                    _authState.value = AuthState.Error(errorMessage)
+                    _authState.value = AuthState.Error(response.errorMessage("Đăng ký thất bại"))
                 }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
@@ -139,12 +132,12 @@ class AuthViewModel(
                 val response = withContext(Dispatchers.IO) {
                     authApi.forgotPassword(ForgotPasswordRequest(email))
                 }
-                val envelope = response.body()
                 if (response.isSuccessful) {
+                    response.requireSuccess("Gửi mã thất bại")
                     _forgotPasswordState.value = ForgotPasswordState.OtpSent()
                 } else {
                     _forgotPasswordState.value = ForgotPasswordState.EmailError(
-                        envelope?.message ?: "Gửi mã thất bại: ${response.code()}"
+                        response.errorMessage("Gửi mã thất bại")
                     )
                 }
             } catch (e: Exception) {
@@ -160,12 +153,12 @@ class AuthViewModel(
                 val response = withContext(Dispatchers.IO) {
                     authApi.resetPassword(ResetPasswordRequest(email, otp, newPassword, confirmPassword))
                 }
-                val envelope = response.body()
                 if (response.isSuccessful) {
+                    response.requireSuccess("Đặt lại mật khẩu thất bại")
                     _forgotPasswordState.value = ForgotPasswordState.ResetSuccess
                 } else {
                     _forgotPasswordState.value = ForgotPasswordState.OtpSent(
-                        error = envelope?.message ?: "Đặt lại mật khẩu thất bại: ${response.code()}"
+                        error = response.errorMessage("Đặt lại mật khẩu thất bại")
                     )
                 }
             } catch (e: Exception) {
@@ -195,7 +188,9 @@ class AuthViewModel(
     private suspend fun pullCurrentUser(): UserInfo? {
         val response = authApi.getMe()
         if (!response.isSuccessful) return null
-        return response.body()?.data?.also(::persistAuthenticatedUser)
+        return runCatching {
+            response.requireData("Không thể tải thông tin tài khoản").also(::persistAuthenticatedUser)
+        }.getOrNull()
     }
 
     private fun persistAuthenticatedUser(user: UserInfo) {
@@ -207,7 +202,7 @@ class AuthViewModel(
     }
 
     private fun String?.toAppRole(): AppRole? {
-        val normalized = this?.trim()?.uppercase() ?: return null
+        val normalized = this?.trim()?.removePrefix("ROLE_")?.uppercase() ?: return null
         return AppRole.entries.firstOrNull { it.name == normalized }
     }
 }

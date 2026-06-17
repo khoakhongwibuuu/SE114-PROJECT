@@ -71,8 +71,8 @@ private val onboardingSlides = listOf(
     ),
     OnboardingSlide(
         id = "ob-3",
-        title = "Trợ lý AI hỗ trợ\nchăm sóc sức khỏe",
-        description = "Hỏi AI về sức khỏe gia đình bằng giọng nói hoặc văn bản, nhanh chóng và dễ dàng.",
+        title = "Kết nối bác sĩ\nvà lịch tư vấn",
+        description = "Tìm bác sĩ, đặt lịch online hoặc tại phòng khám, theo dõi trạng thái và trao đổi trong phòng tư vấn khi được duyệt.",
         imageRes = R.drawable.carenest_logo_house
     )
 )

@@ -3,8 +3,9 @@ package com.example.carenest.feature.booking.presentation.doctorworkspace
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.carenest.feature.booking.domain.model.BookingResponse
 import com.example.carenest.feature.booking.data.repository.BookingRepository
+import com.example.carenest.feature.booking.domain.model.BookingResponse
+import com.example.carenest.feature.booking.domain.model.BookingStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 data class DoctorWorkspaceUiState(
     val bookings: List<BookingResponse> = emptyList(),
     val isLoading: Boolean = false,
+    val busyBookingIds: Set<Long> = emptySet(),
     val error: String? = null
 )
 
@@ -33,23 +35,7 @@ class DoctorWorkspaceViewModel(
         viewModelScope.launch {
             try {
                 val bookings = repository.getDoctorBookings()
-                // Deduplicate: for each patient, keep only the most actionable booking.
-                // Priority: ACTIVE > APPROVED > PENDING > COMPLETED > REJECTED > CANCELLED
-                val statusPriority = mapOf(
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.ACTIVE to 6,
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.APPROVED to 5,
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.PENDING to 4,
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.COMPLETED to 3,
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.REJECTED to 2,
-                    com.example.carenest.feature.booking.domain.model.BookingStatus.CANCELLED to 1
-                )
-                val deduped = bookings
-                    .groupBy { it.patientId }
-                    .values
-                    .map { perPatient ->
-                        perPatient.maxByOrNull { statusPriority[it.status] ?: 0 }!!
-                    }
-                    .sortedByDescending { statusPriority[it.status] ?: 0 }
+                val deduped = prioritizeDoctorWorkspaceBookings(bookings)
                 _uiState.update { it.copy(isLoading = false, bookings = deduped) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -59,32 +45,75 @@ class DoctorWorkspaceViewModel(
 
     fun approveBooking(id: Long, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
+            _uiState.update { it.copy(busyBookingIds = it.busyBookingIds + id, error = null) }
             val result = repository.approveBooking(id)
             if (result.isSuccess) {
+                val approved = result.getOrNull()
+                    ?: run {
+                        val message = "Thiếu dữ liệu phản hồi khi chấp nhận yêu cầu"
+                        _uiState.update { it.copy(error = message, busyBookingIds = it.busyBookingIds - id) }
+                        onError(message)
+                        return@launch
+                    }
                 // Update local list
                 val updatedBookings = _uiState.value.bookings.map {
-                    if (it.id == id) result.getOrNull()!! else it
+                    if (it.id == id) approved else it
                 }
-                _uiState.update { it.copy(bookings = updatedBookings) }
+                _uiState.update { it.copy(bookings = updatedBookings, busyBookingIds = it.busyBookingIds - id, error = null) }
                 onSuccess()
             } else {
-                onError(result.exceptionOrNull()?.message ?: "Có lỗi xảy ra")
+                val message = result.exceptionOrNull()?.message ?: "Có lỗi xảy ra"
+                _uiState.update { it.copy(error = message, busyBookingIds = it.busyBookingIds - id) }
+                onError(message)
+            }
+        }
+    }
+
+    fun confirmSchedule(
+        id: Long,
+        scheduledAtIso: String,
+        confirmedLocation: String?,
+        confirmedNote: String?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(busyBookingIds = it.busyBookingIds + id, error = null) }
+            try {
+                val updated = repository.confirmSchedule(
+                    bookingId = id,
+                    scheduledAtIso = scheduledAtIso,
+                    confirmedLocation = confirmedLocation,
+                    confirmedNote = confirmedNote
+                )
+                val updatedBookings = _uiState.value.bookings.map {
+                    if (it.id == id) updated else it
+                }
+                _uiState.update { it.copy(bookings = updatedBookings, busyBookingIds = it.busyBookingIds - id, error = null) }
+                onSuccess()
+            } catch (e: Exception) {
+                val message = e.message ?: "Không thể xác nhận lịch"
+                _uiState.update { it.copy(error = message, busyBookingIds = it.busyBookingIds - id) }
+                onError(message)
             }
         }
     }
 
     fun rejectBooking(id: Long, reason: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
+            _uiState.update { it.copy(busyBookingIds = it.busyBookingIds + id, error = null) }
             try {
                 val result = repository.rejectBooking(id, reason)
                 // Update local list
                 val updatedBookings = _uiState.value.bookings.map {
                     if (it.id == id) result else it
                 }
-                _uiState.update { it.copy(bookings = updatedBookings) }
+                _uiState.update { it.copy(bookings = updatedBookings, busyBookingIds = it.busyBookingIds - id, error = null) }
                 onSuccess()
             } catch (e: Exception) {
-                onError(e.message ?: "Có lỗi xảy ra")
+                val message = e.message ?: "Có lỗi xảy ra"
+                _uiState.update { it.copy(error = message, busyBookingIds = it.busyBookingIds - id) }
+                onError(message)
             }
         }
     }
@@ -95,4 +124,31 @@ class DoctorWorkspaceViewModel(
             return DoctorWorkspaceViewModel(repository) as T
         }
     }
+}
+
+internal fun prioritizeDoctorWorkspaceBookings(bookings: List<BookingResponse>): List<BookingResponse> {
+    // Keep one actionable item per patient and booking channel.
+    val statusPriority = mapOf(
+        BookingStatus.ACTIVE to 7,
+        BookingStatus.APPROVED to 6,
+        BookingStatus.PENDING to 5,
+        BookingStatus.RESTRICTED to 4,
+        BookingStatus.COMPLETED to 3,
+        BookingStatus.REJECTED to 2,
+        BookingStatus.CANCELLED to 1
+    )
+
+    return bookings
+        .groupBy { it.patientId to it.requestType }
+        .values
+        .mapNotNull { perPatientChannel ->
+            perPatientChannel.maxWithOrNull(
+                compareBy<BookingResponse> { statusPriority[it.status] ?: 0 }
+                    .thenBy { it.createdAt.orEmpty() }
+            )
+        }
+        .sortedWith(
+            compareByDescending<BookingResponse> { statusPriority[it.status] ?: 0 }
+                .thenByDescending { it.createdAt.orEmpty() }
+        )
 }

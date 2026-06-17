@@ -58,7 +58,7 @@ fun ConsultationInboxPane(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(uiState.error!!, color = MaterialTheme.colorScheme.error)
+                    Text(uiState.error.orEmpty(), color = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(onClick = { viewModel.loadInbox() }) {
                         Text("Thử lại")

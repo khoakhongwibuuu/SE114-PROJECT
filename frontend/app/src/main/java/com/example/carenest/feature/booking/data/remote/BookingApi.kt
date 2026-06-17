@@ -33,7 +33,7 @@ interface BookingApi {
     @POST("/api/v1/bookings")
     suspend fun createBookingRequest(
         @Body request: CreateBookingRequest
-    ): ApiResponse<BookingResponse>
+    ): Response<ApiResponse<BookingResponse>>
 
     @GET("/api/v1/bookings/doctor")
     suspend fun getDoctorBookings(): ApiResponse<List<BookingResponse>>

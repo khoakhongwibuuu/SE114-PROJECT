@@ -13,11 +13,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object MedicineSchedule : NavKey
 @Serializable data object AddMedicineSchedule : NavKey
 @Serializable data object OcrScanner : NavKey
-// Appointment & Vaccine (remote team keys)
-@Serializable data object AppointmentSchedule : NavKey
-@Serializable data object VaccineSchedule : NavKey
-@Serializable data class AddVaccine(val profileId: Long, val editVaccineId: Long? = null) : NavKey
-// Our completed vaccination module keys
 @Serializable data class MedicalAppointment(val profileId: Long) : NavKey
 @Serializable data class AddAppointment(val profileId: Long) : NavKey
 @Serializable data class VaccinationTracker(val profileId: Long) : NavKey
@@ -36,7 +31,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class GroupPostDetail(val groupId: Long, val groupName: String) : NavKey
 @Serializable data class CreateGroupPost(val groupId: Long) : NavKey
-@Serializable data class GroupGovernance(val groupId: Long, val groupName: String) : NavKey
 
 @Serializable data class DoctorProfile(val doctorId: Long) : NavKey
 
@@ -44,5 +38,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class ConsultationRoom(val bookingId: Long) : NavKey
 
-@Serializable data object CreateGroupRequestForm : NavKey
+@Serializable data object CreateGroupRequest : NavKey
+@Serializable data class GroupGovernance(val groupId: Long, val groupName: String) : NavKey
 @Serializable data object AdminGroupRequests : NavKey

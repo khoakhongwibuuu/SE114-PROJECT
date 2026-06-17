@@ -12,10 +12,12 @@ data class MedicalCondition(
 )
 
 data class HealthProfile(
-    val id: Int,
+    val id: Long,
     val name: String,
     val role: String,
     val age: Int?,
+    val dateOfBirth: String?,
+    val gender: String?,
     val location: String?,
     val avatarUrl: String?,
     val isVerified: Boolean = true, // for the tick badge
@@ -33,22 +35,22 @@ data class HealthProfile(
 )
 
 data class RawHealthProfileResponse(
-    val id: Int,
-    val userId: Int,
-    val familyId: Int,
+    val id: Long?,
+    val userId: Long?,
+    val familyId: Long?,
     val fullName: String,
     val dateOfBirth: String?,
-    val gender: String,
-    val relationship: String,
+    val gender: String?,
+    val relationship: String?,
     val bloodType: String?,
     val allergies: String?,
     val chronicDiseases: String?,
     val notes: String?,
     val avatarUrl: String?,
-    val isChild: Boolean,
+    val isChild: Boolean?,
     val height: Float?,
     val weight: Float?,
     val emergencyContactPhone: String?,
-    val createdAt: String,
-    val updatedAt: String
+    val createdAt: String?,
+    val updatedAt: String?
 )

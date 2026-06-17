@@ -367,7 +367,7 @@ fun ProfileScreen(
                     }
                     SettingsRow(icon = Icons.Default.EventNote, iconBg = Color(0xFFF0FDF4), iconTint = Color(0xFF22C55E), label = "Lịch sử đặt khám", onClick = onNavigateToPatientBookingCenter)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    SettingsRow(icon = Icons.Default.Language, iconBg = Color(0xFFF5F3FF), iconTint = Color(0xFF7C3AED), label = "Ngôn ngữ", value = "Tiếng Việt", onClick = { Toast.makeText(context, "Sắp ra mắt", Toast.LENGTH_SHORT).show() })
+                    SettingsRow(icon = Icons.Default.Language, iconBg = Color(0xFFF5F3FF), iconTint = Color(0xFF7C3AED), label = "Ngôn ngữ", value = "Tiếng Việt", enabled = false)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
                     SettingsRow(icon = Icons.Default.Security, iconBg = Color(0xFFF0FDFA), iconTint = Color(0xFF0D9488), label = "Chính sách bảo mật", onClick = onNavigateToPolicy)
                 }
@@ -384,9 +384,9 @@ fun ProfileScreen(
                     .padding(bottom = 24.dp)
             ) {
                 Column {
-                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung tâm hỗ trợ", onClick = { Toast.makeText(context, "Sắp ra mắt", Toast.LENGTH_SHORT).show() })
+                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung tâm hỗ trợ", value = "Chưa hỗ trợ", enabled = false)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    SettingsRow(icon = Icons.Default.BugReport, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Báo cáo sự cố", onClick = { Toast.makeText(context, "Sắp ra mắt", Toast.LENGTH_SHORT).show() })
+                    SettingsRow(icon = Icons.Default.BugReport, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Báo cáo sự cố", value = "Chưa hỗ trợ", enabled = false)
                 }
             }
 
@@ -547,11 +547,21 @@ fun SelectField(
 
 
 @Composable
-fun SettingsRow(icon: ImageVector, iconBg: Color, iconTint: Color, label: String, value: String? = null, onClick: () -> Unit = {}) {
+fun SettingsRow(
+    icon: ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    label: String,
+    value: String? = null,
+    enabled: Boolean = true,
+    onClick: () -> Unit = {}
+) {
+    val textColor = if (enabled) Color(0xFF1E293B) else Color(0xFF94A3B8)
+    val chevronColor = if (enabled) Color(0xFFCBD5E1) else Color.Transparent
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable(enabled = enabled) { onClick() }
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -564,11 +574,11 @@ fun SettingsRow(icon: ImageVector, iconBg: Color, iconTint: Color, label: String
             Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.width(16.dp))
-        Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1E293B), modifier = Modifier.weight(1f))
+        Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor, modifier = Modifier.weight(1f))
         if (value != null) {
             Text(value, fontSize = 14.sp, color = Color(0xFF64748B), modifier = Modifier.padding(end = 4.dp))
         }
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFFCBD5E1))
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = chevronColor)
     }
 }
 

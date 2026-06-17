@@ -1,5 +1,7 @@
 package com.example.carenest.feature.family.domain.model
 
+import com.example.carenest.feature.auth.domain.model.UserInfo
+
 data class FamilySummary(
     val id: Long,
     val name: String,
@@ -10,37 +12,48 @@ data class FamilySummary(
 
 data class FamilyMemberSummary(
     val id: Long,
-    val familyMemberId: Long?,
+    val familyMemberId: Long? = null,
     val profileId: Long?,
-    val userId: Long?,
+    val userId: Long? = null,
+    val user: UserInfo? = null,
     val fullName: String,
     val role: String,
     val avatarUrl: String?,
-    val age: Int?,
-    val healthStatus: String?
+    val age: Int? = null,
+    val healthStatus: String? = null
 )
 
 data class FamilyDetailResponse(
     val id: Long,
     val name: String,
     val ownerId: Long?,
-    val ownerUserId: Long?,
-    val memberCount: Int,
-    val members: List<FamilyMemberSummary>
+    val ownerUserId: Long? = null,
+    val memberCount: Int = 0,
+    val createdAt: String? = null,
+    val members: List<FamilyMemberSummary> = emptyList()
+)
+
+data class FamilyResponse(
+    val id: Long,
+    val name: String,
+    val ownerId: Long?,
+    val createdAt: String? = null
 )
 
 data class FamilyInvitationItem(
-    val inviteId: Int,
-    val id: Int?,
+    val inviteId: Long,
+    val id: Long?,
+    val familyId: Long? = null,
     val name: String?,
     val senderEmail: String?,
     val receiverEmail: String?,
+    val role: String? = null,
     val status: String?,
     val createdAt: String?
 )
 
 data class FamilyJoinCodeResponse(
-    val id: Int,
+    val id: Long,
     val name: String,
     val joinCode: String,
     val joinLink: String,
@@ -81,4 +94,3 @@ data class UpdateMedicalInfoRequest(
     val allergies: String?,
     val chronicDiseases: String?
 )
-
