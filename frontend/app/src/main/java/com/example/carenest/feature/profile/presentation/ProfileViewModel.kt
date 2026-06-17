@@ -7,11 +7,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.userMessage
-import com.example.carenest.core.data.storage.SecureSessionManager
 import com.example.carenest.feature.auth.data.remote.AuthApi
 import com.example.carenest.feature.auth.domain.model.UpdateCurrentUserRequest
 import com.example.carenest.feature.auth.domain.model.UserInfo
-import com.example.carenest.feature.family.data.repository.FamilyRepository
+import com.example.carenest.feature.profile.domain.port.ProfileSessionPort
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,8 +42,8 @@ data class ProfileState(
 
 class ProfileViewModel(
     private val authApi: AuthApi,
-    private val sessionManager: SecureSessionManager,
-    private val repository: FamilyRepository,
+    private val sessionManager: ProfileSessionPort,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ProfileState())
     val state = _state.asStateFlow()
@@ -102,7 +102,7 @@ class ProfileViewModel(
     fun loadCurrentUser() {
         viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) { authApi.getMe() }
+                withContext(ioDispatcher) { authApi.getMe() }
             }.onSuccess { response ->
                 if (response.isSuccessful) {
                     runCatching {
@@ -132,7 +132,7 @@ class ProfileViewModel(
         _state.update { it.copy(isSaving = true, error = null, successMessage = null) }
 
         runCatching {
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 authApi.updateCurrentUser(
                     UpdateCurrentUserRequest(
                         fullName = current.fullName.ifBlank { "Người dùng CareNest" },
@@ -246,13 +246,12 @@ sealed interface ProfileEvent {
 
 class ProfileViewModelFactory(
     private val authApi: AuthApi,
-    private val sessionManager: SecureSessionManager,
-    private val repository: FamilyRepository,
+    private val sessionManager: ProfileSessionPort,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ProfileViewModel(authApi, sessionManager, repository) as T
+            return ProfileViewModel(authApi, sessionManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
