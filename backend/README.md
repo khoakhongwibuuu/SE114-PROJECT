@@ -1,45 +1,60 @@
 # 🏥 CareNest Backend
 
 Dự án Backend RESTful API cho ứng dụng sổ tay sức khỏe gia đình CareNest, xây dựng bằng Spring Boot 3 và PostgreSQL.
-Hệ thống bao gồm 12 modules cốt lõi trong đó có Quản lý thành viên, Thông minh nhân tạo (AI Chatbot) và OCR.
+Backend hiện ưu tiên các luồng MVP thật: auth, family, health core, digital clinic, community, notification. AI Chatbot và OCR vẫn có contract cấu hình nhưng đang được tắt mặc định trong MVP.
 
 ## 🛠 Công nghệ sử dụng
 - **Ngôn ngữ:** Java 17
 - **Framework:** Spring Boot 3.4.5
-- **Cơ sở dữ liệu:** PostgreSQL 16 (cấu trúc Schema chuẩn hoá 18 bảng)
+- **Cơ sở dữ liệu:** PostgreSQL 16
 - **Bộ nhớ đệm (Cache):** Redis 7
 - **Bảo mật:** Spring Security + JWT Authentication
 - **Object Mapper:** MapStruct, Lombok
 - **Tài liệu API:** Swagger UI (OpenAPI 3)
+- **AI/OCR (phase cuối):** feature-flagged, disabled mặc định
 
 ---
 
 ## 🚀 Hướng dẫn khởi chạy dự án
 
-Bạn không cần cài đặt cơ sở dữ liệu trên máy tính. Kho code này đã được tích hợp Docker.
+Bạn có thể chạy backend theo hai cách:
+1. dùng `docker compose` ở root repo để dựng PostgreSQL + Redis + backend container;
+2. chạy source Spring Boot tại thư mục `backend`, miễn là PostgreSQL và Redis đã sẵn sàng.
 
-### Bước 1: Khởi động Database (Bắt buộc)
-Bật ứng dụng **Docker Desktop** trên máy tính của bạn lên. 
-Mở Terminal / PowerShell, điều hướng vào thư mục chứa code `backend` và chạy lệnh sau để khởi tạo đồng thời CSDL PostgreSQL và Redis:
+### Bước 1: Thiết lập biến môi trường
+Từ thư mục root của repo, copy `.env.example` thành `.env` rồi điền tối thiểu:
+- `POSTGRES_PASSWORD`
+- `REDIS_PASSWORD`
+- `JWT_SECRET`
+
+Giữ `APP_FEATURE_AI_CHAT_ENABLED=false` và `APP_FEATURE_OCR_ENABLED=false` nếu bạn chỉ chạy MVP hiện tại.
+
+### Bước 2: Khởi động bằng Docker Compose (khuyến nghị)
+Bật **Docker Desktop**, mở terminal ở **root repo** và chạy:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
-Trạng thái thành công: Lúc này cả 2 máy chủ DB đều đang ngầm rinh trên máy bạn. Không cần cài tay!
+Lệnh này sẽ dựng PostgreSQL, Redis và backend container theo `docker-compose.yml` ở root repo.
 
-### Bước 2: Chạy Core Backend
+### Bước 3: Chạy Core Backend từ source (nếu không dùng container backend)
+Nếu bạn muốn chạy backend từ source:
+- PostgreSQL mặc định phải ở `localhost:5433`
+- Redis mặc định phải ở `localhost:6379`
+- các giá trị này được đọc từ `backend/src/main/resources/application.yml`
+
 Có 2 cách để chạy ứng dụng:
 - **Ngay trên IDE (IntelliJ / Eclipse):** Tìm file `CareNestBackendApplication.java` và ấn nút Run/Play.
-- **Dùng Command Line (Maven Wrapper):** Nằm yên ở thư mục `backend`, gõ lệnh:
+- **Dùng Command Line (Maven Wrapper):** Nằm ở thư mục `backend`, gõ lệnh:
 
 *Trên Windows (PowerShell):*
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-*Lưu ý: Trong lần khởi chạy đầu tiên, mã nguồn (Hibernate) sẽ tự động sinh ra 18 bảng vật lý bên trong Database y như thiết kế của Leader.*
+*Lưu ý: profile mặc định đang là `dev`. Nếu chạy container backend, profile sẽ được inject qua env theo `docker-compose.yml`.*
 
-### Bước 3: Truy cập tài liệu API (Swagger UI)
+### Bước 4: Truy cập tài liệu API (Swagger UI)
 Khi backend đã chạy thành công (hiện chữ `Started CareNestBackendApplication` trên terminal), mở trình duyệt và truy cập vào đường dẫn sau:
 
 👉 **[http://localhost:8080/api/v1/swagger-ui/index.html](http://localhost:8080/api/v1/swagger-ui/index.html)**
@@ -76,7 +91,7 @@ Tất cả các API trong hệ thống đều sử dụng một cấu trúc ph�
 
 ## 📦 Danh sách Module & Endpoint chính
 
-Dựa trên kế hoạch đồng bộ hóa, các module sau đây là ưu tiên hàng đầu:
+Các module đang là trọng tâm của MVP:
 
 ### 1. Authentication (`/api/v1/auth`)
 - `POST /register`: Đăng ký tài khoản mới.
@@ -90,8 +105,10 @@ Dựa trên kế hoạch đồng bộ hóa, các module sau đây là ưu tiên 
 - `GET /families/{id}`: Chi tiết tổ ấm và danh sách thành viên.
 - `GET /health-profiles/{id}`: Chi tiết hồ sơ sức khỏe.
 
-> [!TIP]
-> Các module như `Cabinet`, `Medication`, `Growth`, `Vaccination` đang được tiếp tục chuẩn hoá theo cấu trúc RESTful này.
+### AI/OCR hiện tại
+- `app.features.ai-chat-enabled=false` và `app.features.ocr-enabled=false` theo mặc định.
+- Khi các cờ này đang tắt, backend sẽ trả lỗi có chủ đích cho AI Chat/OCR thay vì chạy mock trong luồng thật.
+- Chỉ bật lại khi đã có provider thật, model thật và contract xác nhận dữ liệu đầu ra rõ ràng.
 
 ---
 
