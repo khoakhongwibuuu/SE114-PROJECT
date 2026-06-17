@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.carenest.core.data.network.userMessage
 import com.example.carenest.feature.booking.domain.model.BookingResponse
-import com.example.carenest.feature.booking.data.repository.BookingRepository
+import com.example.carenest.feature.booking.domain.port.BookingDataSource
 import com.example.carenest.feature.ekyc.domain.model.DoctorSummary
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +21,7 @@ data class PatientBookingCenterUiState(
 )
 
 class PatientBookingCenterViewModel(
-    private val repository: BookingRepository
+    private val repository: BookingDataSource
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PatientBookingCenterUiState())
@@ -51,7 +51,7 @@ class PatientBookingCenterViewModel(
         }
     }
 
-    class Factory(private val repository: BookingRepository) : ViewModelProvider.Factory {
+    class Factory(private val repository: BookingDataSource) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return PatientBookingCenterViewModel(repository) as T

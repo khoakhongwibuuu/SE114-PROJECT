@@ -2,6 +2,7 @@ package com.example.carenest.feature.booking.data.remote
 
 import android.util.Log
 import com.example.carenest.core.data.storage.SecureSessionManager
+import com.example.carenest.feature.booking.domain.port.ConsultationSocketGateway
 import io.reactivex.disposables.CompositeDisposable
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
@@ -17,7 +18,7 @@ sealed interface ConsultationSocketEvent {
 class ConsultationWebSocketClient(
     private val secureSessionManager: SecureSessionManager,
     private val webSocketUrl: String = com.example.carenest.AppConfig.WEBSOCKET_URL,
-) {
+) : ConsultationSocketGateway {
     private val disposables = CompositeDisposable()
     private var stompClient: StompClient? = null
     private var subscribedThreadId: Long? = null
@@ -25,7 +26,7 @@ class ConsultationWebSocketClient(
     private var isManualDisconnect = false
     private var disconnectNotified = false
 
-    fun connect(threadId: Long, onEvent: (ConsultationSocketEvent) -> Unit) {
+    override fun connect(threadId: Long, onEvent: (ConsultationSocketEvent) -> Unit) {
         disconnect()
         connectionId += 1
         val currentConnectionId = connectionId
@@ -81,7 +82,7 @@ class ConsultationWebSocketClient(
         client.connect(headers())
     }
 
-    fun send(threadId: Long, payload: String, onError: (Throwable) -> Unit): Boolean {
+    override fun send(threadId: Long, payload: String, onError: (Throwable) -> Unit): Boolean {
         val client = stompClient ?: return false
         disposables.add(
             client.send("/app/consultation/thread/$threadId", payload).subscribe({}, onError),
@@ -89,7 +90,7 @@ class ConsultationWebSocketClient(
         return true
     }
 
-    fun disconnect() {
+    override fun disconnect() {
         isManualDisconnect = true
         disposables.clear()
         subscribedThreadId = null
