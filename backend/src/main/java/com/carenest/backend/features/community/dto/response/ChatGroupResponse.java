@@ -16,6 +16,7 @@ public class ChatGroupResponse {
     private String leadDoctorName;
     private long memberCount;
     private boolean joined;
+    private boolean isFrozen;
     private String latestMessage;
     private java.time.Instant latestActivityAt;
 }

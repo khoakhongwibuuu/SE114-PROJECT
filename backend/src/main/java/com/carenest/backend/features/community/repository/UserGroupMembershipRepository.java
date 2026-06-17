@@ -18,11 +18,15 @@ public interface UserGroupMembershipRepository extends JpaRepository<UserGroupMe
 
     List<UserGroupMembership> findAllByUserIdOrderByJoinedAtDesc(Long userId);
 
+    List<UserGroupMembership> findAllByGroupIdOrderByGroupRoleDescJoinedAtAsc(Long groupId);
+
     boolean existsByGroupIdAndUserId(Long groupId, Long userId);
 
     boolean existsByGroupIdAndUserIdAndGroupRole(Long groupId, Long userId, GroupRole groupRole);
 
     long countByGroupId(Long groupId);
+
+    long countByGroupIdAndGroupRole(Long groupId, GroupRole groupRole);
 
     @Modifying
     @Query("DELETE FROM UserGroupMembership membership WHERE membership.group.id = :groupId")

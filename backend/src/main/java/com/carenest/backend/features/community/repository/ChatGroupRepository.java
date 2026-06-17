@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface ChatGroupRepository extends JpaRepository<ChatGroup, Long> {
     List<ChatGroup> findAllByOrderByNameAsc();
 
+    boolean existsByNameIgnoreCase(String name);
+
     boolean existsByCategoryIgnoreCaseAndIsPrivateFalse(String category);
 
     Optional<ChatGroup> findFirstByCategoryIgnoreCaseAndIsPrivateFalse(String category);

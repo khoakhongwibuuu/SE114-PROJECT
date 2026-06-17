@@ -5,6 +5,7 @@ public enum NotificationType {
     APPOINTMENT,
     VACCINATION,
     FAMILY,
+    CHAT,
     GROWTH,
     SYSTEM
 }
