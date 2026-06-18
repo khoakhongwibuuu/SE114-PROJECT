@@ -433,9 +433,9 @@ fun ProfileScreen(
                     .padding(bottom = 24.dp)
             ) {
                 Column {
-                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung tâm hỗ trợ", value = "Tạm ẩn", enabled = false)
+                    SettingsRow(icon = Icons.AutoMirrored.Filled.HelpCenter, iconBg = Color(0xFFFFF7ED), iconTint = Color(0xFFEA580C), label = "Trung tâm hỗ trợ", value = "Chưa bật", enabled = false)
                     HorizontalDivider(color = Color(0xFFF1F5F9))
-                    SettingsRow(icon = Icons.Default.BugReport, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Báo cáo sự cố", value = "Tạm ẩn", enabled = false)
+                    SettingsRow(icon = Icons.Default.BugReport, iconBg = Color(0xFFEFF6FF), iconTint = Color(0xFF2563EB), label = "Báo cáo sự cố", value = "Chưa bật", enabled = false)
                 }
             }
 
