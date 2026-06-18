@@ -1,9 +1,9 @@
 import random
-import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from config import settings
+from provider_client import AiProviderError, call_structured_response
 from schemas.chat_schemas import (
     AiAction,
     ChatReply,
@@ -13,6 +13,65 @@ from schemas.chat_schemas import (
 )
 
 router = APIRouter()
+
+
+CHAT_JSON_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "intent",
+        "summary",
+        "advice",
+        "risk_level",
+        "follow_up_questions",
+        "recommended_actions",
+        "safety",
+    ],
+    "properties": {
+        "intent": {
+            "type": "string",
+            "enum": ["medication_guidance", "symptom_triage", "general_health", "unsupported"],
+        },
+        "summary": {"type": "string"},
+        "advice": {"type": "array", "items": {"type": "string"}},
+        "risk_level": {"type": "string", "enum": ["low", "medium", "high", "emergency"]},
+        "follow_up_questions": {"type": "array", "items": {"type": "string"}},
+        "recommended_actions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["type", "label"],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": ["book_doctor", "go_emergency", "track_symptom", "ask_family"],
+                    },
+                    "label": {"type": "string"},
+                },
+            },
+        },
+        "safety": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["needs_doctor", "needs_emergency", "disclaimer"],
+            "properties": {
+                "needs_doctor": {"type": "boolean"},
+                "needs_emergency": {"type": "boolean"},
+                "disclaimer": {"type": "string"},
+            },
+        },
+    },
+}
+
+
+CHAT_INSTRUCTIONS = """
+You are CareNest AI, a Vietnamese family health assistant.
+Return only JSON matching the supplied schema.
+Do not diagnose. Do not prescribe. Do not claim certainty.
+Escalate breathing difficulty, unconsciousness, seizures, severe allergic reaction, or emergency wording as emergency.
+Always include a safety disclaimer. Medication advice must tell the user to verify with a doctor or pharmacist.
+""".strip()
 
 
 def _build_payload(message: str) -> StructuredChatPayload:
@@ -110,8 +169,20 @@ def _build_payload(message: str) -> StructuredChatPayload:
 
 @router.post("/chat", response_model=ChatReply)
 async def chat_with_ai(request: ChatRequest):
-    payload = _build_payload(request.message)
-    time.sleep(1)
+    if settings.ai_enabled and settings.has_api_key:
+        try:
+            provider_payload = call_structured_response(
+                model=settings.ai_model_chat,
+                instructions=CHAT_INSTRUCTIONS,
+                user_input=request.message,
+                schema_name="carenest_chat_v1",
+                schema=CHAT_JSON_SCHEMA,
+            )
+            payload = StructuredChatPayload(**provider_payload)
+        except AiProviderError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+    else:
+        payload = _build_payload(request.message)
 
     return ChatReply(
         reply=payload.summary,

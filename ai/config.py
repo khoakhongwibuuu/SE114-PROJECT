@@ -21,6 +21,7 @@ class Settings:
     ocr_enabled: bool
     ai_provider: str
     ai_api_key: str
+    ai_base_url: str
     ai_model_chat: str
     ai_model_ocr: str
     ai_timeout_ms: int
@@ -37,8 +38,10 @@ def load_settings() -> Settings:
         ocr_enabled=_as_bool(os.getenv("OCR_ENABLED"), False),
         ai_provider=os.getenv("AI_PROVIDER", "openai").strip() or "openai",
         ai_api_key=os.getenv("AI_API_KEY", ""),
-        ai_model_chat=os.getenv("AI_MODEL_CHAT", ""),
-        ai_model_ocr=os.getenv("AI_MODEL_OCR", ""),
+        ai_base_url=os.getenv("AI_BASE_URL", "https://api.openai.com/v1/responses").strip()
+        or "https://api.openai.com/v1/responses",
+        ai_model_chat=os.getenv("AI_MODEL_CHAT", "gpt-5.2").strip() or "gpt-5.2",
+        ai_model_ocr=os.getenv("AI_MODEL_OCR", "gpt-5.2").strip() or "gpt-5.2",
         ai_timeout_ms=_as_int(os.getenv("AI_TIMEOUT_MS"), 15000),
         ai_max_retries=_as_int(os.getenv("AI_MAX_RETRIES"), 2),
     )
