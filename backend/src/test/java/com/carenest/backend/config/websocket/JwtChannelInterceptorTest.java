@@ -4,6 +4,7 @@ import com.carenest.backend.config.security.JwtService;
 import com.carenest.backend.features.auth.entity.User;
 import com.carenest.backend.features.auth.repository.UserRepository;
 import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
+import com.carenest.backend.features.booking.repository.ConsultationThreadRepository;
 import com.carenest.backend.features.family.repository.FamilyMemberRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,9 @@ class JwtChannelInterceptorTest {
     private FamilyMemberRepository familyMemberRepository;
 
     @Mock
+    private ConsultationThreadRepository consultationThreadRepository;
+
+    @Mock
     private MessageChannel channel;
 
     @Test
@@ -48,7 +52,8 @@ class JwtChannelInterceptorTest {
                 userDetailsService,
                 userRepository,
                 userGroupMembershipRepository,
-                familyMemberRepository
+                familyMemberRepository,
+                consultationThreadRepository
         );
         User disabledUser = User.builder()
                 .email("locked@example.com")
