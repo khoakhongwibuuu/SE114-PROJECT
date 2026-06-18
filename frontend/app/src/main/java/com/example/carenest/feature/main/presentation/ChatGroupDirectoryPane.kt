@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -122,9 +123,16 @@ fun ChatGroupDirectoryPane(
             .fillMaxSize()
             .background(Color(0xFFF8FAFC)),
     ) {
+        val currentSearch = if (activeTab == GroupTab.MINE) state.searchMine else state.searchDiscover
         OutlinedTextField(
-            value = state.search,
-            onValueChange = viewModel::onSearchChange,
+            value = currentSearch,
+            onValueChange = {
+                if (activeTab == GroupTab.MINE) {
+                    viewModel.onSearchMineChange(it)
+                } else {
+                    viewModel.onSearchDiscoverChange(it)
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -138,9 +146,15 @@ fun ChatGroupDirectoryPane(
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B))
             },
-            trailingIcon = if (state.search.isNotBlank()) {
+            trailingIcon = if (currentSearch.isNotBlank()) {
                 {
-                    IconButton(onClick = { viewModel.onSearchChange("") }) {
+                    IconButton(onClick = {
+                        if (activeTab == GroupTab.MINE) {
+                            viewModel.onSearchMineChange("")
+                        } else {
+                            viewModel.onSearchDiscoverChange("")
+                        }
+                    }) {
                         Icon(Icons.Default.Close, contentDescription = "Xóa", tint = Color(0xFF94A3B8))
                     }
                 }
@@ -350,8 +364,34 @@ fun ChatGroupDirectoryPane(
                     val rules = preview?.rules
                         ?: "Tôn trọng thành viên khác, không đăng nội dung sai lệch y khoa và giữ hội nhóm là nơi trao đổi an toàn."
                     val joined = preview?.joined ?: basicGroup.joined
+                    val isFrozen = preview?.isFrozen ?: basicGroup.isFrozen
 
                     Text(groupName, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                    if (isFrozen) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFFFEF2F2))
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Nhóm này đang tạm khóa bởi quản trị viên",
+                                color = Color(0xFFEF4444),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = buildString {
@@ -666,15 +706,29 @@ private fun MyGroupItem(group: ChatGroup, onClick: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        group.name,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF0F172A),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            group.name,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0F172A),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (group.isFrozen) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = "Bị khóa",
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         formatGroupTime(group.latestActivityAt),
@@ -719,14 +773,26 @@ private fun DiscoverGroupItem(
             GroupAvatar(group = group)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    group.name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF0F172A),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        group.name,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (group.isFrozen) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = "Bị khóa",
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(5.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
