@@ -222,7 +222,7 @@ class CommunityKnowledgeServiceImplTest {
 
         var request = new com.carenest.backend.features.community.dto.request.UpdateGroupMemberRoleRequest();
         request.setRole("MODERATOR");
-        request.setReason("Need moderation coverage");
+        request.setReason("Promote member to moderator");
 
         assertThat(service.updateGroupMemberRole(10L, 3L, request).getRole()).isEqualTo(GroupRole.MODERATOR);
         verify(groupGovernanceAuditLogRepository).save(any());
@@ -248,7 +248,7 @@ class CommunityKnowledgeServiceImplTest {
 
         var request = new com.carenest.backend.features.community.dto.request.UpdateGroupMemberRoleRequest();
         request.setRole("MEMBER");
-        request.setReason("Host is no longer active");
+        request.setReason("Demote host to member");
 
         assertThatThrownBy(() -> service.updateGroupMemberRole(10L, 2L, request))
                 .isInstanceOf(com.carenest.backend.core.exception.BadRequestException.class);
@@ -265,7 +265,7 @@ class CommunityKnowledgeServiceImplTest {
         when(chatGroupRepository.findById(10L)).thenReturn(Optional.of(group));
         when(chatGroupRepository.save(any(ChatGroup.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.freezeGroup(10L, "moderation escalation");
+        service.freezeGroup(10L, "Suspicious activity");
 
         assertThat(group.isFrozen()).isTrue();
         verify(groupGovernanceAuditLogRepository).save(any());
