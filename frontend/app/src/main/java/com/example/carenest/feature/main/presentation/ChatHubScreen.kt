@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.carenest.AppConfig
 import com.example.carenest.core.presentation.components.CareNestIcon
 import com.example.carenest.core.presentation.theme.AppRadius
 import com.example.carenest.core.presentation.theme.AppSpacing
@@ -38,6 +39,7 @@ import com.example.carenest.core.presentation.theme.PageBackground
 import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
+import com.example.carenest.feature.chat.presentation.AiChatPane
 import com.example.carenest.feature.chat.presentation.ConsultationInboxPane
 
 private enum class ChatHubTab(val label: String) {
@@ -87,7 +89,13 @@ fun ChatHubScreen(
         }
 
         when (activeTab) {
-            ChatHubTab.AI -> AiCareDisabledPane(onOpenDoctorInbox = { activeTab = ChatHubTab.DOCTOR })
+            ChatHubTab.AI -> {
+                if (AppConfig.AI_CHAT_ENABLED) {
+                    AiChatPane()
+                } else {
+                    AiCareDisabledPane(onOpenDoctorInbox = { activeTab = ChatHubTab.DOCTOR })
+                }
+            }
             ChatHubTab.DOCTOR -> ConsultationInboxPane(onNavigateToConsultationRoom = onNavigateToConsultationRoom)
         }
     }
@@ -111,14 +119,14 @@ private fun AiCareDisabledPane(onOpenDoctorInbox: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(AppSpacing.lg))
         Text(
-            text = "AI Care đang tạm tắt trong MVP",
+            text = "AI Care đang tạm tắt",
             style = CareNestTextStyles.titleMd,
             color = TextPrimary,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(AppSpacing.sm))
         Text(
-            text = "Tính năng AI sẽ được hoàn thiện ở phase cuối với backend thật và kiểm chứng y tế rõ ràng. Trong MVP, hãy dùng luồng tư vấn bác sĩ và thông báo thật.",
+            text = "Tính năng AI chỉ bật khi môi trường đã cấu hình provider thật và kiểm thử y tế. Trong lúc này, hãy dùng luồng tư vấn bác sĩ.",
             style = CareNestTextStyles.bodyMd.copy(lineHeight = 22.sp),
             color = TextSecondary,
             textAlign = TextAlign.Center,

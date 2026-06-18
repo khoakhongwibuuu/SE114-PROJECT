@@ -7,4 +7,5 @@ import lombok.Data;
 public class ChatRequest {
     @NotBlank(message = "Nội dung chat không được để trống")
     private String message;
+    private Long conversationId;
 }

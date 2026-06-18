@@ -3,6 +3,7 @@ package com.example.carenest.feature.chat.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.carenest.core.data.network.errorMessage
 import com.example.carenest.feature.chat.data.remote.AiChatApi
 import com.example.carenest.feature.chat.data.remote.AiChatRequest
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,37 +20,53 @@ data class AiMessage(
 class AiChatViewModel(
     private val aiChatApi: AiChatApi
 ) : ViewModel() {
-    private val _messages = MutableStateFlow<List<AiMessage>>(
-        listOf(AiMessage(
-            text = "Xin chào! Tôi là CareNest AI — trợ lý sức khỏe thông minh.\n\n" +
-                "Tôi có thể giúp bạn tra cứu thông tin thuốc, nhắc lịch uống thuốc, và giải đáp các thắc mắc sức khỏe phổ thông.\n\n" +
-                "⚠️ Lưu ý: Đây là trợ lý AI, không phải bác sĩ. Thông tin tôi cung cấp chỉ mang tính tham khảo — không thay thế tư vấn y tế trực tiếp từ chuyên gia.",
-            isUser = false
-        ))
+    private val _messages = MutableStateFlow(
+        listOf(
+            AiMessage(
+                text = "Xin chào! Tôi là CareNest AI, trợ lý sức khỏe gia đình.\n\n" +
+                    "Tôi có thể giúp bạn tóm tắt thông tin sức khỏe, gợi ý câu hỏi cần hỏi bác sĩ và nhắc kiểm tra thông tin thuốc.\n\n" +
+                    "Lưu ý: AI chỉ hỗ trợ tham khảo, không thay thế chẩn đoán hoặc tư vấn y tế trực tiếp.",
+                isUser = false
+            )
+        )
     )
     val messages: StateFlow<List<AiMessage>> = _messages.asStateFlow()
-    
+
     private val _isTyping = MutableStateFlow(false)
     val isTyping = _isTyping.asStateFlow()
 
+    private var conversationId: Long? = null
+
     fun sendMessage(text: String) {
-        if (text.isBlank()) return
-        
-        // Thêm tin nhắn của User
-        _messages.value = _messages.value + AiMessage(text, isUser = true)
+        val trimmed = text.trim()
+        if (trimmed.isBlank() || _isTyping.value) return
+
+        _messages.value = _messages.value + AiMessage(trimmed, isUser = true)
         _isTyping.value = true
-        
+
         viewModelScope.launch {
             try {
-                val response = aiChatApi.chatWithAi(AiChatRequest(message = text))
+                val response = aiChatApi.chatWithAi(
+                    AiChatRequest(message = trimmed, conversationId = conversationId)
+                )
                 if (response.isSuccessful) {
-                    val reply = response.body()?.reply ?: "Có lỗi xảy ra từ máy chủ."
+                    val envelope = response.body()
+                    val reply = envelope?.data?.reply
+                        ?: envelope?.message
+                        ?: "Máy chủ AI không trả về nội dung."
+                    conversationId = envelope?.data?.conversationId ?: conversationId
                     _messages.value = _messages.value + AiMessage(reply, isUser = false)
                 } else {
-                    _messages.value = _messages.value + AiMessage("Xin lỗi, hệ thống AI đang gặp trục trặc.", isUser = false)
+                    _messages.value = _messages.value + AiMessage(
+                        response.errorMessage("Hệ thống AI đang gặp sự cố."),
+                        isUser = false
+                    )
                 }
             } catch (e: Exception) {
-                _messages.value = _messages.value + AiMessage("Không thể kết nối đến máy chủ AI (Lỗi: ${e.localizedMessage}).", isUser = false)
+                _messages.value = _messages.value + AiMessage(
+                    "Không thể kết nối đến máy chủ AI (${e.localizedMessage ?: "lỗi không xác định"}).",
+                    isUser = false
+                )
             } finally {
                 _isTyping.value = false
             }

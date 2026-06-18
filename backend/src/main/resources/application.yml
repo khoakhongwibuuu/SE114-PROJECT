@@ -59,6 +59,7 @@ app:
     enabled: ${AI_ENABLED:false}
     provider: ${AI_PROVIDER:openai}
     api-key: ${AI_API_KEY:}
+    service-base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
     chat-model: ${AI_MODEL_CHAT:}
     ocr-model: ${AI_MODEL_OCR:}
     timeout-ms: ${AI_TIMEOUT_MS:15000}

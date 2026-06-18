@@ -56,6 +56,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(UpstreamServiceException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUpstreamService(UpstreamServiceException ex) {
+        log.warn("Upstream service unavailable: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(DuplicateActiveConsultationException.class)
     public ResponseEntity<ApiResponse<ActiveConsultationDto>> handleDuplicateActiveConsultation(DuplicateActiveConsultationException ex) {
         log.warn("Duplicate active consultation: {}", ex.getMessage());

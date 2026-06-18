@@ -2,6 +2,7 @@ package com.example.carenest
 
 import android.app.Application
 import com.example.carenest.core.data.storage.SecureSessionManager
+import com.example.carenest.feature.chat.data.remote.AiChatApi
 import com.example.carenest.feature.chat.data.remote.ChatWebSocketClient
 import com.example.carenest.feature.chat.data.repository.ChatRepository
 import com.example.carenest.feature.admin.data.AdminApi
@@ -42,6 +43,7 @@ class CareNestApplication : Application() {
     lateinit var doctorRepository: DoctorRepository
     lateinit var bookingApi: BookingApi
     lateinit var bookingRepository: BookingRepository
+    lateinit var aiChatApi: AiChatApi
 
     override fun onCreate() {
         super.onCreate()
@@ -51,6 +53,7 @@ class CareNestApplication : Application() {
         val ekycApi = retrofit.create(EkycApi::class.java)
         val mediaApi = retrofit.create(MediaApi::class.java)
         authApi = retrofit.create(AuthApi::class.java)
+        aiChatApi = retrofit.create(AiChatApi::class.java)
         dashboardApi = retrofit.create(DashboardApi::class.java)
         vaccinationApi = retrofit.create(com.example.carenest.feature.health.data.remote.VaccinationApi::class.java)
         growthApi = retrofit.create(com.example.carenest.feature.health.data.remote.GrowthApi::class.java)

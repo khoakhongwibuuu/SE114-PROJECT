@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 public class ParseOcrRequest {
-    @NotBlank(message = "Văn bản thô không được để trống")
+    @NotBlank(message = "Văn bản OCR không được để trống")
     private String rawText;
 }
