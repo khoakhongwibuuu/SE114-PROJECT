@@ -6,6 +6,7 @@ import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.repository.UserRepository;
 import com.carenest.backend.features.community.repository.UserGroupMembershipRepository;
 import com.carenest.backend.features.family.repository.FamilyMemberRepository;
+import com.carenest.backend.features.booking.repository.ConsultationThreadRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -33,6 +34,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     private final UserRepository userRepository;
     private final UserGroupMembershipRepository userGroupMembershipRepository;
     private final FamilyMemberRepository familyMemberRepository;
+    private final ConsultationThreadRepository consultationThreadRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -115,6 +117,15 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             boolean isMember = familyMemberRepository.existsByFamilyIdAndUserId(familyId, user.getId());
             if (!isMember) {
                 throw new AccessDeniedException("Forbidden WebSocket family subscription.");
+            }
+            return;
+        }
+
+        if (destination.startsWith("/topic/consultation/thread/")) {
+            Long threadId = parseId(destination, "/topic/consultation/thread/");
+            boolean isParticipant = consultationThreadRepository.existsByIdAndParticipantId(threadId, user.getId());
+            if (!isParticipant && user.getRole() != Role.ADMIN) {
+                throw new AccessDeniedException("Forbidden WebSocket consultation subscription.");
             }
         }
     }
