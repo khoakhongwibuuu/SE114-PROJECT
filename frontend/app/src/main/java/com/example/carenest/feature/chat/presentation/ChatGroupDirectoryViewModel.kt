@@ -17,7 +17,8 @@ import kotlinx.coroutines.withContext
 
 data class ChatGroupDirectoryUiState(
     val isLoading: Boolean = true,
-    val search: String = "",
+    val searchMine: String = "",
+    val searchDiscover: String = "",
     val myGroups: List<ChatGroup> = emptyList(),
     val discoverGroups: List<ChatGroup> = emptyList(),
     val error: String? = null,
@@ -33,22 +34,32 @@ class ChatGroupDirectoryViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ChatGroupDirectoryUiState())
     val uiState: StateFlow<ChatGroupDirectoryUiState> = _uiState.asStateFlow()
-    private val searchFlow = MutableStateFlow("")
+    private val searchMineFlow = MutableStateFlow("")
+    private val searchDiscoverFlow = MutableStateFlow("")
 
     init {
         viewModelScope.launch {
-            searchFlow.debounce(300).collect { loadGroups(it) }
+            searchMineFlow.debounce(300).collect { loadMineGroups(it) }
+        }
+        viewModelScope.launch {
+            searchDiscoverFlow.debounce(300).collect { loadDiscoverGroups(it) }
         }
     }
 
-    fun onSearchChange(value: String) {
-        _uiState.value = _uiState.value.copy(search = value)
-        searchFlow.value = value.trim()
+    fun onSearchMineChange(value: String) {
+        _uiState.value = _uiState.value.copy(searchMine = value)
+        searchMineFlow.value = value.trim()
+    }
+
+    fun onSearchDiscoverChange(value: String) {
+        _uiState.value = _uiState.value.copy(searchDiscover = value)
+        searchDiscoverFlow.value = value.trim()
     }
 
     fun refresh() {
         viewModelScope.launch {
-            loadGroups(_uiState.value.search.trim())
+            loadMineGroups(_uiState.value.searchMine.trim())
+            loadDiscoverGroups(_uiState.value.searchDiscover.trim())
         }
     }
 
@@ -136,7 +147,7 @@ class ChatGroupDirectoryViewModel(
         }
     }
 
-    private suspend fun loadGroups(search: String) {
+    private suspend fun loadMineGroups(search: String) {
         val currentState = _uiState.value
         _uiState.value = currentState.copy(
             isLoading = true,
@@ -148,12 +159,36 @@ class ChatGroupDirectoryViewModel(
             val mine = withContext(Dispatchers.IO) {
                 repository.myGroups(query)
             }
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                myGroups = mine,
+                error = null,
+                hasBlockingError = false
+            )
+        } catch (e: Exception) {
+            val hadPreviousData = currentState.myGroups.isNotEmpty() || currentState.discoverGroups.isNotEmpty()
+            _uiState.value = currentState.copy(
+                isLoading = false,
+                error = e.localizedMessage ?: "Không thể tải danh sách nhóm của tôi",
+                hasBlockingError = !hadPreviousData
+            )
+        }
+    }
+
+    private suspend fun loadDiscoverGroups(search: String) {
+        val currentState = _uiState.value
+        _uiState.value = currentState.copy(
+            isLoading = true,
+            error = null,
+            hasBlockingError = false
+        )
+        try {
+            val query = search.ifBlank { null }
             val discover = withContext(Dispatchers.IO) {
                 repository.discoverGroups(query)
             }
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                myGroups = mine,
                 discoverGroups = discover,
                 error = null,
                 hasBlockingError = false
@@ -162,7 +197,7 @@ class ChatGroupDirectoryViewModel(
             val hadPreviousData = currentState.myGroups.isNotEmpty() || currentState.discoverGroups.isNotEmpty()
             _uiState.value = currentState.copy(
                 isLoading = false,
-                error = e.localizedMessage ?: "Không thể tải danh sách hội nhóm",
+                error = e.localizedMessage ?: "Không thể tải danh sách nhóm tất cả",
                 hasBlockingError = !hadPreviousData
             )
         }
@@ -192,7 +227,8 @@ private fun ChatGroup.toJoinedGroup(preview: ChatGroupPreview): ChatGroup {
         leadDoctorName = leadDoctorName ?: preview.leadDoctorName,
         memberCount = preview.memberCount,
         joined = true,
-        latestMessage = latestMessage ?: "Nhóm vừa được tạo"
+        latestMessage = latestMessage ?: "Nhóm vừa được tạo",
+        isFrozen = preview.isFrozen
     )
 }
 
@@ -209,6 +245,7 @@ private fun ChatGroupPreview.toJoinedGroup(updatedPreview: ChatGroupPreview): Ch
         memberCount = updatedPreview.memberCount,
         joined = true,
         latestMessage = "Nhóm vừa được tạo",
-        latestActivityAt = null
+        latestActivityAt = null,
+        isFrozen = updatedPreview.isFrozen
     )
 }
