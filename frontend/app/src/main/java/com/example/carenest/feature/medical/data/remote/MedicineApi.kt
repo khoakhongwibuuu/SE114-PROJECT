@@ -157,4 +157,24 @@ interface MedicineApi {
 
     @PUT("/api/v1/medications/{scheduleId}/complete")
     suspend fun completeMedicationSchedule(@Path("scheduleId") scheduleId: Long): Response<ApiResponse<Unit>>
+
+    @POST("/api/v1/ocr/parse")
+    suspend fun parseOcrText(
+        @Body request: ParseOcrRequest
+    ): Response<ApiResponse<List<ParsedMedicationDto>>>
 }
+
+data class ParseOcrRequest(
+    val rawText: String
+)
+
+data class ParsedMedicationDto(
+    val medicineName: String,
+    val totalQuantity: Int? = null,
+    val unit: String? = null,
+    val dosage: String? = null,
+    val frequency: String? = null,
+    val timesPerDay: Int? = null,
+    val durationDays: Int? = null,
+    val notes: String? = null
+)

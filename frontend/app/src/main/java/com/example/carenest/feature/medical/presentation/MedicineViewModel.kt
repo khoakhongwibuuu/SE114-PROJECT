@@ -17,6 +17,8 @@ import com.example.carenest.feature.medical.data.remote.MedicationLogResponse
 import com.example.carenest.feature.medical.data.remote.MedicationScheduleResponse
 import com.example.carenest.feature.medical.data.remote.MedicineApi
 import com.example.carenest.feature.medical.data.remote.UpdateCabinetMedicineRequest
+import com.example.carenest.feature.medical.data.remote.ParseOcrRequest
+import com.example.carenest.feature.medical.data.remote.ParsedMedicationDto
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -432,6 +434,37 @@ class MedicineViewModel(
                 }
             } catch (e: Exception) {
                 _actionMessage.value = e.localizedMessage ?: "Không thể xóa lịch thuốc"
+            }
+        }
+    }
+
+    fun parseOcrText(
+        rawText: String,
+        onSuccess: (List<ParsedMedicationDto>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isActionLoading.value = true
+            try {
+                val response = medicineApi.parseOcrText(ParseOcrRequest(rawText))
+                if (response.isSuccessful) {
+                    val data = response.requireData("Không thể phân tích dữ liệu OCR")
+                    withContext(Dispatchers.Main) {
+                        onSuccess(data)
+                    }
+                } else {
+                    val errorMsg = response.errorMessage("Không thể phân tích dữ liệu OCR")
+                    withContext(Dispatchers.Main) {
+                        onError(errorMsg)
+                    }
+                }
+            } catch (e: Exception) {
+                val errorMsg = e.localizedMessage ?: "Lỗi kết nối mạng"
+                withContext(Dispatchers.Main) {
+                    onError(errorMsg)
+                }
+            } finally {
+                _isActionLoading.value = false
             }
         }
     }
