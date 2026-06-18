@@ -1,12 +1,13 @@
 package com.carenest.backend.features.aichat.service.impl;
 
 import com.carenest.backend.core.api.PageResponse;
-import com.carenest.backend.core.exception.BadRequestException;
 import com.carenest.backend.core.exception.ResourceNotFoundException;
+import com.carenest.backend.features.ai.AiGatewayClient;
 import com.carenest.backend.features.aichat.dto.request.ChatRequest;
 import com.carenest.backend.features.aichat.dto.response.AiChatMessageResponse;
 import com.carenest.backend.features.aichat.dto.response.ChatResponse;
 import com.carenest.backend.features.aichat.entity.AiChatMessage;
+import com.carenest.backend.features.aichat.entity.AiChatSession;
 import com.carenest.backend.features.aichat.repository.AiChatMessageRepository;
 import com.carenest.backend.features.aichat.repository.AiChatSessionRepository;
 import com.carenest.backend.features.aichat.service.AiChatService;
@@ -19,15 +20,40 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class MockAiChatServiceImpl implements AiChatService {
+public class ProviderAiChatServiceImpl implements AiChatService {
 
     private final FamilySecurityUtil familySecurityUtil;
     private final AiChatSessionRepository sessionRepository;
     private final AiChatMessageRepository messageRepository;
+    private final AiGatewayClient aiGatewayClient;
 
     @Override
     public ChatResponse sendMessage(ChatRequest request) {
-        throw new BadRequestException("AI chat chua co provider that trong MVP va se duoc bat lai o phase cuoi.");
+        User currentUser = familySecurityUtil.getCurrentUser();
+        AiChatSession session = sessionRepository
+                .findByUserIdAndStatus(currentUser.getId(), "ACTIVE")
+                .orElseGet(() -> sessionRepository.save(AiChatSession.builder()
+                        .user(currentUser)
+                        .title(createTitle(request.getMessage()))
+                        .status("ACTIVE")
+                        .build()));
+
+        messageRepository.save(AiChatMessage.builder()
+                .session(session)
+                .role("USER")
+                .content(request.getMessage())
+                .build());
+
+        ChatResponse response = aiGatewayClient.chat(request.getMessage(), session.getId());
+
+        messageRepository.save(AiChatMessage.builder()
+                .session(session)
+                .role("ASSISTANT")
+                .content(response.getReply())
+                .build());
+
+        response.setConversationId(session.getId());
+        return response;
     }
 
     @Override
@@ -39,6 +65,14 @@ public class MockAiChatServiceImpl implements AiChatService {
                 .findBySessionIdOrderByCreatedAtDesc(sessionId, pageable)
                 .map(this::toResponse);
         return PageResponse.of(page);
+    }
+
+    private String createTitle(String message) {
+        if (message == null || message.isBlank()) {
+            return "Cuộc trò chuyện AI";
+        }
+        String compact = message.trim().replaceAll("\\s+", " ");
+        return compact.length() > 80 ? compact.substring(0, 80) : compact;
     }
 
     private AiChatMessageResponse toResponse(AiChatMessage message) {

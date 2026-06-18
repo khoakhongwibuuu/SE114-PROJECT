@@ -23,7 +23,9 @@ android {
             localProperties.load(FileInputStream(localPropertiesFile))
         }
         val hostIp: String = localProperties.getProperty("HOST_IP") ?: "10.0.2.2"
+        val aiChatEnabled: String = localProperties.getProperty("AI_CHAT_ENABLED") ?: "false"
         buildConfigField("String", "HOST_IP", "\"$hostIp\"")
+        buildConfigField("Boolean", "AI_CHAT_ENABLED", aiChatEnabled)
     }
 
     buildTypes {

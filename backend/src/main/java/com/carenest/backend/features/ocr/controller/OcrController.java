@@ -31,7 +31,7 @@ public class OcrController {
 
     @Operation(
             summary = "Phân tích đơn thuốc bằng AI",
-            description = "Nhận dạng văn bản thô từ OCR và chuyển đổi thành cấu trúc JSON"
+            description = "Nhận dạng văn bản thô từ OCR thuốc và chuyển đổi thành cấu trúc thuốc để người dùng xác nhận trước khi lưu"
     )
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Phân tích thành công"),
@@ -49,7 +49,7 @@ public class OcrController {
 
     private void ensureOcrEnabled() {
         if (!ocrEnabled) {
-            throw new BadRequestException("OCR đang tạm tắt trong MVP và sẽ được bật lại ở phase cuối.");
+            throw new BadRequestException("OCR thuốc đang tạm tắt. Hãy bật APP_FEATURE_OCR_ENABLED, OCR_ENABLED và cấu hình AI provider thật.");
         }
     }
 }

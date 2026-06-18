@@ -49,7 +49,7 @@ public class AiChatController {
 
     private void ensureAiChatEnabled() {
         if (!aiChatEnabled) {
-            throw new BadRequestException("AI chat đang tạm tắt trong MVP và sẽ được bật lại ở phase cuối.");
+            throw new BadRequestException("AI chat đang tạm tắt. Hãy bật APP_FEATURE_AI_CHAT_ENABLED và cấu hình AI provider thật.");
         }
     }
 }
