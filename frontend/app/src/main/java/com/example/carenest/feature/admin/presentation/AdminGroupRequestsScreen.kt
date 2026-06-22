@@ -170,8 +170,7 @@ class AdminGroupRequestsViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     actingGroupId = null,
-                    error = e.localizedMessage ?: "Không thể mở khóa nhóm",
->>>>>>> 5bc2146 (feat(admin): add governance audit management surfaces)
+                    error = e.localizedMessage ?: "Không thể mở khóa nhóm"
                 )
             }
         }
