@@ -149,6 +149,27 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     @Transactional
+    public AppointmentResponse completeAppointment(Long id) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", "id", id.toString()));
+        assertAppointmentAccess(appointment);
+
+        appointment.setStatus(AppointmentStatus.COMPLETED);
+        Appointment saved = appointmentRepository.save(appointment);
+
+        bookingRequestRepository.findByAppointment(saved).ifPresent(booking -> {
+            if (booking.getStatus() != BookingStatus.REJECTED
+                    && booking.getStatus() != BookingStatus.CANCELLED) {
+                booking.setStatus(BookingStatus.COMPLETED);
+                bookingRequestRepository.save(booking);
+            }
+        });
+
+        return appointmentMapper.toResponse(saved);
+    }
+
+    @Override
+    @Transactional
     public AppointmentResponse assignMember(Long id, AppointmentMemberRequest request) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment", "id", id.toString()));

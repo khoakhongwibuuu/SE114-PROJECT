@@ -3,6 +3,7 @@ package com.example.carenest.feature.dashboard.domain.model
 data class DashboardResponse(
     val unreadNotifications: Long = 0,
     val todayTasks: List<DashboardTask> = emptyList(),
+    val tomorrowTasks: List<DashboardTask> = emptyList(),
     val families: List<Family> = emptyList(),
     val members: List<Member> = emptyList(),
     val medications: List<Medication> = emptyList(),

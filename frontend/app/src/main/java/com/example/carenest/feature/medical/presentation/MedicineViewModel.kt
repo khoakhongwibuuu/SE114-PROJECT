@@ -99,7 +99,9 @@ class MedicineViewModel(
 
     fun fetchCabinet(familyId: String? = null) {
         viewModelScope.launch(Dispatchers.IO) {
-            _cabinetState.value = CabinetState.Loading
+            if (_cabinetState.value !is CabinetState.Success) {
+                _cabinetState.value = CabinetState.Loading
+            }
             try {
                 val fid = familyId ?: secureSessionManager.familyIdFlow.value ?: run {
                     _cabinetState.value = CabinetState.Error("Chưa chọn gia đình")

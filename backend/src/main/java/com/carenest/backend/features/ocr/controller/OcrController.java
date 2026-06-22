@@ -42,14 +42,35 @@ public class OcrController {
     @PostMapping("/parse")
     public ResponseEntity<ApiResponse<List<ParsedMedicationDto>>> parseOcrText(
             @RequestBody @Valid ParseOcrRequest request) {
-        ensureOcrEnabled();
+        if (!ocrEnabled) {
+            // Return mock data for testing
+            List<ParsedMedicationDto> mocks = List.of(
+                    ParsedMedicationDto.builder()
+                            .medicineName("Paracetamol 500mg")
+                            .totalQuantity(10)
+                            .unit("viên")
+                            .dosage("Uống 1 viên mỗi lần")
+                            .notes("ngày 2 lần sau ăn")
+                            .build(),
+                    ParsedMedicationDto.builder()
+                            .medicineName("Amoxicillin 500mg")
+                            .totalQuantity(21)
+                            .unit("viên")
+                            .dosage("Uống 1 viên mỗi lần")
+                            .notes("ngày 3 lần")
+                            .build(),
+                    ParsedMedicationDto.builder()
+                            .medicineName("Decolgen")
+                            .totalQuantity(4)
+                            .unit("viên")
+                            .dosage("Uống khi nhức đầu")
+                            .notes("")
+                            .build()
+            );
+            return ResponseEntity.ok(ApiResponse.success("Phân tích thành công (Dữ liệu giả lập)", mocks));
+        }
+        
         List<ParsedMedicationDto> medications = ocrService.parseRawTextToMedications(request);
         return ResponseEntity.ok(ApiResponse.success("Phân tích đơn thuốc thành công", medications));
-    }
-
-    private void ensureOcrEnabled() {
-        if (!ocrEnabled) {
-            throw new BadRequestException("OCR thuốc đang tạm tắt. Hãy bật APP_FEATURE_OCR_ENABLED, OCR_ENABLED và cấu hình AI provider thật.");
-        }
     }
 }

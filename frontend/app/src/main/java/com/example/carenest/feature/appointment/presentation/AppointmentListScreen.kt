@@ -25,6 +25,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -225,7 +227,7 @@ fun AppointmentListScreen(
                     )
                 }
 
-                is AppointmentState.Success -> {
+            is AppointmentState.Success -> {
                     val filteredList = when (selectedFilter) {
                         FilterKey.ALL -> currentState.upcomingAppointments + currentState.appointmentHistory
                         FilterKey.UPCOMING -> currentState.upcomingAppointments
@@ -250,6 +252,51 @@ fun AppointmentListScreen(
                                 is AppointmentItem.History -> item.location
                             }?.takeIf { it.isNotBlank() }
 
+                            var showCompleteDialog by remember { mutableStateOf(false) }
+                            var showCancelDialog by remember { mutableStateOf(false) }
+
+                            if (showCompleteDialog) {
+                                androidx.compose.material3.AlertDialog(
+                                    onDismissRequest = { showCompleteDialog = false },
+                                    title = { Text("Đánh dấu hoàn thành") },
+                                    text = { Text("Bạn có chắc chắn muốn đánh dấu lịch khám này là đã hoàn thành không?") },
+                                    confirmButton = {
+                                        androidx.compose.material3.TextButton(onClick = {
+                                            showCompleteDialog = false
+                                            vm.completeAppointment(item.id, resolvedProfileId)
+                                        }) {
+                                            Text("Đồng ý", color = PrimaryBlue)
+                                        }
+                                    },
+                                    dismissButton = {
+                                        androidx.compose.material3.TextButton(onClick = { showCompleteDialog = false }) {
+                                            Text("Hủy", color = Color.Gray)
+                                        }
+                                    }
+                                )
+                            }
+
+                            if (showCancelDialog) {
+                                androidx.compose.material3.AlertDialog(
+                                    onDismissRequest = { showCancelDialog = false },
+                                    title = { Text("Hủy lịch khám") },
+                                    text = { Text("Bạn có chắc chắn muốn hủy bỏ lịch khám này không? Thao tác này không thể hoàn tác.") },
+                                    confirmButton = {
+                                        androidx.compose.material3.TextButton(onClick = {
+                                            showCancelDialog = false
+                                            vm.cancelAppointment(item.id, resolvedProfileId)
+                                        }) {
+                                            Text("Đồng ý", color = Color(0xFFC62828))
+                                        }
+                                    },
+                                    dismissButton = {
+                                        androidx.compose.material3.TextButton(onClick = { showCancelDialog = false }) {
+                                            Text("Hủy", color = Color.Gray)
+                                        }
+                                    }
+                                )
+                            }
+
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -258,111 +305,151 @@ fun AppointmentListScreen(
                                 shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White)
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(14.dp),
-                                    verticalAlignment = Alignment.Top
-                                ) {
-                                    Box(
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
                                         modifier = Modifier
-                                            .width(48.dp)
-                                            .height(56.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(if (isUpcoming) Color(0xFFCFE5FF) else Color(0xFFE2E8F0)),
-                                        contentAlignment = Alignment.Center
+                                            .fillMaxWidth()
+                                            .padding(14.dp),
+                                        verticalAlignment = Alignment.Top
                                     ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            val day = if (isUpcoming) {
-                                                item.dayOfMonth
-                                            } else {
-                                                "--"
-                                            }
-                                            val month = if (isUpcoming) {
-                                                val monthValue = parseAppointmentDate(item.appointmentDate)?.monthValue ?: 1
-                                                "Th${monthValue.toString().padStart(2, '0')}"
-                                            } else {
-                                                "--"
-                                            }
-
-                                            Text(
-                                                text = day,
-                                                fontSize = 20.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = if (isUpcoming) PrimaryBlue else Color(0xFF64748B)
-                                            )
-                                            Text(
-                                                text = month,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = if (isUpcoming) PrimaryBlue else Color(0xFF64748B)
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = item.title,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF0F172A)
-                                        )
-                                        Text(
-                                            text = item.doctorName?.takeIf { it.isNotBlank() } ?: "Chưa cập nhật bác sĩ",
-                                            fontSize = 13.sp,
-                                            color = Color(0xFF64748B)
-                                        )
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(top = 4.dp)
+                                        Box(
+                                            modifier = Modifier
+                                                .width(48.dp)
+                                                .height(56.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(if (isUpcoming) Color(0xFFCFE5FF) else Color(0xFFE2E8F0)),
+                                            contentAlignment = Alignment.Center
                                         ) {
-                                            Icon(
-                                                Icons.Default.AccessTime,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(12.dp),
-                                                tint = Color(0xFF64748B)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                val day = if (isUpcoming) {
+                                                    (item as AppointmentItem.Upcoming).dayOfMonth
+                                                } else {
+                                                    "--"
+                                                }
+                                                val month = if (isUpcoming) {
+                                                    val monthValue = parseAppointmentDate(item.appointmentDate)?.monthValue ?: 1
+                                                    "Th${monthValue.toString().padStart(2, '0')}"
+                                                } else {
+                                                    "--"
+                                                }
+
+                                                Text(
+                                                    text = day,
+                                                    fontSize = 20.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = if (isUpcoming) PrimaryBlue else Color(0xFF64748B)
+                                                )
+                                                Text(
+                                                    text = month,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = if (isUpcoming) PrimaryBlue else Color(0xFF64748B)
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+
+                                        Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = timeText.ifBlank { item.appointmentDate },
-                                                fontSize = 12.sp,
+                                                text = item.title,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF0F172A)
+                                            )
+                                            Text(
+                                                text = item.doctorName?.takeIf { it.isNotBlank() } ?: "Chưa cập nhật bác sĩ",
+                                                fontSize = 13.sp,
                                                 color = Color(0xFF64748B)
                                             )
-                                        }
-                                        location?.let {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 modifier = Modifier.padding(top = 4.dp)
                                             ) {
                                                 Icon(
-                                                    Icons.Default.LocationOn,
+                                                    Icons.Default.AccessTime,
                                                     contentDescription = null,
                                                     modifier = Modifier.size(12.dp),
                                                     tint = Color(0xFF64748B)
                                                 )
                                                 Spacer(modifier = Modifier.width(4.dp))
                                                 Text(
-                                                    text = it,
+                                                    text = timeText.ifBlank { item.appointmentDate },
                                                     fontSize = 12.sp,
                                                     color = Color(0xFF64748B)
                                                 )
                                             }
+                                            location?.let {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier.padding(top = 4.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.LocationOn,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(12.dp),
+                                                        tint = Color(0xFF64748B)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text(
+                                                        text = it,
+                                                        fontSize = 12.sp,
+                                                        color = Color(0xFF64748B)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(badge.backgroundColor)
+                                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = badge.label,
+                                                color = badge.textColor,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
                                         }
                                     }
 
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(badge.backgroundColor)
-                                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(
-                                            text = badge.label,
-                                            color = badge.textColor,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                    if (isUpcoming && item.status == "SCHEDULED") {
+                                        androidx.compose.material3.Divider(color = Color(0xFFF1F5F9))
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                                            horizontalArrangement = Arrangement.End
+                                        ) {
+                                            IconButton(
+                                                onClick = { showCancelDialog = true },
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .background(Color(0xFFFEE2E2), RoundedCornerShape(8.dp))
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = "Hủy lịch",
+                                                    tint = Color(0xFFDC2626),
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            IconButton(
+                                                onClick = { showCompleteDialog = true },
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .background(Color(0xFFDCFCE7), RoundedCornerShape(8.dp))
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = "Hoàn thành",
+                                                    tint = Color(0xFF16A34A),
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -442,7 +529,7 @@ private fun appointmentStatusUi(status: String): AppointmentStatusUi {
 }
 
 private fun parseAppointmentDate(value: String): ZonedDateTime? {
-    return runCatching { ZonedDateTime.parse(value) }.getOrNull()
+    return runCatching { ZonedDateTime.parse(value).withZoneSameInstant(ZoneId.systemDefault()) }.getOrNull()
         ?: runCatching { Instant.parse(value).atZone(ZoneId.systemDefault()) }.getOrNull()
 }
 

@@ -47,4 +47,9 @@ interface AppointmentApi {
     suspend fun cancelAppointment(
         @Path("appointmentId") appointmentId: Long
     ): Response<ApiResponse<AppointmentResponse>>
+
+    @PUT("/api/v1/appointments/{appointmentId}/complete")
+    suspend fun completeAppointment(
+        @Path("appointmentId") appointmentId: Long
+    ): Response<ApiResponse<AppointmentResponse>>
 }

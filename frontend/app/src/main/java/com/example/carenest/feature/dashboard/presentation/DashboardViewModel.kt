@@ -27,6 +27,7 @@ sealed class DashboardState {
     data class Success(
         val data: DashboardResponse,
         val tasks: List<DashboardTask>,
+        val tomorrowTasks: List<DashboardTask>,
         val unreadCount: Int,
         val aiSummaryText: String,
         val warning: String? = null
@@ -58,6 +59,7 @@ class DashboardViewModel(
     val currentUser: StateFlow<UserInfo?> = _currentUser.asStateFlow()
 
     private var memberProfileMap: Map<String, Long?> = emptyMap()
+    private var hasInitializedProfileSelection = false
 
     init {
         fetchCurrentUser()
@@ -114,6 +116,7 @@ class DashboardViewModel(
                 _dashboardState.value = DashboardState.Success(
                     data = DashboardResponse(),
                     tasks = emptyList(),
+                    tomorrowTasks = emptyList(),
                     unreadCount = 0,
                     aiSummaryText = "Bạn chưa có gia đình nào. Hãy tạo hoặc tham gia gia đình để bắt đầu."
                 )
@@ -157,12 +160,18 @@ class DashboardViewModel(
             val ownProfileId = resolveOwnProfileId(familyDetail)
             ownProfileId?.let { secureSessionManager.saveProfileIdSync(it) }
 
-            val activeProfileId = resolveActiveProfileId(familyDetail, ownProfileId)
-            secureSessionManager.saveActiveProfileId(activeProfileId)
-            _currentProfileId.value = activeProfileId
-            _selectedMemberId.value = memberProfileMap.entries
-                .firstOrNull { it.value == activeProfileId }
-                ?.key
+            val activeProfileId = if (!hasInitializedProfileSelection) {
+                hasInitializedProfileSelection = true
+                val resolved = resolveActiveProfileId(familyDetail, ownProfileId)
+                secureSessionManager.saveActiveProfileId(resolved)
+                _currentProfileId.value = resolved
+                _selectedMemberId.value = memberProfileMap.entries
+                    .firstOrNull { it.value == resolved }
+                    ?.key
+                resolved
+            } else {
+                _currentProfileId.value
+            }
 
             val dashboardResult = runCatching {
                 dashboardApi.getDashboard(activeFamilyId, activeProfileId)
@@ -176,13 +185,13 @@ class DashboardViewModel(
                 members = mappedMembers
             )
 
-            val tasks = mergedDashboard.todayTasks.ifEmpty {
-                buildFallbackDashboardTasks(familyDetail, activeProfileId)
-            }.map(::decorateDashboardTask)
+            val tasks = mergedDashboard.todayTasks.map(::decorateDashboardTask)
+            val tomorrowTasks = mergedDashboard.tomorrowTasks.map(::decorateDashboardTask)
 
             _dashboardState.value = DashboardState.Success(
                 data = mergedDashboard,
                 tasks = tasks,
+                tomorrowTasks = tomorrowTasks,
                 unreadCount = mergedDashboard.unreadNotifications.toInt(),
                 aiSummaryText = buildDashboardHealthSummary(tasks),
                 warning = dashboardWarning
@@ -202,6 +211,7 @@ class DashboardViewModel(
 
     fun switchFamily(family: Family) {
         viewModelScope.launch(Dispatchers.IO) {
+            hasInitializedProfileSelection = false
             _selectedMemberId.value = null
             _currentProfileId.value = null
             secureSessionManager.saveActiveProfileId(null)

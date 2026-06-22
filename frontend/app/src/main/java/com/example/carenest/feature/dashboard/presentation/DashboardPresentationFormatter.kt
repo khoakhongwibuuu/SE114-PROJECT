@@ -28,7 +28,7 @@ internal fun decorateDashboardTask(task: DashboardTask): DashboardTask {
 
     return when (normalizedType) {
         "MEDICATION" -> task.copy(
-            subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Lịch uống thuốc hôm nay" } },
+            subtitle = (task.subtitle ?: "").ifBlank { fallbackSubtitle.ifBlank { "Lịch uống thuốc hôm nay" } },
             icon = "pill",
             iconBgColor = 0xFFE0F2FE,
             iconColor = 0xFF0EA5E9,
@@ -36,15 +36,15 @@ internal fun decorateDashboardTask(task: DashboardTask): DashboardTask {
         )
 
         "VACCINATION" -> task.copy(
-            subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Lịch tiêm chủng sắp tới" } },
+            subtitle = (task.subtitle ?: "").ifBlank { fallbackSubtitle.ifBlank { "Lịch tiêm chủng sắp tới" } },
             icon = "syringe",
             iconBgColor = 0xFFF3E8FF,
             iconColor = 0xFF8B5CF6,
-            badge = task.badge ?: task.subtitle.ifBlank { "Tiêm" }
+            badge = task.badge ?: (task.subtitle ?: "").ifBlank { "Tiêm" }
         )
 
         "APPOINTMENT" -> task.copy(
-            subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Lịch khám hôm nay" } },
+            subtitle = (task.subtitle ?: "").ifBlank { fallbackSubtitle.ifBlank { "Lịch khám hôm nay" } },
             icon = "calendar_month",
             iconBgColor = 0xFFE0F7FA,
             iconColor = 0xFF0097A7,
@@ -52,8 +52,8 @@ internal fun decorateDashboardTask(task: DashboardTask): DashboardTask {
         )
 
         else -> task.copy(
-            subtitle = task.subtitle.ifBlank { fallbackSubtitle.ifBlank { "Việc cần theo dõi" } },
-            icon = task.icon.ifBlank { "check_circle" },
+            subtitle = (task.subtitle ?: "").ifBlank { fallbackSubtitle.ifBlank { "Việc cần theo dõi" } },
+            icon = (task.icon ?: "").ifBlank { "check_circle" },
             iconBgColor = if (task.iconBgColor == 0xFFFFFFFF) 0xFFF1F5F9 else task.iconBgColor,
             iconColor = if (task.iconColor == 0xFF000000) 0xFF64748B else task.iconColor
         )

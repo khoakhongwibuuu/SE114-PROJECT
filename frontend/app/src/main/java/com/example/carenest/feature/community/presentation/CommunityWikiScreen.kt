@@ -635,6 +635,7 @@ private fun ArticleFeedCard(
                 }
             }
 
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -655,12 +656,22 @@ private fun ArticleFeedCard(
                 )
             }
 
-            HorizontalDivider(color = Color(0xFFE2E8F0), modifier = Modifier.padding(top = 12.dp))
-            Row(modifier = Modifier.fillMaxWidth().height(46.dp)) {
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = Color(0xFFE2E8F0), modifier = Modifier.padding(horizontal = 14.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable(onClick = onLike),
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onLike)
+                        .padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -668,8 +679,9 @@ private fun ArticleFeedCard(
                         if (article.likedByMe) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = null,
                         tint = if (article.likedByMe) Color(0xFFEF4444) else Color(0xFF64748B),
+                        modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.width(7.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         if (liking) "Đang thích..." else "Thích",
                         fontSize = 14.sp,
@@ -680,12 +692,19 @@ private fun ArticleFeedCard(
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable(onClick = onOpenComments),
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onOpenComments)
+                        .padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Default.Message, contentDescription = null, tint = Color(0xFF64748B))
-                    Spacer(modifier = Modifier.width(7.dp))
+                    Icon(
+                        Icons.Default.Message,
+                        contentDescription = null,
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text("Bình luận", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFF64748B))
                 }
             }
