@@ -1,0 +1,1 @@
+D:\DoAn_MB1\CareNest\frontend\CareNestApp\android\app\build\intermediates\cxx\Debug\5vu5j285\obj\arm64-v8a

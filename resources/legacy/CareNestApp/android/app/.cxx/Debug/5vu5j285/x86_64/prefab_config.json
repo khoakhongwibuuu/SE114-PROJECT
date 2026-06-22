@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "prefabPath": "C:\\Users\\Hi\\.gradle\\caches\\modules-2\\files-2.1\\com.google.prefab\\cli\\2.1.0\\aa32fec809c44fa531f01dcfb739b5b3304d3050\\cli-2.1.0-all.jar",
+  "packages": [
+    "D:\\DoAn_MB1\\CareNest\\frontend\\CareNestApp\\node_modules\\react-native-nitro-modules\\android\\build\\intermediates\\prefab_package\\debug\\prefab",
+    "D:\\DoAn_MB1\\CareNest\\frontend\\CareNestApp\\node_modules\\react-native-worklets\\android\\build\\intermediates\\prefab_package\\debug\\prefab",
+    "C:\\Users\\Hi\\.gradle\\caches\\9.3.1\\transforms\\008945c2150abc476ac6e709457dbe1b\\workspace\\transformed\\jetified-react-android-0.85.2-debug\\prefab",
+    "D:\\DoAn_MB1\\CareNest\\frontend\\CareNestApp\\node_modules\\react-native-reanimated\\android\\build\\intermediates\\prefab_package\\debug\\prefab",
+    "C:\\Users\\Hi\\.gradle\\caches\\9.3.1\\transforms\\c5cf9f222a759325732d5acbc23255de\\workspace\\transformed\\jetified-hermes-android-250829098.0.10-debug\\prefab",
+    "C:\\Users\\Hi\\.gradle\\caches\\9.3.1\\transforms\\9a8ca31572e63227f44714ceb36a5b06\\workspace\\transformed\\jetified-fbjni-0.7.0\\prefab"
+  ]
+}
