@@ -175,6 +175,14 @@ Repo hiện có workflow `.github/workflows/ci.yml` để chạy:
 
 Workflow này chỉ kiểm tra build/test ở mức code-level, không claim runtime PASS cho PostgreSQL, Redis, Android device/emulator, AI hay OCR.
 
+### 7. Dữ liệu mẫu (QA Seeding)
+Hệ thống có sẵn bộ dữ liệu mẫu chi tiết dùng cho quá trình kiểm thử (QA) và kiểm tra tính năng runtime:
+*   Để sử dụng, bật tính năng tự động khởi tạo dữ liệu trong `.env`:
+    `APP_SEED_QA_DEMO_ENABLED=true`
+    `APP_SEED_QA_DEMO_DEFAULT_PASSWORD=Password123!`
+*   Xem chi tiết các tài khoản và kịch bản đã khởi tạo tại [TEST_ACCOUNTS_AND_SCENARIOS.md](TEST_ACCOUNTS_AND_SCENARIOS.md).
+*   Chạy script Python `backend/verify_seed.py` để kiểm tra nhanh trạng thái dữ liệu đã nạp.
+
 ---
 
 ## 📊 Cấu trúc Database (Entity Summary)
