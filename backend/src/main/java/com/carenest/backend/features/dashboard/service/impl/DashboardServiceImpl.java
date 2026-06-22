@@ -60,77 +60,77 @@ public class DashboardServiceImpl implements DashboardService {
             familySecurityUtil.checkHealthProfileBelongsToFamily(profileId, familyId);
         }
 
-        // 2. Tính toán startOfDay và endOfDay (Instant)
+        // 2. Tính toán startOfDay, endOfDay, endOfTomorrow (Instant)
         ZoneId zoneId = ZoneId.systemDefault();
         ZonedDateTime now = ZonedDateTime.now(zoneId);
         LocalDate today = now.toLocalDate();
         Instant startOfDay = today.atStartOfDay(zoneId).toInstant();
         Instant endOfDay = today.plusDays(1).atStartOfDay(zoneId).toInstant();
+        Instant endOfTomorrow = today.plusDays(2).atStartOfDay(zoneId).toInstant();
 
-        // 3. Tính toán khoảng ngày cho Tiêm chủng: [Hôm nay, Hôm nay + 2 ngày] (LocalDate)
-        LocalDate todayPlusTwo = today.plusDays(2);
+        // 3. Tính toán khoảng ngày cho Tiêm chủng: [Hôm nay, Ngày mai] (LocalDate)
+        LocalDate tomorrowDate = today.plusDays(1);
 
         // 4. Query Medication Logs
         List<MedicationLog> pendingMedications;
         if (profileId != null) {
             pendingMedications = medicationLogRepository.findPendingTasksForProfileToday(
-                    profileId, MedicationLogStatus.PENDING, startOfDay, endOfDay);
+                    profileId, MedicationLogStatus.PENDING, startOfDay, endOfTomorrow);
         } else {
             pendingMedications = medicationLogRepository.findPendingTasksForFamilyToday(
-                    familyId, MedicationLogStatus.PENDING, startOfDay, endOfDay);
+                    familyId, MedicationLogStatus.PENDING, startOfDay, endOfTomorrow);
         }
 
-        // 5. Query Vaccination Doses trong khoảng 2 ngày tới
+        // 5. Query Vaccination Doses trong hôm nay và ngày mai
         List<VaccinationDose> upcomingVaccines;
         if (profileId != null) {
             upcomingVaccines = vaccinationDoseRepository.findUpcomingDosesForProfileBetween(
-                    profileId, DoseStatus.PENDING, today, todayPlusTwo);
+                    profileId, DoseStatus.PENDING, today, tomorrowDate);
         } else {
             upcomingVaccines = vaccinationDoseRepository.findUpcomingDosesForFamilyBetween(
-                    familyId, DoseStatus.PENDING, today, todayPlusTwo);
+                    familyId, DoseStatus.PENDING, today, tomorrowDate);
         }
 
-        // 6. Query Appointments trong ngày hôm nay
+        // 6. Query Appointments trong ngày hôm nay và ngày mai
         List<Appointment> todayAppointments;
         if (profileId != null) {
             todayAppointments = appointmentRepository.findScheduledAppointmentsForProfileToday(
-                    profileId, AppointmentStatus.SCHEDULED, startOfDay, endOfDay);
+                    profileId, AppointmentStatus.SCHEDULED, startOfDay, endOfTomorrow);
         } else {
             todayAppointments = appointmentRepository.findScheduledAppointmentsForFamilyToday(
-                    familyId, AppointmentStatus.SCHEDULED, startOfDay, endOfDay);
+                    familyId, AppointmentStatus.SCHEDULED, startOfDay, endOfTomorrow);
         }
 
         // 7. Query count notifications chưa đọc
         long unreadCount = notificationRepository.countUnreadNotifications(userId);
 
-        // 8. Map dữ liệu vào list chung DashboardTask
-        List<DashboardTask> tasks = new ArrayList<>();
+        // 8. Map dữ liệu vào list chung
+        List<DashboardTask> todayTasksList = new ArrayList<>();
+        List<DashboardTask> tomorrowTasksList = new ArrayList<>();
 
         // Map Thuốc
         for (MedicationLog logItem : pendingMedications) {
-            tasks.add(DashboardTask.builder()
+            DashboardTask task = DashboardTask.builder()
                     .type("MEDICATION")
                     .title(logItem.getMedication().getMedicineName())
                     .time(logItem.getScheduledTime().toString())
                     .memberName(logItem.getMedication().getHealthProfile().getFullName())
                     .referenceId(logItem.getId())
                     .profileId(logItem.getMedication().getHealthProfile().getId())
-                    .build());
+                    .build();
+            if (logItem.getScheduledTime().isBefore(endOfDay)) {
+                todayTasksList.add(task);
+            } else {
+                tomorrowTasksList.add(task);
+            }
         }
 
-        // Map Tiêm chủng với tag nhắc nhở "⏳ Ngày mai" hoặc "⏳ Ngày kia"
+        // Map Tiêm chủng với tag nhắc nhở "⏳ Ngày mai" hoặc "⏳ Hôm nay"
         for (VaccinationDose dose : upcomingVaccines) {
-            String subtitle = null;
             long daysBetween = ChronoUnit.DAYS.between(today, dose.getScheduledDate());
-            if (daysBetween == 1) {
-                subtitle = "⏳ Ngày mai";
-            } else if (daysBetween == 2) {
-                subtitle = "⏳ Ngày kia";
-            } else if (daysBetween == 0) {
-                subtitle = "⏳ Hôm nay";
-            }
+            String subtitle = (daysBetween == 1) ? "⏳ Ngày mai" : "⏳ Hôm nay";
 
-            tasks.add(DashboardTask.builder()
+            DashboardTask task = DashboardTask.builder()
                     .type("VACCINATION")
                     .title(dose.getVaccinationRecord().getVaccineName() + " (Mũi " + dose.getDoseNumber() + ")")
                     .time(dose.getScheduledDate().atStartOfDay(zoneId).toInstant().toString())
@@ -138,29 +138,44 @@ public class DashboardServiceImpl implements DashboardService {
                     .referenceId(dose.getId())
                     .profileId(dose.getVaccinationRecord().getHealthProfile().getId())
                     .subtitle(subtitle)
-                    .build());
+                    .build();
+            if (daysBetween == 0) {
+                todayTasksList.add(task);
+            } else {
+                tomorrowTasksList.add(task);
+            }
         }
 
         // Map Lịch khám
         for (Appointment app : todayAppointments) {
             String hospitalInfo = app.getHospitalName() != null ? " tại " + app.getHospitalName() : "";
-            tasks.add(DashboardTask.builder()
+            boolean isToday = app.getAppointmentDate().isBefore(endOfDay);
+            String subtitle = isToday ? "🏥 Hôm nay" : "🏥 Ngày mai";
+
+            DashboardTask task = DashboardTask.builder()
                     .type("APPOINTMENT")
                     .title("Lịch khám bác sĩ " + (app.getDoctorName() != null ? app.getDoctorName() : "") + hospitalInfo)
                     .time(app.getAppointmentDate().toString())
                     .memberName(app.getHealthProfile().getFullName())
                     .referenceId(app.getId())
                     .profileId(app.getHealthProfile().getId())
-                    .subtitle("🏥 Hôm nay")
-                    .build());
+                    .subtitle(subtitle)
+                    .build();
+            if (isToday) {
+                todayTasksList.add(task);
+            } else {
+                tomorrowTasksList.add(task);
+            }
         }
 
         // Sắp xếp các tasks theo thời gian
-        tasks.sort(Comparator.comparing(DashboardTask::getTime));
+        todayTasksList.sort(Comparator.comparing(DashboardTask::getTime));
+        tomorrowTasksList.sort(Comparator.comparing(DashboardTask::getTime));
 
         return DashboardResponse.builder()
                 .unreadNotifications(unreadCount)
-                .todayTasks(tasks)
+                .todayTasks(todayTasksList)
+                .tomorrowTasks(tomorrowTasksList)
                 .build();
     }
 }

@@ -55,6 +55,12 @@ public class AppointmentController {
         return ApiResponse.success("Đã hủy lịch khám", response);
     }
 
+    @PutMapping("/appointments/{id}/complete")
+    public ApiResponse<AppointmentResponse> completeAppointment(@PathVariable("id") Long id) {
+        AppointmentResponse response = appointmentService.completeAppointment(id);
+        return ApiResponse.success("Đã hoàn tất lịch khám", response);
+    }
+
     @PostMapping("/appointments/{id}/members")
     public ApiResponse<AppointmentResponse> assignMember(
             @PathVariable("id") Long id,

@@ -45,6 +45,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -172,33 +173,31 @@ fun ChatGroupDirectoryPane(
             ),
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White),
+        androidx.compose.material3.TabRow(
+            selectedTabIndex = activeTab.ordinal,
+            containerColor = Color.White,
+            contentColor = PrimaryBlue,
+            indicator = { tabPositions ->
+                androidx.compose.material3.TabRowDefaults.SecondaryIndicator(
+                    Modifier.tabIndicatorOffset(tabPositions[activeTab.ordinal]),
+                    color = PrimaryBlue,
+                    height = 3.dp
+                )
+            }
         ) {
             GroupTab.entries.forEach { tab ->
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { activeTab = tab }
-                        .padding(bottom = 11.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = tab.label,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = if (activeTab == tab) PrimaryBlue else Color(0xFF64748B),
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(if (activeTab == tab) PrimaryBlue else Color.Transparent),
-                    )
-                }
+                androidx.compose.material3.Tab(
+                    selected = activeTab == tab,
+                    onClick = { activeTab = tab },
+                    text = {
+                        Text(
+                            text = tab.label,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (activeTab == tab) PrimaryBlue else Color(0xFF64748B),
+                        )
+                    }
+                )
             }
         }
 

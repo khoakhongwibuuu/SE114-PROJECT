@@ -517,29 +517,42 @@ fun StructuredGroupPostCard(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-                HorizontalDivider(color = Color(0xFFF1F5F9))
+                HorizontalDivider(color = Color(0xFFF1F5F9), modifier = Modifier.padding(horizontal = 14.dp))
 
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                        .padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(
-                        onClick = { onLikeClick?.invoke(post.id) },
-                        modifier = Modifier.weight(1f),
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onLikeClick?.invoke(post.id) }
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             "Thích",
-                            color = if (post.likedByMe) PrimaryBlue else Color(0xFF64748B),
-                            fontWeight = if (post.likedByMe) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (post.likedByMe) Color(0xFFEF4444) else Color(0xFF64748B)
                         )
                     }
-                    TextButton(
-                        onClick = { onCommentClick?.invoke(post.id) },
-                        modifier = Modifier.weight(1f),
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onCommentClick?.invoke(post.id) }
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Bình luận", color = Color(0xFF64748B))
+                        Text("Bình luận", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFF64748B))
                     }
                 }
             }

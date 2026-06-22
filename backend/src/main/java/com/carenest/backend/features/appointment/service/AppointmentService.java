@@ -14,6 +14,7 @@ public interface AppointmentService {
     List<AppointmentResponse> getUpcomingAppointments(Long profileId);
     AppointmentResponse updateAppointment(Long id, AppointmentUpdateRequest request);
     AppointmentResponse cancelAppointment(Long id);
+    AppointmentResponse completeAppointment(Long id);
     AppointmentResponse assignMember(Long id, AppointmentMemberRequest request);
     String getNotes(Long id);
     AppointmentResponse updateNotes(Long id, AppointmentNotesRequest request);

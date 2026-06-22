@@ -177,6 +177,14 @@ fun HomeDashboardScreen(
                         onTaskClick = onNavigateToTask
                     )
 
+                    if (state.tomorrowTasks.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(AppSpacing.x2))
+                        TomorrowTasksSection(
+                            tasks = state.tomorrowTasks,
+                            onTaskClick = onNavigateToTask
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(AppSpacing.x2))
 
                     HealthBriefCard(text = state.aiSummaryText)
@@ -439,13 +447,12 @@ fun TasksSection(tasks: List<DashboardTask>, onTaskClick: (DashboardTask) -> Uni
                 border = BorderStroke(1.dp, Color(0xFFF1F5F9))
             ) {
                 Row(modifier = Modifier.padding(AppSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(52.dp).clip(RoundedCornerShape(18.dp)).background(PrimaryFixed), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF2563EB), modifier = Modifier.size(24.dp))
+                    Box(modifier = Modifier.size(52.dp).clip(RoundedCornerShape(18.dp)).background(Color(0xFFF1F5F9)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(24.dp))
                     }
                     Spacer(modifier = Modifier.width(AppSpacing.lg))
                     Column {
-                        Text("Chưa có việc nào cần xử lý", style = CareNestTextStyles.labelLg.copy(fontSize = 15.sp), color = TextPrimary)
-                        Text("Dashboard sẽ tự cập nhật khi có lịch mới.", style = CareNestTextStyles.bodySm.copy(fontSize = 13.sp), color = TextSecondary)
+                        Text("Công việc hôm nay đã hoàn tất", style = CareNestTextStyles.labelLg.copy(fontSize = 15.sp), color = TextPrimary)
                     }
                 }
             }
@@ -484,6 +491,52 @@ fun TasksSection(tasks: List<DashboardTask>, onTaskClick: (DashboardTask) -> Uni
                         } else {
                             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TomorrowTasksSection(tasks: List<DashboardTask>, onTaskClick: (DashboardTask) -> Unit) {
+    Column {
+        Text("NGÀY MAI CẦN LÀM", style = CareNestTextStyles.overline, color = Color(0xFF94A3B8))
+        Spacer(modifier = Modifier.height(AppSpacing.md))
+
+        tasks.forEach { task ->
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.md).clickable { onTaskClick(task) },
+                shape = RoundedCornerShape(AppRadius.x2),
+                color = CardBackground,
+                shadowElevation = AppElevation.sm,
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9))
+            ) {
+                Row(modifier = Modifier.padding(AppSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(52.dp).clip(RoundedCornerShape(18.dp)).background(Color(task.iconBgColor)), contentAlignment = Alignment.Center) {
+                        CareNestIcon(
+                            name = task.icon.ifBlank { "check_circle" },
+                            contentDescription = null,
+                            tint = Color(task.iconColor),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(AppSpacing.lg))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(task.title, style = CareNestTextStyles.labelLg.copy(fontSize = 15.sp), color = TextPrimary)
+                        Text(task.subtitle, style = CareNestTextStyles.bodySm.copy(fontSize = 13.sp), color = TextSecondary)
+                    }
+                    if (task.badge != null) {
+                        val isTomorrow = task.badge.contains("Ngày mai")
+                        val isToday = task.badge.contains("Hôm nay")
+                        val badgeBg = if (isTomorrow) Color(0xFFFFEDD5) else if (isToday) Color(0xFFFEE2E2) else Color(0xFFEEF2FF)
+                        val badgeColor = if (isTomorrow) Color(0xFFF97316) else if (isToday) Color(0xFFEF4444) else Color(0xFF4F46E5)
+
+                        Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(badgeBg).padding(horizontal = 10.dp, vertical = 5.dp)) {
+                            Text(task.badge, style = CareNestTextStyles.labelSm.copy(fontSize = 11.sp), color = badgeColor)
+                        }
+                    } else {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
                     }
                 }
             }

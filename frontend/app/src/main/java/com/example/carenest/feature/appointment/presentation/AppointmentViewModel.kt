@@ -21,6 +21,7 @@ private const val INVALID_PROFILE_MESSAGE = "Chưa chọn hồ sơ sức khỏe 
 private const val LOAD_APPOINTMENTS_ERROR = "Không thể tải lịch hẹn"
 private const val CREATE_APPOINTMENT_ERROR = "Không thể tạo lịch hẹn"
 private const val CANCEL_APPOINTMENT_ERROR = "Không thể hủy lịch hẹn"
+private const val COMPLETE_APPOINTMENT_ERROR = "Không thể cập nhật trạng thái"
 private const val DEFAULT_APPOINTMENT_TITLE = "Khám bệnh"
 
 sealed class AppointmentState {
@@ -170,10 +171,14 @@ class AppointmentViewModel(
                         notes = notes
                     )
                 ).requireData(CREATE_APPOINTMENT_ERROR)
-                onSuccess()
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    onSuccess()
+                }
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                onError(e.message ?: CREATE_APPOINTMENT_ERROR)
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    onError(e.message ?: CREATE_APPOINTMENT_ERROR)
+                }
             } finally {
                 _isActionLoading.value = false
             }
@@ -183,21 +188,41 @@ class AppointmentViewModel(
     fun cancelAppointment(appointmentId: Long, profileId: Long) {
         viewModelScope.launch(ioDispatcher) {
             if (profileId <= 0L) {
-                _appointmentState.value = AppointmentState.Error(INVALID_PROFILE_MESSAGE)
                 return@launch
             }
 
+            _isActionLoading.value = true
             try {
                 api.cancelAppointment(appointmentId).requireData(CANCEL_APPOINTMENT_ERROR)
                 fetchAppointments(profileId)
             } catch (e: Exception) {
-                _appointmentState.value = AppointmentState.Error(e.message ?: CANCEL_APPOINTMENT_ERROR)
+                // Ignore error in state to not break the list, could use an error event flow
+            } finally {
+                _isActionLoading.value = false
+            }
+        }
+    }
+
+    fun completeAppointment(appointmentId: Long, profileId: Long) {
+        viewModelScope.launch(ioDispatcher) {
+            if (profileId <= 0L) {
+                return@launch
+            }
+
+            _isActionLoading.value = true
+            try {
+                api.completeAppointment(appointmentId).requireData(COMPLETE_APPOINTMENT_ERROR)
+                fetchAppointments(profileId)
+            } catch (e: Exception) {
+                // Ignore error in state
+            } finally {
+                _isActionLoading.value = false
             }
         }
     }
 
     private fun parseAppointmentDate(value: String): ZonedDateTime? {
-        return runCatching { ZonedDateTime.parse(value) }.getOrNull()
+        return runCatching { ZonedDateTime.parse(value).withZoneSameInstant(ZoneId.systemDefault()) }.getOrNull()
             ?: runCatching { Instant.parse(value).atZone(ZoneId.systemDefault()) }.getOrNull()
     }
 

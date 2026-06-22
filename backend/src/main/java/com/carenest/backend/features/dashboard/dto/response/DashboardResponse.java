@@ -18,4 +18,7 @@ public class DashboardResponse {
 
     @Schema(description = "Danh sách công việc cần làm hôm nay (uống thuốc, tiêm chủng)")
     private List<DashboardTask> todayTasks;
+
+    @Schema(description = "Danh sách công việc của ngày mai")
+    private List<DashboardTask> tomorrowTasks;
 }
