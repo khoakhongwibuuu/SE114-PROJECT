@@ -237,18 +237,24 @@ fun AddMedicineScreen(
                             }
                         }
                     }
-                    OutlinedTextField(
-                        value = expiryDate,
-                        onValueChange = {},
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { datePickerDialog.show() },
-                        label = { Text("Hạn sử dụng *") },
-                        placeholder = { Text("Chọn ngày") },
-                        leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
-                        readOnly = true,
-                        singleLine = true,
-                    )
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = expiryDate,
+                            onValueChange = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Hạn sử dụng *") },
+                            placeholder = { Text("Chọn ngày") },
+                            leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                            readOnly = true,
+                            singleLine = true,
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(Color.Transparent)
+                                .clickable { datePickerDialog.show() }
+                        )
+                    }
                     Text(
                         text = "Chọn ngày bằng lịch để tránh sai định dạng. Hạn dùng không được nằm trong quá khứ.",
                         color = Color(0xFF64748B),

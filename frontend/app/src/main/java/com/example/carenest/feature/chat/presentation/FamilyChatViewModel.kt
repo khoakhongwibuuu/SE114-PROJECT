@@ -48,6 +48,7 @@ class FamilyChatViewModel(
     fun bindFamily(familyId: Long) {
         if (boundFamilyId == familyId && loadedFamilyId == familyId) {
             reconnectAttempt = 0
+            loadHistory(familyId, page = 0)
             if (!_uiState.value.isConnected) connect(familyId)
             return
         }
@@ -172,7 +173,7 @@ class FamilyChatViewModel(
                         isLoadingMore = false,
                         messages = if (page == 0) mapped else current.messages + mapped,
                         hasMore = !response.last,
-                        currentPage = response.number,
+                        currentPage = response.page,
                         error = null,
                     )
                 }
