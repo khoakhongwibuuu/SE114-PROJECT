@@ -33,7 +33,7 @@ public class NotificationController {
     public ApiResponse<PageResponse<NotificationResponse>> getNotifications(
             @AuthenticationPrincipal User user,
             @RequestParam(required = false) NotificationType type,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 20) Pageable pageable) {
 
         Page<NotificationResponse> page = notificationService.getUserNotifications(user.getId(), type, pageable);
         return ApiResponse.success("Lấy danh sách thông báo thành công", PageResponse.of(page));

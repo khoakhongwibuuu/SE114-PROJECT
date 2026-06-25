@@ -55,19 +55,19 @@ app:
     access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}
     refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
   features:
-    ai-chat-enabled: ${APP_FEATURE_AI_CHAT_ENABLED:false}
-    ocr-enabled: ${APP_FEATURE_OCR_ENABLED:false}
+    ai-chat-enabled: ${APP_FEATURE_AI_CHAT_ENABLED:true}
+    ocr-enabled: ${APP_FEATURE_OCR_ENABLED:true}
   ai:
-    enabled: ${AI_ENABLED:false}
-    provider: ${AI_PROVIDER:openai}
+    enabled: ${AI_ENABLED:true}
+    provider: ${AI_PROVIDER:gemini}
     api-key: ${AI_API_KEY:}
     service-base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
-    chat-model: ${AI_MODEL_CHAT:}
-    ocr-model: ${AI_MODEL_OCR:}
+    chat-model: ${AI_MODEL_CHAT:gemini-2.5-flash}
+    ocr-model: ${AI_MODEL_OCR:gemini-2.5-flash}
     timeout-ms: ${AI_TIMEOUT_MS:15000}
     max-retries: ${AI_MAX_RETRIES:2}
   ocr:
-    enabled: ${OCR_ENABLED:false}
+    enabled: ${OCR_ENABLED:true}
   media:
     upload-dir: ${MEDIA_UPLOAD_DIR:uploads/media}
     max-image-size-bytes: ${MEDIA_MAX_IMAGE_SIZE_BYTES:5242880}

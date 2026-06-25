@@ -34,14 +34,14 @@ class Settings:
 
 def load_settings() -> Settings:
     return Settings(
-        ai_enabled=_as_bool(os.getenv("AI_ENABLED"), False),
-        ocr_enabled=_as_bool(os.getenv("OCR_ENABLED"), False),
-        ai_provider=os.getenv("AI_PROVIDER", "openai").strip() or "openai",
+        ai_enabled=_as_bool(os.getenv("AI_ENABLED"), True),
+        ocr_enabled=_as_bool(os.getenv("OCR_ENABLED"), True),
+        ai_provider=os.getenv("AI_PROVIDER", "gemini").strip() or "gemini",
         ai_api_key=os.getenv("AI_API_KEY", ""),
-        ai_base_url=os.getenv("AI_BASE_URL", "https://api.openai.com/v1/responses").strip()
-        or "https://api.openai.com/v1/responses",
-        ai_model_chat=os.getenv("AI_MODEL_CHAT", "gpt-5.2").strip() or "gpt-5.2",
-        ai_model_ocr=os.getenv("AI_MODEL_OCR", "gpt-5.2").strip() or "gpt-5.2",
+        ai_base_url=os.getenv("AI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/models").strip()
+        or "https://generativelanguage.googleapis.com/v1beta/models",
+        ai_model_chat=os.getenv("AI_MODEL_CHAT", "gemini-2.5-flash").strip() or "gemini-2.5-flash",
+        ai_model_ocr=os.getenv("AI_MODEL_OCR", "gemini-2.5-flash").strip() or "gemini-2.5-flash",
         ai_timeout_ms=_as_int(os.getenv("AI_TIMEOUT_MS"), 15000),
         ai_max_retries=_as_int(os.getenv("AI_MAX_RETRIES"), 2),
     )

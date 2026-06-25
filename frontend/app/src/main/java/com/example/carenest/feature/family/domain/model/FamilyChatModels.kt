@@ -17,7 +17,7 @@ data class FamilyChatUserDto(
 
 data class FamilyChatPageResponse(
     val content: List<FamilyChatMessageResponse> = emptyList(),
-    val number: Int = 0,
+    val page: Int = 0,
     val size: Int = 0,
     val totalElements: Long = 0,
     val totalPages: Int = 0,
