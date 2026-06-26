@@ -22,12 +22,13 @@ class OcrControllerTest {
     private OcrController ocrController;
 
     @Test
-    void parseOcrText_rejectsWhenOcrIsDisabledByDefault() {
+    void parseOcrText_returnsMockDataWhenOcrIsDisabledByDefault() {
         ParseOcrRequest request = new ParseOcrRequest();
         request.setRawText("Paracetamol 500mg");
 
-        assertThrows(BadRequestException.class, () -> ocrController.parseOcrText(request));
+        var response = ocrController.parseOcrText(request);
 
+        org.junit.jupiter.api.Assertions.assertEquals(200, response.getStatusCodeValue());
         verifyNoInteractions(ocrService);
     }
 }
