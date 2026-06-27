@@ -73,54 +73,57 @@ Kiến trúc phân quyền phức tạp được giải quyết thông qua `Fami
 
 ## 🚀 Hướng dẫn chạy dự án (Getting Started)
 
-### 1. Yêu cầu hệ thống (Prerequisites)
-*   **Java 17** (cho Spring Boot và Android build)
-*   **Python 3.12+** (cho AI FastAPI Gateway)
-*   **Docker & Docker Compose** (cho PostgreSQL + Redis)
-*   **Android Studio** (để chạy frontend app)
+Hệ thống đã được tối ưu hóa và đóng gói hoàn chỉnh bằng Docker, giúp việc thiết lập môi trường cực kỳ đơn giản cho tất cả thành viên trong nhóm.
 
-### 2. Clone Repo
-```bash
-git clone https://github.com/khoakhongwibuuu/SE114-PROJECT.git
-cd SE114-PROJECT
-```
+### 1. Dành cho các thành viên trong nhóm (Testers / Developers)
+Để chạy dự án, bạn chỉ cần cài đặt sẵn **Docker Desktop** và **Android Studio** trên máy tính.
 
-### 3. Khởi động AI Gateway (Python FastAPI)
-AI Gateway là dịch vụ xử lý AI Chat và OCR, bắt buộc phải chạy ở cổng `8000` để Backend Spring Boot kết nối tới.
-1. Mở terminal, đi vào thư mục `ai`.
-2. (Tùy chọn) Tạo môi trường ảo ảo: `python -m venv venv` và kích hoạt (`venv\Scripts\activate` trên Windows).
-3. Cài đặt thư viện: `pip install -r requirements.txt`
-4. Cấu hình biến môi trường (Có thể chạy trực tiếp nếu dùng key mặc định):
-   - `AI_API_KEY`: Google AI Studio / Gemini API Key của bạn.
-5. Chạy server:
-```bash
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
-```
+**Bước 1: Lấy mã nguồn và Cấu hình**
+1. Clone dự án:
+   ```bash
+   git clone https://github.com/khoakhongwibuuu/SE114-PROJECT.git
+   cd SE114-PROJECT
+   ```
+2. **CỰC KỲ QUAN TRỌNG:** Liên hệ với Quản trị viên (người setup chính) để xin file `.env` chuẩn của dự án. (File này chứa các chuỗi kết nối Database Neon, khoá bảo mật JWT, và Google Gemini API Key - không được đưa lên Github).
+3. Đặt file `.env` vừa nhận được vào ngay thư mục gốc của dự án (ngang hàng với file `docker-compose.yml`).
 
-### 4. Thiết lập Backend (Spring Boot)
-1. Copy `.env.example` thành `.env` tại thư mục root.
-2. Điền các giá trị bắt buộc như `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `JWT_SECRET`. Điền `AI_API_KEY` nếu bạn muốn backend đồng bộ nó xuống.
-3. Khởi động Database, Redis bằng Docker Compose:
+**Bước 2: Khởi động Hệ thống (One-Click Setup)**
+Mở Terminal tại thư mục gốc của dự án và gõ lệnh:
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
-4. Mở thư mục `backend` và chạy ứng dụng Spring Boot:
-```bash
-# Trên Windows
-cd backend
-.\mvnw.cmd spring-boot:run
-```
-*(Backend sẽ chạy ở cổng `http://localhost:8080/api/v1`)*
+*(Lệnh này sẽ tự động tải các service, biên dịch Spring Boot Backend, chạy Python AI Gateway và tự động móc nối lên Neon Database chung của nhóm).*
 
-### 5. Thiết lập Frontend Android (`frontend/app`)
-Để ứng dụng kết nối tới Backend, bạn cần cấu hình IP nội bộ:
-1. Dùng lệnh `ipconfig` (Windows) để tìm IPv4 Address của máy tính (ví dụ: `192.168.1.5`).
-2. Mở file `frontend/local.properties` và thêm cấu hình IP cùng cờ bật AI:
+**Bước 3: Chạy ứng dụng Android (Frontend)**
+1. Mở Terminal và gõ `ipconfig` (trên Windows) để xem địa chỉ IPv4 mạng WiFi của máy tính (ví dụ: `192.168.1.71`).
+2. Mở file `frontend/local.properties` và cấu hình lại IP:
    ```properties
-   HOST_IP=192.168.1.5
+   HOST_IP=192.168.1.71
    AI_CHAT_ENABLED=true
    ```
-3. Mở thư mục `frontend` bằng phần mềm **Android Studio**. Bấm nút **Run (▶️)** để cài ứng dụng lên điện thoại hoặc máy ảo.
+3. Mở thư mục `frontend` bằng phần mềm **Android Studio**. Bấm nút **Run (▶️)** để cài app lên điện thoại thật hoặc máy ảo (đảm bảo điện thoại dùng chung mạng WiFi với máy tính).
+
+---
+
+### 2. Dành cho Quản trị viên (Người cung cấp file cấu hình)
+Với tư cách là người thiết lập dự án, bạn có trách nhiệm tạo và gửi file `.env` (hoặc nội dung của nó) cho các bạn khác trong nhóm. Một file `.env` chuẩn để nhóm chạy Local với Neon Database sẽ cần có tối thiểu:
+
+```env
+# Môi trường chạy (qa để bật chế độ tạo dữ liệu mẫu giả lập)
+SPRING_PROFILES_ACTIVE=qa,prod
+
+# Chuỗi kết nối Neon Database
+SPRING_DATASOURCE_URL=jdbc:postgresql://<neon-url>/neondb?sslmode=require
+SPRING_DATASOURCE_USERNAME=<neon-user>
+SPRING_DATASOURCE_PASSWORD=<neon-pass>
+
+# API Key của Gemini AI
+AI_API_KEY=<your-google-gemini-key>
+
+# Bật tính năng giả lập dữ liệu ban đầu
+APP_SEED_QA_DEMO_ENABLED=true
+APP_SEED_QA_DEMO_DEFAULT_PASSWORD=Password123!
+```
 
 ---
 
