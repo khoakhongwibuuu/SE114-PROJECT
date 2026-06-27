@@ -84,6 +84,10 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-${POSTGRES_USER:-carenest_user}}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-${POSTGRES_PASSWORD}}
 
+      # ── QA Demo Seeding ──────────────────────────────────────
+      APP_SEED_QA_DEMO_ENABLED: ${APP_SEED_QA_DEMO_ENABLED:-false}
+      APP_SEED_QA_DEMO_DEFAULT_PASSWORD: ${APP_SEED_QA_DEMO_DEFAULT_PASSWORD:-Password123!}
+
       # ── Redis ────────────────────────────────────────────────
       # Point to Docker service name "carenest-redis", NOT localhost
       SPRING_DATA_REDIS_HOST: carenest-redis
