@@ -79,10 +79,10 @@ services:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
 
       # ── Database ────────────────────────────────────────────
-      # Point to Docker service name "carenest-db", NOT localhost
-      SPRING_DATASOURCE_URL: jdbc:postgresql://carenest-db:5432/${POSTGRES_DB:-carenest_db}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-carenest_user}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # Point to Docker service name "carenest-db" by default, or override with Neon URL
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://carenest-db:5432/${POSTGRES_DB:-carenest_db}}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-${POSTGRES_USER:-carenest_user}}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-${POSTGRES_PASSWORD}}
 
       # ── Redis ────────────────────────────────────────────────
       # Point to Docker service name "carenest-redis", NOT localhost
