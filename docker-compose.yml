@@ -122,11 +122,11 @@ services:
     environment:
       AI_ENABLED: ${AI_ENABLED:-false}
       OCR_ENABLED: ${OCR_ENABLED:-false}
-      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
       AI_API_KEY: ${AI_API_KEY}
-      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1/responses}
-      AI_MODEL_CHAT: ${AI_MODEL_CHAT:-gpt-5.2}
-      AI_MODEL_OCR: ${AI_MODEL_OCR:-gpt-5.2}
+      AI_BASE_URL: ${AI_BASE_URL}
+      AI_MODEL_CHAT: ${AI_MODEL_CHAT:-gemini-2.5-flash}
+      AI_MODEL_OCR: ${AI_MODEL_OCR:-gemini-2.5-flash}
       AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-15000}
       AI_MAX_RETRIES: ${AI_MAX_RETRIES:-2}
     ports:
