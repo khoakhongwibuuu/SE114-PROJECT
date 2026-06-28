@@ -22,6 +22,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.carenest.backend.features.auth.dto.request.ForgotPasswordRequest;
+import com.carenest.backend.features.auth.dto.request.ResetPasswordRequest;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+
+import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.Locale;
 
 @Service
@@ -33,6 +41,8 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
+    private final JavaMailSender mailSender;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     @Transactional
@@ -135,5 +145,75 @@ public class AuthServiceImpl implements AuthService {
 
         User savedUser = userRepository.save(user);
         return userMapper.toUserInfoResponse(savedUser);
+    }
+
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+        String email = request.getEmail() != null ? request.getEmail().trim() : null;
+        if (email == null) {
+            throw new BadRequestException("Email không được để trống");
+        }
+
+        if (!userRepository.existsByEmail(email)) {
+            throw new ResourceNotFoundException("Không tìm thấy tài khoản với email này");
+        }
+
+        String otp = generateOtp();
+        redisTemplate.opsForValue().set("otp:" + email, otp, Duration.ofMinutes(5));
+
+        try {
+            sendOtpEmail(email, otp);
+        } catch (Exception e) {
+            throw new BadRequestException("Không thể gửi email OTP. Vui lòng thử lại sau.");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail() != null ? request.getEmail().trim() : null;
+        if (email == null) {
+            throw new BadRequestException("Email không được để trống");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Mật khẩu xác nhận không khớp");
+        }
+
+        String cachedOtp = (String) redisTemplate.opsForValue().get("otp:" + email);
+        if (cachedOtp == null) {
+            throw new BadRequestException("Mã OTP đã hết hạn hoặc không tồn tại. Vui lòng yêu cầu mã mới.");
+        }
+
+        if (!cachedOtp.equals(request.getOtp().trim())) {
+            throw new BadRequestException("Mã OTP không chính xác");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        redisTemplate.delete("otp:" + email);
+    }
+
+    private String generateOtp() {
+        SecureRandom random = new SecureRandom();
+        int num = 100000 + random.nextInt(900000);
+        return String.valueOf(num);
+    }
+
+    private void sendOtpEmail(String email, String otp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("[CareNest] Mã OTP xác nhận đặt lại mật khẩu");
+        message.setText("Chào bạn,\n\n" +
+                "Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản CareNest.\n" +
+                "Mã OTP của bạn là: " + otp + "\n" +
+                "Mã này có hiệu lực trong vòng 5 phút. Vui lòng không chia sẻ mã này với bất kỳ ai.\n\n" +
+                "Thân mến,\n" +
+                "Đội ngũ CareNest");
+        mailSender.send(message);
     }
 }

@@ -3,6 +3,8 @@ package com.carenest.backend.features.auth.controller;
 import com.carenest.backend.core.api.ApiResponse;
 import com.carenest.backend.features.auth.dto.request.LoginRequest;
 import com.carenest.backend.features.auth.dto.request.RegisterRequest;
+import com.carenest.backend.features.auth.dto.request.ForgotPasswordRequest;
+import com.carenest.backend.features.auth.dto.request.ResetPasswordRequest;
 import com.carenest.backend.features.auth.dto.response.AuthResponse;
 import com.carenest.backend.features.auth.dto.response.UserInfoResponse;
 import com.carenest.backend.features.auth.service.AuthService;
@@ -80,6 +82,30 @@ public class AuthController {
             @RequestBody @Valid com.carenest.backend.features.auth.dto.request.RefreshTokenRequest request) {
         AuthResponse response = authService.refreshToken(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success("Làm mới phiên đăng nhập thành công", response));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        if (!resolveBucket(httpRequest).tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiResponse.error("Quá nhiều yêu cầu. Vui lòng thử lại sau."));
+        }
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Mã OTP đã được gửi đến email của bạn."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        if (!resolveBucket(httpRequest).tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiResponse.error("Quá nhiều yêu cầu. Vui lòng thử lại sau."));
+        }
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Đặt lại mật khẩu thành công."));
     }
 
     private Bucket resolveBucket(HttpServletRequest request) {
