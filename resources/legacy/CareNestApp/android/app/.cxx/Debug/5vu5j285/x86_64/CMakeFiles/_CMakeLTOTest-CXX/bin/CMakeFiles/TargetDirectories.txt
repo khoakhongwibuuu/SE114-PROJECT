@@ -1,4 +1,0 @@
-D:/DoAn_MB1/CareNest/frontend/CareNestApp/android/app/.cxx/Debug/5vu5j285/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
-D:/DoAn_MB1/CareNest/frontend/CareNestApp/android/app/.cxx/Debug/5vu5j285/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
-D:/DoAn_MB1/CareNest/frontend/CareNestApp/android/app/.cxx/Debug/5vu5j285/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
-D:/DoAn_MB1/CareNest/frontend/CareNestApp/android/app/.cxx/Debug/5vu5j285/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir
