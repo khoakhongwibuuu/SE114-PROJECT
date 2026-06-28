@@ -13,18 +13,18 @@ public class QaDemoSeedProperties {
 
     private boolean enabled = false;
     private String defaultPassword = "";
-    private String adminEmail = "admin.demo@carenest.local";
-    private String patientPrimaryEmail = "patient.one.demo@carenest.local";
-    private String patientSecondaryEmail = "patient.two.demo@carenest.local";
-    private String doctorPediatricEmail = "doctor.pediatrics.demo@carenest.local";
-    private String doctorGeneralEmail = "doctor.general.demo@carenest.local";
-    private String moderatorEmail = "moderator.demo@carenest.local";
-    private String adminFullName = "Demo Admin";
-    private String patientPrimaryFullName = "Demo Patient One";
-    private String patientSecondaryFullName = "Demo Patient Two";
-    private String doctorPediatricFullName = "Demo Pediatric Doctor";
-    private String doctorGeneralFullName = "Demo General Doctor";
-    private String moderatorFullName = "Demo Moderator";
+    private String adminEmail = "admin@carenest.com";
+    private String patientPrimaryEmail = "anhkhoa.vv@gmail.com";
+    private String patientSecondaryEmail = "doletuankiet06@gmail.com";
+    private String doctorPediatricEmail = "bacsinhikhoa@gmail.com";
+    private String doctorGeneralEmail = "bacsidakhoa@gmail.com";
+    private String moderatorEmail = "qa.moderator@gmail.com";
+    private String adminFullName = "CareNest Admin";
+    private String patientPrimaryFullName = "Khoa Vu";
+    private String patientSecondaryFullName = "Tuan Kiet";
+    private String doctorPediatricFullName = "Bác sĩ Nhi Khoa";
+    private String doctorGeneralFullName = "Bác sĩ Đa Khoa";
+    private String moderatorFullName = "QA Moderator";
 
     public String requireDefaultPassword() {
         if (defaultPassword == null || defaultPassword.isBlank()) {
