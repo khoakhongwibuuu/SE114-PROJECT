@@ -91,47 +91,32 @@ class HealthProfileServiceImplTest {
 
     @Test
     void getMyHealthProfile_throwsWhenNoProfileExists() {
-        when(healthProfileRepository.findByUserIdAndDeletedAtIsNull(1L)).thenReturn(List.of());
+        when(healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> healthProfileService.getMyHealthProfile(1L));
     }
 
     @Test
-    void getMyHealthProfile_prefersActiveFamilyProfile() {
-        FamilyRequestContext.set(20L, null);
-
-        Family otherFamily = Family.builder().name("Family Two").owner(user).build();
-        otherFamily.setId(20L);
-
-        HealthProfile first = HealthProfile.builder()
+    void getMyHealthProfile_returnsPersonalProfile() {
+        HealthProfile profile = HealthProfile.builder()
                 .user(user)
-                .family(family)
-                .fullName("Family One Profile")
-                .dateOfBirth(LocalDate.of(2020, 1, 1))
+                .fullName("Personal Profile")
+                .dateOfBirth(LocalDate.of(1995, 1, 1))
                 .gender(Gender.OTHER)
                 .build();
-        first.setId(100L);
-
-        HealthProfile second = HealthProfile.builder()
-                .user(user)
-                .family(otherFamily)
-                .fullName("Family Two Profile")
-                .dateOfBirth(LocalDate.of(2020, 1, 1))
-                .gender(Gender.OTHER)
-                .build();
-        second.setId(200L);
+        profile.setId(100L);
 
         HealthProfileResponse mapped = new HealthProfileResponse();
-        mapped.setId(200L);
-        mapped.setFullName("Family Two Profile");
+        mapped.setId(100L);
+        mapped.setFullName("Personal Profile");
 
-        when(healthProfileRepository.findByUserIdAndDeletedAtIsNull(1L)).thenReturn(List.of(first, second));
-        when(healthProfileMapper.toResponse(second)).thenReturn(mapped);
-        when(growthRecordRepository.findByHealthProfileIdOrderByRecordDateDesc(200L)).thenReturn(List.of());
+        when(healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(1L)).thenReturn(Optional.of(profile));
+        when(healthProfileMapper.toResponse(profile)).thenReturn(mapped);
+        when(growthRecordRepository.findByHealthProfileIdOrderByRecordDateDesc(100L)).thenReturn(List.of());
 
         HealthProfileResponse response = healthProfileService.getMyHealthProfile(1L);
 
-        assertEquals(200L, response.getId());
-        assertEquals("Family Two Profile", response.getFullName());
+        assertEquals(100L, response.getId());
+        assertEquals("Personal Profile", response.getFullName());
     }
 }
