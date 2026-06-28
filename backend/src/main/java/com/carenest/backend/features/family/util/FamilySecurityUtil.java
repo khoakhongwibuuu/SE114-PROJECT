@@ -52,12 +52,8 @@ public class FamilySecurityUtil {
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
 
-        Long activeFamilyId = FamilyRequestContext.getFamilyId();
-        if (activeFamilyId != null
-                && profile.getFamily() != null
-                && !profile.getFamily().getId().equals(activeFamilyId)) {
-            throw new AccessDeniedException("Hồ sơ sức khỏe không thuộc gia đình đang chọn");
-        }
+        // Relax check to allow cross-family navigation for members belonging to both families
+        // and prevent mismatch errors with globally active family ID in request headers.
 
         if (profile.getFamily() != null) {
             boolean belongs = familyMemberRepository

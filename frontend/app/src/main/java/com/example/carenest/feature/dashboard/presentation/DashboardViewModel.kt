@@ -109,17 +109,49 @@ class DashboardViewModel(
             }
 
             if (families.isEmpty()) {
+                val myProfileResult = familyRepository.getMyHealthProfile()
+                val personalProfileId = myProfileResult.getOrNull()?.id
+                
                 memberProfileMap = emptyMap()
                 _selectedMemberId.value = null
-                _currentProfileId.value = null
-                secureSessionManager.saveActiveProfileId(null)
-                _dashboardState.value = DashboardState.Success(
-                    data = DashboardResponse(),
-                    tasks = emptyList(),
-                    tomorrowTasks = emptyList(),
-                    unreadCount = 0,
-                    aiSummaryText = "Bạn chưa có gia đình nào. Hãy tạo hoặc tham gia gia đình để bắt đầu."
-                )
+                
+                if (personalProfileId != null) {
+                    _currentProfileId.value = personalProfileId
+                    secureSessionManager.saveActiveProfileId(personalProfileId)
+                    
+                    val dashboardResult = runCatching {
+                        dashboardApi.getDashboard(null, personalProfileId)
+                            .requireData("Không thể tải dữ liệu trang chủ")
+                    }
+                    val backendData = dashboardResult.getOrNull() ?: DashboardResponse()
+                    val tasks = backendData.todayTasks.map(::decorateDashboardTask)
+                    val tomorrowTasks = backendData.tomorrowTasks.map(::decorateDashboardTask)
+                    
+                    val personalProfileName = myProfileResult.getOrNull()?.name ?: "Hồ sơ cá nhân"
+                    val personalMember = Member(id = personalProfileId.toString(), name = personalProfileName, avatarUrl = myProfileResult.getOrNull()?.avatarUrl)
+                    val mergedDashboard = backendData.copy(
+                        members = listOf(personalMember)
+                    )
+
+                    _dashboardState.value = DashboardState.Success(
+                        data = mergedDashboard,
+                        tasks = tasks,
+                        tomorrowTasks = tomorrowTasks,
+                        unreadCount = mergedDashboard.unreadNotifications.toInt(),
+                        aiSummaryText = buildDashboardHealthSummary(tasks),
+                        warning = null
+                    )
+                } else {
+                    _currentProfileId.value = null
+                    secureSessionManager.saveActiveProfileId(null)
+                    _dashboardState.value = DashboardState.Success(
+                        data = DashboardResponse(),
+                        tasks = emptyList(),
+                        tomorrowTasks = emptyList(),
+                        unreadCount = 0,
+                        aiSummaryText = "Hãy cập nhật hồ sơ sức khỏe cá nhân để bắt đầu."
+                    )
+                }
                 return@launch
             }
 

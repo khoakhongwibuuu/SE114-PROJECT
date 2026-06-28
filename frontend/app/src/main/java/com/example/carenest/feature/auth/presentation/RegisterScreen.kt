@@ -35,6 +35,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -74,6 +76,19 @@ fun RegisterScreen(
 
     val authState by viewModel.authState.collectAsState()
     val isLoading = authState is AuthState.Loading
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val googleAuthClient = remember { GoogleAuthClient(context) }
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val idToken = googleAuthClient.getSignInResult(result.data)
+            if (idToken != null) {
+                viewModel.loginWithGoogle(idToken)
+            }
+        }
+    }
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
@@ -242,7 +257,23 @@ fun RegisterScreen(
                         )
                     }
 
+                    DividerRow()
 
+                    OutlinePillButton(
+                        text = "Đăng ký bằng Google",
+                        enabled = !isLoading,
+                        onClick = {
+                            googleSignInLauncher.launch(googleAuthClient.getSignInIntent())
+                        },
+                        leading = {
+                            Text(
+                                text = "G",
+                                color = Color(0xFF4285F4),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        },
+                    )
                 }
             }
 

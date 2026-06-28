@@ -19,6 +19,7 @@ import com.example.carenest.CareNestApplication
 import com.example.carenest.feature.admin.presentation.AdminMainScreen
 import com.example.carenest.feature.auth.domain.model.AppRole
 import com.example.carenest.feature.auth.presentation.LoginScreen
+import com.example.carenest.feature.auth.presentation.GoogleAuthClient
 import com.example.carenest.feature.auth.presentation.RegisterScreen
 import com.example.carenest.feature.main.presentation.MainScreen
 import com.example.carenest.feature.main.presentation.MainTabTarget
@@ -311,6 +312,11 @@ fun MainNavigation() {
               onLogout = {
                   scope.launch {
                       application.secureSessionManager.clearAll()
+                      try {
+                          GoogleAuthClient(application).signOut()
+                      } catch (e: Exception) {
+                          e.printStackTrace()
+                      }
                       backStack.clear()
                       backStack.add(Login)
                   }
@@ -334,6 +340,11 @@ fun MainNavigation() {
               onLogout = {
                 scope.launch {
                   application.secureSessionManager.clearAll()
+                  try {
+                      GoogleAuthClient(application).signOut()
+                  } catch (e: Exception) {
+                      e.printStackTrace()
+                  }
                   backStack.clear()
                   backStack.add(Login)
                 }

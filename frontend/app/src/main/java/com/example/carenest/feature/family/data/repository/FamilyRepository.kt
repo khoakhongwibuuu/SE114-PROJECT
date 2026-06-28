@@ -96,6 +96,61 @@ class FamilyRepository(
         }
     }
 
+    suspend fun getMyHealthProfile(): Result<HealthProfile> {
+        return try {
+            val response = familyApi.getMyHealthProfile()
+            val raw = response.requireData("Không thể tải hồ sơ cá nhân")
+            val bmiValue = if (raw.weight != null && raw.height != null && raw.height > 0) {
+                val heightM = raw.height / 100f
+                raw.weight / (heightM * heightM)
+            } else null
+
+            val conditionsList = mutableListOf<MedicalCondition>()
+            if (!raw.chronicDiseases.isNullOrEmpty()) {
+                raw.chronicDiseases.split(";").forEach {
+                    if (it.isNotBlank()) conditionsList.add(MedicalCondition(it.trim(), "Theo dõi định kỳ"))
+                }
+            }
+
+            val allergiesList = if (!raw.allergies.isNullOrEmpty()) {
+                raw.allergies.split(",").map { it.trim() }.filter { it.isNotBlank() }
+            } else emptyList()
+
+            var calcAge: Int? = null
+            if (!raw.dateOfBirth.isNullOrEmpty()) {
+                try {
+                    val year = raw.dateOfBirth.substring(0, 4).toInt()
+                    val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+                    calcAge = currentYear - year
+                } catch (e: Exception) {}
+            }
+            
+            val profileId = raw.id ?: return Result.failure(Exception("Profile response is missing id"))
+
+            val profile = HealthProfile(
+                id = profileId,
+                name = raw.fullName ?: "Không rõ",
+                role = raw.relationship.orEmpty(),
+                age = calcAge,
+                dateOfBirth = raw.dateOfBirth,
+                gender = raw.gender,
+                location = null,
+                avatarUrl = raw.avatarUrl,
+                isVerified = true,
+                bloodType = raw.bloodType,
+                allergies = allergiesList,
+                height = raw.height,
+                weight = raw.weight,
+                bmi = bmiValue,
+                medicalHistory = conditionsList,
+                emergencyContact = null
+            )
+            Result.success(profile)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun createFamily(name: String): Result<FamilyResponse> {
         return try {
             val response = familyApi.createFamily(CreateFamilyRequest(name))

@@ -42,22 +42,32 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "dashboard", key = "#familyId", condition = "#profileId == null && #familyId != null")
     public DashboardResponse getDashboardOverview(Long familyId, Long profileId) {
-        if (familyId == null) {
-            familyId = familySecurityUtil.getDefaultFamilyId();
-        }
-        if (familyId == null) {
-            return DashboardResponse.builder().unreadNotifications(0L).todayTasks(new ArrayList<>()).build();
-        }
-
-        // 1. Kiểm tra bảo mật: User hiện tại phải thuộc familyId này
-        familySecurityUtil.checkUserBelongsToFamily(familyId);
         Long userId = familySecurityUtil.getCurrentUser().getId();
 
-        // Nếu profileId != null, kiểm tra quyền truy cập profile đó
         if (profileId != null) {
-            familySecurityUtil.checkHealthProfileBelongsToFamily(profileId, familyId);
+            familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        } else if (familyId != null) {
+            familySecurityUtil.checkUserBelongsToFamily(familyId);
+        } else {
+            familyId = familySecurityUtil.getDefaultFamilyId();
+            if (familyId == null) {
+                // If no family, try to get tasks for the user's personal profile at least
+                com.carenest.backend.features.healthprofile.entity.HealthProfile personalProfile = 
+                    com.carenest.backend.features.healthprofile.repository.HealthProfileRepository.class.cast(
+                        org.springframework.web.context.support.WebApplicationContextUtils.getRequiredWebApplicationContext(
+                            ((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.getRequestAttributes()).getRequest().getServletContext()
+                        ).getBean(com.carenest.backend.features.healthprofile.repository.HealthProfileRepository.class)
+                    ).findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(userId).orElse(null);
+                
+                if (personalProfile != null) {
+                    profileId = personalProfile.getId();
+                } else {
+                    return DashboardResponse.builder().unreadNotifications(0L).todayTasks(new ArrayList<>()).build();
+                }
+            } else {
+                familySecurityUtil.checkUserBelongsToFamily(familyId);
+            }
         }
 
         // 2. Tính toán startOfDay, endOfDay, endOfTomorrow (Instant)

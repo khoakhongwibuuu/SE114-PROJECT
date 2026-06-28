@@ -41,6 +41,9 @@ interface FamilyApi {
     @GET("/api/v1/health-profiles/{id}")
     suspend fun getFamilyProfile(@Path("id") profileId: Long): Response<ApiResponse<RawHealthProfileResponse>>
 
+    @GET("/api/v1/health-profiles/me")
+    suspend fun getMyHealthProfile(): Response<ApiResponse<RawHealthProfileResponse>>
+
     @POST("/api/v1/families")
     suspend fun createFamily(@Body request: CreateFamilyRequest): Response<ApiResponse<FamilyResponse>>
 

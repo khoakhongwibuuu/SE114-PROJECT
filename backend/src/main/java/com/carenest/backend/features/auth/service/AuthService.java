@@ -16,4 +16,5 @@ public interface AuthService {
     AuthResponse refreshToken(String refreshToken);
     void forgotPassword(ForgotPasswordRequest request);
     void resetPassword(ResetPasswordRequest request);
+    AuthResponse loginWithGoogle(com.carenest.backend.features.auth.dto.request.GoogleLoginRequest request);
 }

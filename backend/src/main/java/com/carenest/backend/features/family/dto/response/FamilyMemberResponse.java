@@ -21,4 +21,6 @@ public class FamilyMemberResponse {
     private String avatarUrl;
     private FamilyRole role;
     private Instant joinedAt;
+    private Boolean isChild;
+    private Boolean isEditable;
 }

@@ -60,3 +60,7 @@ data class ResetPasswordRequest(
     val confirmPassword: String
 )
 
+data class GoogleLoginRequest(
+    val idToken: String
+)
+

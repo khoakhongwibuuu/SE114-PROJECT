@@ -175,8 +175,7 @@ fun MainScreen(
     fun resolveActiveProfileIdOrNotify(): Long? {
         val profileId = currentProfileId ?: application.secureSessionManager.getActiveProfileId()
         if (!profileId.isValidHealthProfileId()) {
-            Toast.makeText(context, "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước", Toast.LENGTH_SHORT).show()
-            selectedTab = TAB_FAMILY
+            Toast.makeText(context, "Đang tải hồ sơ của bạn, vui lòng thử lại sau.", Toast.LENGTH_SHORT).show()
             return null
         }
         return profileId

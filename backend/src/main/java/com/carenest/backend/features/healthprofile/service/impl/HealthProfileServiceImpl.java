@@ -50,10 +50,10 @@ public class HealthProfileServiceImpl implements HealthProfileService {
             familySecurityUtil.checkUserBelongsToFamily(request.getFamilyId());
             family = familyRepository.findById(request.getFamilyId())
                     .orElseThrow(() -> new ResourceNotFoundException("Family", "id", request.getFamilyId().toString()));
-            if (healthProfileRepository.existsByUserIdAndFamilyIdAndDeletedAtIsNull(userId, request.getFamilyId())) {
+            if (!Boolean.TRUE.equals(request.getIsChild()) && healthProfileRepository.existsByUserIdAndFamilyIdAndDeletedAtIsNull(userId, request.getFamilyId())) {
                 throw new DuplicateResourceException("HealthProfile", "userId/familyId", userId + "/" + request.getFamilyId());
             }
-        } else if (healthProfileRepository.existsByUserIdAndFamilyIsNullAndDeletedAtIsNull(userId)) {
+        } else if (!Boolean.TRUE.equals(request.getIsChild()) && healthProfileRepository.existsByUserIdAndFamilyIsNullAndDeletedAtIsNull(userId)) {
             throw new DuplicateResourceException("HealthProfile", "userId", userId.toString());
         }
 
@@ -157,22 +157,10 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional
     public HealthProfileResponse getMyHealthProfile(Long userId) {
-        List<HealthProfile> profiles = healthProfileRepository.findByUserIdAndDeletedAtIsNull(userId);
-        if (profiles.isEmpty()) {
-            throw new ResourceNotFoundException("HealthProfile", "userId", userId.toString());
-        }
-
-        Long activeFamilyId = FamilyRequestContext.getFamilyId();
-        if (activeFamilyId != null) {
-            return profiles.stream()
-                    .filter(profile -> profile.getFamily() != null && activeFamilyId.equals(profile.getFamily().getId()))
-                    .findFirst()
-                    .map(healthProfileMapper::toResponse)
-                    .map(this::enrichWithHeightAndWeight)
-                    .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "familyId", activeFamilyId.toString()));
-        }
-
-        return enrichWithHeightAndWeight(healthProfileMapper.toResponse(profiles.get(0)));
+        HealthProfile profile = healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "userId", userId.toString()));
+        
+        return enrichWithHeightAndWeight(healthProfileMapper.toResponse(profile));
     }
 
     private HealthProfileResponse enrichWithHeightAndWeight(HealthProfileResponse response) {

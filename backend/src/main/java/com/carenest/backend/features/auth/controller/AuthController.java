@@ -4,6 +4,7 @@ import com.carenest.backend.core.api.ApiResponse;
 import com.carenest.backend.features.auth.dto.request.LoginRequest;
 import com.carenest.backend.features.auth.dto.request.RegisterRequest;
 import com.carenest.backend.features.auth.dto.request.ForgotPasswordRequest;
+import com.carenest.backend.features.auth.dto.request.GoogleLoginRequest;
 import com.carenest.backend.features.auth.dto.request.ResetPasswordRequest;
 import com.carenest.backend.features.auth.dto.response.AuthResponse;
 import com.carenest.backend.features.auth.dto.response.UserInfoResponse;
@@ -60,6 +61,18 @@ public class AuthController {
         }
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", response));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> loginWithGoogle(
+            @RequestBody @Valid GoogleLoginRequest request,
+            HttpServletRequest httpRequest) {
+        if (!resolveBucket(httpRequest).tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(ApiResponse.error("Quá nhiều yêu cầu. Vui lòng thử lại sau."));
+        }
+        AuthResponse response = authService.loginWithGoogle(request);
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập bằng Google thành công", response));
     }
 
     @GetMapping("/me")

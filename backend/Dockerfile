@@ -13,13 +13,8 @@ FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
 WORKDIR /build
 
-# Copy pom.xml first for dependency caching layer
+# Copy pom.xml and source code
 COPY pom.xml .
-
-# Download all dependencies (separate layer = faster rebuilds when only src changes)
-RUN mvn dependency:go-offline -B --no-transfer-progress
-
-# Copy the full source code
 COPY src ./src
 
 # Build the application, skipping tests (tests run in CI/CD pipeline separately)

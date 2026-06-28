@@ -14,6 +14,8 @@ import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.mapper.UserMapper;
 import com.carenest.backend.features.auth.repository.UserRepository;
 import com.carenest.backend.features.auth.service.AuthService;
+import com.carenest.backend.features.healthprofile.entity.HealthProfile;
+import com.carenest.backend.features.healthprofile.repository.HealthProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,13 +25,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.carenest.backend.features.auth.dto.request.ForgotPasswordRequest;
+import com.carenest.backend.features.auth.dto.request.GoogleLoginRequest;
 import com.carenest.backend.features.auth.dto.request.ResetPasswordRequest;
+import com.carenest.backend.features.auth.enums.AuthProvider;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Locale;
 
 @Service
@@ -43,6 +53,10 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final JavaMailSender mailSender;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final HealthProfileRepository healthProfileRepository;
+
+    @Value("${app.google.client-id}")
+    private String googleClientId;
 
     @Override
     @Transactional
@@ -56,8 +70,22 @@ public class AuthServiceImpl implements AuthService {
         user.setRole(Role.USER);
         user.setIsActive(true);
         user.setIsVerified(false); // Can trigger email verification logic later
+        user.setAuthProvider(AuthProvider.LOCAL);
 
-        userRepository.save(user);
+        user = userRepository.save(user);
+
+        // Auto-create personal health profile for new user
+        HealthProfile healthProfile = HealthProfile.builder()
+                .user(user)
+                .family(null)
+                .fullName(user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : user.getEmail())
+                .dateOfBirth(user.getDateOfBirth() != null ? user.getDateOfBirth() : java.time.LocalDate.of(2000, 1, 1))
+                .gender(user.getGender() != null ? user.getGender() : Gender.OTHER)
+                .relationship("MEMBER")
+                .avatarUrl(user.getAvatarUrl())
+                .isChild(false)
+                .build();
+        healthProfileRepository.save(healthProfile);
 
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
@@ -196,6 +224,75 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         redisTemplate.delete("otp:" + email);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse loginWithGoogle(GoogleLoginRequest request) {
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
+
+        GoogleIdToken idToken;
+        try {
+            idToken = verifier.verify(request.getIdToken());
+        } catch (Exception e) {
+            throw new BadRequestException("Không thể xác thực ID Token từ Google: " + e.getMessage());
+        }
+
+        if (idToken == null) {
+            throw new BadRequestException("ID Token từ Google không hợp lệ");
+        }
+
+        GoogleIdToken.Payload payload = idToken.getPayload();
+        String email = payload.getEmail();
+        if (email == null) {
+            throw new BadRequestException("ID Token không chứa thông tin email");
+        }
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            String name = (String) payload.get("name");
+            String pictureUrl = (String) payload.get("picture");
+
+            user = User.builder()
+                    .email(email)
+                    .fullName(name != null && !name.isBlank() ? name : "Người dùng CareNest")
+                    .avatarUrl(pictureUrl)
+                    .authProvider(AuthProvider.GOOGLE)
+                    .role(Role.USER)
+                    .isActive(true)
+                    .isVerified(true)
+                    .build();
+            user = userRepository.save(user);
+
+            // Auto-create personal health profile for new Google user
+            HealthProfile healthProfile = HealthProfile.builder()
+                    .user(user)
+                    .family(null)
+                    .fullName(user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : user.getEmail())
+                    .dateOfBirth(java.time.LocalDate.of(2000, 1, 1))
+                    .gender(Gender.OTHER)
+                    .relationship("MEMBER")
+                    .avatarUrl(user.getAvatarUrl())
+                    .isChild(false)
+                    .build();
+            healthProfileRepository.save(healthProfile);
+        } else {
+            if (user.getAuthProvider() == null || user.getAuthProvider() == AuthProvider.LOCAL) {
+                user.setAuthProvider(AuthProvider.GOOGLE);
+                user = userRepository.save(user);
+            }
+        }
+
+        var jwtToken = jwtService.generateToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
+
+        return AuthResponse.builder()
+                .accessToken(jwtToken)
+                .refreshToken(refreshToken)
+                .user(userMapper.toUserInfoResponse(user))
+                .build();
     }
 
     private String generateOtp() {

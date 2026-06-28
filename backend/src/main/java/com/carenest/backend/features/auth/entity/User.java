@@ -1,6 +1,7 @@
 package com.carenest.backend.features.auth.entity;
 
 import com.carenest.backend.core.entity.BaseEntity;
+import com.carenest.backend.features.auth.enums.AuthProvider;
 import com.carenest.backend.features.auth.enums.Gender;
 import com.carenest.backend.features.auth.enums.Role;
 import jakarta.persistence.*;
@@ -31,7 +32,7 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", nullable = true, length = 255)
     private String passwordHash;
 
     @Column(name = "full_name", nullable = false, length = 100)
@@ -54,6 +55,11 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private Role role = Role.USER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = true, length = 20)
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
 
     @Column(name = "is_verified", nullable = false)
     @Builder.Default

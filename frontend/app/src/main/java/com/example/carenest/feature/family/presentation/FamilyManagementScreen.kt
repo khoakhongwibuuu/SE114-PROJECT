@@ -29,11 +29,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -373,9 +377,20 @@ fun ManagementContent(viewModel: FamilyViewModel) {
     }
 
     uiState.activeFamily?.let { familyDetail ->
-        Text("Thành viên gia đình", style = CareNestTextStyles.titleMd, color = TextPrimary, modifier = Modifier.padding(bottom = AppSpacing.sm))
-        familyDetail.members.forEach { member ->
+        val adultMembers = familyDetail.members.filter { !it.isChild }
+        val dependentMembers = familyDetail.members.filter { it.isChild }
+
+        Text("Thành viên (${adultMembers.size})", style = CareNestTextStyles.titleMd, color = TextPrimary, modifier = Modifier.padding(bottom = AppSpacing.sm))
+        adultMembers.forEach { member ->
             FamilyMemberRow(member)
+        }
+        
+        if (dependentMembers.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(AppSpacing.md))
+            Text("Người phụ thuộc / Trẻ em (${dependentMembers.size})", style = CareNestTextStyles.titleMd, color = TextPrimary, modifier = Modifier.padding(bottom = AppSpacing.sm))
+            dependentMembers.forEach { member ->
+                FamilyMemberRow(member)
+            }
         }
         Spacer(modifier = Modifier.height(AppSpacing.x2))
     } ?: run {
@@ -600,9 +615,17 @@ fun FamilyMemberRow(member: FamilyMemberSummary) {
                 )
             }
             Spacer(modifier = Modifier.width(AppSpacing.md))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(member.fullName, style = CareNestTextStyles.labelLg.copy(fontSize = 15.sp), color = TextPrimary)
                 Text(familyRoleLabel(member.role), style = CareNestTextStyles.bodySm.copy(fontSize = 13.sp), color = TextSecondary)
+            }
+            if (member.isEditable) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Chỉnh sửa",
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }

@@ -43,8 +43,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    username: ${SPRING_MAIL_USERNAME:${MAIL_USERNAME:}}
+    password: ${SPRING_MAIL_PASSWORD:${MAIL_PASSWORD:}}
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
@@ -54,6 +54,8 @@ app:
     secret: ${JWT_SECRET:carenest-256-bit-secret-key-for-dev-environment-only-change-in-prod}
     access-token-expiration: ${JWT_ACCESS_EXPIRATION:900000}
     refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:18905220308-m8gqr5h99mq9jq14obv08gch3e6bqq1m.apps.googleusercontent.com}
   features:
     ai-chat-enabled: ${APP_FEATURE_AI_CHAT_ENABLED:true}
     ocr-enabled: ${APP_FEATURE_OCR_ENABLED:true}

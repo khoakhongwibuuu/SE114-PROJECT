@@ -93,6 +93,38 @@ class AuthViewModel(
         }
     }
 
+    fun loginWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    authApi.loginWithGoogle(com.example.carenest.feature.auth.domain.model.GoogleLoginRequest(idToken))
+                }
+                if (response.isSuccessful) {
+                    val envelope = response.body()
+                    runCatching {
+                        val auth = envelope.requireData(
+                            fallback = "Đăng nhập bằng Google thất bại",
+                            missingDataMessage = "Không nhận được dữ liệu đăng nhập"
+                        )
+                        withContext(Dispatchers.IO) {
+                            secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
+                            auth.user?.let(::persistAuthenticatedUser)
+                                ?: pullCurrentUser()?.let(::persistAuthenticatedUser)
+                        }
+                        _authState.value = AuthState.Success(envelope?.message ?: "Đăng nhập thành công")
+                    }.onFailure { error ->
+                        _authState.value = AuthState.Error(error.localizedMessage ?: "Đăng nhập bằng Google thất bại")
+                    }
+                } else {
+                    _authState.value = AuthState.Error(response.errorMessage("Đăng nhập bằng Google thất bại"))
+                }
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(e.localizedMessage ?: "Lỗi kết nối")
+            }
+        }
+    }
+
     fun register(email: String, password: String, fullName: String, phoneNumber: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading

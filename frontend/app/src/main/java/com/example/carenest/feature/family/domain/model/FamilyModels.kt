@@ -20,7 +20,9 @@ data class FamilyMemberSummary(
     val role: String,
     val avatarUrl: String?,
     val age: Int? = null,
-    val healthStatus: String? = null
+    val healthStatus: String? = null,
+    val isChild: Boolean = false,
+    val isEditable: Boolean = false
 )
 
 data class FamilyDetailResponse(

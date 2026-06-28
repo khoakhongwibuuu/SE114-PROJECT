@@ -135,7 +135,6 @@ public class FamilyServiceImpl implements FamilyService {
                 .build();
 
         familyMemberRepository.save(Objects.requireNonNull(member));
-        ensureFamilyHealthProfile(family, currentUser);
 
         return familyMapper.toFamilyResponse(family);
     }
@@ -156,22 +155,46 @@ public class FamilyServiceImpl implements FamilyService {
         FamilyDetailResponse response = familyMapper.toFamilyDetailResponse(family);
         List<FamilyMemberResponse> memberResponses = members.stream()
                 .map(member -> {
-                    HealthProfile profile = ensureFamilyHealthProfile(family, member.getUser());
+                    HealthProfile profile = healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(member.getUser().getId()).orElse(null);
                     FamilyMemberResponse memberResponse = familyMapper.toFamilyMemberResponse(member);
-                    memberResponse.setProfileId(profile.getId());
-                    memberResponse.setFullName(
-                            profile.getFullName() != null && !profile.getFullName().isBlank()
-                                    ? profile.getFullName()
-                                    : (member.getUser().getFullName() != null && !member.getUser().getFullName().isBlank()
-                                    ? member.getUser().getFullName()
-                                    : member.getUser().getEmail())
-                    );
-                    if (profile.getAvatarUrl() != null && !profile.getAvatarUrl().isBlank()) {
-                        memberResponse.setAvatarUrl(profile.getAvatarUrl());
+                    memberResponse.setIsChild(false);
+                    memberResponse.setIsEditable(member.getUser().getId().equals(currentUser.getId()));
+                    if (profile != null) {
+                        memberResponse.setProfileId(profile.getId());
+                        memberResponse.setFullName(
+                                profile.getFullName() != null && !profile.getFullName().isBlank()
+                                        ? profile.getFullName()
+                                        : (member.getUser().getFullName() != null && !member.getUser().getFullName().isBlank()
+                                        ? member.getUser().getFullName()
+                                        : member.getUser().getEmail())
+                        );
+                        if (profile.getAvatarUrl() != null && !profile.getAvatarUrl().isBlank()) {
+                            memberResponse.setAvatarUrl(profile.getAvatarUrl());
+                        }
+                    } else {
+                        memberResponse.setFullName(member.getUser().getFullName() != null && !member.getUser().getFullName().isBlank() ? member.getUser().getFullName() : member.getUser().getEmail());
+                        memberResponse.setAvatarUrl(member.getUser().getAvatarUrl());
                     }
                     return memberResponse;
                 })
                 .collect(Collectors.toList());
+
+        List<HealthProfile> dependentProfiles = healthProfileRepository.findByFamilyIdAndIsChildTrueAndDeletedAtIsNull(id);
+        List<FamilyMemberResponse> dependentResponses = dependentProfiles.stream()
+                .map(profile -> {
+                    FamilyMemberResponse r = new FamilyMemberResponse();
+                    r.setId(profile.getId()); // Use profile ID as pseudo member ID
+                    r.setProfileId(profile.getId());
+                    r.setFullName(profile.getFullName());
+                    r.setAvatarUrl(profile.getAvatarUrl());
+                    r.setRole(com.carenest.backend.features.family.enums.FamilyRole.MEMBER);
+                    r.setJoinedAt(profile.getCreatedAt() != null ? profile.getCreatedAt() : java.time.Instant.now());
+                    r.setIsChild(true);
+                    r.setIsEditable(profile.getUser() != null && profile.getUser().getId().equals(currentUser.getId()));
+                    return r;
+                }).collect(Collectors.toList());
+
+        memberResponses.addAll(dependentResponses);
         response.setMembers(memberResponses);
 
         return response;
@@ -372,7 +395,7 @@ public class FamilyServiceImpl implements FamilyService {
             throw new ResourceNotFoundException("Family", "userId", String.valueOf(currentUser.getId()));
         }
         if (memberships.size() > 1) {
-            throw new BadRequestException("Vui lĂ²ng chá»n gia Ä‘Ă¬nh Ä‘ang hoáº¡t Ä‘á»™ng trÆ°á»›c khi thá»±c hiá»‡n thao tĂ¡c nĂ y");
+            throw new BadRequestException("Vui lĂ²ng chá» n gia Ä‘Ă¬nh Ä‘ang hoáº¡t Ä‘á»™ng trÆ°á»›c khi thá»±c hiá»‡n thao tĂ¡c nĂ y");
         }
         return memberships.get(0);
     }
@@ -406,22 +429,6 @@ public class FamilyServiceImpl implements FamilyService {
                 .role(role)
                 .build();
         familyMemberRepository.save(member);
-        ensureFamilyHealthProfile(family, user);
-    }
-
-    private HealthProfile ensureFamilyHealthProfile(Family family, User user) {
-        return healthProfileRepository
-                .findFirstByFamilyIdAndUserIdAndDeletedAtIsNull(family.getId(), user.getId())
-                .orElseGet(() -> healthProfileRepository.save(HealthProfile.builder()
-                        .user(user)
-                        .family(family)
-                        .fullName(user.getFullName() != null ? user.getFullName() : user.getEmail())
-                        .dateOfBirth(user.getDateOfBirth() != null ? user.getDateOfBirth() : LocalDate.of(2000, 1, 1))
-                        .gender(user.getGender() != null ? user.getGender() : com.carenest.backend.features.auth.enums.Gender.OTHER)
-                        .relationship("MEMBER")
-                        .avatarUrl(user.getAvatarUrl())
-                        .isChild(false)
-                        .build()));
     }
 
     private FamilyRole normalizeRole(FamilyRole role) {

@@ -5,6 +5,7 @@ import com.example.carenest.feature.auth.domain.model.AuthResponse
 import com.example.carenest.feature.auth.domain.model.LoginRequest
 import com.example.carenest.feature.auth.domain.model.ForgotPasswordRequest
 import com.example.carenest.feature.auth.domain.model.RefreshTokenRequest
+import com.example.carenest.feature.auth.domain.model.GoogleLoginRequest
 import com.example.carenest.feature.auth.domain.model.RegisterRequest
 import com.example.carenest.feature.auth.domain.model.ResetPasswordRequest
 import com.example.carenest.feature.auth.domain.model.UpdateCurrentUserRequest
@@ -27,6 +28,9 @@ interface AuthApi {
 
     @POST("/api/v1/auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<AuthResponse>>
+
+    @POST("/api/v1/auth/google")
+    suspend fun loginWithGoogle(@Body request: GoogleLoginRequest): Response<ApiResponse<AuthResponse>>
 
     @POST("/api/v1/auth/refresh")
     suspend fun refresh(@Body request: RefreshTokenRequest): Response<ApiResponse<AuthResponse>>
