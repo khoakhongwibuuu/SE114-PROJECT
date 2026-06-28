@@ -32,7 +32,7 @@ public class NotificationController {
     @GetMapping
     public ApiResponse<PageResponse<NotificationResponse>> getNotifications(
             @AuthenticationPrincipal User user,
-            @RequestParam(required = false) NotificationType type,
+            @RequestParam(name = "type", required = false) NotificationType type,
             @PageableDefault(size = 20) Pageable pageable) {
 
         Page<NotificationResponse> page = notificationService.getUserNotifications(user.getId(), type, pageable);

@@ -45,6 +45,11 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+
 @Composable
 fun AiChatPane() {
     val application = LocalContext.current.applicationContext as CareNestApplication
@@ -66,6 +71,7 @@ fun AiChatPane() {
         modifier = Modifier
             .fillMaxSize()
             .background(PageBackground)
+            .windowInsetsPadding(WindowInsets.ime)
     ) {
         LazyColumn(
             state = listState,

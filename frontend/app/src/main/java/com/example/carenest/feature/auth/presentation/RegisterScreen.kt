@@ -242,27 +242,7 @@ fun RegisterScreen(
                         )
                     }
 
-                    DividerRow()
 
-                    OutlinePillButton(
-                        text = "Google sẽ mở ở phase sau",
-                        enabled = false,
-                        onClick = {},
-                        leading = {
-                            Text(
-                                text = "G",
-                                color = Color(0xFF4285F4),
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        },
-                    )
-                    Text(
-                        text = "MVP hiện hỗ trợ tạo tài khoản bằng email, số điện thoại và mật khẩu.",
-                        color = LegacyOnSurfaceVariant,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
                 }
             }
 
