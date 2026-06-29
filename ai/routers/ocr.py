@@ -64,6 +64,7 @@ OCR_MEDICINE_JSON_SCHEMA = {
 OCR_MEDICINE_INSTRUCTIONS = """
 Extract medicine information from OCR text for CareNest.
 Return only JSON matching the supplied schema.
+Strictly ignore clinic names, doctor names, patient names, addresses, phone numbers, and any other non-medication text. Focus ONLY on the actual prescribed medicines to avoid returning junk data.
 Do not infer missing strength, dose, route, or duration. Use null or unknown when unclear.
 Never return vaccination entries. This endpoint is only for medicine labels and prescriptions.
 Set safety.requires_confirmation=true and safety.can_save_directly=false.
