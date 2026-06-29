@@ -180,14 +180,14 @@ class DashboardViewModel(
             }
             val mappedMembers = familyDetail.members.map { member ->
                 Member(
-                    memberId = member.userId,
+                    memberId = member.userId ?: -1L,
                     profileId = member.profileId,
                     name = member.fullName,
                     avatarUrl = member.avatarUrl
                 )
             }
             memberProfileMap = familyDetail.members.associate { member ->
-                member.profileId?.toString() to member.profileId
+                (member.userId?.toString() ?: "") to member.profileId
             }
 
             val ownProfileId = resolveOwnProfileId(familyDetail)

@@ -172,8 +172,6 @@ fun MainScreen(
         }
     }
 
-      }
-
     // When user is on a non-home tab and presses Android system back, return to Home tab
     // instead of propagating to NavDisplay (which would pop MainDashboard off the stack).
     BackHandler(enabled = selectedTab != TAB_HOME) {
