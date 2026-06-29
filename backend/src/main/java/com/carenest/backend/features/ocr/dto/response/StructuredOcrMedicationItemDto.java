@@ -21,6 +21,8 @@ public class StructuredOcrMedicationItemDto {
     private String frequency;
     @JsonProperty("duration_days")
     private Integer durationDays;
+    @JsonProperty("total_quantity")
+    private Integer totalQuantity;
     private String route;
     private Double confidence;
     private List<String> warnings;

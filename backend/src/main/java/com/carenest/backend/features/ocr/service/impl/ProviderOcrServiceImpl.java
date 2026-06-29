@@ -30,12 +30,24 @@ public class ProviderOcrServiceImpl implements OcrService {
     private ParsedMedicationDto toParsedMedication(StructuredOcrMedicationItemDto item) {
         return ParsedMedicationDto.builder()
                 .medicineName(joinName(item.getName(), item.getStrength()))
-                .unit(item.getForm())
+                .unit(translateForm(item.getForm()))
                 .dosage(item.getDoseInstruction())
+                .totalQuantity(item.getTotalQuantity())
                 .frequency(toFrequency(item.getFrequency()))
                 .durationDays(item.getDurationDays())
                 .notes(buildNotes(item))
                 .build();
+    }
+
+    private String translateForm(String form) {
+        if (form == null) return "Viên";
+        return switch (form.toLowerCase(Locale.ROOT)) {
+            case "tablet" -> "Viên";
+            case "capsule" -> "Viên nang";
+            case "syrup" -> "Siro";
+            case "drop" -> "Giọt";
+            default -> "Viên";
+        };
     }
 
     private String joinName(String name, String strength) {
