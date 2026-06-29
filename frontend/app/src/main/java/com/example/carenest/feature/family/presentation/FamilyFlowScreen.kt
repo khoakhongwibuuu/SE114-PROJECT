@@ -179,7 +179,6 @@ fun FamilyFlowScreen(
                     activeFamilyId = activeFamilyId,
                     onOpenMembersTab = { activeTabName = FamilyTab.MEMBERS.name },
                     onSelectFamily = { family ->
-                        familyViewModel.selectFamily(family.id)
                         onOpenFamilyChat(family)
                     },
                 )

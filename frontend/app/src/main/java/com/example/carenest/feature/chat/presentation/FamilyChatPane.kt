@@ -310,15 +310,6 @@ private fun FamilyChatFamilyCard(
                         fontWeight = FontWeight.Black,
                         color = Color(0xFF0F172A),
                     )
-                    if (isActive) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Đang chọn",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryBlue,
-                        )
-                    }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
