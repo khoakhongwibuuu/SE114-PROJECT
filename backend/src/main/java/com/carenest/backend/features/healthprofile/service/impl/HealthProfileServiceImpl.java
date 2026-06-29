@@ -181,7 +181,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional
     public HealthProfileResponse getMyHealthProfile(Long userId) {
-        HealthProfile profile = healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(userId)
+        HealthProfile profile = healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndIsChildFalseAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "userId", userId.toString()));
         
         return enrichWithHeightAndWeight(healthProfileMapper.toResponse(profile));

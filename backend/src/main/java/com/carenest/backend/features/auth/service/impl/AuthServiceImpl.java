@@ -158,7 +158,7 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(user);
 
         // Sync personal health profile avatar and name if it exists
-        healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(user.getId())
+        healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndIsChildFalseAndDeletedAtIsNull(user.getId())
                 .ifPresent(profile -> {
                     profile.setFullName(request.getFullName());
                     profile.setDateOfBirth(request.getDateOfBirth());
@@ -311,7 +311,7 @@ public class AuthServiceImpl implements AuthService {
 
     private AuthResponse buildAuthResponse(User user, String jwtToken, String refreshToken, HealthProfile stub) {
         HealthProfile profile = stub != null ? stub : healthProfileRepository
-                .findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(user.getId())
+                .findFirstByUserIdAndFamilyIsNullAndIsChildFalseAndDeletedAtIsNull(user.getId())
                 .orElse(null);
 
         boolean isNonPatient = user.getRole() == Role.DOCTOR || user.getRole() == Role.ADMIN;

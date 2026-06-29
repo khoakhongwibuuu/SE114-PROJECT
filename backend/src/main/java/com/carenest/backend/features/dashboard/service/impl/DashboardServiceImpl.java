@@ -58,7 +58,7 @@ public class DashboardServiceImpl implements DashboardService {
                         org.springframework.web.context.support.WebApplicationContextUtils.getRequiredWebApplicationContext(
                             ((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.getRequestAttributes()).getRequest().getServletContext()
                         ).getBean(com.carenest.backend.features.healthprofile.repository.HealthProfileRepository.class)
-                    ).findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(userId).orElse(null);
+                    ).findFirstByUserIdAndFamilyIsNullAndIsChildFalseAndDeletedAtIsNull(userId).orElse(null);
                 
                 if (personalProfile != null) {
                     profileId = personalProfile.getId();
