@@ -702,7 +702,7 @@ private fun MemberItem(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = member.name.take(1).uppercase(),
+                    text = (member.name ?: "?").take(1).uppercase(),
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF64748B),
                     fontSize = 18.sp
@@ -712,7 +712,7 @@ private fun MemberItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (isSelf) "${member.name} (bạn)" else member.name,
+                    text = if (isSelf) "${member.name ?: "Unknown"} (bạn)" else (member.name ?: "Unknown"),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = Color(0xFF0F172A)
