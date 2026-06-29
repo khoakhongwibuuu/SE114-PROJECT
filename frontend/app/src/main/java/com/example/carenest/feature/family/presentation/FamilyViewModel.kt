@@ -307,8 +307,41 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
     }
 
     fun onCreateDependentSubmit(name: String, dob: String, gender: String, relation: String) {
-        println("Create Dependent: $name, $dob, $gender, $relation")
-        _uiState.update { it.copy(message = "Đã lưu hồ sơ phụ thuộc (Mock)") }
+        val familyId = _uiState.value.activeFamilyId ?: return
+        
+        // Convert DD/MM/YYYY to YYYY-MM-DD
+        val dateParts = dob.split("/")
+        if (dateParts.size != 3) {
+            _uiState.update { it.copy(error = "Định dạng ngày sinh không đúng") }
+            return
+        }
+        val formattedDob = "${dateParts[2]}-${dateParts[1]}-${dateParts[0]}"
+        
+        // Convert Gender
+        val genderEnum = when (gender) {
+            "Nam" -> "MALE"
+            "Nữ" -> "FEMALE"
+            else -> "OTHER"
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true, error = null, message = null) }
+            val request = com.example.carenest.feature.family.domain.model.CreateDependentRequest(
+                familyId = familyId,
+                fullName = name,
+                dateOfBirth = formattedDob,
+                gender = genderEnum,
+                relationship = relation
+            )
+            
+            val result = repository.createDependentProfile(request)
+            result.onSuccess {
+                _uiState.update { state -> state.copy(isBusy = false, message = "Đã tạo hồ sơ người phụ thuộc") }
+                loadActiveFamilyDetail(familyId) // Refresh list
+            }.onFailure { e ->
+                _uiState.update { state -> state.copy(isBusy = false, error = e.message) }
+            }
+        }
     }
 }
 

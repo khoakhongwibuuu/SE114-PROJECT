@@ -41,6 +41,28 @@ public class HealthProfileServiceImpl implements HealthProfileService {
 
     @Override
     @Transactional
+    public HealthProfileResponse createDependentProfile(Long userId, com.carenest.backend.features.healthprofile.dto.request.CreateDependentRequest request) {
+        familySecurityUtil.checkUserBelongsToFamily(request.getFamilyId());
+        
+        Family family = familyRepository.findById(request.getFamilyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Family", "id", request.getFamilyId().toString()));
+
+        HealthProfile dependentProfile = HealthProfile.builder()
+                .user(null)
+                .family(family)
+                .fullName(request.getFullName())
+                .dateOfBirth(request.getDateOfBirth())
+                .gender(request.getGender())
+                .relationship(request.getRelationship())
+                .isChild(true)
+                .build();
+
+        dependentProfile = healthProfileRepository.save(dependentProfile);
+        return healthProfileMapper.toResponse(dependentProfile);
+    }
+
+    @Override
+    @Transactional
     public HealthProfileResponse createHealthProfile(Long userId, HealthProfileCreateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId.toString()));

@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import com.example.carenest.core.presentation.theme.AppRadius
 import com.example.carenest.core.presentation.theme.CareNestTextStyles
 import com.example.carenest.core.presentation.theme.Outline
@@ -42,6 +43,7 @@ import com.example.carenest.core.presentation.theme.TextSecondary
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateDependentBottomSheet(
+    isBusy: Boolean = false,
     onDismissRequest: () -> Unit,
     onSubmit: (String, String, String, String) -> Unit
 ) {
@@ -154,9 +156,17 @@ fun CreateDependentBottomSheet(
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                 shape = RoundedCornerShape(AppRadius.lg),
-                enabled = name.isNotBlank() && dob.isNotBlank()
+                enabled = name.isNotBlank() && dob.isNotBlank() && !isBusy
             ) {
-                Text("Lưu hồ sơ", color = Color.White, fontWeight = FontWeight.Bold)
+                if (isBusy) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Lưu hồ sơ", color = Color.White, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

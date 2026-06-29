@@ -35,7 +35,16 @@ public class HealthProfileController {
             @AuthenticationPrincipal User user,
             @Valid @RequestBody HealthProfileCreateRequest request) {
         HealthProfileResponse response = healthProfileService.createHealthProfile(user.getId(), request);
-        return ApiResponse.success("Tạo hồ sơ sức khỏe thành công", response);
+        return ApiResponse.success(response);
+    }
+
+    @PostMapping("/profiles/dependents")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<HealthProfileResponse> createDependentProfile(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody com.carenest.backend.features.healthprofile.dto.request.CreateDependentRequest request) {
+        HealthProfileResponse response = healthProfileService.createDependentProfile(user.getId(), request);
+        return ApiResponse.success(response);
     }
 
     @GetMapping("/families/{familyId}/health-profiles")

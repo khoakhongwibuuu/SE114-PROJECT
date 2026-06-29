@@ -375,6 +375,9 @@ fun ManagementContent(viewModel: FamilyViewModel) {
         if (uiState.message == "Đã gửi lời mời") {
             inviteEmail = ""
         }
+        if (uiState.message == "Đã tạo hồ sơ người phụ thuộc") {
+            showCreateDependentSheet = false
+        }
     }
 
     uiState.activeFamily?.let { familyDetail ->
@@ -603,10 +606,10 @@ fun ManagementContent(viewModel: FamilyViewModel) {
 
     if (showCreateDependentSheet) {
         CreateDependentBottomSheet(
+            isBusy = uiState.isBusy,
             onDismissRequest = { showCreateDependentSheet = false },
             onSubmit = { name, dob, gender, relation ->
                 viewModel.onCreateDependentSubmit(name, dob, gender, relation)
-                showCreateDependentSheet = false
             }
         )
     }

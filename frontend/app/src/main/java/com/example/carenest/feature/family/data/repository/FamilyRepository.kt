@@ -153,8 +153,52 @@ class FamilyRepository(
 
     suspend fun createFamily(name: String): Result<FamilyResponse> {
         return try {
-            val response = familyApi.createFamily(CreateFamilyRequest(name))
+            val request = CreateFamilyRequest(name)
+            val response = familyApi.createFamily(request)
             Result.success(response.requireData("Không thể tạo gia đình"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createDependentProfile(request: CreateDependentRequest): Result<HealthProfile> {
+        return try {
+            val response = familyApi.createDependentProfile(request)
+            val raw = response.requireData("Không thể tạo hồ sơ người phụ thuộc")
+            
+            // Map RawHealthProfileResponse to HealthProfile
+            val bmiValue = if (raw.weight != null && raw.height != null && raw.height > 0) {
+                val heightM = raw.height / 100f
+                raw.weight / (heightM * heightM)
+            } else null
+
+            val conditionsList = mutableListOf<MedicalCondition>()
+            if (!raw.allergies.isNullOrBlank()) {
+                conditionsList.add(MedicalCondition("Dị ứng", raw.allergies))
+            }
+            if (!raw.chronicDiseases.isNullOrBlank()) {
+                conditionsList.add(MedicalCondition("Bệnh mãn tính", raw.chronicDiseases))
+            }
+
+            val profile = HealthProfile(
+                id = raw.id ?: 0L,
+                name = raw.fullName,
+                role = raw.relationship ?: "Thành viên",
+                age = raw.dateOfBirth?.let { calculateAge(it) },
+                dateOfBirth = raw.dateOfBirth,
+                gender = raw.gender,
+                location = null,
+                avatarUrl = raw.avatarUrl,
+                isVerified = true,
+                bloodType = raw.bloodType,
+                allergies = if (!raw.allergies.isNullOrBlank()) listOf(raw.allergies) else emptyList(),
+                height = raw.height?.toFloat(),
+                weight = raw.weight?.toFloat(),
+                bmi = bmiValue?.toFloat(),
+                medicalHistory = conditionsList,
+                emergencyContact = null
+            )
+            Result.success(profile)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -302,6 +346,17 @@ class FamilyRepository(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private fun calculateAge(dob: String?): Int? {
+        if (dob.isNullOrBlank()) return null
+        return try {
+            val birthDate = java.time.LocalDate.parse(dob)
+            val today = java.time.LocalDate.now()
+            java.time.Period.between(birthDate, today).years
+        } catch (e: Exception) {
+            null
         }
     }
 

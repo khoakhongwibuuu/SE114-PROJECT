@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface HealthProfileService {
     HealthProfileResponse createHealthProfile(Long userId, HealthProfileCreateRequest request);
+    HealthProfileResponse createDependentProfile(Long userId, com.carenest.backend.features.healthprofile.dto.request.CreateDependentRequest request);
     List<HealthProfileResponse> getFamilyHealthProfiles(Long familyId);
     HealthProfileResponse getHealthProfileById(Long id);
     HealthProfileResponse updateHealthProfile(Long id, HealthProfileUpdateRequest request);

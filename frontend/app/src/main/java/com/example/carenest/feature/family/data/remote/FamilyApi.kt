@@ -13,6 +13,7 @@ import com.example.carenest.feature.family.domain.model.UpdateInvitationRequest
 import com.example.carenest.feature.family.domain.model.FamilyChatPageResponse
 import com.example.carenest.feature.family.domain.model.UpdateMedicalInfoRequest
 import com.example.carenest.feature.family.domain.model.UpdateProfileDetailsRequest
+import com.example.carenest.feature.family.domain.model.CreateDependentRequest
 import com.example.carenest.model.RawHealthProfileResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
@@ -46,6 +47,9 @@ interface FamilyApi {
 
     @POST("/api/v1/families")
     suspend fun createFamily(@Body request: CreateFamilyRequest): Response<ApiResponse<FamilyResponse>>
+
+    @POST("/api/v1/profiles/dependents")
+    suspend fun createDependentProfile(@Body request: CreateDependentRequest): Response<ApiResponse<RawHealthProfileResponse>>
 
     @POST("/api/v1/families/join-by-code")
     suspend fun joinFamilyByCode(@Body request: JoinFamilyByCodeRequest): Response<ApiResponse<FamilyDetailResponse>>

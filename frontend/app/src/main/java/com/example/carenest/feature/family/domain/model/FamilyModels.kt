@@ -96,3 +96,11 @@ data class UpdateMedicalInfoRequest(
     val allergies: String?,
     val chronicDiseases: String?
 )
+
+data class CreateDependentRequest(
+    val familyId: Long,
+    val fullName: String,
+    val dateOfBirth: String,
+    val gender: String,
+    val relationship: String
+)
