@@ -95,13 +95,31 @@ docker compose up -d --build
 *(Lệnh này sẽ tự động tải các service, biên dịch Spring Boot Backend, chạy Python AI Gateway và tự động móc nối lên Neon Database chung của nhóm).*
 
 **Bước 3: Chạy ứng dụng Android (Frontend)**
+
+Bạn có 2 cách để cấu hình mạng cho App gọi về Backend:
+
+**Cách 1: Dùng ADB Reverse (Khuyên dùng khi cắm cáp test máy thật)**
+Cách này giúp app chạy cực kỳ ổn định qua cáp USB, không phụ thuộc vào độ lag của WiFi (rất tốt khi mang lên trường demo).
+1. Cắm cáp điện thoại vào máy tính, đảm bảo đã bật USB Debugging.
+2. Mở Terminal (PowerShell) và chạy lệnh:
+   ```bash
+   & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:8080 tcp:8080
+   ```
+3. Mở file `frontend/local.properties` và để nguyên hoặc set thành `localhost`:
+   ```properties
+   HOST_IP=localhost
+   AI_CHAT_ENABLED=true
+   ```
+
+**Cách 2: Cấu hình qua IP LAN (Dùng khi test máy thật qua WiFi)**
 1. Mở Terminal và gõ `ipconfig` (trên Windows) để xem địa chỉ IPv4 mạng WiFi của máy tính (ví dụ: `192.168.1.71`).
 2. Mở file `frontend/local.properties` và cấu hình lại IP:
    ```properties
    HOST_IP=192.168.1.71
    AI_CHAT_ENABLED=true
    ```
-3. Mở thư mục `frontend` bằng phần mềm **Android Studio**. Bấm nút **Run (▶️)** để cài app lên điện thoại thật hoặc máy ảo (đảm bảo điện thoại dùng chung mạng WiFi với máy tính).
+
+**Cuối cùng:** Mở thư mục `frontend` bằng phần mềm **Android Studio**. Bấm nút **Run (▶️)** để cài app lên điện thoại thật hoặc máy ảo.
 
 ---
 
