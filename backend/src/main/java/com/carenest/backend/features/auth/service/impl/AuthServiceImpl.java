@@ -14,8 +14,6 @@ import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.mapper.UserMapper;
 import com.carenest.backend.features.auth.repository.UserRepository;
 import com.carenest.backend.features.auth.service.AuthService;
-import com.carenest.backend.features.healthprofile.entity.HealthProfile;
-import com.carenest.backend.features.healthprofile.repository.HealthProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -53,7 +51,6 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final JavaMailSender mailSender;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final HealthProfileRepository healthProfileRepository;
 
     @Value("${app.google.client-id}")
     private String googleClientId;
@@ -73,19 +70,6 @@ public class AuthServiceImpl implements AuthService {
         user.setAuthProvider(AuthProvider.LOCAL);
 
         user = userRepository.save(user);
-
-        // Auto-create personal health profile for new user
-        HealthProfile healthProfile = HealthProfile.builder()
-                .user(user)
-                .family(null)
-                .fullName(user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : user.getEmail())
-                .dateOfBirth(user.getDateOfBirth() != null ? user.getDateOfBirth() : java.time.LocalDate.of(2000, 1, 1))
-                .gender(user.getGender() != null ? user.getGender() : Gender.OTHER)
-                .relationship("MEMBER")
-                .avatarUrl(user.getAvatarUrl())
-                .isChild(false)
-                .build();
-        healthProfileRepository.save(healthProfile);
 
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
@@ -265,19 +249,6 @@ public class AuthServiceImpl implements AuthService {
                     .isVerified(true)
                     .build();
             user = userRepository.save(user);
-
-            // Auto-create personal health profile for new Google user
-            HealthProfile healthProfile = HealthProfile.builder()
-                    .user(user)
-                    .family(null)
-                    .fullName(user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : user.getEmail())
-                    .dateOfBirth(java.time.LocalDate.of(2000, 1, 1))
-                    .gender(Gender.OTHER)
-                    .relationship("MEMBER")
-                    .avatarUrl(user.getAvatarUrl())
-                    .isChild(false)
-                    .build();
-            healthProfileRepository.save(healthProfile);
         } else {
             if (user.getAuthProvider() == null || user.getAuthProvider() == AuthProvider.LOCAL) {
                 user.setAuthProvider(AuthProvider.GOOGLE);

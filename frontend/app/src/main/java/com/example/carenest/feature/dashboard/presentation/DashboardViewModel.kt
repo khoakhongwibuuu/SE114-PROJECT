@@ -128,7 +128,7 @@ class DashboardViewModel(
                     val tomorrowTasks = backendData.tomorrowTasks.map(::decorateDashboardTask)
                     
                     val personalProfileName = myProfileResult.getOrNull()?.name ?: "Hồ sơ cá nhân"
-                    val personalMember = Member(id = personalProfileId.toString(), name = personalProfileName, avatarUrl = myProfileResult.getOrNull()?.avatarUrl)
+                    val personalMember = Member(memberId = -1L, profileId = personalProfileId, name = personalProfileName, avatarUrl = myProfileResult.getOrNull()?.avatarUrl)
                     val mergedDashboard = backendData.copy(
                         members = listOf(personalMember)
                     )
@@ -180,13 +180,14 @@ class DashboardViewModel(
             }
             val mappedMembers = familyDetail.members.map { member ->
                 Member(
-                    id = (member.profileId ?: member.id).toString(),
+                    memberId = member.userId,
+                    profileId = member.profileId,
                     name = member.fullName,
                     avatarUrl = member.avatarUrl
                 )
             }
             memberProfileMap = familyDetail.members.associate { member ->
-                (member.profileId ?: member.id).toString() to member.profileId
+                member.profileId?.toString() to member.profileId
             }
 
             val ownProfileId = resolveOwnProfileId(familyDetail)

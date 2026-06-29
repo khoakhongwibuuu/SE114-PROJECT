@@ -329,7 +329,8 @@ fun MemberSelector(members: List<Member>, selectedId: String?, onSelect: (String
                 MemberPill("Cả nhà", selectedId == null) { onSelect(null) }
             }
             items(members) { member ->
-                MemberPill(member.name, selectedId == member.id) { onSelect(member.id) }
+                val idStr = member.memberId.toString()
+                MemberPill(member.name, selectedId == idStr) { onSelect(idStr) }
             }
         }
     }

@@ -36,7 +36,8 @@ data class Family(
 )
 
 data class Member(
-    val id: String,
+    val memberId: Long,
+    val profileId: Long?,
     val name: String,
     val avatarUrl: String? = null
 )

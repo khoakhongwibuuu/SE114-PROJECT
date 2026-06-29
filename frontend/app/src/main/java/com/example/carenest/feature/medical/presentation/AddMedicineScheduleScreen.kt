@@ -81,7 +81,7 @@ fun AddMedicineScheduleScreen(
         (cabinetState as? CabinetState.Success)?.medicines.orEmpty()
     }
 
-    var selectedMemberId by remember(members) { mutableStateOf(members.firstOrNull()?.id ?: "") }
+    var selectedMemberId by remember(members) { mutableStateOf(members.firstOrNull()?.memberId?.toString() ?: "") }
     var selectedMedicineId by remember(medicines) { mutableStateOf(medicines.firstOrNull()?.id ?: -1L) }
     var dosage by remember { mutableStateOf("") }
     var frequency by remember { mutableStateOf("2") }
@@ -180,7 +180,7 @@ fun AddMedicineScheduleScreen(
                 } else {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         items(members) { member ->
-                            val safeId = member.id
+                            val safeId = member.memberId.toString()
                             val selected = safeId == selectedMemberId
                             Column(
                                 modifier = Modifier
