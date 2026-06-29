@@ -64,7 +64,12 @@ public class AdminServiceImpl implements AdminService {
     @Transactional(readOnly = true)
     public PageResponse<AdminUserSummaryResponse> getUsers(int page, int size, String search) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<User> userPage = userRepository.findUsersBySearch(search, pageable);
+        Page<User> userPage;
+        if (search == null || search.isBlank()) {
+            userPage = userRepository.findAll(pageable);
+        } else {
+            userPage = userRepository.findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(search, search, pageable);
+        }
 
         Page<AdminUserSummaryResponse> responsePage = userPage.map(user -> AdminUserSummaryResponse.builder()
                 .id(user.getId())
