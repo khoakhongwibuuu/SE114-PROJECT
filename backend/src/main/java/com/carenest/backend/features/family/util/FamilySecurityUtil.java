@@ -60,7 +60,7 @@ public class FamilySecurityUtil {
                     .findByFamilyIdAndUserId(profile.getFamily().getId(), currentUser.getId())
                     .isPresent();
             if (!belongs) {
-                throw new AccessDeniedException("Bạn không có quyền xem hồ sơ sức khỏe này");
+                throw new AccessDeniedException("Bạn không có quyền xem hồ sơ sức khỏe này. (ProfileFamilyId: " + profile.getFamily().getId() + ", UserId: " + currentUser.getId() + ")");
             }
             return;
         }

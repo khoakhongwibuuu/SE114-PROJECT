@@ -63,7 +63,7 @@ fun MainNavigation() {
     if (application.secureSessionManager.isOnboardingDone()) {
       if (application.secureSessionManager.getAccessToken()?.isNotBlank() == true) {
         val isComplete = application.secureSessionManager.isProfileComplete()
-        if (!isComplete && storedRole != AppRole.ADMIN) {
+        if (!isComplete && storedRole != AppRole.ADMIN && storedRole != AppRole.DOCTOR) {
            val profileId = application.secureSessionManager.getProfileId() ?: -1L
            ProfileSetup(profileId)
         } else {

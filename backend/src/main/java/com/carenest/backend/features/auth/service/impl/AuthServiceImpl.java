@@ -315,7 +315,9 @@ public class AuthServiceImpl implements AuthService {
                 .orElse(null);
 
         Long profileId = profile != null ? profile.getId() : null;
-        Boolean isComplete = profile != null && profile.getDateOfBirth() != null && profile.getGender() != null;
+        // DOCTOR and ADMIN don't have a personal HealthProfile and don't need ProfileSetup
+        boolean isNonPatient = user.getRole() == Role.DOCTOR || user.getRole() == Role.ADMIN;
+        Boolean isComplete = isNonPatient || (profile != null && profile.getDateOfBirth() != null && profile.getGender() != null);
 
         return AuthResponse.builder()
                 .accessToken(jwtToken)
