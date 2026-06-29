@@ -26,6 +26,7 @@ Mục tiêu: Đảm bảo toàn bộ các luồng chức năng MVP của CareNes
 - **TC1.2:** Đăng nhập sai thông tin (hiển thị thông báo lỗi rõ ràng).
 - **TC1.3:** Refresh Token: Đăng nhập, tắt app trong đa nhiệm, mở lại app (phiên đăng nhập vẫn được giữ nguyên).
 - **TC1.4:** (Tùy chọn) Flow tải ảnh CCCD/bằng cấp để xác thực Bác sĩ (eKYC).
+- **TC1.5:** Khởi tạo hồ sơ tự động (Auto-provisioning): Đăng nhập bằng tài khoản Bác sĩ hoặc QA Moderator (những user được seed sẵn chưa có hồ sơ y tế). Xác minh hệ thống tự động cấp phát một hồ sơ y tế cơ bản và cho phép người dùng vào cập nhật ở màn "Hồ sơ y tế" thay vì bị chặn.
 
 ### Luồng 2: Hồ Sơ Gia Đình & Theo Dõi Sức Khỏe
 - **TC2.1:** Chuyển đổi thành viên: Từ màn hình Home, đổi profile từ Bệnh nhân A sang "Bé Na" (thành viên gia đình). Xác minh dữ liệu hiển thị tương ứng với Bé Na.

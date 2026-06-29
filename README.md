@@ -14,7 +14,7 @@
 **CareNest** là ứng dụng quản lý sức khỏe gia đình đa người dùng, kết hợp Spring Boot backend với Android app Jetpack Compose, cùng với một vi dịch vụ (microservice) AI viết bằng Python FastAPI. Hệ thống hỗ trợ đầy đủ các luồng dữ liệu cho 3 role `patient`, `doctor`, `admin`.
 
 Các tính năng nổi bật:
-*   **Auth & Profile:** Đăng ký, đăng nhập an toàn, refresh token, quản lý hồ sơ cá nhân và sức khỏe.
+*   **Auth & Profile:** Đăng ký, đăng nhập an toàn, refresh token, tự động cấp phát hồ sơ y tế (auto-provisioning) cho mọi vai trò, quản lý hồ sơ cá nhân và sức khỏe.
 *   **Family & Health Core:** Gia đình, thành viên, thuốc, lịch uống, tiêm chủng, tăng trưởng, lịch khám.
 *   **Digital Clinic:** Hồ sơ bác sĩ, booking online/offline, không gian làm việc của bác sĩ, consultation room.
 *   **Community & Chat:** Chat gia đình theo thời gian thực (real-time WebSocket), hội nhóm, bài viết nhóm.
