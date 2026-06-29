@@ -10,10 +10,10 @@ Mục tiêu: Đảm bảo toàn bộ các luồng chức năng MVP của CareNes
 ### Tài Khoản Kiểm Thử (Seeded Accounts)
 | Vai trò | Email | Mật khẩu | Mục đích kiểm thử |
 | --- | --- | --- | --- |
-| Admin | `admin@gmail.com` | `Password123!` | Quản trị hệ thống, duyệt nhóm, phân quyền |
+| Admin | `admin@carenest.com` | `Password123!` | Quản trị hệ thống, duyệt nhóm, phân quyền |
 | Bác sĩ (Nhi khoa) | `bacsinhikhoa@gmail.com` | `Password123!` | Tư vấn trực tuyến, quản lý lịch hẹn nhi |
 | Bác sĩ (Đa khoa) | `bacsidakhoa@gmail.com` | `Password123!` | Xem lịch sử tư vấn cũ, tư vấn đa khoa |
-| Bệnh nhân A | `kiet@gmail.com` | `Password123!` | Test luồng dữ liệu đầy đủ (Gia đình, Thuốc, Lịch khám) |
+| Bệnh nhân A | `anhkhoa.vv@gmail.com` | `Password123!` | Test luồng dữ liệu đầy đủ (Gia đình, Thuốc, Lịch khám) |
 | Bệnh nhân B | `doletuankiet06@gmail.com` | `Password123!` | Test luồng dữ liệu trống (Sparse-data), xin quyền |
 | QA Moderator | `qa.moderator@gmail.com` | `Password123!` | Kiểm duyệt bài viết, quản lý cộng đồng |
 
