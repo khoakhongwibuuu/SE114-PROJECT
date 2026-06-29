@@ -109,16 +109,6 @@ fun OnboardingScreen(
                 .background(Color(0xFFEDE9FE).copy(alpha = 0.2f))
         )
 
-        TextButton(
-            onClick = onComplete,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(top = 16.dp, end = 24.dp)
-        ) {
-            Text("Bỏ qua", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = OnboardingOutline)
-        }
-
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -161,6 +151,16 @@ fun OnboardingScreen(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
+        }
+
+        TextButton(
+            onClick = onComplete,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(top = 16.dp, end = 24.dp)
+        ) {
+            Text("Bỏ qua", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = OnboardingOutline)
         }
     }
 }

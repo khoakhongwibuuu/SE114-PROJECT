@@ -155,9 +155,7 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại", tint = Color(0xFF1E293B))
-            }
+            Box(modifier = Modifier.size(48.dp))
             Text(
                 text = "Thông tin tài khoản",
                 fontSize = 18.sp,
