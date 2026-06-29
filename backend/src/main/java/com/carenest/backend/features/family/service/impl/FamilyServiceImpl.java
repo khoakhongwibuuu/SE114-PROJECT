@@ -155,7 +155,10 @@ public class FamilyServiceImpl implements FamilyService {
         FamilyDetailResponse response = familyMapper.toFamilyDetailResponse(family);
         List<FamilyMemberResponse> memberResponses = members.stream()
                 .map(member -> {
-                    HealthProfile profile = healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(member.getUser().getId()).orElse(null);
+                    // Try to find the member's profile within this family first, then fall back to personal profile
+                    HealthProfile profile = healthProfileRepository
+                            .findFirstByFamilyIdAndUserIdAndDeletedAtIsNull(id, member.getUser().getId())
+                            .orElse(healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(member.getUser().getId()).orElse(null));
                     FamilyMemberResponse memberResponse = familyMapper.toFamilyMemberResponse(member);
                     memberResponse.setIsChild(false);
                     memberResponse.setIsEditable(member.getUser().getId().equals(currentUser.getId()));
