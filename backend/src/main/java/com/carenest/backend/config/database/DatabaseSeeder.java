@@ -323,7 +323,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         HealthProfile profileP1 = getOrCreateProfile(
             patient1,
             familyA,
-            "Kiet Tuan",
+            patient1.getFullName(),
             LocalDate.of(2000, 1, 1),
             Gender.MALE,
             "Ban than",
@@ -333,7 +333,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         getOrCreateProfile(
             patient2,
             familyB,
-            "Tuan Kiet",
+            patient2.getFullName(),
             LocalDate.of(2006, 1, 13),
             Gender.MALE,
             "Ban than",
