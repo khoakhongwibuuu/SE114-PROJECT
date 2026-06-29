@@ -19,6 +19,7 @@ class SecureSessionManager(private val context: Context) {
         private const val USER_EMAIL_KEY = "user_email"
         private const val USER_NAME_KEY = "user_name"
         private const val ONBOARDING_DONE_KEY = "@carenest_onboarding_done"
+        private const val IS_PROFILE_COMPLETE_KEY = "is_profile_complete"
     }
 
     private val encryptedPrefs = try {
@@ -70,6 +71,8 @@ class SecureSessionManager(private val context: Context) {
     fun isOnboardingDone(): Boolean = encryptedPrefs.getString(ONBOARDING_DONE_KEY, null) != null
 
     fun getProfileId(): Long? = encryptedPrefs.getLong(PROFILE_ID_KEY, -1L).takeIf { it > 0 }
+
+    fun isProfileComplete(): Boolean = encryptedPrefs.getBoolean(IS_PROFILE_COMPLETE_KEY, false)
 
     fun getActiveProfileId(): Long? = encryptedPrefs.getLong(ACTIVE_PROFILE_ID_KEY, -1L).takeIf { it > 0 }
 
@@ -136,6 +139,10 @@ class SecureSessionManager(private val context: Context) {
             encryptedPrefs.edit().putString(USER_NAME_KEY, name).apply()
             _userNameFlow.value = name
         }
+    }
+
+    fun saveIsProfileCompleteSync(isComplete: Boolean) {
+        encryptedPrefs.edit().putBoolean(IS_PROFILE_COMPLETE_KEY, isComplete).apply()
     }
 
     suspend fun saveActiveProfileId(profileId: Long?) {

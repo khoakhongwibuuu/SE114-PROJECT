@@ -13,4 +13,6 @@ public class AuthResponse {
     private String accessToken;
     private String refreshToken;
     private UserInfoResponse user;
+    private Long profileId;
+    private Boolean isProfileComplete;
 }

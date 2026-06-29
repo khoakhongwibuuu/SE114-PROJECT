@@ -14,6 +14,8 @@ import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.mapper.UserMapper;
 import com.carenest.backend.features.auth.repository.UserRepository;
 import com.carenest.backend.features.auth.service.AuthService;
+import com.carenest.backend.features.healthprofile.entity.HealthProfile;
+import com.carenest.backend.features.healthprofile.repository.HealthProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -45,6 +47,7 @@ import java.util.Locale;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final HealthProfileRepository healthProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -71,14 +74,19 @@ public class AuthServiceImpl implements AuthService {
 
         user = userRepository.save(user);
 
+        HealthProfile stub = HealthProfile.builder()
+                .user(user)
+                .fullName(user.getFullName() != null ? user.getFullName() : user.getEmail())
+                .gender(null)
+                .dateOfBirth(null)
+                .isChild(false)
+                .build();
+        healthProfileRepository.save(stub);
+
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
 
-        return AuthResponse.builder()
-                .accessToken(jwtToken)
-                .refreshToken(refreshToken)
-                .user(userMapper.toUserInfoResponse(user))
-                .build();
+        return buildAuthResponse(user, jwtToken, refreshToken, stub);
     }
 
     @Override
@@ -98,11 +106,7 @@ public class AuthServiceImpl implements AuthService {
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
 
-        return AuthResponse.builder()
-                .accessToken(jwtToken)
-                .refreshToken(refreshToken)
-                .user(userMapper.toUserInfoResponse(user))
-                .build();
+        return buildAuthResponse(user, jwtToken, refreshToken, null);
     }
 
     @Override
@@ -121,11 +125,7 @@ public class AuthServiceImpl implements AuthService {
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
             if (jwtService.isTokenValid(refreshToken, user)) {
                 var accessToken = jwtService.generateToken(user);
-                return AuthResponse.builder()
-                        .accessToken(accessToken)
-                        .refreshToken(refreshToken)
-                        .user(userMapper.toUserInfoResponse(user))
-                        .build();
+                return buildAuthResponse(user, accessToken, refreshToken, null);
             }
         }
         throw new IllegalArgumentException("Refresh token không hợp lệ");
@@ -234,6 +234,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("ID Token không chứa thông tin email");
         }
 
+        HealthProfile stubToReturn = null;
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) {
             String name = (String) payload.get("name");
@@ -249,6 +250,16 @@ public class AuthServiceImpl implements AuthService {
                     .isVerified(true)
                     .build();
             user = userRepository.save(user);
+            
+            HealthProfile stub = HealthProfile.builder()
+                    .user(user)
+                    .fullName(user.getFullName() != null ? user.getFullName() : user.getEmail())
+                    .gender(null)
+                    .dateOfBirth(null)
+                    .isChild(false)
+                    .build();
+            healthProfileRepository.save(stub);
+            stubToReturn = stub;
         } else {
             if (user.getAuthProvider() == null || user.getAuthProvider() == AuthProvider.LOCAL) {
                 user.setAuthProvider(AuthProvider.GOOGLE);
@@ -259,11 +270,7 @@ public class AuthServiceImpl implements AuthService {
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
 
-        return AuthResponse.builder()
-                .accessToken(jwtToken)
-                .refreshToken(refreshToken)
-                .user(userMapper.toUserInfoResponse(user))
-                .build();
+        return buildAuthResponse(user, jwtToken, refreshToken, stubToReturn);
     }
 
     private String generateOtp() {
@@ -283,5 +290,22 @@ public class AuthServiceImpl implements AuthService {
                 "Thân mến,\n" +
                 "Đội ngũ CareNest");
         mailSender.send(message);
+    }
+
+    private AuthResponse buildAuthResponse(User user, String jwtToken, String refreshToken, HealthProfile stub) {
+        HealthProfile profile = stub != null ? stub : healthProfileRepository
+                .findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(user.getId())
+                .orElse(null);
+
+        Long profileId = profile != null ? profile.getId() : null;
+        Boolean isComplete = profile != null && profile.getDateOfBirth() != null && profile.getGender() != null;
+
+        return AuthResponse.builder()
+                .accessToken(jwtToken)
+                .refreshToken(refreshToken)
+                .user(userMapper.toUserInfoResponse(user))
+                .profileId(profileId)
+                .isProfileComplete(isComplete)
+                .build();
     }
 }

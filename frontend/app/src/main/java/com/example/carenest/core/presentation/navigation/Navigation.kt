@@ -62,7 +62,13 @@ fun MainNavigation() {
   val startDestination = remember {
     if (application.secureSessionManager.isOnboardingDone()) {
       if (application.secureSessionManager.getAccessToken()?.isNotBlank() == true) {
-        authenticatedRootFor(storedRole)
+        val isComplete = application.secureSessionManager.isProfileComplete()
+        if (!isComplete && storedRole != AppRole.ADMIN) {
+           val profileId = application.secureSessionManager.getProfileId() ?: -1L
+           ProfileSetup(profileId)
+        } else {
+           authenticatedRootFor(storedRole)
+        }
       } else {
         Login
       }
@@ -210,7 +216,13 @@ fun MainNavigation() {
             onNavigateToRegister = { backStack.add(Register) },
             onLoginSuccess = { 
                 backStack.clear()
-                backStack.add(authenticatedRootFor(authViewModel.currentUserRole.value)) 
+                val isComplete = application.secureSessionManager.isProfileComplete()
+                if (!isComplete && authViewModel.currentUserRole.value != AppRole.ADMIN) {
+                    val profileId = application.secureSessionManager.getProfileId() ?: -1L
+                    backStack.add(ProfileSetup(profileId))
+                } else {
+                    backStack.add(authenticatedRootFor(authViewModel.currentUserRole.value)) 
+                }
             },
             onNavigateToForgotPassword = { backStack.add(ForgotPassword) }
           )
@@ -226,6 +238,24 @@ fun MainNavigation() {
             ForgotPasswordScreen(
                 viewModel = authViewModel,
                 onNavigateToLogin = { backStack.removeLastOrNull() }
+            )
+        }
+        entry<ProfileSetup> {
+            val key = it as ProfileSetup
+            val setupViewModel: com.example.carenest.feature.auth.presentation.ProfileSetupViewModel = viewModel(
+                factory = com.example.carenest.feature.auth.presentation.ProfileSetupViewModelFactory(
+                    application.familyApi,
+                    application.secureSessionManager,
+                    key.profileId
+                )
+            )
+            com.example.carenest.feature.auth.presentation.ProfileSetupScreen(
+                viewModel = setupViewModel,
+                userName = application.secureSessionManager.getUserName() ?: "",
+                onSetupComplete = {
+                    backStack.clear()
+                    backStack.add(authenticatedRootFor(authViewModel.currentUserRole.value))
+                }
             )
         }
         entry<MedicalAppointment> {

@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object Onboarding : NavKey
 @Serializable data object Register : NavKey
 @Serializable data object ForgotPassword : NavKey
+@Serializable data class ProfileSetup(val profileId: Long) : NavKey
 @Serializable data object MainDashboard : NavKey
 @Serializable data object AdminMain : NavKey
 @Serializable data object AddMedicine : NavKey

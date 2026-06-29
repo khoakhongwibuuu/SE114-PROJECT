@@ -77,6 +77,8 @@ class AuthViewModel(
                         )
                         withContext(Dispatchers.IO) {
                             secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
+                            auth.profileId?.let { secureSessionManager.saveProfileIdSync(it) }
+                            auth.isProfileComplete?.let { secureSessionManager.saveIsProfileCompleteSync(it) }
                             auth.user?.let(::persistAuthenticatedUser)
                                 ?: pullCurrentUser()?.let(::persistAuthenticatedUser)
                         }
@@ -109,6 +111,8 @@ class AuthViewModel(
                         )
                         withContext(Dispatchers.IO) {
                             secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
+                            auth.profileId?.let { secureSessionManager.saveProfileIdSync(it) }
+                            auth.isProfileComplete?.let { secureSessionManager.saveIsProfileCompleteSync(it) }
                             auth.user?.let(::persistAuthenticatedUser)
                                 ?: pullCurrentUser()?.let(::persistAuthenticatedUser)
                         }
@@ -143,6 +147,8 @@ class AuthViewModel(
                     if (auth != null) {
                         withContext(Dispatchers.IO) {
                             secureSessionManager.saveSession(auth.accessToken, auth.refreshToken)
+                            auth.profileId?.let { secureSessionManager.saveProfileIdSync(it) }
+                            auth.isProfileComplete?.let { secureSessionManager.saveIsProfileCompleteSync(it) }
                             auth.user?.let(::persistAuthenticatedUser)
                                 ?: pullCurrentUser()?.let(::persistAuthenticatedUser)
                         }

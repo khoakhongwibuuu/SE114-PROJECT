@@ -26,7 +26,9 @@ data class RefreshTokenRequest(
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,
-    val user: UserInfo? = null
+    val user: UserInfo? = null,
+    val profileId: Long? = null,
+    val isProfileComplete: Boolean? = null
 )
 
 data class UserInfo(
