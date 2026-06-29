@@ -18,6 +18,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -701,12 +704,23 @@ private fun MemberItem(
                     .background(Color(0xFFE2E8F0), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = (member.name ?: "?").take(1).uppercase(),
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF64748B),
-                    fontSize = 18.sp
-                )
+                if (!member.avatarUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = member.avatarUrl,
+                        contentDescription = "Avatar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Text(
+                        text = (member.name ?: "?").take(1).uppercase(),
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF64748B),
+                        fontSize = 18.sp
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(12.dp))
 

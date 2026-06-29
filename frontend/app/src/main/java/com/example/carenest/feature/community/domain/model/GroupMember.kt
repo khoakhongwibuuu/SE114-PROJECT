@@ -1,8 +1,11 @@
 package com.example.carenest.feature.community.domain.model
 
+import com.google.gson.annotations.SerializedName
+
 data class GroupMember(
     val userId: Long,
-    val name: String,
+    @SerializedName("fullName") val name: String?,
+    val avatarUrl: String?,
     val role: String, // HOST, MODERATOR, MEMBER
     val joinedAt: String
 )
