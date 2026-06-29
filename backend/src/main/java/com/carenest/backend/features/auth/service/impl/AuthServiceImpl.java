@@ -315,7 +315,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElse(null);
 
         boolean isNonPatient = user.getRole() == Role.DOCTOR || user.getRole() == Role.ADMIN;
-        if (profile == null && isNonPatient) {
+        if (profile == null) {
             profile = HealthProfile.builder()
                     .user(user)
                     .fullName(user.getFullName() != null ? user.getFullName() : user.getEmail())
