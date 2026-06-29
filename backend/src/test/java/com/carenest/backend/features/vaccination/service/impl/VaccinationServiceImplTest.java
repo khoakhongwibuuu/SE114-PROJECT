@@ -101,7 +101,7 @@ public class VaccinationServiceImplTest {
         request.setDateAdministered(actualDate);
 
         when(vaccinationDoseRepository.findById(1L)).thenReturn(Optional.of(dose1));
-        doNothing().when(familySecurityUtil).checkCanReadHealthProfile(any());
+        doNothing().when(familySecurityUtil).checkCanWriteHealthProfile(any());
         when(vaccinationDoseRepository.findAllByVaccinationRecordIdOrderByDoseNumberAsc(1L))
                 .thenReturn(Arrays.asList(dose1, dose2, dose3));
 

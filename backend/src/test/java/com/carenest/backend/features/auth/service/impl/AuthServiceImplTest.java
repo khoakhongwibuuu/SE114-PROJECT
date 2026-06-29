@@ -9,6 +9,7 @@ import com.carenest.backend.features.auth.enums.Gender;
 import com.carenest.backend.features.auth.enums.Role;
 import com.carenest.backend.features.auth.mapper.UserMapper;
 import com.carenest.backend.features.auth.repository.UserRepository;
+import com.carenest.backend.features.healthprofile.repository.HealthProfileRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,8 @@ class AuthServiceImplTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private JwtService jwtService;
+    @Mock
+    private HealthProfileRepository healthProfileRepository;
     @Mock
     private AuthenticationManager authenticationManager;
     @Mock

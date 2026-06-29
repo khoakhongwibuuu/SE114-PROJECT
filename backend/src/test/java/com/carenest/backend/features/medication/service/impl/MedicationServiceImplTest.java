@@ -95,7 +95,7 @@ public class MedicationServiceImplTest {
                 .build();
         mappedMedication.setId(1L);
 
-        doNothing().when(familySecurityUtil).checkCanReadHealthProfile(any());
+        doNothing().when(familySecurityUtil).checkCanWriteHealthProfile(any());
         when(healthProfileRepository.findById(1L)).thenReturn(Optional.of(profile));
         when(medicationMapper.toEntity(any())).thenReturn(mappedMedication);
         when(medicationRepository.save(any())).thenReturn(mappedMedication);
@@ -131,7 +131,7 @@ public class MedicationServiceImplTest {
         existingMedication.setId(1L);
 
         when(medicationRepository.findById(1L)).thenReturn(Optional.of(existingMedication));
-        doNothing().when(familySecurityUtil).checkCanReadHealthProfile(any());
+        doNothing().when(familySecurityUtil).checkCanWriteHealthProfile(any());
         when(medicationRepository.save(any())).thenReturn(existingMedication);
         when(medicationMapper.stringToList("08:00")).thenReturn(Arrays.asList("08:00"));
 

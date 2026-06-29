@@ -86,7 +86,7 @@ class FamilyAuthorizationContractTest {
         AppointmentCreateRequest request = new AppointmentCreateRequest();
         request.setHealthProfileId(99L);
         doThrow(new AccessDeniedException("denied"))
-                .when(familySecurityUtil).checkCanReadHealthProfile(99L);
+                .when(familySecurityUtil).checkCanWriteHealthProfile(99L);
 
         assertThrows(AccessDeniedException.class, () -> appointmentService.createAppointment(request));
 
@@ -108,7 +108,7 @@ class FamilyAuthorizationContractTest {
     @Test
     void updateHealthProfile_deniesForeignProfileBeforeMutation() {
         doThrow(new AccessDeniedException("denied"))
-                .when(familySecurityUtil).checkCanReadHealthProfile(55L);
+                .when(familySecurityUtil).checkCanWriteHealthProfile(55L);
 
         assertThrows(
                 AccessDeniedException.class,
@@ -120,7 +120,7 @@ class FamilyAuthorizationContractTest {
     @Test
     void addGrowthRecord_deniesForeignProfileBeforeMutation() {
         doThrow(new AccessDeniedException("denied"))
-                .when(familySecurityUtil).checkCanReadHealthProfile(44L);
+                .when(familySecurityUtil).checkCanWriteHealthProfile(44L);
 
         assertThrows(
                 AccessDeniedException.class,
