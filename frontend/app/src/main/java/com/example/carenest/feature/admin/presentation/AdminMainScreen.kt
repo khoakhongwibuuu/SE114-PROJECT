@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,6 +25,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -66,6 +68,7 @@ fun AdminMainScreen(
     onNavigateToGroupRequests: () -> Unit = {},
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var showAuditLogs by rememberSaveable { mutableStateOf(false) }
     val currentTab = AdminTab.entries.getOrNull(selectedTab) ?: AdminTab.DASHBOARD
 
     Scaffold(
@@ -73,6 +76,11 @@ fun AdminMainScreen(
             TopAppBar(
                 title = { Text("CareNest Admin", fontWeight = FontWeight.Black) },
                 actions = {
+                    if (selectedTab == AdminTab.USERS.ordinal) {
+                        IconButton(onClick = { showAuditLogs = true }) {
+                            Icon(Icons.Default.History, contentDescription = "Nhật ký override")
+                        }
+                    }
                     IconButton(onClick = onNavigateToGroupRequests) {
                         Icon(Icons.Default.Groups, contentDescription = "Duyệt yêu cầu nhóm")
                     }
@@ -123,7 +131,10 @@ fun AdminMainScreen(
                     onOpenModeration = { selectedTab = AdminTab.MODERATION.ordinal },
                 )
 
-                AdminTab.USERS -> AdminUserManagementScreen()
+                AdminTab.USERS -> AdminUserManagementScreen(
+                    showAuditLogs = showAuditLogs,
+                    onDismissAuditLogs = { showAuditLogs = false }
+                )
                 AdminTab.EKYC -> AdminEkycScreen()
                 AdminTab.MODERATION -> AdminModerationScreen()
             }

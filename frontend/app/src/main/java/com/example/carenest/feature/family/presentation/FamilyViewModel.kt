@@ -118,7 +118,8 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
         viewModelScope.launch {
             val receivedRes = repository.getReceivedInvitations()
             receivedRes.onSuccess { list ->
-                _uiState.update { it.copy(receivedInvitations = list) }
+                val pending = list.filter { it.status == "PENDING" }
+                _uiState.update { it.copy(receivedInvitations = pending) }
             }
 
             val sentRes = repository.getSentInvitations()
@@ -303,6 +304,11 @@ class FamilyViewModel(private val repository: FamilyRepository) : ViewModel() {
                 _uiState.update { it.copy(isBusy = false, error = e.message) }
             }
         }
+    }
+
+    fun onCreateDependentSubmit(name: String, dob: String, gender: String, relation: String) {
+        println("Create Dependent: $name, $dob, $gender, $relation")
+        _uiState.update { it.copy(message = "Đã lưu hồ sơ phụ thuộc (Mock)") }
     }
 }
 

@@ -91,6 +91,11 @@ app:
       doctor-general-full-name: ${APP_SEED_QA_DEMO_DOCTOR_GENERAL_FULL_NAME:Bác sĩ Đa Khoa}
       moderator-full-name: ${APP_SEED_QA_DEMO_MODERATOR_FULL_NAME:QA Moderator}
 
+management:
+  health:
+    mail:
+      enabled: false
+
 server:
   port: 8080
   servlet:

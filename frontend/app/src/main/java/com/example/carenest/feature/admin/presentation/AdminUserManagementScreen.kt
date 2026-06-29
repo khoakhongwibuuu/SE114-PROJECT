@@ -2,6 +2,7 @@ package com.example.carenest.feature.admin.presentation
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,10 +34,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -68,8 +73,12 @@ private data class StatusDialogState(
     val targetStatus: String
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminUserManagementScreen() {
+fun AdminUserManagementScreen(
+    showAuditLogs: Boolean = false,
+    onDismissAuditLogs: () -> Unit = {}
+) {
     val context = LocalContext.current
     val application = context.applicationContext as CareNestApplication
     val viewModel: AdminUserManagementViewModel = viewModel(
@@ -80,6 +89,7 @@ fun AdminUserManagementScreen() {
     val roleDialogState = remember { mutableStateOf<RoleDialogState?>(null) }
     val statusDialogState = remember { mutableStateOf<StatusDialogState?>(null) }
     val currentUserId = application.secureSessionManager.getUserId()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     LaunchedEffect(state.error, state.message) {
         state.error?.let {
@@ -117,12 +127,6 @@ fun AdminUserManagementScreen() {
                 focusedBorderColor = Color(0xFFCBD5E1),
                 unfocusedBorderColor = Color(0xFFE2E8F0)
             )
-        )
-
-        UserAuditLogCard(
-            logs = state.auditLogs,
-            isLoading = state.isAuditLoading,
-            onRefresh = viewModel::refreshAuditLogs
         )
 
         when {
@@ -310,6 +314,22 @@ fun AdminUserManagementScreen() {
                 }
             }
         )
+    }
+
+    if (showAuditLogs) {
+        ModalBottomSheet(
+            onDismissRequest = onDismissAuditLogs,
+            sheetState = sheetState,
+            containerColor = Color(0xFFF8FAFC)
+        ) {
+            Box(modifier = Modifier.padding(16.dp).padding(bottom = 32.dp)) {
+                UserAuditLogCard(
+                    logs = state.auditLogs,
+                    isLoading = state.isAuditLoading,
+                    onRefresh = viewModel::refreshAuditLogs
+                )
+            }
+        }
     }
 }
 
@@ -508,7 +528,11 @@ private fun AdminUserRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
                     AssistChip(
                         onClick = onToggleAdminRole,
                         enabled = !isBusy && !isBanned && !isCurrentAdmin,
@@ -520,11 +544,13 @@ private fun AdminUserRow(
                     )
                     Box(
                         modifier = Modifier
+                            .height(32.dp)
                             .background(
                                 color = if (isBanned) Color(0xFFFEF2F2) else Color(0xFFECFDF5),
                                 shape = RoundedCornerShape(8.dp)
                             )
-                            .padding(horizontal = 12.dp, vertical = 7.dp)
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = if (isBanned) "Đã khóa" else "Hoạt động",
@@ -536,7 +562,7 @@ private fun AdminUserRow(
                         AssistChip(
                             onClick = {},
                             enabled = false,
-                            label = { Text("Bạn") }
+                            label = { Text("Bạn", maxLines = 1) }
                         )
                     }
                 }

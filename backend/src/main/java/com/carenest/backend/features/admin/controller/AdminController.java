@@ -40,9 +40,9 @@ public class AdminController {
     @GetMapping("/users")
     @Operation(summary = "Get paginated list of users")
     public ApiResponse<PageResponse<AdminUserSummaryResponse>> getUsers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String search) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "search", required = false) String search) {
         PageResponse<AdminUserSummaryResponse> response = adminService.getUsers(page, size, search);
         return ApiResponse.success(response);
     }
@@ -56,7 +56,7 @@ public class AdminController {
     @PatchMapping("/users/{userId}/status")
     @Operation(summary = "Update user status (ACTIVE/BANNED)")
     public ApiResponse<AdminUserStatusUpdateResponse> updateUserStatus(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @RequestBody @Valid AdminUserStatusUpdateRequest request,
             @AuthenticationPrincipal User currentAdmin) {
         AdminUserStatusUpdateResponse response = adminService.updateUserStatus(userId, request, currentAdmin);
@@ -66,7 +66,7 @@ public class AdminController {
     @PatchMapping("/users/{userId}/role")
     @Operation(summary = "Update user role (USER/ADMIN)")
     public ApiResponse<AdminUserRoleUpdateResponse> updateUserRole(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @RequestBody @Valid AdminUserRoleUpdateRequest request,
             @AuthenticationPrincipal User currentAdmin) {
         AdminUserRoleUpdateResponse response = adminService.updateUserRole(userId, request, currentAdmin);

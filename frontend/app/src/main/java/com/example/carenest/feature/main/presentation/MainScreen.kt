@@ -173,7 +173,7 @@ fun MainScreen(
     }
 
     fun resolveActiveProfileIdOrNotify(): Long? {
-        val profileId = currentProfileId ?: application.secureSessionManager.getActiveProfileId()
+        val profileId = currentProfileId ?: application.secureSessionManager.getActiveProfileId() ?: application.secureSessionManager.getProfileId()
         if (!profileId.isValidHealthProfileId()) {
             Toast.makeText(context, "Đang tải hồ sơ của bạn, vui lòng thử lại sau.", Toast.LENGTH_SHORT).show()
             return null
@@ -305,7 +305,7 @@ fun MainScreen(
                 TAB_PROFILE -> ProfileScreen(
                     viewModel = profileViewModel,
                     refreshTrigger = profileRefreshTrigger,
-                    hasActiveHealthProfile = hasActiveHealthProfile,
+
                     onLogout = onLogout,
                     onNavigateToMedicalRecord = {
                         resolveActiveProfileIdOrNotify()?.let(onNavigateToMedicalRecord)

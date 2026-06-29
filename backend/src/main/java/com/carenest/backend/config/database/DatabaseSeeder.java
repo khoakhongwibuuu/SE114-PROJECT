@@ -343,9 +343,15 @@ public class DatabaseSeeder implements CommandLineRunner {
             true
         );
 
-        ensureMedicationScenario(babyNa);
-        ensureVaccinationScenario(babyNa);
+        // ensureMedicationScenario(babyNa);
+        // ensureVaccinationScenario(babyNa);
         ensureManualAppointmentScenario(babyNa);
+        
+        // Temporarily clear mock data from DB
+        medicationLogRepository.deleteAll();
+        medicationRepository.deleteAll();
+        vaccinationDoseRepository.deleteAll();
+        vaccinationRecordRepository.deleteAll();
 
         log.info("QA family and health-profile seed ensured.");
     }

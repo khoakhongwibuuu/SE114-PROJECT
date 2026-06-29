@@ -362,6 +362,7 @@ fun ManagementContent(viewModel: FamilyViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var inviteEmail by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf("MEMBER") }
+    var showCreateDependentSheet by remember { mutableStateOf(false) }
     val trimmedInviteEmail = inviteEmail.trim()
     val inviteEmailInvalid = trimmedInviteEmail.isNotBlank() &&
             (!trimmedInviteEmail.contains("@") || !trimmedInviteEmail.contains("."))
@@ -380,7 +381,16 @@ fun ManagementContent(viewModel: FamilyViewModel) {
         val adultMembers = familyDetail.members.filter { !it.isChild }
         val dependentMembers = familyDetail.members.filter { it.isChild }
 
-        Text("Thành viên (${adultMembers.size})", style = CareNestTextStyles.titleMd, color = TextPrimary, modifier = Modifier.padding(bottom = AppSpacing.sm))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = AppSpacing.sm),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Thành viên (${adultMembers.size})", style = CareNestTextStyles.titleMd, color = TextPrimary)
+            OutlinedButton(onClick = { showCreateDependentSheet = true }) {
+                Text("+ Thêm người phụ thuộc", fontSize = 12.sp)
+            }
+        }
         adultMembers.forEach { member ->
             FamilyMemberRow(member)
         }
@@ -589,6 +599,16 @@ fun ManagementContent(viewModel: FamilyViewModel) {
                 }
             }
         }
+    }
+
+    if (showCreateDependentSheet) {
+        CreateDependentBottomSheet(
+            onDismissRequest = { showCreateDependentSheet = false },
+            onSubmit = { name, dob, gender, relation ->
+                viewModel.onCreateDependentSubmit(name, dob, gender, relation)
+                showCreateDependentSheet = false
+            }
+        )
     }
 }
 

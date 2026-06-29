@@ -41,6 +41,7 @@ fun DoctorProfileScreen(
     val repository = application.doctorRepository
 
     val viewModel: DoctorProfileViewModel = viewModel(
+        key = "DoctorProfile_$doctorId",
         factory = DoctorProfileViewModel.Factory(doctorId, repository)
     )
     val uiState by viewModel.uiState.collectAsState()
