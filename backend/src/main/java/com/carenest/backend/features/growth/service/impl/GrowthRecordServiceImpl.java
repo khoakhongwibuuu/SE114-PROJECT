@@ -47,7 +47,7 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
     @Override
     @Transactional
     public GrowthRecordResponse addRecord(Long profileId, GrowthRecordCreateRequest request) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanWriteHealthProfile(profileId);
 
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
@@ -93,7 +93,7 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
     @Override
     @Transactional(readOnly = true)
     public List<GrowthRecordResponse> getGrowthRecords(Long profileId) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanReadHealthProfile(profileId);
 
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
@@ -107,7 +107,7 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
     @Override
     @Transactional(readOnly = true)
     public List<GrowthChartResponse> getGrowthChartData(Long profileId) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanReadHealthProfile(profileId);
 
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));

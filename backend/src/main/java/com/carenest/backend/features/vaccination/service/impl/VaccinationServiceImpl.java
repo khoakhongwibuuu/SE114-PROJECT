@@ -50,7 +50,7 @@ public class VaccinationServiceImpl implements VaccinationService {
     @Override
     @Transactional
     public VaccinationRecordResponse createVaccinationPlan(Long profileId, CreateVaccinationRequest request) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanWriteHealthProfile(profileId);
 
         HealthProfile profile = healthProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", profileId));
@@ -108,7 +108,7 @@ public class VaccinationServiceImpl implements VaccinationService {
                 .orElseThrow(() -> new ResourceNotFoundException("VaccinationDose", doseId));
 
         VaccinationRecord record = currentDose.getVaccinationRecord();
-        familySecurityUtil.checkUserBelongsToHealthProfile(record.getHealthProfile().getId());
+        familySecurityUtil.checkCanWriteHealthProfile(record.getHealthProfile().getId());
 
         if (currentDose.getStatus() == DoseStatus.COMPLETED) {
             throw new BadRequestException("Mũi tiêm này đã được hoàn thành trước đó.");
@@ -166,7 +166,7 @@ public class VaccinationServiceImpl implements VaccinationService {
     @Override
     @Transactional(readOnly = true)
     public List<VaccinationRecordResponse> getVaccinationHistory(Long profileId) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanReadHealthProfile(profileId);
 
         List<VaccinationRecord> records = vaccinationRecordRepository.findAllByHealthProfileId(profileId);
 

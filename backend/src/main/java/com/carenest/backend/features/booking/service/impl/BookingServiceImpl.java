@@ -78,7 +78,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         // Security check for Health Profile
-        familySecurityUtil.checkUserBelongsToHealthProfile(request.getHealthProfileId());
+        familySecurityUtil.checkCanReadHealthProfile(request.getHealthProfileId());
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(request.getHealthProfileId())
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", request.getHealthProfileId().toString()));
 

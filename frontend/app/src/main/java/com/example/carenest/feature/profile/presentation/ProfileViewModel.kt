@@ -86,12 +86,41 @@ class ProfileViewModel(
             is ProfileEvent.MedReminderChanged -> _state.update { it.copy(medReminder = event.enabled) }
             is ProfileEvent.ApptReminderChanged -> _state.update { it.copy(apptReminder = event.enabled) }
             is ProfileEvent.AvatarSelected -> {
-                _state.update {
-                    it.copy(
-                        isUploadingAvatar = false,
-                        avatarUri = event.uri,
-                        successMessage = "Ảnh đại diện đã được cập nhật."
-                    )
+                _state.update { it.copy(isUploadingAvatar = true, error = null, successMessage = null) }
+                viewModelScope.launch {
+                    try {
+                        val tempFile = withContext(Dispatchers.IO) {
+                            val file = java.io.File.createTempFile("avatar-", ".jpg", event.context.cacheDir)
+                            event.context.contentResolver.openInputStream(event.uri)?.use { input ->
+                                file.outputStream().use { output -> input.copyTo(output) }
+                            }
+                            file
+                        }
+                        val result = repository.uploadAvatar(tempFile)
+                        result.onSuccess { url ->
+                            _state.update {
+                                it.copy(
+                                    isUploadingAvatar = false,
+                                    avatarUri = Uri.parse(url),
+                                    successMessage = "Ảnh đại diện đã tải lên thành công. Bấm Lưu để hoàn tất."
+                                )
+                            }
+                        }.onFailure { e ->
+                            _state.update {
+                                it.copy(
+                                    isUploadingAvatar = false,
+                                    error = "Không thể tải ảnh: ${e.message}"
+                                )
+                            }
+                        }
+                    } catch (e: Exception) {
+                        _state.update {
+                            it.copy(
+                                isUploadingAvatar = false,
+                                error = "Lỗi xử lý ảnh: ${e.message}"
+                            )
+                        }
+                    }
                 }
             }
 
@@ -242,7 +271,7 @@ sealed interface ProfileEvent {
     data class BloodTypeChanged(val bloodType: String) : ProfileEvent
     data class MedReminderChanged(val enabled: Boolean) : ProfileEvent
     data class ApptReminderChanged(val enabled: Boolean) : ProfileEvent
-    data class AvatarSelected(val uri: Uri?) : ProfileEvent
+    data class AvatarSelected(val context: android.content.Context, val uri: Uri) : ProfileEvent
     data object ClearMessage : ProfileEvent
 }
 

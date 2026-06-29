@@ -133,7 +133,14 @@ public class DatabaseSeeder implements CommandLineRunner {
             newUser.setIsActive(true);
             newUser.setIsVerified(true);
             User saved = userRepository.save(newUser);
-            log.info("Seeded account: {} ({})", email, role.name());
+            
+            HealthProfile stub = new HealthProfile();
+            stub.setUser(saved);
+            stub.setFullName(fullName);
+            stub.setIsChild(false);
+            healthProfileRepository.save(stub);
+            
+            log.info("Seeded account and profile stub: {} ({})", email, role.name());
             return saved;
         });
     }
@@ -392,22 +399,39 @@ public class DatabaseSeeder implements CommandLineRunner {
         String relationship,
         boolean isChild
     ) {
-        return healthProfileRepository.findAll().stream()
-            .filter(profile -> profile.getFamily().getId().equals(family.getId()) && fullName.equals(profile.getFullName()))
+        HealthProfile existingProfile = healthProfileRepository.findAll().stream()
+            .filter(profile -> (profile.getFamily() != null && profile.getFamily().getId().equals(family.getId()) && fullName.equals(profile.getFullName()))
+                    || (profile.getUser() != null && profile.getUser().getId().equals(user.getId()) && profile.getIsChild() == isChild))
             .findFirst()
-            .orElseGet(() -> healthProfileRepository.save(HealthProfile.builder()
-                .user(user)
-                .family(family)
-                .fullName(fullName)
-                .dateOfBirth(dob)
-                .gender(gender)
-                .relationship(relationship)
-                .bloodType(isChild ? BloodType.O_POSITIVE : BloodType.A_POSITIVE)
-                .allergies(isChild ? "Di ung hai san nhe" : "Khong co")
-                .chronicDiseases("Khong")
-                .notes(isChild ? "Can theo doi lich tiem va thuoc." : "QA seed profile")
-                .isChild(isChild)
-                .build()));
+            .orElse(null);
+
+        if (existingProfile != null) {
+            existingProfile.setFamily(isChild ? family : null);
+            existingProfile.setFullName(fullName);
+            existingProfile.setDateOfBirth(dob);
+            existingProfile.setGender(gender);
+            existingProfile.setRelationship(relationship);
+            existingProfile.setBloodType(isChild ? BloodType.O_POSITIVE : BloodType.A_POSITIVE);
+            existingProfile.setAllergies(isChild ? "Di ung hai san nhe" : "Khong co");
+            existingProfile.setChronicDiseases("Khong");
+            existingProfile.setNotes(isChild ? "Can theo doi lich tiem va thuoc." : "QA seed profile");
+            existingProfile.setIsChild(isChild);
+            return healthProfileRepository.save(existingProfile);
+        }
+
+        return healthProfileRepository.save(HealthProfile.builder()
+            .user(user)
+            .family(isChild ? family : null)
+            .fullName(fullName)
+            .dateOfBirth(dob)
+            .gender(gender)
+            .relationship(relationship)
+            .bloodType(isChild ? BloodType.O_POSITIVE : BloodType.A_POSITIVE)
+            .allergies(isChild ? "Di ung hai san nhe" : "Khong co")
+            .chronicDiseases("Khong")
+            .notes(isChild ? "Can theo doi lich tiem va thuoc." : "QA seed profile")
+            .isChild(isChild)
+            .build());
     }
 
     private void ensureMedicationScenario(HealthProfile babyNa) {

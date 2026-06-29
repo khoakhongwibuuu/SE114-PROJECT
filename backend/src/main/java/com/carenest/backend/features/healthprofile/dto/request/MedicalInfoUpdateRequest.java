@@ -14,4 +14,6 @@ public class MedicalInfoUpdateRequest {
     private BloodType bloodType;
     private String allergies;
     private String chronicDiseases;
+    private String emergencyContactName;
+    private String emergencyContactPhone;
 }

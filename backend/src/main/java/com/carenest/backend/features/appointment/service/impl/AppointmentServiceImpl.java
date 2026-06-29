@@ -41,7 +41,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional
     public AppointmentResponse createAppointment(AppointmentCreateRequest request) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(request.getHealthProfileId());
+        familySecurityUtil.checkCanWriteHealthProfile(request.getHealthProfileId());
 
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(request.getHealthProfileId())
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", request.getHealthProfileId().toString()));
@@ -62,7 +62,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(readOnly = true)
     public List<AppointmentResponse> getProfileAppointments(Long profileId) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanReadHealthProfile(profileId);
 
         if (!healthProfileRepository.existsById(profileId)) {
             throw new ResourceNotFoundException("HealthProfile", "id", profileId.toString());
@@ -77,7 +77,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(readOnly = true)
     public List<AppointmentResponse> getUpcomingAppointments(Long profileId) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanReadHealthProfile(profileId);
 
         if (!healthProfileRepository.existsById(profileId)) {
             throw new ResourceNotFoundException("HealthProfile", "id", profileId.toString());
@@ -174,7 +174,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment", "id", id.toString()));
         assertAppointmentAccess(appointment);
-        familySecurityUtil.checkUserBelongsToHealthProfile(request.getHealthProfileId());
+        familySecurityUtil.checkCanWriteHealthProfile(request.getHealthProfileId());
 
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(request.getHealthProfileId())
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", request.getHealthProfileId().toString()));
@@ -226,6 +226,6 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     private void assertAppointmentAccess(Appointment appointment) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(appointment.getHealthProfile().getId());
+        familySecurityUtil.checkCanWriteHealthProfile(appointment.getHealthProfile().getId());
     }
 }

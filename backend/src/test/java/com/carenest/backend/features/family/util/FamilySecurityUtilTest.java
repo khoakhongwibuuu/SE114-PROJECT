@@ -40,7 +40,7 @@ class FamilySecurityUtilTest {
     }
 
     @Test
-    void checkUserBelongsToHealthProfile_rejectsDeletedProfile() {
+    void checkCanReadHealthProfile_rejectsDeletedProfile() {
         User currentUser = User.builder()
                 .email("user@example.com")
                 .passwordHash("hash")
@@ -53,7 +53,7 @@ class FamilySecurityUtilTest {
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(currentUser));
         when(healthProfileRepository.findByIdAndDeletedAtIsNull(55L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> familySecurityUtil.checkUserBelongsToHealthProfile(55L));
+        assertThrows(ResourceNotFoundException.class, () -> familySecurityUtil.checkCanReadHealthProfile(55L));
 
         verifyNoInteractions(familyMemberRepository);
     }

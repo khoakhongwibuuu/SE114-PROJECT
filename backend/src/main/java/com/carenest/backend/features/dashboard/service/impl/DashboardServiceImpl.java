@@ -46,7 +46,7 @@ public class DashboardServiceImpl implements DashboardService {
         Long userId = familySecurityUtil.getCurrentUser().getId();
 
         if (profileId != null) {
-            familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+            familySecurityUtil.checkCanReadHealthProfile(profileId);
         } else if (familyId != null) {
             familySecurityUtil.checkUserBelongsToFamily(familyId);
         } else {

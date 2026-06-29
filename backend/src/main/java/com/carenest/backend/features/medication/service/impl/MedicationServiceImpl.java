@@ -72,7 +72,7 @@ public class MedicationServiceImpl implements MedicationService {
     @Override
     @Transactional
     public MedicationResponse createMedication(Long profileId, CreateMedicationRequest request) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanWriteHealthProfile(profileId);
 
         HealthProfile profile = healthProfileRepository.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", profileId));
@@ -100,7 +100,7 @@ public class MedicationServiceImpl implements MedicationService {
         Medication medication = medicationRepository.findById(medicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Medication", medicationId));
 
-        familySecurityUtil.checkUserBelongsToHealthProfile(medication.getHealthProfile().getId());
+        familySecurityUtil.checkCanWriteHealthProfile(medication.getHealthProfile().getId());
 
         boolean scheduleChanged = false;
 
@@ -156,7 +156,7 @@ public class MedicationServiceImpl implements MedicationService {
         Medication medication = medicationRepository.findById(medicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Medication", medicationId));
 
-        familySecurityUtil.checkUserBelongsToHealthProfile(medication.getHealthProfile().getId());
+        familySecurityUtil.checkCanWriteHealthProfile(medication.getHealthProfile().getId());
 
         medication.setStatus(MedicationStatus.COMPLETED);
         medicationRepository.save(medication);
@@ -175,7 +175,7 @@ public class MedicationServiceImpl implements MedicationService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<MedicationResponse> getMedicationsByProfile(Long profileId, Pageable pageable) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanReadHealthProfile(profileId);
 
         Page<MedicationResponse> page = medicationRepository.findAllByHealthProfileId(profileId, pageable)
                 .map(medicationMapper::toMedicationResponse);
@@ -185,7 +185,7 @@ public class MedicationServiceImpl implements MedicationService {
     @Override
     @Transactional(readOnly = true)
     public List<MedicationLogResponse> getMedicationsForToday(Long profileId) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(profileId);
+        familySecurityUtil.checkCanReadHealthProfile(profileId);
 
         // Today's range in local timezone (assuming system default or Asia/Ho_Chi_Minh for simplicity)
         ZoneId zone = ZoneId.systemDefault();
@@ -215,7 +215,7 @@ public class MedicationServiceImpl implements MedicationService {
         MedicationLog log = medicationLogRepository.findById(logId)
                 .orElseThrow(() -> new ResourceNotFoundException("MedicationLog", logId));
 
-        familySecurityUtil.checkUserBelongsToHealthProfile(log.getMedication().getHealthProfile().getId());
+        familySecurityUtil.checkCanWriteHealthProfile(log.getMedication().getHealthProfile().getId());
 
         MedicationLogStatus oldStatus = log.getStatus();
         MedicationLogStatus newStatus = request.getStatus();
@@ -463,7 +463,7 @@ public class MedicationServiceImpl implements MedicationService {
         Medication medication = medicationRepository.findById(medicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Medication", medicationId));
 
-        familySecurityUtil.checkUserBelongsToHealthProfile(medication.getHealthProfile().getId());
+        familySecurityUtil.checkCanWriteHealthProfile(medication.getHealthProfile().getId());
 
         // Delete all logs first
         List<MedicationLog> logs = medicationLogRepository.findAllByMedicationId(medicationId);

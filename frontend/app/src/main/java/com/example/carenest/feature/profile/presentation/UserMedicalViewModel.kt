@@ -274,7 +274,9 @@ class UserMedicalViewModel(
                 weight = weightD,
                 bloodType = state.bloodType,
                 allergy = state.allergies,
-                medicalHistory = state.chronicDiseases
+                medicalHistory = state.chronicDiseases,
+                emergencyContactName = state.emergencyName.trim().ifBlank { null },
+                emergencyContactPhone = state.emergencyPhone.trim().ifBlank { null }
             )
 
             result.onSuccess {

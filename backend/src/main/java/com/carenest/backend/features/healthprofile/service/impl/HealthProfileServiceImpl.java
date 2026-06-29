@@ -117,7 +117,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional(readOnly = true)
     public HealthProfileResponse getHealthProfileById(Long id) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(id);
+        familySecurityUtil.checkCanReadHealthProfile(id);
 
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", id.toString()));
@@ -127,7 +127,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional
     public HealthProfileResponse updateHealthProfile(Long id, HealthProfileUpdateRequest request) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(id);
+        familySecurityUtil.checkCanWriteHealthProfile(id);
 
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", id.toString()));
@@ -151,7 +151,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional
     public void deleteHealthProfile(Long id) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(id);
+        familySecurityUtil.checkCanWriteHealthProfile(id);
 
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", id.toString()));
@@ -163,7 +163,7 @@ public class HealthProfileServiceImpl implements HealthProfileService {
     @Override
     @Transactional
     public HealthProfileResponse updateMedicalInfo(Long id, MedicalInfoUpdateRequest request) {
-        familySecurityUtil.checkUserBelongsToHealthProfile(id);
+        familySecurityUtil.checkCanWriteHealthProfile(id);
 
         HealthProfile healthProfile = healthProfileRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", id.toString()));
@@ -171,6 +171,8 @@ public class HealthProfileServiceImpl implements HealthProfileService {
         healthProfile.setBloodType(request.getBloodType());
         healthProfile.setAllergies(request.getAllergies());
         healthProfile.setChronicDiseases(request.getChronicDiseases());
+        healthProfile.setEmergencyContactName(request.getEmergencyContactName());
+        healthProfile.setEmergencyContactPhone(request.getEmergencyContactPhone());
 
         HealthProfile updatedProfile = healthProfileRepository.save(healthProfile);
         return enrichWithHeightAndWeight(healthProfileMapper.toResponse(updatedProfile));

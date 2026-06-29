@@ -71,7 +71,7 @@ class UserDataIsolationContractTest {
 
         assertThrows(
                 AccessDeniedException.class,
-                () -> familySecurityUtil.checkUserBelongsToHealthProfile(99L));
+                () -> familySecurityUtil.checkCanReadHealthProfile(99L));
     }
 
     @Test

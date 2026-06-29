@@ -96,4 +96,11 @@ interface FamilyApi {
         @Path("id") profileId: Long,
         @Body request: UpdateMedicalInfoRequest
     ): Response<ApiResponse<RawHealthProfileResponse>>
+
+    @Multipart
+    @POST("/api/v1/media/upload")
+    suspend fun uploadMedia(
+        @Part file: MultipartBody.Part,
+        @Query("category") category: String? = null
+    ): Response<ApiResponse<com.example.carenest.core.data.network.MediaUploadResponse>>
 }

@@ -81,7 +81,7 @@ public class AuthServiceImpl implements AuthService {
                 .dateOfBirth(null)
                 .isChild(false)
                 .build();
-        healthProfileRepository.save(stub);
+        stub = healthProfileRepository.save(stub);
 
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
@@ -156,6 +156,23 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User savedUser = userRepository.save(user);
+
+        // Sync personal health profile avatar and name if it exists
+        healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(user.getId())
+                .ifPresent(profile -> {
+                    profile.setFullName(request.getFullName());
+                    profile.setDateOfBirth(request.getDateOfBirth());
+                    if (request.getGender() != null) {
+                        try {
+                            profile.setGender(Gender.valueOf(request.getGender().trim().toUpperCase(Locale.ROOT)));
+                        } catch (IllegalArgumentException ignored) {}
+                    }
+                    if (request.getAvatarUrl() != null) {
+                        profile.setAvatarUrl(request.getAvatarUrl());
+                    }
+                    healthProfileRepository.save(profile);
+                });
+
         return userMapper.toUserInfoResponse(savedUser);
     }
 
@@ -258,7 +275,7 @@ public class AuthServiceImpl implements AuthService {
                     .dateOfBirth(null)
                     .isChild(false)
                     .build();
-            healthProfileRepository.save(stub);
+            stub = healthProfileRepository.save(stub);
             stubToReturn = stub;
         } else {
             if (user.getAuthProvider() == null || user.getAuthProvider() == AuthProvider.LOCAL) {

@@ -50,6 +50,7 @@ data class RawHealthProfileResponse(
     val isChild: Boolean?,
     val height: Float?,
     val weight: Float?,
+    val emergencyContactName: String?,
     val emergencyContactPhone: String?,
     val createdAt: String?,
     val updatedAt: String?

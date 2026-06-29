@@ -47,7 +47,7 @@ public class FamilySecurityUtil {
                 .orElse(null);
     }
 
-    public void checkUserBelongsToHealthProfile(Long profileId) {
+    public void checkCanReadHealthProfile(Long profileId) {
         User currentUser = getCurrentUser();
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
@@ -60,14 +60,49 @@ public class FamilySecurityUtil {
                     .findByFamilyIdAndUserId(profile.getFamily().getId(), currentUser.getId())
                     .isPresent();
             if (!belongs) {
-                throw new AccessDeniedException("Bạn không có quyền truy cập hồ sơ sức khỏe này");
+                throw new AccessDeniedException("Bạn không có quyền xem hồ sơ sức khỏe này");
             }
             return;
         }
 
-        if (profile.getUser() == null || !profile.getUser().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("Bạn không có quyền truy cập hồ sơ sức khỏe cá nhân này");
+        if (profile.getUser() == null) {
+            throw new AccessDeniedException("Hồ sơ không hợp lệ");
         }
+
+        if (profile.getUser().getId().equals(currentUser.getId())) {
+            return;
+        }
+
+        // Allow if currentUser and profile.getUser() share any family
+        boolean shareFamily = familyMemberRepository.findAllByUserId(currentUser.getId()).stream()
+                .anyMatch(fm -> familyMemberRepository.existsByFamilyIdAndUserId(fm.getFamily().getId(), profile.getUser().getId()));
+
+        if (!shareFamily) {
+            throw new AccessDeniedException("Bạn không có quyền xem hồ sơ sức khỏe cá nhân này");
+        }
+    }
+
+    public void checkCanWriteHealthProfile(Long profileId) {
+        User currentUser = getCurrentUser();
+        HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
+                .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));
+
+        // 1. Current user's own profile
+        if (profile.getUser() != null && profile.getUser().getId().equals(currentUser.getId())) {
+            return;
+        }
+
+        // 2. Dependent profile in a family the current user belongs to
+        if (profile.getUser() == null && profile.getFamily() != null) {
+            boolean belongsToFamily = familyMemberRepository
+                    .findByFamilyIdAndUserId(profile.getFamily().getId(), currentUser.getId())
+                    .isPresent();
+            if (belongsToFamily) {
+                return;
+            }
+        }
+
+        throw new AccessDeniedException("Bạn không có quyền chỉnh sửa. Chỉ có thể chỉnh sửa hồ sơ cá nhân hoặc người phụ thuộc.");
     }
 
     public void checkHealthProfileBelongsToFamily(Long profileId, Long familyId) {
@@ -76,7 +111,7 @@ public class FamilySecurityUtil {
         }
 
         checkUserBelongsToFamily(familyId);
-        checkUserBelongsToHealthProfile(profileId);
+        checkCanReadHealthProfile(profileId);
 
         HealthProfile profile = healthProfileRepository.findByIdAndDeletedAtIsNull(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("HealthProfile", "id", profileId.toString()));

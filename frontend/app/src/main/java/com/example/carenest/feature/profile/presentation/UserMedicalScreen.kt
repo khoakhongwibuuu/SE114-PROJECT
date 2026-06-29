@@ -88,7 +88,7 @@ fun UserMedicalScreen(
                     }
                 },
                 actions = {
-                    if (selectedTab == 0) {
+                    if (selectedTab == 0 && profileId > 0L) {
                         TextButton(
                             onClick = { viewModel.saveMedicalProfile(profileId) },
                             enabled = !state.isSaving
@@ -134,7 +134,7 @@ fun UserMedicalScreen(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        "Bạn chưa có hồ sơ cá nhân. Vui lòng cập nhật hồ sơ để sử dụng tính năng này.",
+                        "Tính năng này yêu cầu hồ sơ sức khỏe. Vui lòng quay lại và chọn một thành viên đã có hồ sơ.",
                         fontSize = 14.sp,
                         color = Color(0xFF64748B),
                         textAlign = TextAlign.Center

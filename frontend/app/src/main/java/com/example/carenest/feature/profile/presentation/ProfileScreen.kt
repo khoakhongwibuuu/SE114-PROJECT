@@ -125,7 +125,7 @@ fun ProfileScreen(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri: Uri? ->
             if (uri != null) {
-                viewModel.onEvent(ProfileEvent.AvatarSelected(uri))
+                viewModel.onEvent(ProfileEvent.AvatarSelected(context, uri))
             }
         }
     )

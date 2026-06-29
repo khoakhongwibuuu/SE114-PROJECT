@@ -94,7 +94,9 @@ data class UpdateProfileDetailsRequest(
 data class UpdateMedicalInfoRequest(
     val bloodType: String?,
     val allergies: String?,
-    val chronicDiseases: String?
+    val chronicDiseases: String?,
+    val emergencyContactName: String?,
+    val emergencyContactPhone: String?
 )
 
 data class CreateDependentRequest(

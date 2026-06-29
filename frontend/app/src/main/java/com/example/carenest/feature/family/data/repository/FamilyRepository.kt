@@ -7,6 +7,7 @@ import com.example.carenest.core.data.network.requireData
 import com.example.carenest.core.data.network.requireList
 import com.example.carenest.core.data.network.requireSuccess
 import com.example.carenest.core.data.storage.SecureSessionManager
+import com.example.carenest.model.EmergencyContact
 import com.example.carenest.model.HealthProfile
 import com.example.carenest.model.MedicalCondition
 import kotlinx.coroutines.flow.first
@@ -88,7 +89,13 @@ class FamilyRepository(
                 weight = raw.weight,
                 bmi = bmiValue,
                 medicalHistory = conditionsList,
-                emergencyContact = null
+                emergencyContact = if (!raw.emergencyContactName.isNullOrBlank() || !raw.emergencyContactPhone.isNullOrBlank()) {
+                    EmergencyContact(
+                        name = raw.emergencyContactName.orEmpty(),
+                        phone = raw.emergencyContactPhone.orEmpty(),
+                        relation = ""
+                    )
+                } else null
             )
             Result.success(profile)
         } catch (e: Exception) {
@@ -143,7 +150,13 @@ class FamilyRepository(
                 weight = raw.weight,
                 bmi = bmiValue,
                 medicalHistory = conditionsList,
-                emergencyContact = null
+                emergencyContact = if (!raw.emergencyContactName.isNullOrBlank() || !raw.emergencyContactPhone.isNullOrBlank()) {
+                    EmergencyContact(
+                        name = raw.emergencyContactName.orEmpty(),
+                        phone = raw.emergencyContactPhone.orEmpty(),
+                        relation = ""
+                    )
+                } else null
             )
             Result.success(profile)
         } catch (e: Exception) {
@@ -308,7 +321,9 @@ class FamilyRepository(
         weight: Double?,
         bloodType: String?,
         allergy: String?,
-        medicalHistory: String?
+        medicalHistory: String?,
+        emergencyContactName: String?,
+        emergencyContactPhone: String?
     ): Result<Unit> {
         return try {
             val detailsResponse = familyApi.updateProfileDetails(
@@ -329,12 +344,15 @@ class FamilyRepository(
             runCatching {
                 detailsResponse.body().requireSuccess("Không thể cập nhật thông tin hồ sơ")
             }.onFailure { return Result.failure(Exception(it.message ?: "Không thể cập nhật thông tin hồ sơ", it)) }
+
             val medResponse = familyApi.updateProfileMedicalInfo(
                 profileId,
                 UpdateMedicalInfoRequest(
                     bloodType = bloodType,
                     allergies = allergy,
-                    chronicDiseases = medicalHistory
+                    chronicDiseases = medicalHistory,
+                    emergencyContactName = emergencyContactName,
+                    emergencyContactPhone = emergencyContactPhone
                 )
             )
             if (!medResponse.isSuccessful) {
@@ -345,6 +363,19 @@ class FamilyRepository(
             }.onFailure { return Result.failure(Exception(it.message ?: "Không thể cập nhật thông tin y tế", it)) }
             Result.success(Unit)
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun uploadAvatar(file: java.io.File): Result<String> {
+        return try {
+            val mimeType = java.net.URLConnection.guessContentTypeFromName(file.name) ?: "image/jpeg"
+            val reqFile = file.asRequestBody(mimeType.toMediaTypeOrNull())
+            val imagePart = okhttp3.MultipartBody.Part.createFormData("file", file.name, reqFile)
+            val response = familyApi.uploadMedia(imagePart, "avatar")
+            val data = response.requireData("Không thể tải ảnh lên server")
+            Result.success(data.url)
+        } catch(e: Exception) {
             Result.failure(e)
         }
     }

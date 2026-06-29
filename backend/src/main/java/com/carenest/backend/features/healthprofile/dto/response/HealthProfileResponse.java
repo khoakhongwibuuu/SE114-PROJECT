@@ -25,6 +25,8 @@ public class HealthProfileResponse {
     private BloodType bloodType;
     private String allergies;
     private String chronicDiseases;
+    private String emergencyContactName;
+    private String emergencyContactPhone;
     private String notes;
     private String avatarUrl;
     private Boolean isChild;

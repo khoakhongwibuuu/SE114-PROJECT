@@ -57,6 +57,12 @@ public class HealthProfile extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "emergency_contact_name", length = 100)
+    private String emergencyContactName;
+
+    @Column(name = "emergency_contact_phone", length = 20)
+    private String emergencyContactPhone;
+
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
