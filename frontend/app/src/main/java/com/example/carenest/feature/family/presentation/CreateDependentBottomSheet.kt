@@ -39,6 +39,8 @@ import com.example.carenest.core.presentation.theme.PrimaryBlue
 import com.example.carenest.core.presentation.theme.SurfaceHigh
 import com.example.carenest.core.presentation.theme.TextPrimary
 import com.example.carenest.core.presentation.theme.TextSecondary
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,12 +55,16 @@ fun CreateDependentBottomSheet(
     var expandedRelation by remember { mutableStateOf(false) }
     var relation by remember { mutableStateOf("Con cái") }
 
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var dobError by remember { mutableStateOf<String?>(null) }
+
     val context = LocalContext.current
     val datePickerDialog = remember {
         android.app.DatePickerDialog(
             context,
             { _, year, month, dayOfMonth ->
                 dob = String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year)
+                dobError = null
             },
             2020, 0, 1
         )
@@ -73,8 +79,13 @@ fun CreateDependentBottomSheet(
 
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
+                onValueChange = { 
+                    name = it
+                    nameError = null
+                },
                 label = { Text("Họ và tên") },
+                isError = nameError != null,
+                supportingText = { nameError?.let { Text(it) } },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(AppRadius.lg)
             )
@@ -86,12 +97,15 @@ fun CreateDependentBottomSheet(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Ngày sinh") },
+                    isError = dobError != null,
+                    supportingText = { dobError?.let { Text(it) } },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = false,
                     colors = OutlinedTextFieldDefaults.colors(
                         disabledTextColor = TextPrimary,
-                        disabledBorderColor = Outline,
-                        disabledLabelColor = TextSecondary
+                        disabledBorderColor = if (dobError != null) androidx.compose.material3.MaterialTheme.colorScheme.error else Outline,
+                        disabledLabelColor = if (dobError != null) androidx.compose.material3.MaterialTheme.colorScheme.error else TextSecondary,
+                        disabledSupportingTextColor = androidx.compose.material3.MaterialTheme.colorScheme.error
                     ),
                     shape = RoundedCornerShape(AppRadius.lg)
                 )
@@ -152,11 +166,44 @@ fun CreateDependentBottomSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = { onSubmit(name, dob, gender, relation) },
+                onClick = { 
+                    var isValid = true
+                    
+                    if (name.isBlank()) {
+                        nameError = "Họ và tên không được để trống"
+                        isValid = false
+                    } else if (name.length > 50) {
+                        nameError = "Họ và tên không được vượt quá 50 ký tự"
+                        isValid = false
+                    } else if (!name.matches(Regex("^[a-zA-ZÀ-Ỹà-ỹ\\s]+$"))) {
+                        nameError = "Họ và tên không được chứa số hoặc ký tự đặc biệt"
+                        isValid = false
+                    }
+
+                    if (dob.isBlank()) {
+                        dobError = "Ngày sinh không được để trống"
+                        isValid = false
+                    } else {
+                        try {
+                            val parsedDob = LocalDate.parse(dob, DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                            if (parsedDob.isAfter(LocalDate.now())) {
+                                dobError = "Ngày sinh không được ở tương lai"
+                                isValid = false
+                            }
+                        } catch (e: Exception) {
+                            dobError = "Ngày sinh không hợp lệ"
+                            isValid = false
+                        }
+                    }
+
+                    if (isValid) {
+                        onSubmit(name, dob, gender, relation)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                 shape = RoundedCornerShape(AppRadius.lg),
-                enabled = name.isNotBlank() && dob.isNotBlank() && !isBusy
+                enabled = !isBusy
             ) {
                 if (isBusy) {
                     androidx.compose.material3.CircularProgressIndicator(
