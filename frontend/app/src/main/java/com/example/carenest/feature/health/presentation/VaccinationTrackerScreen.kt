@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,7 +43,9 @@ fun VaccinationTrackerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(profileId) {
-        viewModel.loadVaccinations(profileId)
+        if (profileId > 0L) {
+            viewModel.loadVaccinations(profileId)
+        }
     }
 
     Scaffold(
@@ -87,6 +90,44 @@ fun VaccinationTrackerScreen(
         },
         containerColor = Color(0xFFF8FAFC)
     ) { paddingValues ->
+        // Guard: user chưa có hồ sơ cá nhân
+        if (profileId <= 0L) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MedicalServices,
+                        contentDescription = null,
+                        tint = PrimaryBlue.copy(alpha = 0.4f),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Chưa có hồ sơ",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Bạn chưa có hồ sơ y tế cá nhân. Vui lòng thiết lập hồ sơ để theo dõi lịch tiêm chủng.",
+                        fontSize = 14.sp,
+                        color = Color(0xFF64748B),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+            return@Scaffold
+        }
+
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryBlue)

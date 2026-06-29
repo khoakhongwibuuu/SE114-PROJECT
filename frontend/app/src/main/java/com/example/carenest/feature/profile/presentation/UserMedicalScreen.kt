@@ -53,8 +53,10 @@ fun UserMedicalScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(profileId) {
-        viewModel.loadProfile(profileId)
-        viewModel.loadGrowthData(profileId)
+        if (profileId > 0L) {
+            viewModel.loadProfile(profileId)
+            viewModel.loadGrowthData(profileId)
+        }
     }
 
     LaunchedEffect(state.successMessage, state.error) {
@@ -104,6 +106,44 @@ fun UserMedicalScreen(
             )
         }
     ) { paddingValues ->
+        // Guard: user chưa có hồ sơ cá nhân
+        if (profileId <= 0L) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MedicalServices,
+                        contentDescription = null,
+                        tint = PrimaryBlue.copy(alpha = 0.5f),
+                        modifier = Modifier.size(72.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Chưa có hồ sơ y tế",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        "Bạn chưa có hồ sơ cá nhân. Vui lòng cập nhật hồ sơ để sử dụng tính năng này.",
+                        fontSize = 14.sp,
+                        color = Color(0xFF64748B),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+            return@Scaffold
+        }
+
         if (state.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = PrimaryBlue)
