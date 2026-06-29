@@ -271,7 +271,7 @@ class DashboardViewModel(
         return when {
             savedProfileId != null && validProfileIds.contains(savedProfileId) -> savedProfileId
             ownProfileId != null -> ownProfileId
-            else -> validProfileIds.firstOrNull()
+            else -> null
         }
     }
 }

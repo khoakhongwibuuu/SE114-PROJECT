@@ -100,20 +100,54 @@ fun MedicineScheduleScreen(
     }
 
     LaunchedEffect(resolvedProfileId) {
-        resolvedProfileId?.let { viewModel.fetchTodaySchedule(it) }
+        resolvedProfileId?.takeIf { it > 0 }?.let { viewModel.fetchTodaySchedule(it) }
     }
+
+    val hasActiveProfile = resolvedProfileId != null && resolvedProfileId > 0L
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF8FAFC)),
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
+        if (!hasActiveProfile) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .statusBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MedicalServices,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = Color(0xFF94A3B8)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Bạn chưa có hồ sơ y tế cá nhân. Vui lòng cập nhật hồ sơ để sử dụng tính năng này.",
+                    fontSize = 16.sp,
+                    color = Color(0xFF475569),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = onBack,
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Quay lại", color = Color.White)
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
             item {
                 Row(
                     modifier = Modifier
@@ -299,6 +333,7 @@ fun MedicineScheduleScreen(
         ) {
             Icon(Icons.Default.Add, contentDescription = "Thêm lịch")
         }
+    }
     }
 }
 

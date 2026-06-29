@@ -172,17 +172,7 @@ fun MainScreen(
         }
     }
 
-    fun resolveActiveProfileIdOrNotify(): Long? {
-        val profileId = currentProfileId ?: application.secureSessionManager.getActiveProfileId() ?: application.secureSessionManager.getProfileId()
-        if (!profileId.isValidHealthProfileId()) {
-            Toast.makeText(context, "Đang tải hồ sơ của bạn, vui lòng thử lại sau.", Toast.LENGTH_SHORT).show()
-            return null
-        }
-        return profileId
-    }
-
-    val hasActiveHealthProfile = (currentProfileId ?: application.secureSessionManager.getActiveProfileId())
-        .isValidHealthProfileId()
+      }
 
     // When user is on a non-home tab and presses Android system back, return to Home tab
     // instead of propagating to NavDisplay (which would pop MainDashboard off the stack).
@@ -253,22 +243,22 @@ fun MainScreen(
                     refreshTrigger = homeRefreshTrigger,
                     onNavigateToMedicine = onNavigateToMedicineSchedule,
                     onNavigateToAppointment = {
-                        resolveActiveProfileIdOrNotify()?.let(onNavigateToAppointments)
+                        onNavigateToAppointments(currentProfileId ?: -1L)
                     },
                     onNavigateToVaccine = {
-                        resolveActiveProfileIdOrNotify()?.let(onNavigateToVaccinations)
+                        onNavigateToVaccinations(currentProfileId ?: -1L)
                     },
                     onNavigateToNotifications = onNavigateToNotifications,
                     onNavigateToTask = { task ->
                         when (task.type?.uppercase()) {
                             "MEDICATION" -> onNavigateToMedicineSchedule()
                             "VACCINATION" -> {
-                                val profileId = task.profileId?.takeIf { it > 0L } ?: resolveActiveProfileIdOrNotify()
-                                profileId?.let(onNavigateToVaccinations)
+                                val profileId = task.profileId?.takeIf { it > 0L } ?: currentProfileId ?: -1L
+                                onNavigateToVaccinations(profileId)
                             }
                             "APPOINTMENT" -> {
-                                val profileId = task.profileId?.takeIf { it > 0L } ?: resolveActiveProfileIdOrNotify()
-                                profileId?.let(onNavigateToAppointments)
+                                val profileId = task.profileId?.takeIf { it > 0L } ?: currentProfileId ?: -1L
+                                onNavigateToAppointments(profileId)
                             }
                         }
                     }
@@ -308,7 +298,7 @@ fun MainScreen(
 
                     onLogout = onLogout,
                     onNavigateToMedicalRecord = {
-                        resolveActiveProfileIdOrNotify()?.let(onNavigateToMedicalRecord)
+                        onNavigateToMedicalRecord(currentProfileId ?: -1L)
                     },
                     onNavigateToFamilySetup = {
                         selectedTab = TAB_FAMILY

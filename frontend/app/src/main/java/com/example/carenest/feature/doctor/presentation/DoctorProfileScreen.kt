@@ -80,27 +80,46 @@ fun DoctorProfileScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Button(
-                        onClick = { showBookingSheet = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        enabled = canCreateBooking,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            "Đặt lịch khám",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                    }
                     if (!activeProfileId.isValidHealthProfileId()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Hãy chọn hoặc tạo hồ sơ sức khỏe trước khi đặt lịch với bác sĩ này.",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFF1F5F9))
+                                .padding(16.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MedicalServices,
+                                contentDescription = null,
+                                tint = Color(0xFF94A3B8),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Bạn chưa có hồ sơ y tế cá nhân. Vui lòng cập nhật hồ sơ để sử dụng tính năng này.",
+                                    color = Color(0xFF475569),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    } else {
+                        Button(
+                            onClick = { showBookingSheet = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            enabled = canCreateBooking,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                "Đặt lịch khám",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        }
                     }
                 }
             }

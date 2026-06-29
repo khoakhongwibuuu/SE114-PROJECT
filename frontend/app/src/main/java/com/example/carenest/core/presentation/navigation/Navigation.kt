@@ -535,15 +535,7 @@ private fun GuardedProfileRoute(
   onInvalid: () -> Unit,
   content: @Composable (Long) -> Unit
 ) {
-  if (!profileId.isValidHealthProfileId()) {
-    val context = LocalContext.current
-    LaunchedEffect(profileId) {
-      Toast.makeText(context, "Vui lòng chọn hoặc tạo hồ sơ sức khỏe trước", Toast.LENGTH_SHORT).show()
-      onInvalid()
-    }
-  } else {
-    content(profileId)
-  }
+  content(profileId)
 }
 
 private fun String?.toAppRole(): AppRole? {

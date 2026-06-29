@@ -151,42 +151,76 @@ fun AddAppointmentScreen(
             )
         }
 
-        ScrollViewContent(
-            facility = facility,
-            onFacilityChange = { facility = it },
-            doctor = doctor,
-            onDoctorChange = { doctor = it },
-            address = address,
-            onAddressChange = { address = it },
-            notes = notes,
-            onNotesChange = { notes = it },
-            selectedDateTime = selectedDateTime,
-            onDateClick = { datePickerDialog.show() },
-            onTimeClick = { timePickerDialog.show() },
-            canSubmit = canSubmit,
-            hasActiveProfile = hasActiveProfile,
-            isFutureSchedule = isFutureSchedule,
-            isActionLoading = isActionLoading,
-            onSubmit = {
-                val targetProfileId = activeProfileId ?: return@ScrollViewContent
-                val isoDate = selectedDateTime.atZone(ZoneId.systemDefault()).toInstant().toString()
-                vm.createAppointment(
-                    profileId = targetProfileId,
-                    hospitalName = facility,
-                    doctorName = doctor,
-                    isoDate = isoDate,
-                    address = address.takeIf { it.isNotBlank() },
-                    notes = notes.takeIf { it.isNotBlank() },
-                    onSuccess = {
-                        Toast.makeText(context, "Đã lưu lịch hẹn", Toast.LENGTH_SHORT).show()
-                        onBack()
-                    },
-                    onError = { message ->
-                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        if (!hasActiveProfile) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocalHospital,
+                        contentDescription = null,
+                        modifier = Modifier.size(80.dp),
+                        tint = Color(0xFF94A3B8)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Bạn chưa có hồ sơ y tế cá nhân. Vui lòng cập nhật hồ sơ để sử dụng tính năng này.",
+                        fontSize = 16.sp,
+                        color = Color(0xFF475569),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = onBack,
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Quay lại", color = Color.White)
                     }
-                )
+                }
             }
-        )
+        } else {
+            ScrollViewContent(
+                facility = facility,
+                onFacilityChange = { facility = it },
+                doctor = doctor,
+                onDoctorChange = { doctor = it },
+                address = address,
+                onAddressChange = { address = it },
+                notes = notes,
+                onNotesChange = { notes = it },
+                selectedDateTime = selectedDateTime,
+                onDateClick = { datePickerDialog.show() },
+                onTimeClick = { timePickerDialog.show() },
+                canSubmit = canSubmit,
+                hasActiveProfile = true,
+                isFutureSchedule = isFutureSchedule,
+                isActionLoading = isActionLoading,
+                onSubmit = {
+                    val targetProfileId = activeProfileId ?: return@ScrollViewContent
+                    val isoDate = selectedDateTime.atZone(ZoneId.systemDefault()).toInstant().toString()
+                    vm.createAppointment(
+                        profileId = targetProfileId,
+                        hospitalName = facility,
+                        doctorName = doctor,
+                        isoDate = isoDate,
+                        address = address.takeIf { it.isNotBlank() },
+                        notes = notes.takeIf { it.isNotBlank() },
+                        onSuccess = {
+                            android.widget.Toast.makeText(context, "Đã lưu lịch hẹn", android.widget.Toast.LENGTH_SHORT).show()
+                            onBack()
+                        },
+                        onError = { message ->
+                            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }
+            )
+        }
     }
 }
 
