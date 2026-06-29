@@ -91,7 +91,7 @@ class HealthProfileServiceImplTest {
 
     @Test
     void getMyHealthProfile_throwsWhenNoProfileExists() {
-        when(healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
+        when(healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndIsChildFalseAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> healthProfileService.getMyHealthProfile(1L));
     }
@@ -110,7 +110,7 @@ class HealthProfileServiceImplTest {
         mapped.setId(100L);
         mapped.setFullName("Personal Profile");
 
-        when(healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(1L)).thenReturn(Optional.of(profile));
+        when(healthProfileRepository.findFirstByUserIdAndFamilyIsNullAndIsChildFalseAndDeletedAtIsNull(1L)).thenReturn(Optional.of(profile));
         when(healthProfileMapper.toResponse(profile)).thenReturn(mapped);
         when(growthRecordRepository.findByHealthProfileIdOrderByRecordDateDesc(100L)).thenReturn(List.of());
 
