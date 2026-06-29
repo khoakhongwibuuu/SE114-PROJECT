@@ -51,12 +51,22 @@ public class AdminServiceImpl implements AdminService {
         long pendingEkycCount = verificationRepository.countByStatus(VerificationStatus.PENDING);
         long moderationQueueCount = reportRepository.countByStatus(ReportStatus.PENDING);
 
+        // Tính toán xu hướng người dùng trong 7 ngày gần nhất (tính cả ngày hôm nay)
+        java.time.Instant now = java.time.Instant.now();
+        java.util.List<Long> trend = new java.util.ArrayList<>();
+        for (int i = 6; i >= 0; i--) {
+            // Lùi ngày vào cuối ngày (hoặc trừ đi i ngày)
+            java.time.Instant targetTime = now.minus(java.time.Duration.ofDays(i));
+            long countAtDay = userRepository.countByCreatedAtBefore(targetTime);
+            trend.add(countAtDay);
+        }
+
         return AdminDashboardStatsResponse.builder()
                 .totalUsers(totalUsers)
                 .totalDoctors(totalDoctors)
                 .pendingEkycCount(pendingEkycCount)
                 .moderationQueueCount(moderationQueueCount)
-                .trend(List.of())
+                .trend(trend)
                 .build();
     }
 

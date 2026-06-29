@@ -1,9 +1,13 @@
 package com.example.carenest.feature.admin.presentation
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Analytics
@@ -28,11 +32,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.example.carenest.R
 
-private val AdminNavy = Color(0xFF1E293B)
+private val AdminNavy = Color(0xFF00629D) // Sử dụng màu xanh chủ đạo của phía User
 
 private enum class AdminTab(
     val title: String,
@@ -74,7 +82,19 @@ fun AdminMainScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("CareNest Admin", fontWeight = FontWeight.Black) },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.carenest_logo_house),
+                            contentDescription = "CareNest Logo",
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Text("CareNest Admin", fontWeight = FontWeight.Black)
+                    }
+                },
                 actions = {
                     if (selectedTab == AdminTab.USERS.ordinal) {
                         IconButton(onClick = { showAuditLogs = true }) {
@@ -109,9 +129,9 @@ fun AdminMainScreen(
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color.White,
                             selectedTextColor = Color.White,
-                            unselectedIconColor = Color(0xFF94A3B8),
-                            unselectedTextColor = Color(0xFF94A3B8),
-                            indicatorColor = Color(0xFF334155),
+                            unselectedIconColor = Color(0xFFB3E5FC),
+                            unselectedTextColor = Color(0xFFB3E5FC),
+                            indicatorColor = Color(0xFF004D7A),
                         ),
                     )
                 }

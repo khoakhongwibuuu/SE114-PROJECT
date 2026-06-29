@@ -19,4 +19,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRoleAndIsActiveTrue(Role role);
 
     org.springframework.data.domain.Page<User> findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(String email, String fullName, org.springframework.data.domain.Pageable pageable);
+    long countByCreatedAtBefore(java.time.Instant dateTime);
 }
