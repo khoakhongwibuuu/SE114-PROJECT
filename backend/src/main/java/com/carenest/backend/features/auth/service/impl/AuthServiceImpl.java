@@ -314,9 +314,20 @@ public class AuthServiceImpl implements AuthService {
                 .findFirstByUserIdAndFamilyIsNullAndDeletedAtIsNull(user.getId())
                 .orElse(null);
 
+        boolean isNonPatient = user.getRole() == Role.DOCTOR || user.getRole() == Role.ADMIN;
+        if (profile == null && isNonPatient) {
+            profile = HealthProfile.builder()
+                    .user(user)
+                    .fullName(user.getFullName() != null ? user.getFullName() : user.getEmail())
+                    .gender(null)
+                    .dateOfBirth(null)
+                    .isChild(false)
+                    .build();
+            profile = healthProfileRepository.save(profile);
+        }
+
         Long profileId = profile != null ? profile.getId() : null;
         // DOCTOR and ADMIN don't have a personal HealthProfile and don't need ProfileSetup
-        boolean isNonPatient = user.getRole() == Role.DOCTOR || user.getRole() == Role.ADMIN;
         Boolean isComplete = isNonPatient || (profile != null && profile.getDateOfBirth() != null && profile.getGender() != null);
 
         return AuthResponse.builder()
