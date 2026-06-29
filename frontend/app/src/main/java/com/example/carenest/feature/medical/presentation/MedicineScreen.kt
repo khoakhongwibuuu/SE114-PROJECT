@@ -190,7 +190,7 @@ fun MedicineScreen(
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "OCR đang tạm tắt trong MVP. Chạm để xem trạng thái tính năng.",
+                            text = "Quét ảnh đơn thuốc để tự động điền thông tin.",
                             color = Color(0xFF64748B),
                             fontSize = 12.sp,
                         )
