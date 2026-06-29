@@ -28,6 +28,7 @@ OCR_MEDICINE_JSON_SCHEMA = {
                     "dose_instruction",
                     "frequency",
                     "duration_days",
+                    "total_quantity",
                     "route",
                     "confidence",
                     "warnings",
@@ -39,6 +40,7 @@ OCR_MEDICINE_JSON_SCHEMA = {
                     "dose_instruction": {"anyOf": [{"type": "string"}, {"type": "null"}]},
                     "frequency": {"anyOf": [{"type": "string"}, {"type": "null"}]},
                     "duration_days": {"anyOf": [{"type": "integer", "minimum": 0}, {"type": "null"}]},
+                    "total_quantity": {"anyOf": [{"type": "integer", "minimum": 1}, {"type": "null"}]},
                     "route": {"type": "string", "enum": ["oral", "topical", "inhaled", "unknown"]},
                     "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
                     "warnings": {"type": "array", "items": {"type": "string"}},
@@ -63,6 +65,7 @@ OCR_MEDICINE_JSON_SCHEMA = {
 
 OCR_MEDICINE_INSTRUCTIONS = """
 Extract medicine information from OCR text for CareNest.
+Extract ALL medication entries found in the text. Ensure NO medicines are skipped or omitted.
 Return only JSON matching the supplied schema.
 Strictly ignore clinic names, doctor names, patient names, addresses, phone numbers, and any other non-medication text. Focus ONLY on the actual prescribed medicines to avoid returning junk data.
 Do not infer missing strength, dose, route, or duration. Use null or unknown when unclear.
