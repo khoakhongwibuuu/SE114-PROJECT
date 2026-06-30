@@ -18,6 +18,7 @@ public class GroupPostResponse {
     private String chatGroupName;
     private Long authorId;
     private String authorName;
+    private String authorAvatarUrl;
     private String authorRole;
     private String title;
     private String content;

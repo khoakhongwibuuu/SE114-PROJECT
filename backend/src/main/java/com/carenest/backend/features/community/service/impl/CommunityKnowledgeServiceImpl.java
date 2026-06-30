@@ -1192,6 +1192,7 @@ public class CommunityKnowledgeServiceImpl implements CommunityKnowledgeService 
                 .chatGroupName(group != null ? group.getName() : null)
                 .authorId(author != null ? author.getId() : null)
                 .authorName(author != null ? author.getFullName() : null)
+                .authorAvatarUrl(author != null ? author.getAvatarUrl() : null)
                 .authorRole(author != null && author.getRole() != null ? author.getRole().name() : null)
                 .title(post.getTitle())
                 .content(post.getContent())

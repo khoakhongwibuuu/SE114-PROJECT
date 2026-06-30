@@ -68,9 +68,9 @@ fun PostCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (!post.authorAvatar.isNullOrBlank()) {
+                if (!post.authorAvatarUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = post.authorAvatar,
+                        model = post.authorAvatarUrl,
                         contentDescription = "Avatar of ${post.authorName}",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier

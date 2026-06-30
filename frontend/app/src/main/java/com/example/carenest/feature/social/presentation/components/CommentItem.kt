@@ -48,9 +48,9 @@ fun CommentItem(
             .padding(start = startPadding, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.Top
     ) {
-        if (!comment.authorAvatar.isNullOrBlank()) {
+        if (!comment.authorAvatarUrl.isNullOrBlank()) {
             AsyncImage(
-                model = comment.authorAvatar,
+                model = comment.authorAvatarUrl,
                 contentDescription = "Avatar of ${comment.authorName}",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

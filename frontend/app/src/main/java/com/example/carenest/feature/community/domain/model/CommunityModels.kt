@@ -17,6 +17,7 @@ data class GroupPost(
     val socialGroupName: String? = null,
     val authorId: Long? = null,
     val authorName: String? = null,
+    val authorAvatarUrl: String? = null,
     val authorRole: String? = null,
     val title: String? = null,
     val content: String,
