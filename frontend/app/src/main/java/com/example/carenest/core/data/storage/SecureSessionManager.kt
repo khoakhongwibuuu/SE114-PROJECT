@@ -18,6 +18,7 @@ class SecureSessionManager(private val context: Context) {
         private const val USER_ROLE_KEY = "user_role"
         private const val USER_EMAIL_KEY = "user_email"
         private const val USER_NAME_KEY = "user_name"
+        private const val USER_AVATAR_KEY = "user_avatar"
         private const val ONBOARDING_DONE_KEY = "@carenest_onboarding_done"
         private const val IS_PROFILE_COMPLETE_KEY = "is_profile_complete"
     }
@@ -62,6 +63,9 @@ class SecureSessionManager(private val context: Context) {
     private val _userNameFlow = MutableStateFlow(encryptedPrefs.getString(USER_NAME_KEY, null))
     val userNameFlow: StateFlow<String?> = _userNameFlow
 
+    private val _userAvatarFlow = MutableStateFlow(encryptedPrefs.getString(USER_AVATAR_KEY, null))
+    val userAvatarFlow: StateFlow<String?> = _userAvatarFlow
+
     fun getAccessToken(): String? = encryptedPrefs.getString(ACCESS_TOKEN_KEY, null)
 
     fun getRefreshToken(): String? = encryptedPrefs.getString(REFRESH_TOKEN_KEY, null)
@@ -83,6 +87,8 @@ class SecureSessionManager(private val context: Context) {
     fun getUserEmail(): String? = encryptedPrefs.getString(USER_EMAIL_KEY, null)
 
     fun getUserName(): String? = encryptedPrefs.getString(USER_NAME_KEY, null)
+
+    fun getUserAvatar(): String? = encryptedPrefs.getString(USER_AVATAR_KEY, null)
 
     suspend fun saveToken(token: String) {
         saveAccessToken(token)
@@ -138,6 +144,16 @@ class SecureSessionManager(private val context: Context) {
         } else {
             encryptedPrefs.edit().putString(USER_NAME_KEY, name).apply()
             _userNameFlow.value = name
+        }
+    }
+
+    fun saveUserAvatarSync(avatarUrl: String?) {
+        if (avatarUrl.isNullOrBlank()) {
+            encryptedPrefs.edit().remove(USER_AVATAR_KEY).apply()
+            _userAvatarFlow.value = null
+        } else {
+            encryptedPrefs.edit().putString(USER_AVATAR_KEY, avatarUrl).apply()
+            _userAvatarFlow.value = avatarUrl
         }
     }
 
@@ -200,5 +216,6 @@ class SecureSessionManager(private val context: Context) {
         _userRoleFlow.value = null
         _userEmailFlow.value = null
         _userNameFlow.value = null
+        _userAvatarFlow.value = null
     }
 }

@@ -81,6 +81,24 @@ class DashboardViewModel(
                     ?.key
             }
         }
+        viewModelScope.launch {
+            secureSessionManager.userAvatarFlow.collect { newAvatarUrl ->
+                val currentState = _dashboardState.value
+                if (currentState is DashboardState.Success) {
+                    val currentUserId = _currentUser.value?.id ?: -1L
+                    val updatedMembers = currentState.data.members.map { member ->
+                        if (member.memberId == currentUserId || member.memberId == -1L) {
+                            member.copy(avatarUrl = newAvatarUrl)
+                        } else {
+                            member
+                        }
+                    }
+                    _dashboardState.value = currentState.copy(
+                        data = currentState.data.copy(members = updatedMembers)
+                    )
+                }
+            }
+        }
     }
 
     fun fetchCurrentUser() {

@@ -217,6 +217,7 @@ class ProfileViewModel(
     private fun applyUserInfo(user: UserInfo) {
         sessionManager.saveUserIdSync(user.id)
         sessionManager.saveUserRoleSync(user.role.normalizedRole())
+        sessionManager.saveUserAvatarSync(user.avatarUrl)
         _state.update {
             it.copy(
                 fullName = user.fullName ?: "",

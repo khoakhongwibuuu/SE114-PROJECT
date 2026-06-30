@@ -236,6 +236,7 @@ class AuthViewModel(
         secureSessionManager.saveUserRoleSync(user.role)
         secureSessionManager.saveUserEmailSync(user.email)
         secureSessionManager.saveUserNameSync(user.fullName)
+        secureSessionManager.saveUserAvatarSync(user.avatarUrl)
         _currentUser.value = user
     }
 
