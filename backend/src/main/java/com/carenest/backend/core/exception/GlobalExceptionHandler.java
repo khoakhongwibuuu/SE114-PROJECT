@@ -88,6 +88,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Email hoặc mật khẩu không đúng"));
     }
 
+    @ExceptionHandler(org.springframework.security.authentication.LockedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleLockedException(org.springframework.security.authentication.LockedException ex) {
+        log.warn("Account locked: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("Tài khoản của bạn đã bị khoá. Vui lòng liên hệ quản trị viên."));
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
         log.warn("Access denied: {}", ex.getMessage());
